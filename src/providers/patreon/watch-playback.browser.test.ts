@@ -11,16 +11,20 @@ import { testEngines } from '../../test-utils/test-engines';
 import type { AutoTheaterRuntime } from '../../ui/auto-theater-runtime';
 
 const BUNDLE = bundleModules([
+  "export { exposeFixtureRuntime } from './test-utils/provider-runtime';",
   "export { createAutoTheaterRuntime } from './ui/auto-theater-runtime';",
   "export { installWatchPlaybackQueries, confirmProviderWatchVideo } from './providers/watch-playback';",
   "export { installPatreonNavigation } from './providers/patreon/navigation';"
 ], 'PatreonTest');
+// The provider's MAIN script, loaded after the runtime like the installed extension does.
+const PROVIDER = bundleModules(["import './providers/patreon/main';"]);
 const browsers = sharedEngineBrowsers();
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 
 declare global {
   interface Window {
     PatreonTest: {
+      exposeFixtureRuntime(world: 'main'): void;
       createAutoTheaterRuntime: typeof import('../../ui/auto-theater-runtime').createAutoTheaterRuntime;
       installWatchPlaybackQueries(): void;
       installPatreonNavigation(): void;
@@ -59,6 +63,8 @@ async function open(page: Page, path: string): Promise<void> {
   await page.goto(`https://www.patreon.com${path}`);
   await page.evaluate(media => { (window as unknown as { MEDIA: string }).MEDIA = media; }, MEDIA);
   await page.addScriptTag({ content: BUNDLE });
+  await page.evaluate(() => window.PatreonTest.exposeFixtureRuntime('main'));
+  await page.addScriptTag({ content: PROVIDER });
   await page.evaluate(() => window.PatreonTest.installWatchPlaybackQueries());
 }
 

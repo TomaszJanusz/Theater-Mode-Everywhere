@@ -6,7 +6,6 @@ import { DisneyAdapter } from '../providers/disney/adapter';
 import { createHostCaptionLayoutSource } from '../providers/host-captions';
 import { NativeTextTrackAdapter } from '../providers/native/adapter';
 import { NetflixAdapter } from '../providers/netflix/adapter';
-import { PatreonAdapter } from '../providers/patreon/adapter';
 import { PROVIDER_DEFINITIONS, shouldAttachProvider } from '../providers/registry';
 import { TencentAdapter } from '../providers/tencent/adapter';
 import { TwitchAdapter } from '../providers/twitch/adapter';
@@ -23,10 +22,6 @@ export function shouldAttachYouTubeAdapter(flags: MediaProviderFlags, hostname?:
 
 export function shouldAttachVimeoAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
   return shouldAttachProvider('vimeo', flags, hostname);
-}
-
-export function shouldAttachPatreonAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
-  return shouldAttachProvider('patreon', flags, hostname);
 }
 
 export function shouldAttachTwitchAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
@@ -58,7 +53,6 @@ export function createMediaFeaturesAdapter(
   const surface = coercePlaybackSurface(media);
   const adapters: MediaFeaturesAdapter[] = [];
   if (shouldAttachVimeoAdapter(flags)) adapters.push(new VimeoAdapter());
-  if (shouldAttachPatreonAdapter(flags)) adapters.push(new PatreonAdapter());
   if (shouldAttachTwitchAdapter(flags)) adapters.push(new TwitchAdapter());
   if (shouldAttachDisneyAdapter(flags)) adapters.push(new DisneyAdapter());
   if (shouldAttachNetflixAdapter(flags)) adapters.push(new NetflixAdapter());

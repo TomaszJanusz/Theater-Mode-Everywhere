@@ -115,6 +115,93 @@ export async function assertProviderScripts(page: Page, context: BrowserContext)
   }
 }
 
+const PATREON = 'https://www.patreon.com/posts/pilot-post-12345678';
+const patreonFixture = `<!doctype html><html><head><title>Generic fixture title</title><script>
+window.historyPublications = 0;
+window.hostKeys = 0;
+window.addEventListener('theater-everywhere-patreon-navigate', () => window.historyPublications++);
+history.replaceState(null, '', location.href);
+window.earlyHistoryPublications = window.historyPublications;
+window.addEventListener('keydown', event => {
+  if (event.code === 'KeyT') { window.hostKeys++; event.stopImmediatePropagation(); event.preventDefault(); }
+}, true);
+</script></head><body>
+<h1 data-tag="post-title">Patreon pilot post</h1>
+<video id="video" muted style="width:640px;height:360px"></video>
+<script>
+fetch('/fixture.webm').then(response => response.blob()).then(blob => { document.querySelector('video').src = URL.createObjectURL(blob); });
+</script></body></html>`;
+
+/** Patreon loads per host: installed-extension evidence on intercepted host URLs, as for SOOP. */
+export async function assertPatreonProvider(page: Page, context: BrowserContext): Promise<void> {
+  const worker = await extensionWorker(context);
+  const saved = await worker.evaluate(() => chrome.storage.sync.get(['autoEnterTheater', 'patreonIntegrationEnabled']));
+  const media = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
+  const handler = async (route: Route) => {
+    if (new URL(route.request().url()).pathname === '/fixture.webm') await route.fulfill({ contentType: 'video/webm', body: media });
+    else await route.fulfill({ contentType: 'text/html', body: patreonFixture });
+  };
+  const hosts = /^https:\/\/(?:www\.patreon\.com\.?|patreon\.com\.evil\.test|player\.example\.test)\//;
+  await context.route(hosts, handler);
+  try {
+    await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false, patreonIntegrationEnabled: true }));
+    await page.goto('https://www.patreon.com/home');
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+    assert.equal(await page.evaluate('window.earlyHistoryPublications'), 1, 'MAIN history hook must precede the first host script');
+    await page.evaluate(`history.pushState(null, '', '/posts/pilot-post-12345678')`);
+    await page.waitForFunction(() => { const video = document.querySelector('video'); return video && video.readyState >= 2; });
+    assert.equal(await page.evaluate('window.historyPublications'), 2, 'a pushState navigation is published to the isolated world');
+    const first = await page.evaluate(() => {
+      const begin = performance.now();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 't', code: 'KeyT', bubbles: true, cancelable: true }));
+      return { entered: document.documentElement.classList.contains('theater-everywhere-html-active'), milliseconds: performance.now() - begin };
+    });
+    assert.equal(first.entered, true, 'first t enters synchronously, without loading or replaying the key');
+    assert.equal(await page.evaluate('window.hostKeys'), 0, 'early key capture beats the host listener');
+    await page.locator('.theater-title-hud-head').filter({ hasText: 'Patreon pilot post' }).first().waitFor({ state: 'attached' });
+    await page.keyboard.press('Escape');
+
+    // Registration survives preference changes.
+    await worker.evaluate(() => chrome.storage.sync.set({ patreonIntegrationEnabled: false }));
+    await page.goto(PATREON);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-patreon-integration-off') && document.querySelector('video')!.readyState >= 2);
+    await page.keyboard.press('t');
+    await page.locator('.theater-controls-wrapper').waitFor();
+    await worker.evaluate(() => chrome.storage.sync.set({ patreonIntegrationEnabled: true }));
+    await page.waitForFunction(() => !document.documentElement.hasAttribute('data-te-patreon-integration-off'));
+    await page.locator('.theater-title-hud-head').filter({ hasText: 'Patreon pilot post' }).first().waitFor({ state: 'attached' });
+    await page.keyboard.press('Escape');
+
+    for (const url of ['https://player.example.test/', 'https://patreon.com.evil.test/']) {
+      await page.goto(url);
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts') && document.querySelector('video')!.readyState >= 2);
+      assert.equal(await page.evaluate('window.earlyHistoryPublications'), 0, url);
+      await page.keyboard.press('t');
+      await page.locator('.theater-controls-wrapper').waitFor();
+      await page.keyboard.press('Escape');
+    }
+    await page.goto('https://www.patreon.com./home');
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+    assert.equal(await page.evaluate('window.earlyHistoryPublications'), 1, 'terminal DNS dot keeps provider admission');
+    await page.goto('https://player.example.test/');
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+    // Own-frame admission: generic parent, Patreon child.
+    await page.evaluate(url => { const frame = document.createElement('iframe'); frame.src = url; document.body.append(frame); }, PATREON);
+    await page.frameLocator('iframe').locator('video').waitFor();
+    const frame = page.frames().find(frame => frame.url() === PATREON)!;
+    await frame.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+    assert.equal(await frame.evaluate('window.earlyHistoryPublications'), 1);
+    assert.equal(await page.evaluate('window.earlyHistoryPublications'), 0);
+    console.log(`smoke provider scripts: Patreon registration in both worlds, early history, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), navigation, RTE off/on, generic/spoofed host, own-frame admission passed (installed fixture)`);
+  } finally {
+    await context.unroute(hosts, handler);
+    await worker.evaluate(async saved => {
+      await chrome.storage.sync.remove(['autoEnterTheater', 'patreonIntegrationEnabled']);
+      await chrome.storage.sync.set(saved);
+    }, saved);
+  }
+}
+
 const YOUTUBE = 'https://www.youtube.com/watch?v=abcdefghijk';
 const youtubeFixture = `<!doctype html><html><head><title>Generic fixture title</title><script>
 // The page's first script: YouTube's MAIN hooks must already observe responses, and the entry key must beat this listener.

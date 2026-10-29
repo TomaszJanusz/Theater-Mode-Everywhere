@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { shouldAttachProvider } from '../providers/registry';
+
 import {
   computeCaptionDockBottom,
   CAPTION_DOCK_RAISED_CENTER_GAP,
@@ -34,7 +36,7 @@ import {
   resolveMediaProviderFlags,
   richTheaterExperienceEnabled
 } from './provider-flags';
-import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
+import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { YouTubeAdapter } from './youtube-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls } from './youtube-snapshot';
@@ -1571,9 +1573,9 @@ describe('provider integration flags', () => {
     assert.equal(shouldAttachVimeoAdapter({ ...allOn, vimeo: false }, 'vimeo.com'), false);
     assert.equal(shouldAttachVimeoAdapter(allOn, 'player.vimeo.com'), true);
     assert.equal(shouldAttachYouTubeAdapter(allOn, 'example.com'), false);
-    assert.equal(shouldAttachPatreonAdapter(allOn, 'www.patreon.com'), true);
-    assert.equal(shouldAttachPatreonAdapter({ ...allOn, patreon: false }, 'www.patreon.com'), false);
-    assert.equal(shouldAttachPatreonAdapter(allOn, 'example.com'), false);
+    assert.equal(shouldAttachProvider('patreon', allOn, 'www.patreon.com'), true);
+    assert.equal(shouldAttachProvider('patreon', { ...allOn, patreon: false }, 'www.patreon.com'), false);
+    assert.equal(shouldAttachProvider('patreon', allOn, 'example.com'), false);
     assert.equal(shouldAttachTwitchAdapter(allOn, 'www.twitch.tv'), true);
     assert.equal(shouldAttachTwitchAdapter(allOn, 'player.twitch.tv'), true);
     assert.equal(shouldAttachTwitchAdapter({ ...allOn, twitch: false }, 'www.twitch.tv'), false);

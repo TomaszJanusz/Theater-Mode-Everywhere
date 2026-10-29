@@ -23,7 +23,7 @@ import {
   MAX_BIF_BYTES,
   readDisneySnapshot
 } from '../providers/disney/main';
-import { isBilibiliHost, isBilibiliIntlHost, isIqiyiHost, isPatreonHost, isTwitchHost, isVikiHost } from '../providers/hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isIqiyiHost, isTwitchHost, isVikiHost } from '../providers/hosts';
 import { installIqiyiNavigation, readIqiyiSnapshot } from '../providers/iqiyi-main';
 import {
   installNetflixMain,
@@ -32,8 +32,6 @@ import {
   readNetflixSnapshot
 } from '../providers/netflix/main';
 import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
-import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
-import { installPatreonNavigation } from '../providers/patreon/navigation';
 import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
 import type { ProviderHarvest } from '../providers/provider-api';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
@@ -293,7 +291,6 @@ export function installMainWorldRuntime(): void {
     installNetflixMain();
     installTencentMain();
     installCrunchyrollMain();
-    if (isPatreonHost(window.location.hostname)) installPatreonNavigation();
   }
 
   installMediaAudioRuntime();
@@ -488,7 +485,6 @@ export function installMainWorldRuntime(): void {
     const requestId = parseProbeRequest((event as CustomEvent<unknown>).detail);
     if (requestId === null) return;
     let vimeo: Record<string, unknown> | null = null;
-    let patreon: Record<string, unknown> | null = null;
     let twitch: Record<string, unknown> | null = null;
     let disney: Record<string, unknown> | null = null;
     let netflix: Record<string, unknown> | null = null;
@@ -496,11 +492,6 @@ export function installMainWorldRuntime(): void {
       vimeo = vimeoIntegrationEnabled() ? readVimeoSnapshot() : null;
     } catch {
       vimeo = null;
-    }
-    try {
-      patreon = patreonIntegrationEnabled() ? readPatreonSnapshot() : null;
-    } catch {
-      patreon = null;
     }
     try {
       twitch = twitchIntegrationEnabled() ? readTwitchSnapshot() : null;
@@ -518,7 +509,7 @@ export function installMainWorldRuntime(): void {
       netflix = null;
     }
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, providers: probeProviders(), vimeo, patreon, twitch, disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot(), iqiyi: readIqiyiSnapshot() }
+      detail: { requestId, providers: probeProviders(), vimeo, twitch, disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot(), iqiyi: readIqiyiSnapshot() }
     }));
     // Bilibili needs asynchronous metadata. Keep the original fast probe for
     // other adapters and deliver Bilibili's result through its own event.
@@ -542,7 +533,6 @@ export function installMainWorldRuntime(): void {
     if (!isAllowlistedPageFetchUrl(url, window.location.href)) return false;
     const classified = classifyMediaFetchUrl(url, window.location.href);
     if (!classified) return false;
-    if (classified.provider === 'patreon') return patreonIntegrationEnabled();
     if (classified.provider === 'twitch') return twitchIntegrationEnabled();
     if (classified.provider === 'disney') return disneyIntegrationEnabled();
     if (classified.provider === 'bilibili') return bilibiliIntegrationEnabled();

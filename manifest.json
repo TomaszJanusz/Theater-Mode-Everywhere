@@ -23,6 +23,8 @@
         "<all_urls>"
       ],
       "exclude_matches": [
+        "*://*.patreon.com/*",
+        "*://*.patreon.com./*",
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*",
         "*://*.youtube.com/*",
@@ -34,6 +36,22 @@
       ],
       "js": [
         "content.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
+        "*://*.patreon.com/*",
+        "*://*.patreon.com./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/patreon/isolated.js",
         "contentStart.js"
       ],
       "run_at": "document_start",
@@ -83,6 +101,8 @@
         "<all_urls>"
       ],
       "exclude_matches": [
+        "*://*.patreon.com/*",
+        "*://*.patreon.com./*",
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*",
         "*://*.youtube.com/*",
@@ -94,6 +114,20 @@
       ],
       "js": [
         "mainWorld.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.patreon.com/*",
+        "*://*.patreon.com./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/patreon/main.js",
         "mainWorldStart.js"
       ],
       "run_at": "document_start",

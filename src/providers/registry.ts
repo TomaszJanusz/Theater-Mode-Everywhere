@@ -8,12 +8,11 @@ import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
 import { PROVIDER_CATALOG } from './catalog';
 import { descriptorMatchesHost } from './descriptor-hosts';
 import { disneyWatchPlayback } from './disney/watch-playback';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVikiHost, isVimeoHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isTencentHost, isTwitchHost, isVikiHost, isVimeoHost } from './hosts';
 import { IqiyiAdapter } from './iqiyi/adapter';
 import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
 import type { LauncherPlacementFactory } from './launcher-placement';
 import { netflixWatchPlayback } from './netflix/watch-playback';
-import { patreonWatchPlayback } from './patreon/watch-playback';
 import { providerRegistry } from './runtime-registration';
 import { twitchWatchPlayback } from './twitch/watch-playback';
 import { vikiWatchPlayback } from './viki/watch-playback';
@@ -39,7 +38,6 @@ export type ProviderDefinition = {
 export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'native', matchesHost: () => true },
   { id: 'vimeo', matchesHost: (hostname) => isVimeoHost(hostname), watchPlayback: vimeoWatchPlayback },
-  { id: 'patreon', matchesHost: (hostname) => isPatreonHost(hostname), watchPlayback: patreonWatchPlayback },
   { id: 'twitch', matchesHost: (hostname) => isTwitchHost(hostname), watchPlayback: twitchWatchPlayback },
   { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname), watchPlayback: disneyWatchPlayback },
   { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname), watchPlayback: netflixWatchPlayback },

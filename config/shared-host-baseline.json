@@ -154,20 +154,13 @@
   },
   "patreon": {
     "src/media-features": {
-      "serviceId": 9,
-      "identifier": 15
-    },
-    "src/platform": {
-      "hostCheck": 4,
-      "serviceId": 1,
-      "domain": 1,
-      "identifier": 11
+      "serviceId": 7,
+      "identifier": 4
     },
     "src/providers": {
-      "hostCheck": 3,
       "serviceId": 1,
-      "domain": 2,
-      "identifier": 4
+      "domain": 1,
+      "identifier": 2
     }
   },
   "soop": {
