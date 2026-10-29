@@ -2,7 +2,6 @@ import { encodeProbeRequest } from '../protocol/page-requests';
 import { createWorldMessage, readWorldEnvelope } from '../protocol/world-messages';
 import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
 import type { CrunchyrollSnapshot } from '../providers/crunchyroll/main';
-import type { IqiyiSnapshot } from '../providers/iqiyi/play-info';
 import type { TencentSnapshot } from '../providers/tencent/main';
 
 import type { BilibiliSnapshot } from './parsers/bilibili';
@@ -78,7 +77,6 @@ export type MediaProbeSnapshot = {
   bilibiliIntl?: BilibiliIntlSnapshot | null;
   tencent?: TencentSnapshot | null;
   crunchyroll?: CrunchyrollSnapshot | null;
-  iqiyi?: IqiyiSnapshot | null;
 };
 
 type ProbeRequest = {
@@ -114,8 +112,7 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
         bilibili: snapshot.bilibili ?? null,
         bilibiliIntl: snapshot.bilibiliIntl ?? null,
         tencent: snapshot.tencent ?? null,
-        crunchyroll: snapshot.crunchyroll ?? null,
-        iqiyi: snapshot.iqiyi ?? null
+        crunchyroll: snapshot.crunchyroll ?? null
       });
     };
 

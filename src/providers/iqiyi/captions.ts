@@ -52,10 +52,6 @@ export function readIqiyiCaptionItems(doc: Document): IqiyiCaptionItem[] {
   });
 }
 
-export function iqiyiCaptionOffItem(doc: Document): HTMLElement | null {
-  return menuItems(doc).find((item) => item.getAttribute('datakey') === OFF_KEY) ?? null;
-}
-
 /** Painted cue lines, so the shared dock can lift them above the control bar. */
 export function readIqiyiCaptionLayout(doc: Document = document): HostCaptionLayout | null {
   let top = Infinity, bottom = -Infinity, left = Infinity, right = -Infinity, height = 0, lines = 0;

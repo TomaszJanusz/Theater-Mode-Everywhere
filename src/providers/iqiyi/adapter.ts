@@ -1,11 +1,19 @@
-import { requestMediaProbe } from '../../media-features/probe';
+import type { MediaProbeSnapshot } from '../../media-features/probe';
 import type { AudioTrackList, CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from '../../media-features/types';
 import { observeProviderDom } from '../dom-watch';
 
 import { observeIqiyiAudioTracks, readIqiyiAudioTracks, selectIqiyiAudioTrack } from './audio';
-import { iqiyiCaptionOffItem, readIqiyiCaptionItems } from './captions';
+import { readIqiyiCaptionItems } from './captions';
 import { iqiyiPlayId, readIqiyiTitle } from './page';
-import { iqiyiChapters, type IqiyiSnapshot } from './play-info';
+import { iqiyiChapters, parseIqiyiSnapshot, type IqiyiSnapshot } from './play-info';
+
+/** The isolated runtime's shared probe owner, lent by the registry so the provider bundles no second copy. */
+export type IqiyiServices = {
+  requestMediaProbe(): Promise<MediaProbeSnapshot>;
+};
+
+/** Set on the document while the menu owns Off; providers/iqiyi/presentation.css hides the host's painted cues on it. */
+const HIDDEN_ATTRIBUTE = 'data-te-iqiyi-captions-hidden';
 
 const FAILED: CaptionActivationResult = { status: 'failed', delivery: 'none', cues: [] };
 
@@ -16,8 +24,10 @@ const FAILED: CaptionActivationResult = { status: 'failed', delivery: 'none', cu
 export class IqiyiAdapter implements MediaFeaturesAdapter {
   private snapshot: IqiyiSnapshot | null = null;
   private loadedFor: string | null = null;
+  /** A track the viewer (or the saved language) chose, so the host's own cues are the ones on screen. */
+  private picked = false;
 
-  constructor(private readonly video: HTMLVideoElement | null = null) {}
+  constructor(private readonly video: HTMLVideoElement | null, private readonly services: IqiyiServices) {}
 
   mediaId(): string | null {
     return iqiyiPlayId(window.location.pathname);
@@ -38,7 +48,7 @@ export class IqiyiAdapter implements MediaFeaturesAdapter {
   private async load(): Promise<void> {
     const id = this.mediaId();
     if (this.loadedFor === id && this.snapshot) return;
-    const snapshot = (await requestMediaProbe()).iqiyi ?? null;
+    const snapshot = parseIqiyiSnapshot((await this.services.requestMediaProbe()).providers?.iqiyi);
     // The page swaps its play-info after navigation; keep it only while this episode is still current.
     if (this.mediaId() !== id) return;
     this.snapshot = snapshot;
@@ -51,20 +61,25 @@ export class IqiyiAdapter implements MediaFeaturesAdapter {
   }
 
   async listCaptionTracks(): Promise<CaptionTrack[]> {
-    return readIqiyiCaptionItems(document).map((item) => item.track);
+    const items = readIqiyiCaptionItems(document);
+    // iQIYI starts on its own default language while the menu says Off: once it lists tracks, it owns what is on screen.
+    this.hostCaptionsHidden(items.length > 0 && !this.picked);
+    return items.map((item) => item.track);
   }
 
   async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     if (id === null) {
-      const off = iqiyiCaptionOffItem(document);
-      if (!off?.isConnected) return FAILED;
-      off.click();
+      // Off hides the host's cues in theater instead of pressing its Off item, so leaving theater gives the viewer back the host's own choice.
+      this.picked = false;
+      this.hostCaptionsHidden(readIqiyiCaptionItems(document).length > 0);
       return { status: 'off', delivery: 'none', cues: [] };
     }
     // Read the menu again: the host rebuilds it for each episode.
     const item = readIqiyiCaptionItems(document).find((candidate) => candidate.id === id);
     if (!item?.element.isConnected) return FAILED;
     item.element.click();
+    this.picked = true;
+    this.hostCaptionsHidden(false);
     return { status: 'active', delivery: 'host', cues: [] };
   }
 
@@ -93,9 +108,16 @@ export class IqiyiAdapter implements MediaFeaturesAdapter {
   invalidate(): void {
     this.snapshot = null;
     this.loadedFor = null;
+    // A pick belongs to the episode it was made for: the next one starts on iQIYI's own default again.
+    this.picked = false;
+    this.hostCaptionsHidden(false);
   }
 
   dispose(): void {
     this.invalidate();
+  }
+
+  private hostCaptionsHidden(hidden: boolean): void {
+    document.documentElement.toggleAttribute(HIDDEN_ATTRIBUTE, hidden);
   }
 }

@@ -149,7 +149,8 @@ it('keeps exact descriptor hosts exact while folding case and terminal DNS dots'
 });
 
 it('validates and preserves canonical home declarations without changing injection rules', () => {
-  const original = descriptors[0];
+  // Any descriptor that declares no home yet, so the test does not change as providers adopt one.
+  const original = descriptors.find(item => !item.home)!;
   const home = `https://${original.hosts[0].domain}/`;
   const declared = parseDescriptor({ ...original, home });
   assert.equal(declared.home, home);

@@ -1,7 +1,6 @@
-import { IQIYI_PLAYER_SELECTOR, selectedIqiyiEpisode } from '../iqiyi-dom';
 import { collectElement, namedControl, type CollectedControl } from '../playlist-controls';
 
-export { IQIYI_PLAYER_SELECTOR };
+import { selectedIqiyiEpisode } from './dom';
 
 const NEXT = '[data-player-hook="nextcontrol"], .iqp-btn-next';
 

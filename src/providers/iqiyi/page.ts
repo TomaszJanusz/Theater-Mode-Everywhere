@@ -1,5 +1,6 @@
 import { contentTitle, type ContentTitle } from '../../media-features/content-title';
-import { selectedIqiyiEpisode } from '../iqiyi-dom';
+
+import { selectedIqiyiEpisode } from './dom';
 
 /**
  * iq.com watch URLs are `/play/<slug>-<id>`; the id is the part after the last hyphen. The host

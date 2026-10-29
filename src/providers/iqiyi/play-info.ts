@@ -36,6 +36,14 @@ export function normalizeIqiyiPlayInfo(raw: unknown): IqiyiSnapshot | null {
   return { tvid, duration, introEnd: seconds(p.bt), outroStart: seconds(p.et), outroEnd: seconds(p.ete) };
 }
 
+/** The MAIN-world probe answers as plain data; the adapter checks it again instead of trusting its shape. */
+export function parseIqiyiSnapshot(value: unknown): IqiyiSnapshot | null {
+  const raw = record(value);
+  const duration = seconds(raw.duration);
+  if (typeof raw.tvid !== 'string' || !/^\d{1,20}$/.test(raw.tvid) || !duration) return null;
+  return { tvid: raw.tvid, duration, introEnd: seconds(raw.introEnd), outroStart: seconds(raw.outroStart), outroEnd: seconds(raw.outroEnd) };
+}
+
 /** Skip windows are intro/outro ranges, not named chapters, as on Bilibili.tv. */
 export function iqiyiChapters(snapshot: IqiyiSnapshot | null, mediaDuration: number): Chapter[] {
   if (!snapshot || !Number.isFinite(mediaDuration) || Math.abs(snapshot.duration - mediaDuration) > 2) return [];

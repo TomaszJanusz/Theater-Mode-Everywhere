@@ -103,23 +103,10 @@
   "iqiyi": {
     "src/media-features": {
       "serviceId": 3,
-      "identifier": 7
-    },
-    "src/platform": {
-      "hostCheck": 2,
-      "identifier": 5
+      "identifier": 2
     },
     "src/providers": {
-      "hostCheck": 7,
-      "serviceId": 3,
-      "domain": 2,
-      "identifier": 24,
-      "file": 2
-    },
-    "src/providers/navigation": {
-      "serviceId": 2,
-      "identifier": 9,
-      "file": 1
+      "identifier": 2
     }
   },
   "netflix": {

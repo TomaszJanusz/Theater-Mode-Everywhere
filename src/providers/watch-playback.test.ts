@@ -5,6 +5,7 @@ import { defaultMediaProviderFlags, MEDIA_PROVIDER_IDS } from '../media-features
 
 import { bilibiliVideoIdentity } from './bilibili/watch-playback';
 import { bilibiliIntlVideoIdentity } from './bilibili-intl/watch-playback';
+import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
 import { patreonWatchPlayback } from './patreon/watch-playback';
 import { providerDefinition, shouldAttachProvider } from './registry';
 import { providerRegistry } from './runtime-registration';
@@ -29,14 +30,15 @@ describe('positive provider watch declarations', () => {
   });
 
   it('keeps extracted providers unavailable until their host script registers', () => {
-    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['vimeo', 'https://vimeo.com/123456'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk']] as const) {
+    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['vimeo', 'https://vimeo.com/123456'], ['iqiyi', 'https://www.iq.com/play/spring-of-the-blade-episode-2-1w9dte7osf8'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk']] as const) {
       assert.equal(providerDefinition(id).watchPlayback, undefined);
       assert.equal(read(href), null);
     }
   });
 
   it('limits the countdown-only preparing confirmation to providers that declare it', () => {
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['twitch', 'bilibili', 'bilibiliIntl', 'iqiyi']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['twitch', 'bilibili', 'bilibiliIntl']);
+    assert.ok(iqiyiWatchPlayback.preparingVideo);
     assert.ok(youtubeWatchPlayback.preparingVideo);
     assert.ok(patreonWatchPlayback.preparingVideo);
     assert.ok(youtubeWatchPlayback.refreshEvents?.includes('yt-navigate-start'));
@@ -81,7 +83,7 @@ describe('positive provider watch declarations', () => {
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://twitch.tv.evil.test/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
