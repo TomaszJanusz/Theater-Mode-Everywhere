@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "Програвач"
   },
-  "nativeChatWidth": {
-    "message": "Ширина"
+  "nativeChatResize": {
+    "message": "Змінити ширину чату"
   },
   "nativeChatThemeUnavailable": {
     "message": "Чат використовує оформлення сервісу. Вибрана тема недоступна на цій сторінці."

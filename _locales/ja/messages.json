@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "プレーヤー"
   },
-  "nativeChatWidth": {
-    "message": "幅"
+  "nativeChatResize": {
+    "message": "チャットの幅を変更"
   },
   "nativeChatThemeUnavailable": {
     "message": "チャットはサービスの外観を使用しています。このページでは選択したテーマを利用できません。"

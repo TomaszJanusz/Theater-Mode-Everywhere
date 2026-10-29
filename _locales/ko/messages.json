@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "플레이어"
   },
-  "nativeChatWidth": {
-    "message": "너비"
+  "nativeChatResize": {
+    "message": "채팅 크기 조절"
   },
   "nativeChatThemeUnavailable": {
     "message": "채팅은 서비스의 화면 설정을 사용합니다. 이 페이지에서는 선택한 테마를 사용할 수 없습니다."

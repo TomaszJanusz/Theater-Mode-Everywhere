@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "Reproductor"
   },
-  "nativeChatWidth": {
-    "message": "Ancho"
+  "nativeChatResize": {
+    "message": "Cambiar el ancho del chat"
   },
   "nativeChatThemeUnavailable": {
     "message": "El chat usa la apariencia del servicio. El tema elegido no está disponible en esta página."

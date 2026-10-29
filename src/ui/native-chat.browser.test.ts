@@ -135,9 +135,9 @@ type Layout = {
   toggleHidden: boolean | null;
   toggleExpanded: string | null;
   toggleLabel: string | null;
-  widthRowHidden: boolean | null;
-  sliderInSettings: boolean;
-  settingsButton: boolean;
+  separator: Rect | null;
+  separatorHidden: boolean | null;
+  separatorValue: string | null;
   theater: boolean;
   paused: boolean;
   muted: boolean;
@@ -183,9 +183,7 @@ function readLayout(): Layout {
   const video = document.querySelector('video');
   const bar = shadow?.querySelector('.theater-controls-wrapper') ?? null;
   const toggle = shadow?.querySelector('.theater-chat-toggle') ?? null;
-  const widthRow = shadow?.querySelector('.theater-chat-width-row') ?? null;
-  const slider = shadow?.querySelector('.theater-chat-width-slider') ?? null;
-  const menu = slider?.closest('.theater-settings-menu') ?? null;
+  const separator = shadow?.querySelector('.theater-chat-separator') ?? null;
   const frame = document.querySelector('#chatframe');
   const iframe = frame instanceof HTMLIFrameElement ? frame : null;
   const framedDraft = iframe?.contentDocument?.querySelector('#draft') ?? null;
@@ -239,9 +237,9 @@ function readLayout(): Layout {
     toggleHidden: toggle instanceof HTMLElement ? Boolean(toggle.hidden) : null,
     toggleExpanded: toggle?.getAttribute('aria-expanded') ?? null,
     toggleLabel: toggle?.getAttribute('aria-label') ?? null,
-    widthRowHidden: widthRow instanceof HTMLElement ? Boolean(widthRow.hidden) : null,
-    sliderInSettings: Boolean(menu),
-    settingsButton: Boolean(menu?.parentElement?.querySelector('.player-settings-btn')),
+    separator: separator instanceof HTMLElement && !separator.hidden ? rect(separator) : null,
+    separatorHidden: separator instanceof HTMLElement ? separator.hidden === true : null,
+    separatorValue: separator?.getAttribute('aria-valuenow') ?? null,
     theater: document.documentElement.classList.contains('theater-everywhere-html-active'),
     paused: video instanceof HTMLVideoElement ? video.paused : true,
     muted: video instanceof HTMLVideoElement ? video.muted : false,
@@ -315,7 +313,13 @@ function assertSharedGeometry(layout: Layout, label: string): void {
 function assertRightDock(layout: Layout, label: string): void {
   const detail = `${label} ${JSON.stringify(layout)}`;
   assert.equal(layout.state?.dock, 'right', detail);
-  assert.equal(layout.widthRowHidden, false, detail);
+  if (layout.state?.visible) {
+    // The separator straddles the edge between the picture and the chat and reports the chat width.
+    assert.equal(layout.separatorHidden, false, detail);
+    assert.ok(layout.separator && layout.chat && layout.separator.left < layout.chat.left
+      && layout.separator.right > layout.chat.left, detail);
+    assert.equal(layout.separatorValue, String(layout.state.width), detail);
+  }
   assert.ok(layout.viewport.width >= 900, detail);
   assert.ok(layout.video && layout.chat, detail);
   assert.ok(!overlaps(layout.video, layout.chat), detail);
@@ -331,7 +335,7 @@ function assertRightDock(layout: Layout, label: string): void {
 function assertBottomDock(layout: Layout, label: string): void {
   const detail = `${label} ${JSON.stringify(layout)}`;
   assert.equal(layout.state?.dock, 'bottom', detail);
-  assert.equal(layout.widthRowHidden, true, detail);
+  assert.equal(layout.separatorHidden, true, detail);
   assert.ok(layout.viewport.width < 900, detail);
   assert.ok(layout.video && layout.chat, detail);
   assert.ok(!overlaps(layout.video, layout.chat), detail);
@@ -457,19 +461,22 @@ async function waitForSaved(
   throw new Error(`saved ${provider} chat preference was not updated: ${JSON.stringify(last)}`);
 }
 
+/** Center of the visible separator, which straddles the chat's left edge. */
+async function separatorCenter(page: Page): Promise<{ x: number; y: number }> {
+  const box = await page.locator('.theater-chat-separator').boundingBox();
+  assert.ok(box, 'the chat separator is not shown');
+  return { x: Math.round(box.x + box.width / 2), y: Math.round(box.y + box.height / 2) };
+}
+
+/** Drags the separator with the mouse; the chat follows the pointer's horizontal travel. */
 async function setChatWidth(page: Page, width: number): Promise<void> {
-  await page.locator('.player-settings-btn').click();
-  const placed = await page.evaluate(() => {
-    const slider = document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-chat-width-slider');
-    const menu = slider?.closest('.theater-settings-menu');
-    return Boolean(menu && menu.parentElement?.querySelector('.player-settings-btn'));
-  });
-  assert.equal(placed, true, 'width slider is not inside the player settings menu');
-  await page.locator('.theater-chat-width-slider').evaluate((slider, next: number) => {
-    if (!(slider instanceof HTMLInputElement)) throw new Error('missing chat width slider');
-    slider.value = String(next);
-    slider.dispatchEvent(new Event('input', { bubbles: true }));
-  }, width);
+  const before = await page.evaluate(() => window.NativeChatTest.nativeChatState()?.width ?? 0);
+  const start = await separatorCenter(page);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x + before - width, start.y, { steps: 6 });
+  await page.mouse.up();
+  await page.waitForFunction(next => window.NativeChatTest.nativeChatState()?.width === next, width);
 }
 
 async function armPlaybackProbe(page: Page): Promise<void> {
@@ -635,7 +642,7 @@ async function expectAppliedTheme(page: Page, theme: 'light' | 'native' | 'dark'
 
 describe('native chat browser session', () => {
   for (const engine of testEngines()) {
-    it(`fixes Twitch Option+R, native toggle, and slider drift in ${engine}`, { timeout: 120_000 }, async t => {
+    it(`fixes Twitch Option+R and native toggle, and resizes the chat by dragging in ${engine}`, { timeout: 120_000 }, async t => {
       const browser = pagesOf(browsers[engine], t);
       const { page } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
       const nativeToggle = page.locator('[data-a-target="right-column__toggle-collapse-btn"]');
@@ -656,36 +663,38 @@ describe('native chat browser session', () => {
 
       await revealChatSettings(page);
       const menu = page.locator('.theater-settings-menu');
-      const slider = page.locator('.theater-chat-width-slider');
       const before = await menu.boundingBox();
-      const track = await slider.boundingBox();
-      assert.ok(before && track);
-      await page.mouse.move(track.x + track.width / 2, track.y + track.height / 2);
+      assert.ok(before);
+      await closeChatSettings(page);
+      // Every drag step moves the chat with the pointer, clamped to the shared range.
+      const start = await separatorCenter(page);
+      const initial = (await layoutOf(page)).state!.width;
+      await page.mouse.move(start.x, start.y);
       await page.mouse.down();
-      for (const fraction of [.8, .15, .95]) {
-        await page.mouse.move(track.x + track.width * fraction, track.y + track.height / 2, { steps: 8 });
-        const after = await menu.boundingBox();
-        assert.ok(after);
-        assert.ok(Math.abs(after.x - before.x) < 1, `settings drifted during drag: ${JSON.stringify({before, after})}`);
+      for (const travel of [-120, 60, -400]) {
+        await page.mouse.move(start.x + travel, start.y, { steps: 8 });
+        const expected = Math.min(600, Math.max(280, initial - travel));
+        await page.waitForFunction(width => window.NativeChatTest.nativeChatState()?.width === width, expected);
+        // The drag overlay covers the chat until release, so only the geometry is checked here.
+        const moving = await layoutOf(page);
+        const detail = `${engine} dragging ${travel} ${JSON.stringify(moving)}`;
+        assert.ok(moving.chat && moving.video && near(moving.chat.width, expected) && near(moving.chat.left, moving.video.right, 2), detail);
+        assert.ok(moving.separator && moving.separator.left < moving.chat.left && moving.separator.right > moving.chat.left, detail);
       }
       await page.mouse.up();
-      const width = Number(await slider.inputValue());
-      assert.ok(width > 540, `the gauge stopped following the pointer: ${width}`);
       const layout = await layoutOf(page);
-      assert.equal(layout.state?.width, width);
+      assert.equal(layout.state?.width, 600);
       assertRightDock(layout, `${engine} resized`);
-      const released = await menu.boundingBox();
-      assert.ok(released && Math.abs(released.x - before.x) < 1, 'pointerup moved the menu');
-      await closeChatSettings(page);
       await revealChatSettings(page);
       const reopened = await menu.boundingBox();
       assert.ok(reopened && Math.abs(reopened.x - before.x) > 100, 'reopening did not reanchor to the resized bar');
+      await closeChatSettings(page);
       await leaveTheater(page);
       assert.equal(await nativeToggle.isVisible(), true);
       assert.deepEqual(pageErrors(page), []);
     });
 
-    it(`reaches and adjusts the Theme and Width rows with W/A/S/D in ${engine}`, { timeout: 120_000 }, async t => {
+    it(`reaches and adjusts the Theme row with W/A/S/D in ${engine}`, { timeout: 120_000 }, async t => {
       const browser = pagesOf(browsers[engine], t);
       const { page, read } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
       await boot(page);
@@ -723,20 +732,11 @@ describe('native chat browser session', () => {
       assert.equal(await focusedControl(), 'theater-chat-theme-select', 'focus stays on the select while it steps');
       await waitForSaved(read, 'twitch', preference => preference.theme === 'light');
 
-      // The Width row sits above Theme: W reaches the slider, D/A step it through the same input handler.
-      await climbTo('theater-chat-width-slider');
-      const before = (await layoutOf(page)).state!.width;
-      await D();
-      await page.waitForFunction(width => window.NativeChatTest.nativeChatState()?.width === width + 10, before);
-      await waitForSaved(read, 'twitch', preference => preference.width === before + 10);
-      await A();
-      await A();
-      await page.waitForFunction(width => window.NativeChatTest.nativeChatState()?.width === width - 10, before);
-      assert.equal(Number(await page.locator('.theater-chat-width-slider').inputValue()), before - 10);
-
-      // S returns down through the Theme row, whose select does not trap focus.
+      // Theme is the chat section's only row now that the separator owns the width: S leaves it, W returns.
       await S();
-      assert.equal(await focusedControl(), 'theater-chat-theme-select');
+      assert.notEqual(await focusedControl(), 'theater-chat-theme-select');
+      await climbTo('theater-chat-theme-select');
+      assert.equal(await page.locator('.theater-chat-width-row').count(), 0, 'the Width row is gone from the menu');
       assert.deepEqual(pageErrors(page), []);
     });
 
@@ -1329,7 +1329,7 @@ describe('native chat browser session', () => {
       const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
       const body = root?.querySelector('.theater-settings-body');
       const chat = body?.querySelector('[data-settings-section="chat"]');
-      const width = root?.querySelector('.theater-chat-width-row');
+      const width = root?.querySelector('.theater-chat-width-row') ?? null;
       const themeRow = root?.querySelector('.theater-chat-theme-row');
       const sameRow = (row: Element | null | undefined) => {
         const label = row?.querySelector('.theater-settings-label');
@@ -1343,9 +1343,8 @@ describe('native chat browser session', () => {
             ? node.dataset.settingsSection : node.className),
         chatHeading: chat?.querySelector('.theater-settings-heading')?.textContent ?? null,
         playerHeading: body?.querySelector(':scope > .theater-settings-heading')?.textContent ?? null,
-        widthLabel: width?.querySelector('.theater-settings-label')?.textContent ?? null,
+        widthRow: width !== null,
         themeInChat: Boolean(themeRow && chat?.contains(themeRow)),
-        widthInline: sameRow(width),
         themeInline: sameRow(themeRow),
         chatActive: root?.querySelector('.theater-chat-toggle')?.classList.contains('active') ?? false,
         chatColor: (() => {
@@ -1367,9 +1366,8 @@ describe('native chat browser session', () => {
     ], JSON.stringify(menu));
     assert.equal(menu.chatHeading, 'Chat');
     assert.equal(menu.playerHeading, 'Player');
-    assert.equal(menu.widthLabel, 'Width');
+    assert.equal(menu.widthRow, false, 'the separator replaces the Width row');
     assert.equal(menu.themeInChat, true);
-    assert.equal(menu.widthInline, true);
     assert.equal(menu.themeInline, true);
     assert.equal(menu.chatActive, true);
     assert.notEqual(menu.chatColor, menu.idleColor, JSON.stringify(menu));
@@ -1480,8 +1478,9 @@ describe('native chat browser session', () => {
             localStorage.setItem('tme-navigation-storage', JSON.stringify(data));
             return save(data);
           };
-          const width = root.querySelector<HTMLInputElement>('.theater-chat-width-slider')!;
-          width.value = '440'; width.dispatchEvent(new Event('input', { bubbles: true }));
+          const separator = root.querySelector<HTMLElement>('.theater-chat-separator')!;
+          separator.focus();
+          for (let step = 0; step < 8; step++) separator.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true, composed: true }));
           const theme = root.querySelector<HTMLSelectElement>('.theater-chat-theme-select')!;
           theme.value = 'dark'; theme.dispatchEvent(new Event('change', { bubbles: true }));
           root.querySelector<HTMLButtonElement>('.theater-chat-toggle')!.click();

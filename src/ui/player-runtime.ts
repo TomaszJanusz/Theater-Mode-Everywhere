@@ -1629,6 +1629,8 @@ function initialize(): void {
     if (activeEl?.matches('.theater-cc-menu-item') && ['ArrowUp', 'ArrowDown', 'Escape'].includes(event.key)) return false;
     if (activeEl?.matches('input[type=range]')
         && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;
+    // The chat separator resizes the chat with these keys instead of seeking (see chat-separator.ts).
+    if (activeEl?.matches('.theater-chat-separator') && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return false;
     if (event.key === 'Escape') {
       // The slider panel consumes Escape only while it is open (see bindSliderPopover).
       const sliderPanel = activeEl?.closest('.theater-volume-container, .theater-speed-container')

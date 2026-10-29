@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "Lettore"
   },
-  "nativeChatWidth": {
-    "message": "Larghezza"
+  "nativeChatResize": {
+    "message": "Ridimensiona la chat"
   },
   "nativeChatThemeUnavailable": {
     "message": "La chat usa l’aspetto del servizio. Il tema scelto non è disponibile su questa pagina."

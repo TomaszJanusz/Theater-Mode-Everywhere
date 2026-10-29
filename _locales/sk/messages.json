@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "Prehrávač"
   },
-  "nativeChatWidth": {
-    "message": "Šírka"
+  "nativeChatResize": {
+    "message": "Zmeniť šírku chatu"
   },
   "nativeChatThemeUnavailable": {
     "message": "Chat používa vzhľad služby. Zvolená téma nie je na tejto stránke dostupná."

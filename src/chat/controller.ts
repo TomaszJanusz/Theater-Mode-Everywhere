@@ -197,7 +197,8 @@ export class ChatController {
     if (preference.width === next) return;
     preference.width = next;
     this.persist(provider);
-    this.refresh();
+    // A drag calls this once per frame; only the geometry depends on the width, so skip detection.
+    this.publish(this.current.surface);
   }
 
   setTheme(theme: ChatTheme): void {
