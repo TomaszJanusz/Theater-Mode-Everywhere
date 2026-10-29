@@ -102,9 +102,8 @@
   },
   "iqiyi": {
     "src/media-features": {
-      "serviceId": 4,
-      "identifier": 12,
-      "file": 1
+      "serviceId": 3,
+      "identifier": 7
     },
     "src/platform": {
       "hostCheck": 2,

@@ -1,4 +1,3 @@
-import { iqiyiChapters, type IqiyiSnapshot } from '../../media-features/parsers/iqiyi';
 import { requestMediaProbe } from '../../media-features/probe';
 import type { AudioTrackList, CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from '../../media-features/types';
 import { observeProviderDom } from '../dom-watch';
@@ -6,6 +5,7 @@ import { observeProviderDom } from '../dom-watch';
 import { observeIqiyiAudioTracks, readIqiyiAudioTracks, selectIqiyiAudioTrack } from './audio';
 import { iqiyiCaptionOffItem, readIqiyiCaptionItems } from './captions';
 import { iqiyiPlayId, readIqiyiTitle } from './page';
+import { iqiyiChapters, type IqiyiSnapshot } from './play-info';
 
 const FAILED: CaptionActivationResult = { status: 'failed', delivery: 'none', cues: [] };
 

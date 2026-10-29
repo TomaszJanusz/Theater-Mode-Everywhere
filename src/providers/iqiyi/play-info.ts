@@ -1,4 +1,4 @@
-import type { Chapter } from '../types';
+import type { Chapter } from '../../media-features/types';
 
 /**
  * What iq.com's own play-info response (`window.__playerdata__.__dash.data`) says about the
