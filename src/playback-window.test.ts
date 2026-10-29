@@ -290,6 +290,41 @@ describe('playback window', () => {
     assert.equal(playbackWindow(video).end, 1473);
   });
 
+  it('reads YouTube live DVR from the main controls, not the stale miniplayer copy before them', () => {
+    // Captured from a queued live stream: the hidden miniplayer controls come
+    // first in the player and froze. The isolated world cannot call getVideoData.
+    const bar = (max: number, now: number) => ({
+      getAttribute: (name: string) => ({ 'aria-valuemin': '0', 'aria-valuemax': String(max), 'aria-valuenow': String(now) })[name] ?? null
+    });
+    const badge = (visible: boolean, liveHead: boolean) => ({
+      offsetParent: visible ? {} : null,
+      classList: { contains: (name: string) => liveHead && name === 'ytp-live-badge-is-livehead' }
+    });
+    const main = { bar: bar(4844, 4821), badge: badge(true, false) };
+    const miniplayer = { bar: bar(4819, 4819), badge: badge(false, true) };
+    const player = {
+      classList: { contains: (name: string) => name === 'ytp-livebadge-color' },
+      querySelector: (selector: string) => {
+        const controls = selector.startsWith('.ytp-chrome-bottom ') ? main : miniplayer;
+        if (selector.endsWith('.ytp-progress-bar')) return controls.bar;
+        if (selector.endsWith('.ytp-live-badge')) return controls.badge;
+        return null;
+      }
+    };
+    const video = fakeVideo({
+      duration: 8384.17,
+      currentTime: 4821.98,
+      seekable: [{ start: 0, end: 8384.17 }],
+      paused: true
+    });
+    (video as HTMLVideoElement & { closest: () => unknown }).closest = () => player;
+
+    const window = playbackWindow(video);
+    assert.equal(window.live, true);
+    assert.ok(Math.abs(window.end - 4844.98) < 0.01);
+    assert.equal(isVideoAtLiveEdge(video, window), false);
+  });
+
   it('maps live DVR onto the seekable range instead of Infinity', () => {
     const window = playbackWindow(fakeVideo({
       duration: Number.POSITIVE_INFINITY,

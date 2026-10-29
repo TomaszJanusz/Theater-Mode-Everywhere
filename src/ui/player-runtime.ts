@@ -1,3 +1,4 @@
+import type { DisposableScope } from '../core/disposable-scope';
 import { AUDIO_PREF_STORAGE_KEY, resolveAudioPreferences, upsertAudioPreference } from '../media-features/audio-preference';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
@@ -2155,8 +2156,18 @@ function toggleTheaterMode(): void {
 /** How long a video may sit off its playback surface before theater ends. */
 const LOST_SURFACE_GRACE_MS = 750;
 
+/** Owns the bound theater video's listeners and observers; replacement and exit release it. */
+let videoBindingScope: DisposableScope | null = null;
+
+function releaseVideoBinding(): void {
+  videoBindingScope?.dispose();
+  videoBindingScope = null;
+}
+
 function keepTheaterVideoBound(video: HTMLVideoElement): void {
+  releaseVideoBinding();
   const bindingScope = session.runtimeScope.child();
+  videoBindingScope = bindingScope;
   // Hosts flip the watch surface to `hidden` for a frame while switching videos, so a lost
   // surface must persist before it ends the session. Owned by the binding; one recheck at a time.
   let surfaceRecheck: typeof bindingScope | null = null;
@@ -2562,6 +2573,7 @@ function exitTheaterMode(
   cancelAudioReload?.();
   cancelAudioReload = null;
   try {
+  releaseVideoBinding();
   hideHelpOverlay(false);
   stopNativeChatSession();
 

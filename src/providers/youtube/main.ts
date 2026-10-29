@@ -27,6 +27,7 @@ import { publishHiddenJson } from '../../platform/hidden-json';
 import { parseYoutubeCaptions } from '../../protocol/page-requests';
 import { isYouTubeHost } from '../hosts';
 import { MINIPLAYER_SURFACE } from '../video-candidates';
+import { youtubePlayerControl } from '../youtube-player-controls';
 import { installYouTubeAudio } from './audio-main';
 import { installYouTubeQueueNavigation } from './queue-main';
 import {
@@ -691,13 +692,17 @@ function refreshYoutubePlayerLayout(): void {
   }
 }
 
+function youtubeProgressBar(player: YoutubePlayer | null): Element | null {
+  return player ? youtubePlayerControl(player, '.ytp-progress-bar') : null;
+}
+
 function youtubeWallNow(player: YoutubePlayer | null): number | null {
-  const now = Number(player?.querySelector?.('.ytp-progress-bar')?.getAttribute('aria-valuenow'));
+  const now = Number(youtubeProgressBar(player)?.getAttribute('aria-valuenow'));
   return Number.isFinite(now) ? now : null;
 }
 
 function youtubeWallLiveHead(player: YoutubePlayer | null): number | null {
-  const max = Number(player?.querySelector?.('.ytp-progress-bar')?.getAttribute('aria-valuemax'));
+  const max = Number(youtubeProgressBar(player)?.getAttribute('aria-valuemax'));
   return Number.isFinite(max) ? max : null;
 }
 
@@ -719,7 +724,7 @@ export function handleYoutubeMediaSeek(detail: { live?: boolean; time?: number }
       const html5Now = videoEl ? videoEl.currentTime : NaN;
       const wallNow = youtubeWallNow(player);
       const wallMax = youtubeWallLiveHead(player);
-      const liveBadge = player?.querySelector?.('.ytp-live-badge');
+      const liveBadge = player ? youtubePlayerControl(player, '.ytp-live-badge') : null;
       const atLiveHead = Boolean(liveBadge?.classList?.contains('ytp-live-badge-is-livehead'));
       const stored = videoEl ? Number(videoEl.dataset.teYtWallOffset) : NaN;
       const ariaBehind = wallMax != null && wallNow != null ? wallMax - wallNow : NaN;

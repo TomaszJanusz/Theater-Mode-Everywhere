@@ -1,3 +1,5 @@
+import { youtubePlayerControl } from '../youtube-player-controls';
+
 import { LIVE_EDGE_SECONDS, MAX_LIVE_DVR_SECONDS, MIN_LIVE_DVR_SECONDS } from './limits';
 import type { HostSeekDispatch, HostSeekInput, ProviderTimeline, TimelineBounds } from './types';
 
@@ -22,7 +24,7 @@ function youtubePlayerFor(video: HTMLVideoElement): YoutubePlayerHost | null {
 }
 
 function youtubeProgressTimes(player: YoutubePlayerHost): { min: number; max: number; now: number } | null {
-  const bar = player.querySelector('.ytp-progress-bar');
+  const bar = youtubePlayerControl(player, '.ytp-progress-bar');
   if (!bar) return null;
   const min = Number(bar.getAttribute('aria-valuemin'));
   const max = Number(bar.getAttribute('aria-valuemax'));
@@ -116,13 +118,13 @@ function youtubeLiveHint(video: HTMLVideoElement): boolean {
     // Player API may throw before the embed is ready.
   }
   // Do not use ytp-livebadge-color: YouTube applies it to VOD chrome too.
-  const badge = player.querySelector('.ytp-live-badge') as HTMLElement | null;
+  const badge = youtubePlayerControl(player, '.ytp-live-badge') as HTMLElement | null;
   return Boolean(badge && badge.offsetParent);
 }
 
 function youtubeIsAtLiveHead(video: HTMLVideoElement): boolean {
   const player = youtubePlayerFor(video);
-  const badge = player?.querySelector('.ytp-live-badge');
+  const badge = player ? youtubePlayerControl(player, '.ytp-live-badge') : null;
   return Boolean(badge && badge.classList.contains('ytp-live-badge-is-livehead'));
 }
 
