@@ -3,8 +3,11 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
+import { baseRef } from './base-ref.mjs';
+
 /**
- * A throwaway repository whose `origin/main` records `baseSource` at `path`, with this branch's own
+ * A throwaway repository whose base ref (the one `baseRef()` names for the current environment, so it holds
+ * under CI's `GITHUB_BASE_REF` too and never needs the real checkout's remotes) records `baseSource` at `path`, with this branch's own
  * (possibly raised) `branchSource` committed on top. Mirrors a PR that edits a ratchet baseline.
  */
 export function repoWithBase(path: string, baseSource: string, branchSource: string): string {
@@ -20,7 +23,7 @@ export function repoWithBase(path: string, baseSource: string, branchSource: str
   };
   git('init', '--quiet');
   write(baseSource);
-  git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+  git('update-ref', `refs/remotes/${baseRef()}`, 'HEAD');
   write(branchSource);
   return directory;
 }
