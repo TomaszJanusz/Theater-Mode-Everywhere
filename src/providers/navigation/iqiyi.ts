@@ -1,6 +1,5 @@
 import { IQIYI_PLAYER_SELECTOR, selectedIqiyiEpisode } from '../iqiyi-dom';
-
-import { collectElement, namedControl, type CollectedControl } from './observed';
+import { collectElement, namedControl, type CollectedControl } from '../playlist-controls';
 
 export { IQIYI_PLAYER_SELECTOR };
 

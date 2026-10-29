@@ -1,5 +1,6 @@
 import { contentTitle, type ContentTitle } from '../../media-features/content-title';
-import type { SoopRoute } from '../soop-dom';
+
+import type { SoopRoute } from './dom';
 
 const TITLE = { live: '#broadTitle', vod: '.broadcast_title' } as const;
 

@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { isAllowedMediaFetchUrl } from '../../media-features/fetch-allowlist';
-import { parseSoopChapters, soopChaptersUrl } from '../../media-features/parsers/soop';
-import { soopRoute, soopRouteKey } from '../soop-dom';
-import { readProviderWatchPage } from '../watch-playback';
+import { parseSoopChapters, soopChaptersUrl } from './chapters';
+import { soopChat } from './chat';
+import { soopRoute, soopRouteKey } from './dom';
+import { allowsSoopMediaFetch as isAllowedMediaFetchUrl } from './fetch-policy';
+import { soopWatchPlayback } from './watch-playback';
 
 const route = (href: string) => soopRoute(new URL(href));
 const chapterBody = (data: unknown, result: unknown = 1) => JSON.stringify({ result, message: 'SUCCESS', data, data_type: 'TITLE_HISTORY' });
@@ -27,7 +28,10 @@ describe('SOOP routes', () => {
   });
 
   it('declares AutoTheater for both routes and nothing else', () => {
-    const page = (href: string) => readProviderWatchPage(new URL(href));
+    const page = (href: string) => {
+      const identity = soopWatchPlayback.pageIdentity(new URL(href));
+      return identity ? { provider: 'soop', identity } : null;
+    };
     assert.deepEqual([page('https://play.sooplive.com/battleland/297994793')?.provider, page('https://play.sooplive.com/battleland/297994793')?.identity], ['soop', 'live:battleland/297994793']);
     assert.deepEqual([page('https://vod.sooplive.com/player/211006561')?.provider, page('https://vod.sooplive.com/player/211006561')?.identity], ['soop', 'vod:211006561']);
     assert.equal(page('https://vod.sooplive.com/player/catch'), null);
@@ -75,4 +79,19 @@ describe('SOOP chapters', () => {
     assert.deepEqual(parseSoopChapters(chapterBody({ title: 'A' }), 1159), []);
     assert.deepEqual(parseSoopChapters(chapterBody([{ title: 'A', time_sec: 0 }]), Number.NaN), []);
   });
+});
+
+it('names SOOP live and replay chat and rejects clips and spoofed hosts', () => {
+  const parse = (href: string) => soopChat.parseLocation(new URL(href));
+  assert.deepEqual(parse('https://play.sooplive.com/AA/123?x=1'), {
+    role: 'watch', provider: 'soop', contentKey: 'aa/123', kind: 'live'
+  });
+  assert.deepEqual(parse('https://vod.sooplive.com/player/211006561'), {
+    role: 'watch', provider: 'soop', contentKey: '211006561', kind: 'replay'
+  });
+  for (const href of ['https://play.sooplive.com/battleland', 'https://vod.sooplive.com/player/catch',
+    'http://play.sooplive.com/battleland/297994793', 'https://play.sooplive.com.evil.test/battleland/297994793']) assert.equal(parse(href), null);
+  assert.equal(soopChat.matchesHost('play.sooplive.com'), true);
+  assert.equal(soopChat.matchesHost('vod.sooplive.com'), true);
+  assert.equal(soopChat.matchesHost('www.sooplive.com'), false);
 });

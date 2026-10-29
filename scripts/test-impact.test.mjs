@@ -263,3 +263,28 @@ test('nested smoke modules are harness roots and retain transitive dependencies'
     assert.equal(selectTests(tests, [file], modules).smoke, true, file);
   }
 });
+
+test('provider descriptors and registration contracts require the full matrix', () => {
+  for (const file of ['scripts/provider-descriptors.ts', 'src/providers/soop/provider.json', 'src/providers/provider-api.ts',
+    'src/providers/runtime-registration.ts', 'src/providers/catalog.ts']) {
+    assert.equal(isFullRun(file), true, file);
+    const result = selectTests(tests, [file], graph);
+    assert.equal(result.full, true, file);
+    assert.equal(result.smoke, true, file);
+  }
+});
+
+test('descriptor entries select installed consumers after extraction from core imports', async t => {
+  const { root, put } = fixture(t);
+  const files = ['src/providers/soop/provider.json', 'src/providers/soop/isolated.ts',
+    'src/providers/soop/adapter.ts', 'src/entries/content.ts', 'scripts/installed.test.ts'];
+  put(files[0], JSON.stringify({ entries: { isolated: { file: 'isolated.ts' } } }));
+  put(files[1], "import './adapter';");
+  put(files[2], 'export const adapter = true;');
+  put(files[3], 'export {};');
+  put(files[4], "export const directory = 'dist/chrome-unpacked';");
+  const actual = await readGraph(root, files, []);
+  const result = selectTests([files[4]], [files[2]], actual);
+  assert.deepEqual(result.files, [files[4]]);
+  assert.equal(result.smoke, true);
+});

@@ -1,7 +1,6 @@
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { isVikiHost } from '../hosts';
-
-import { collectElement, type CollectedControl } from './observed';
+import { collectElement, type CollectedControl } from '../playlist-controls';
 
 /**
  * Viki's Video.js control bar names its buttons only by localized text, so the

@@ -1,5 +1,5 @@
 import type { PlaylistPreview } from '../../playlist-nav';
-import { collectElement, type CollectedControl, type PlaylistNavigationHelpers } from './observed';
+import { collectElement, type CollectedControl, type PlaylistHelpers } from '../playlist-controls';
 
 export function isVimeoShowcaseStepHref(href: string | null | undefined): boolean {
   if (!href) return false;
@@ -30,7 +30,7 @@ export function readVimeoShowcaseControls(root: ParentNode): CollectedControl[] 
 export function vimeoShowcasePreview(
   root: ParentNode,
   stepHref: string | null,
-  helpers: PlaylistNavigationHelpers
+  helpers: PlaylistHelpers
 ): PlaylistPreview | null {
   const videoId = showcaseVideoId(stepHref);
   if (!videoId) return null;

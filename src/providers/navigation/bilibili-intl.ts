@@ -1,4 +1,4 @@
-import { namedControl, type CollectedControl } from './observed';
+import { namedControl, type CollectedControl } from '../playlist-controls';
 
 export const BILIBILI_INTL_PLAYER_SELECTOR = '.bstar-player';
 

@@ -2,14 +2,18 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
+
 import { buildSync, transformSync } from 'esbuild';
 import { parseAst } from 'vite';
-import { MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
-import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from './capabilities';
-import { providerDefinition } from './registry';
-import { VimeoAdapter } from '../media-features/vimeo-adapter';
-import { NetflixAdapter } from '../media-features/netflix-adapter';
+
 import { brightestStop, hexRgb, luminance, over } from '../../options/rte-colors';
+import { NetflixAdapter } from '../media-features/netflix-adapter';
+import { MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
+import { VimeoAdapter } from '../media-features/vimeo-adapter';
+
+import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from './capabilities';
+import { PROVIDER_CATALOG } from './catalog';
+import { providerDefinition } from './registry';
 
 const read = (path: string) => readFileSync(resolve(__dirname, path), 'utf8');
 const folders: Record<string, string> = { bilibiliIntl: 'bilibili-intl' };
@@ -81,7 +85,9 @@ describe('provider capability declarations', () => {
   for (const provider of PROVIDER_CAPABILITIES) {
     it(`${provider.id}: adapter methods and registered actions match the declaration`, () => {
       assert.equal(Boolean(providerDefinition(provider.id).launcherPlacement), provider.capabilities.launcher.status !== 'no');
-      assert.equal(Boolean(providerDefinition(provider.id).watchPlayback), provider.capabilities.autoTheater.status !== 'no', `${provider.id}.autoTheater`);
+      const extracted = PROVIDER_CATALOG.some(item => item.id === provider.id);
+      const entry = extracted ? read(`./${provider.id}/isolated.ts`) : '';
+      assert.equal(extracted ? /watchPlayback:/.test(entry) : Boolean(providerDefinition(provider.id).watchPlayback), provider.capabilities.autoTheater.status !== 'no', `${provider.id}.autoTheater`);
       const folder = folders[provider.id] ?? provider.id;
       const source = read(localAdapters.has(provider.id) ? `./${folder}/adapter.ts` : `../media-features/${provider.id}-adapter.ts`);
       const implemented = methods(source);
@@ -104,15 +110,15 @@ describe('provider capability declarations', () => {
       // Follow imports that are actually called, so adding a registered source
       // to a previously unsupported provider also trips the declaration guard.
       const navFile = provider.id === 'vimeo' ? 'vimeo-showcase' : folder;
-      const hasActions = registeredFrom(actions, `./${folder}/service-actions`);
-      const hasNavigation = registeredFrom(navigation, `./${navFile}`);
+      const hasActions = extracted ? registeredFrom(entry, './service-actions') : registeredFrom(actions, `./${folder}/service-actions`);
+      const hasNavigation = extracted ? /readControls:/.test(entry) : registeredFrom(navigation, `./${navFile}`);
       // Playlists use the registered PlaylistAction contract, not caption HLS
       // playlists or contextual skip/up-next actions (such as Crunchyroll's).
       assert.equal(hasNavigation, provider.capabilities.playlists.status !== 'no', `${provider.id}.playlists`);
       if (hasNavigation) assert.equal(provider.capabilities.playlists.status, 'conditional');
       assert.equal(hasActions || hasNavigation, provider.capabilities.quickActions.status !== 'no');
       if (hasActions) assert.match(read(`./${folder}/service-actions.ts`), /activate|nativeServiceActionSource/);
-      if (hasNavigation) assert.match(read(`./navigation/${navFile}.ts`), /next|collectElement/i);
+      if (hasNavigation) assert.match(read(extracted ? `./${folder}/navigation.ts` : `./navigation/${navFile}.ts`), /next|collectElement/i);
     });
   }
 

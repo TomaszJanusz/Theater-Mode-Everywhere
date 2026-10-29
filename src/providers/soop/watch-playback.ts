@@ -1,6 +1,7 @@
-import { SOOP_PLAYER_SELECTOR, soopRoute, soopRouteKey } from '../soop-dom';
-import { SOOP_NAVIGATE_EVENT } from '../soop-main';
 import type { WatchPlayback } from '../watch-playback';
+
+import { SOOP_PLAYER_SELECTOR, soopRoute, soopRouteKey } from './dom';
+import { SOOP_NAVIGATE_EVENT } from './history';
 
 const VIDEO = { live: 'video#livePlayer', vod: 'video#video' } as const;
 

@@ -1,4 +1,6 @@
 import type { PlaylistAction } from '../../playlist-nav';
+import { usableControlIndexes, type PlaylistHelpers } from '../playlist-controls';
+import { providerRegistry } from '../runtime-registration';
 
 import { BILIBILI_PLAYER_SELECTOR, readBilibiliControls } from './bilibili';
 import { BILIBILI_INTL_PLAYER_SELECTOR, readBilibiliIntlControls } from './bilibili-intl';
@@ -6,8 +8,6 @@ import { DAILYMOTION_PLAYER_SELECTOR, readDailymotionControls } from './dailymot
 import { findDisneyPlaylistActions } from './disney';
 import { IQIYI_PLAYER_SELECTOR, readIqiyiControls } from './iqiyi';
 import { findNetflixPlaylistActions } from './netflix';
-import { usableControlIndexes, type PlaylistNavigationHelpers } from './observed';
-import { readSoopControls, SOOP_PLAYER_SELECTOR } from './soop';
 import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
 import { readVideoJsControls, peerTubeNeighborPreviews, VIDEOJS_PLAYER_SELECTOR } from './videojs';
 import { readVikiControls } from './viki';
@@ -21,14 +21,13 @@ export const HOST_PLAYER_SCOPE = [
   BILIBILI_PLAYER_SELECTOR,
   BILIBILI_INTL_PLAYER_SELECTOR,
   TENCENT_PLAYER_SELECTOR,
-  IQIYI_PLAYER_SELECTOR,
-  SOOP_PLAYER_SELECTOR
+  IQIYI_PLAYER_SELECTOR
 ].join(', ');
 
 export function findProviderPlaylistActions(
   root: ParentNode,
   video: HTMLVideoElement | null | undefined,
-  helpers: PlaylistNavigationHelpers
+  helpers: PlaylistHelpers
 ): PlaylistAction[] {
   const queue = findYouTubeQueueNavigation(root, video, helpers);
   const host = queue.actions.concat(hostActions(root, video, helpers).filter(action => !queue.claimed.has(action.direction)));
@@ -45,7 +44,7 @@ export function findProviderPlaylistActions(
 function hostActions(
   root: ParentNode,
   video: HTMLVideoElement | null | undefined,
-  helpers: PlaylistNavigationHelpers
+  helpers: PlaylistHelpers
 ): PlaylistAction[] {
   const scope = scopedRoot(root, video);
   const scoped = readHostControls(scope);
@@ -76,14 +75,14 @@ function readHostControls(root: ParentNode) {
     ...readBilibiliIntlControls(root),
     ...readTencentControls(root),
     ...readIqiyiControls(root),
-    ...readSoopControls(root),
+    ...providerRegistry.all().flatMap(hooks => hooks.navigation?.readControls(root) ?? []),
     ...readVikiControls(root),
     ...readVimeoShowcaseControls(root)
   ];
 }
 
 function scopedRoot(root: ParentNode, video?: HTMLVideoElement | null): ParentNode {
-  const player = video?.closest(HOST_PLAYER_SCOPE);
+  const player = video?.closest([HOST_PLAYER_SCOPE, ...providerRegistry.all().flatMap(hooks => hooks.navigation?.playerSelector ?? [])].join(', '));
   return player ?? root;
 }
 

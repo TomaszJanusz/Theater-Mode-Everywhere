@@ -5,15 +5,16 @@ import { VikiAdapter } from '../media-features/viki-adapter';
 
 import { bilibiliWatchPlayback } from './bilibili/watch-playback';
 import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
+import { PROVIDER_CATALOG } from './catalog';
+import { descriptorMatchesHost } from './descriptor-hosts';
 import { disneyWatchPlayback } from './disney/watch-playback';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isSoopHost, isPatreonHost, isTencentHost, isTwitchHost, isVikiHost, isVimeoHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVikiHost, isVimeoHost, isYouTubeHost } from './hosts';
 import { IqiyiAdapter } from './iqiyi/adapter';
 import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
 import type { LauncherPlacementFactory } from './launcher-placement';
 import { netflixWatchPlayback } from './netflix/watch-playback';
 import { patreonWatchPlayback } from './patreon/watch-playback';
-import { SoopAdapter } from './soop/adapter';
-import { soopWatchPlayback } from './soop/watch-playback';
+import { providerRegistry } from './runtime-registration';
 import { twitchWatchPlayback } from './twitch/watch-playback';
 import { vikiWatchPlayback } from './viki/watch-playback';
 import { vimeoWatchPlayback } from './vimeo/watch-playback';
@@ -50,7 +51,11 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },
   { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) },
   { id: 'iqiyi', matchesHost: (hostname) => isIqiyiHost(hostname), createAdapter: (video) => new IqiyiAdapter(video), watchPlayback: iqiyiWatchPlayback },
-  { id: 'soop', matchesHost: (hostname) => isSoopHost(hostname), createAdapter: (video) => new SoopAdapter(video), watchPlayback: soopWatchPlayback },
+  ...PROVIDER_CATALOG.map(descriptor => ({
+    id: descriptor.id, matchesHost: (hostname: string) => descriptorMatchesHost(descriptor.hosts, hostname),
+    get createAdapter() { return providerRegistry.get(descriptor.id)?.createAdapter; },
+    get watchPlayback() { return providerRegistry.get(descriptor.id)?.watchPlayback; }
+  })),
   { id: 'viki', matchesHost: (hostname) => isVikiHost(hostname), createAdapter: () => new VikiAdapter(), titleFromPage: true, watchPlayback: vikiWatchPlayback }
 ];
 

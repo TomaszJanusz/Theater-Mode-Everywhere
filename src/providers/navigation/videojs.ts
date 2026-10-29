@@ -1,12 +1,12 @@
 import type { PlaylistPreview } from '../../playlist-nav';
-import { namedControl, type CollectedControl, type PlaylistNavigationHelpers } from './observed';
+import { namedControl, type CollectedControl, type PlaylistHelpers } from '../playlist-controls';
 
 export const VIDEOJS_PLAYER_SELECTOR = '.video-js';
 
 export function readVideoJsControls(root: ParentNode): CollectedControl[] {
   return [
-    ...namedControl(root, 'button.vjs-previous-video', 'videojs', 'previous', () => videoJsDescribe),
-    ...namedControl(root, 'button.vjs-next-video', 'videojs', 'next', () => videoJsDescribe)
+    ...namedControl(root, 'button.vjs-previous-video', 'videojs', { direction: 'previous', describeFor: () => videoJsDescribe }),
+    ...namedControl(root, 'button.vjs-next-video', 'videojs', { direction: 'next', describeFor: () => videoJsDescribe })
   ];
 }
 
@@ -17,7 +17,7 @@ function videoJsDescribe(context: Parameters<CollectedControl['describe']>[0]): 
 export function peerTubeNeighborPreviews(
   root: ParentNode,
   pageHref: string,
-  helpers: PlaylistNavigationHelpers
+  helpers: PlaylistHelpers
 ): { previous: PlaylistPreview | null; next: PlaylistPreview | null } {
   const current = playlistPosition(pageHref);
   if (current == null) return { previous: null, next: null };

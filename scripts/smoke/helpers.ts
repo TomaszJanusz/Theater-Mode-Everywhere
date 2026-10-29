@@ -1,8 +1,13 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { chromium, firefox, type BrowserContext, type Page } from 'playwright';
+
+import { chromium, firefox, type BrowserContext, type Page, type Route } from 'playwright';
+
+import { manifestScriptsForUrl } from '../provider-descriptors';
+
+export type { BrowserContext, Page, Route };
 
 export type SmokeBrowser = 'chromium' | 'firefox';
 
@@ -129,7 +134,8 @@ export async function theaterEntered(page: Page): Promise<boolean> {
 export async function injectBundledPlayer(page: Page, unpackedDir: string): Promise<void> {
   const cssPath = path.join(unpackedDir, 'content.css');
   await page.addStyleTag({ path: cssPath });
-  for (const filename of ['mainWorld.js', 'content.js']) {
+  const manifest = JSON.parse(readFileSync(path.join(unpackedDir, 'manifest.json'), 'utf8'));
+  for (const filename of manifestScriptsForUrl(manifest, page.url())) {
     const source = readFileSync(path.join(unpackedDir, filename), 'utf8');
     const isModule = /^\s*export\b/m.test(source) || /^\s*import\b/m.test(source);
     // Content scripts have their own global scope; preserve it in the injected fallback.

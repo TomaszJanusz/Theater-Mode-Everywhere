@@ -24,7 +24,9 @@ Outputs:
 - `dist/theater-everywhere-firefox.zip` and `dist/firefox-unpacked/`
 - `dist/theater-everywhere-chrome.zip` and `dist/chrome-unpacked/`
 
-`content.js` and `mainWorld.js` stay self-contained classic scripts: one file each, no ESM `import` or `export`. `pnpm verify:bundles` checks both unpacked directories.
+Content scripts remain self-contained classic scripts, with no static or dynamic imports. `src/providers/*/provider.json` declares each extracted provider's hosts and MAIN/isolated entries. After editing a descriptor, run `pnpm exec tsx scripts/provider-descriptors.ts` to update the checked-in host catalog and manifest rules; builds and consistency tests reject drift. Providers not yet extracted keep their existing shared wiring.
+
+Each world runs its shared runtime, matching provider registration, then startup, in that order within one manifest `js` array at `document_start`. The generic rules exclude extracted hosts; every frame uses its own URL. The provider receives stateful shared services through the runtime API and registers before startup, which closes registration. Missing or rejected registrations retain generic HTML5 entry. JavaScript stays private; no background loader or `scripting` permission is needed. `pnpm verify:bundles` checks the complete inventory and order in both unpacked directories; the build also rejects extracted implementations in shared bundles and duplicated runtime owners in provider bundles.
 
 ## Diagnostic build
 

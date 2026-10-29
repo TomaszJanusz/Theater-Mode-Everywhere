@@ -131,7 +131,7 @@ only (`/videos/<id>`); live channels, clips and embeds stay manual. A VOD qualif
 holds exactly one `<video>`, inside the player's `video-ref`, with a non-infinite duration (the
 previous channel's live video during SPA entry is therefore rejected). Ads stitched into the VOD
 stream are part of the watch session, as on Netflix and Disney+. Twitch is a pushState SPA too and
-reuses the shared history publication (`providers/navigation/history-publication.ts`). Tencent
+reuses the shared history publication (`providers/history-publication.ts`). Tencent
 also has WASM/iframe playback; Crunchyroll commonly plays in a separate frame.
 These providers remain undeclared until those content boundaries are qualified.
 Bilibili confirms the live bpx player manifest (upload kind, BV id and part) and

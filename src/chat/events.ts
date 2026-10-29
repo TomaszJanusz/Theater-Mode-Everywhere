@@ -1,6 +1,7 @@
-import { isSoopHost, isTwitchHost, isYouTubeHost } from '../providers/hosts';
+import { isTwitchHost, isYouTubeHost } from '../providers/hosts';
+import { registeredChat } from '../providers/runtime-registration';
 
-import { SOOP_CHAT_EVENT_SELECTOR, TWITCH_CHAT_EVENT_SELECTOR, YOUTUBE_CHAT_EVENT_SELECTOR } from './selectors';
+import { TWITCH_CHAT_EVENT_SELECTOR, YOUTUBE_CHAT_EVENT_SELECTOR } from './selectors';
 import { isChatDocument, readLiveChatSource } from './url';
 
 /**
@@ -29,7 +30,8 @@ function matchesServiceChat(element: Element): boolean {
     host = '';
   }
   if (isTwitchHost(host) && element.matches(TWITCH_CHAT_EVENT_SELECTOR)) return true;
-  if (isSoopHost(host) && element.matches(SOOP_CHAT_EVENT_SELECTOR)) return true;
+  const chat = registeredChat();
+  if (chat?.matchesHost(host) && element.matches(chat.eventSelector)) return true;
   if (!isYouTubeHost(host)) return false;
   if (element.matches(YOUTUBE_CHAT_EVENT_SELECTOR)) return true;
   if (element.ownerDocument.documentElement.hasAttribute('data-theater-chat-active') && element.matches('ytd-popup-container')) return true;

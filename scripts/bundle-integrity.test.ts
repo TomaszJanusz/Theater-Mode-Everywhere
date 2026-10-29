@@ -67,7 +67,8 @@ describe('bundle integrity gate', () => {
       'export { foo } from "./x.js";',
       'export{foo};',
       'import"x.js";',
-      'import{foo}from"x.js";'
+      'import{foo}from"x.js";',
+      'const load = () => import("./x.js");'
     ];
     for (const source of samples) {
       withScript(source, (filePath) => {

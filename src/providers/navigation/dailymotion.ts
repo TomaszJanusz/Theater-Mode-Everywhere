@@ -1,4 +1,4 @@
-import { namedControl, type CollectedControl } from './observed';
+import { namedControl, type CollectedControl } from '../playlist-controls';
 
 /** Watch-page shell. Prev/next live inside it; the same class names exist elsewhere on the site. */
 export const DAILYMOTION_PLAYER_SELECTOR = '#player-wrapper';

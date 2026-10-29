@@ -3,18 +3,20 @@ import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+
 import { build } from 'esbuild';
-import { discoverTests } from './run-tests.mjs';
-import { shouldRunChecks } from './ci-changes.mjs';
+
 import { baseRef } from './base-ref.mjs';
+import { shouldRunChecks } from './ci-changes.mjs';
+import { discoverTests } from './run-tests.mjs';
 
 // Add shared inputs here when they cannot be represented by an import edge.
-export const isFullRun = file => /^(?:package\.json|pnpm-(?:lock|workspace)\.[^/]+|tsconfig[^/]*\.json|manifest\.json|vitest\.config\.[^/]+|config\/vite\.config\.[^/]+)$/.test(file)
+export const isFullRun = file => /(?:^scripts\/provider-descriptors\.ts$|^src\/providers\/(?:provider-api|runtime-registration|descriptor-hosts|catalog)\.ts$|\/provider\.json$)/.test(file) || /^(?:package\.json|pnpm-(?:lock|workspace)\.[^/]+|tsconfig[^/]*\.json|manifest\.json|vitest\.config\.[^/]+|config\/vite\.config\.[^/]+)$/.test(file)
   || /^(?:config\/eslint(?:\.config\.mjs|-rules\/)|eslint-suppressions\.json$)/.test(file)
   || /^(?:scripts\/(?:build[^/]*|run-tests\.mjs|ci-changes\.mjs|test-impact(?:\.test)?\.mjs)|(?:src\/)?test-utils\/|test\/fixtures\/|\.github\/(?:workflows|actions|ci-image)\/)/.test(file);
 const isBuildInput = file => isFullRun(file) && !/^(?:(?:src\/)?test-utils\/|test\/fixtures\/|scripts\/(?:run-tests|ci-changes|test-impact))/.test(file);
 const ENTRIES = ['src/entries/content.ts', 'src/entries/main-world.ts', 'src/entries/background.ts', 'popup/popup.ts', 'options/options.ts'];
-const BUNDLE_ENTRIES = [...ENTRIES, 'scripts/build.ts', 'config/vite.config.ts'];
+const BUNDLE_ENTRIES = [...ENTRIES, 'src/entries/content-start.ts', 'src/entries/main-world-start.ts', 'scripts/build.ts', 'config/vite.config.ts'];
 const localeTest = file => /(?:locales|localization|i18n|store-listings|safe-dom|rte-settings|whatsNew-(?:content|release)|cc-menu-rows|settings-rows)(?:\.browser)?\.test\./.test(file);
 const codeFile = file => /\.(?:[cm]?[jt]sx?)$/.test(file) && !file.endsWith('.d.ts');
 
@@ -99,6 +101,20 @@ export async function readGraph(root, files, entries = ENTRIES) {
     // Built-extension tests consume all shipped runtime code, not their own imports.
     if (/['"`](?:dist(?:\/|['"`])|(?:chrome|firefox)-unpacked)/.test(text)) for (const entry of BUNDLE_ENTRIES) edges.add(entry);
     graph.set(file, edges);
+  }
+  // Static provider entries are manifest dependencies, not TypeScript imports of core.
+  const providerInputs = files.filter(file => /^src\/providers\/[^/]+\/provider\.json$/.test(file));
+  const providerEntries = [];
+  for (const file of providerInputs) {
+    const descriptor = JSON.parse(readFileSync(join(root, file), 'utf8'));
+    const directory = file.slice(0, file.lastIndexOf('/') + 1);
+    const entries = Object.values(descriptor.entries).map(entry => directory + entry.file);
+    graph.set(file, new Set(entries));
+    providerEntries.push(file, ...entries);
+  }
+  for (const entry of BUNDLE_ENTRIES) {
+    const edges = graph.get(entry);
+    if (edges) for (const input of providerEntries) edges.add(input);
   }
   // HTML is loaded by the browser rather than imported by these scripts.
   for (const surface of ['popup', 'options']) {

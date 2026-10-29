@@ -43,6 +43,8 @@ test('pushes, schedules, missing metadata, empty/malformed diffs and git errors 
 });
 
 for (const file of ['manifest.json', 'scripts/build.ts', 'scripts/package-firefox.ts',
+  'src/entries/content-start.ts', 'src/providers/soop/provider.json', 'src/providers/provider-api.ts',
+  'src/providers/runtime-registration.ts', 'src/providers/catalog.ts', 'src/providers/descriptor-hosts.ts',
   'src/platform/audio.ts', 'src/protocol/messages.ts', 'src/test-utils/test-engines.ts',
   'test/fixtures/player.html', '.github/actions/virtual-audio/action.yml', '.github/ci-image/Dockerfile', '.github/workflows/ci.yml',
   'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json']) {

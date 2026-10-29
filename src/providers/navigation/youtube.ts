@@ -1,7 +1,7 @@
 import type { PlaylistAction, PlaylistDirection } from '../../playlist-nav';
 import { isYouTubeHost } from '../hosts';
+import { namedControl, type CollectedControl, type PlaylistHelpers } from '../playlist-controls';
 import { queryYouTubeQueue, requestYouTubeQueueStep } from '../youtube/queue-bridge';
-import { namedControl, type CollectedControl, type PlaylistNavigationHelpers } from './observed';
 
 export const YOUTUBE_PLAYER_SELECTOR = '#movie_player';
 
@@ -9,7 +9,7 @@ export const YOUTUBE_PLAYER_SELECTOR = '#movie_player';
 export function findYouTubeQueueNavigation(
   root: ParentNode,
   video: HTMLVideoElement | null | undefined,
-  helpers: PlaylistNavigationHelpers
+  helpers: PlaylistHelpers
 ): { actions: PlaylistAction[]; claimed: Set<PlaylistDirection> } {
   const actions: PlaylistAction[] = [];
   const claimed = new Set<PlaylistDirection>();
@@ -47,8 +47,8 @@ export function youtubePreviousRestarts(element: { getAttribute(name: string): s
 
 export function readYouTubeControls(root: ParentNode): CollectedControl[] {
   return [
-    ...namedControl(root, '.ytp-prev-button', 'youtube', 'previous', youtubeDescribe),
-    ...namedControl(root, '.ytp-next-button', 'youtube', 'next', youtubeDescribe)
+    ...namedControl(root, '.ytp-prev-button', 'youtube', { direction: 'previous', describeFor: youtubeDescribe }),
+    ...namedControl(root, '.ytp-next-button', 'youtube', { direction: 'next', describeFor: youtubeDescribe })
   ];
 }
 
