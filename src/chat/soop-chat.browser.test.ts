@@ -194,17 +194,42 @@ for (const engine of testEngines()) describe(`${engine} SOOP native chat`, () =>
       [disposed, false], 'disposal disconnects the observer');
   });
 
-  it('keeps the requested theme but leaves SOOP its own appearance', async t => {
+  it('applies SOOP\'s own dark palette to the chat column only, and restores it', async t => {
     const tab = await open(t, engine, LIVE, page(true));
     const report = await tab.evaluate(`(() => {
+      // SOOP's palette shape: light defaults, dark rules keyed on an unanchored [dark=true] ancestor, and the
+      // column background anchored above the player.
+      const style = document.createElement('style');
+      style.textContent = '#webplayer #chatting_area { background: #fff; border: 1px solid #ddd } .chatbox .msg { color: #222 }'
+        + ' [dark=true] .chatbox .msg { color: #e2e4e9 } [dark=true] #webplayer #chatting_area { background: #0c0d0e } [dark=true] body { background: #111 }';
+      document.head.append(style);
+      document.getElementById('chat_area').innerHTML = '<p class="msg">hello</p>';
+      const root = document.getElementById('chatting_area');
+      const read = () => ({ status: controller.state.themeStatus, dark: root.getAttribute('dark'),
+        text: getComputedStyle(document.querySelector('.msg')).color, canvas: getComputedStyle(root).backgroundColor,
+        page: [document.documentElement.getAttribute('dark'), getComputedStyle(document.body).backgroundColor] });
       const controller = new NativeChat.ChatController({ document, href: () => ${JSON.stringify(LIVE)}, onChange() {}, onLayoutChange() {} });
-      controller.start();
-      controller.setTheme('dark');
-      const state = [controller.state.theme, controller.state.themeStatus, [...document.documentElement.attributes].some(a => /theme/.test(a.name))];
-      controller.dispose();
-      return state;
+      const out = {};
+      controller.setTheme('dark'); out.dark = read();
+      controller.setTheme('light'); out.light = read();
+      controller.setTheme('dark'); controller.setTheme('native'); out.native = read();
+      controller.setTheme('dark'); controller.dispose(); out.disposed = [root.getAttribute('dark'), root.getAttribute('style')];
+      // A page in SOOP's own dark mode darkens the chat from the root; light cannot be forced from inside.
+      document.documentElement.setAttribute('dark', 'true');
+      const again = new NativeChat.ChatController({ document, href: () => ${JSON.stringify(LIVE)}, onChange() {}, onLayoutChange() {} });
+      again.setTheme('light');
+      out.siteDark = [again.state.themeStatus, root.getAttribute('dark')];
+      again.dispose();
+      return out;
     })()`);
-    assert.deepEqual(report, ['dark', 'unavailable', false]);
+    const white = 'rgba(0, 0, 0, 0)';
+    assert.deepEqual(report, {
+      dark: { status: 'applied', dark: 'true', text: 'rgb(226, 228, 233)', canvas: 'rgb(0, 0, 0)', page: [null, white] },
+      light: { status: 'applied', dark: null, text: 'rgb(34, 34, 34)', canvas: 'rgb(255, 255, 255)', page: [null, white] },
+      native: { status: 'native', dark: null, text: 'rgb(34, 34, 34)', canvas: 'rgb(255, 255, 255)', page: [null, white] },
+      disposed: [null, null],
+      siteDark: ['unavailable', null]
+    });
   });
 
   it('treats events inside the SOOP chat as chat events and leaves the player to the page shortcuts', async t => {
