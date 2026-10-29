@@ -1,6 +1,7 @@
+import type { MediaProviderId } from '../media-features/provider-flags';
 import type { PlaylistDirection, PlaylistPreview } from '../playlist-nav';
 
-export type PlaylistProvider = 'youtube' | 'videojs' | 'dailymotion' | 'vimeo-showcase' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'iqiyi' | 'soop' | 'viki';
+export type PlaylistProvider = MediaProviderId | 'videojs' | 'dailymotion' | 'vimeo-showcase';
 
 /**
  * Host-control snapshot. The fields are the signals observed on live players:

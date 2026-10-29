@@ -11,7 +11,7 @@ import {
   vikiLoadedVideoId,
   vikiNextDataUrl,
   vikiVideoId
-} from './viki';
+} from './playback-data';
 
 const CAPTION = 'https://api.viki.io/v4/videos/1263131v/subtitles/en.vtt?app=100000a&stream_id=1&t=1&sig=s';
 const PREVIEW = 'https://manifest-viki.viki.io/v1/streams/1263131v/preview.vtt?region=ww';
