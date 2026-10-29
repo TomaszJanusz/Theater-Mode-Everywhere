@@ -23,7 +23,7 @@ window.addEventListener('keydown', event => {
 <div class="vjs-text-track-display"><div class="vjs-text-track-cue">Native cue</div></div>
 <button class="vjs-control"><span class="vjs-icon-next-item"></span><span>Next episode</span></button>
 </div><script>
-fetch('${MANIFEST}').then(() => window.manifestReady = true);
+fetch('${MANIFEST}').then(response => response.text());
 fetch('/fixture.webm').then(response => response.blob()).then(blob => { document.querySelector('video').src = URL.createObjectURL(blob); });
 </script></body></html>`;
 
@@ -39,7 +39,13 @@ export async function assertVikiProvider(page: Page, context: BrowserContext): P
     else if (url.hostname.endsWith('viki.io')) await route.fulfill({ contentType: 'text/vtt', headers: { 'access-control-allow-origin': '*' }, body: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nFixture cue\n' });
     else await route.fulfill({ contentType: 'text/html; charset=utf-8', body: fixture });
   };
-  const ready = () => page.waitForFunction("window.manifestReady && document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts') && document.querySelector('video')?.readyState >= 2");
+  // Viki confirms identity from a completed resource entry, not merely fetch response headers.
+  const ready = () => page.waitForFunction(manifest => {
+    const video = document.querySelector('video');
+    return document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts')
+      && video && video.readyState >= 2 && Number.isFinite(video.duration)
+      && performance.getEntriesByType('resource').some(entry => entry.name === manifest);
+  }, MANIFEST);
   const active = () => page.waitForFunction(() => document.documentElement.classList.contains('theater-everywhere-viki-stage'));
   const restored = () => page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active') && document.getElementById('vmplayer_id')?.getAttribute('tabindex') === '-1');
   await context.route(hosts, handler);
