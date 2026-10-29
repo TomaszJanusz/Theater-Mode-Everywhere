@@ -87,6 +87,8 @@ it('each descriptor entry actually registers its own hooks in its own world befo
     const hooks = registry.get(descriptor.id)!;
     assert.ok(hooks.watchPlayback);
     assert.equal(Boolean(hooks.createAdapter && hooks.chat && hooks.navigation && hooks.serviceActions), world === 'isolated');
+    // Chat events are recognized in both worlds; MAIN's entry shortcut capture leaves them alone.
+    assert.equal(Boolean(hooks.chat), true, `${descriptor.id}/${world} chat`);
     assert.equal(Boolean(hooks.install), world === 'main');
     assert.equal(hooks.allowsMediaFetch({ provider: 'soop', kind: 'chapters', url: 'https://stbbs.sooplive.com/api/chapter/Controllers/ChapterListController.php?nTitleNo=1&szFileType=REVIEW' }), true);
     assert.equal(registry.start(), true);
