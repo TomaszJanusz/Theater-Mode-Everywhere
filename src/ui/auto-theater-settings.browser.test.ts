@@ -16,6 +16,9 @@ const ROOT = path.resolve(__dirname, '../..');
 const bundles = Promise.all([
   bundleQueryModules(["import '../options/options';"], 'SettingsFixture'),
   bundleQueryModules([
+    // Vimeo declares the watch playback this page needs, registered before the runtime starts as the manifest orders it.
+    "import './test-utils/fixture-runtimes';",
+    "import './providers/vimeo/isolated';",
     "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
     "export { setPlayerUiCss } from './ui/root';",
     "export { saveAutoTheaterEnabled } from './ui/auto-theater-settings';"
