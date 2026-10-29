@@ -1400,6 +1400,36 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
+  it('follows a Twitch or SOOP route change through the host history event, not by polling', async t => {
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const cases = [
+      { name: 'twitch', html: TWITCH, from: 'https://www.twitch.tv/SomeChannel', to: 'https://www.twitch.tv/OtherChannel', event: 'theater-everywhere-twitch-navigate' },
+      { name: 'soop', html: '<div id="webplayer" class="chat_open"><div id="chatting_area"><div class="chatbox"></div></div></div>',
+        from: 'https://play.sooplive.com/crankyducks/298190957', to: 'https://play.sooplive.com/lolglobal/298189961', event: 'theater-everywhere-soop-navigate' }
+    ];
+    for (const scenario of cases) {
+      const page = await pageWith(t, scenario.html);
+      try {
+        await page.evaluate(`(() => {
+          window.__href = ${JSON.stringify(scenario.from)};
+          window.__controller = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() {} });
+          window.__controller.hide(); // A viewer's choice for this content.
+        })()`);
+        const read = () => page.evaluate(`({ key: window.__controller.state.surface && window.__controller.state.surface.contentKey, visible: window.__controller.state.visible })`) as Promise<{ key: string; visible: boolean }>;
+        const first = await read();
+        assert.equal(first.visible, false, `${scenario.name}: hidden by the viewer`);
+        await page.evaluate(`window.__href = ${JSON.stringify(scenario.to)}`);
+        await page.clock.runFor(10_000);
+        assert.deepEqual(await read(), first, `${scenario.name}: nothing polls the URL`);
+        await page.evaluate(`window.dispatchEvent(new Event(${JSON.stringify(scenario.event)}))`);
+        await page.clock.runFor(80);
+        const next = await read();
+        assert.notEqual(next.key, first.key, `${scenario.name}: new content identity`);
+        assert.equal(next.visible, true, `${scenario.name}: visibility is seeded again from the native chat`);
+      } finally { await page.close(); }
+    }
+  });
+
   it('keeps the stage size variables following the viewport on pages without chat', async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, '<div id="layout"></div>');
