@@ -694,6 +694,135 @@ describe('native chat browser session', () => {
       assert.deepEqual(pageErrors(page), []);
     });
 
+    it(`resizes YouTube chat across its frame, from the keyboard and by reset, and cleans up in ${engine}`, { timeout: 120_000 }, async t => {
+      const browser = pagesOf(browsers[engine], t);
+      // A width saved by the old Width setting is where the separator starts.
+      const seed = { nativeChatPreferences: { youtube: { visible: true, width: 420, theme: 'native' } } };
+      const { page, read } = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('visible') }, { width: 1280, height: 800 }, seed);
+      await boot(page);
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
+      let layout = await layoutOf(page);
+      assert.equal(layout.state?.width, 420, JSON.stringify(layout.state));
+      assertRightDock(layout, `${engine} migrated width`);
+      const separator = page.locator('.theater-chat-separator');
+      assert.deepEqual(await separator.evaluate(element => ({
+        role: element.getAttribute('role'),
+        orientation: element.getAttribute('aria-orientation'),
+        label: element.getAttribute('aria-label'),
+        min: element.getAttribute('aria-valuemin'),
+        max: element.getAttribute('aria-valuemax'),
+        tabIndex: (element as HTMLElement).tabIndex
+      })), { role: 'separator', orientation: 'vertical', label: 'Resize chat', min: '280', max: '600', tabIndex: 0 });
+      await revealChatSettings(page);
+      assert.equal(await page.locator('.theater-chat-width-row').count(), 0, 'the Width row is gone from the menu');
+      await closeChatSettings(page);
+
+      // Over the chat frame the moves stay with the separator: the frame's document receives none.
+      await page.waitForFunction(() => ((window as unknown as { __chatLoads?: number }).__chatLoads ?? 0) > 0);
+      const chatFrame = page.frames().find(candidate => candidate.url().includes('/live_chat'));
+      assert.ok(chatFrame, 'live chat frame did not load');
+      await chatFrame.evaluate(() => {
+        const probe = window as Window & { __moves?: number };
+        probe.__moves = 0;
+        window.addEventListener('pointermove', () => { probe.__moves = (probe.__moves ?? 0) + 1; }, true);
+      });
+      await page.evaluate(() => {
+        const probe = window as Window & { __seeks?: number };
+        probe.__seeks = 0;
+        // The fixture loops, and a loop also fires `seeking`; count the player's own seeks instead.
+        const video = document.querySelector('video')!;
+        const time = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'currentTime')!;
+        Object.defineProperty(video, 'currentTime', {
+          configurable: true,
+          get() { return time.get!.call(this); },
+          set(value: number) { probe.__seeks = (probe.__seeks ?? 0) + 1; time.set!.call(this, value); }
+        });
+      });
+      const start = await separatorCenter(page);
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.down();
+      await page.mouse.move(start.x + 260, start.y, { steps: 10 });
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 280);
+      // Past the narrowest width the pointer is well inside the frame while the drag goes on.
+      layout = await layoutOf(page);
+      assert.ok(layout.chat && start.x + 260 > layout.chat.left + 80, `the pointer is over the chat frame ${JSON.stringify(layout.chat)}`);
+      await page.mouse.move(start.x + 300, start.y + 120, { steps: 4 });
+      await page.mouse.move(start.x + 100, start.y + 120, { steps: 6 });
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 320);
+      await page.mouse.up();
+      assert.equal(await chatFrame.evaluate(() => (window as Window & { __moves?: number }).__moves), 0, 'the chat frame took pointer moves');
+      const afterDrag = await separator.evaluate(element => ({
+        dragging: element.hasAttribute('data-dragging'),
+        overlays: element.querySelectorAll('.theater-chat-separator-overlay').length,
+        focused: (element.getRootNode() as ShadowRoot).activeElement === element
+      }));
+      assert.deepEqual(afterDrag, { dragging: false, overlays: 0, focused: false }, 'a pointer drag leaves no overlay and keeps focus where it was');
+      layout = await layoutOf(page);
+      assertRightDock(layout, `${engine} dragged over the frame`);
+      await waitForSaved(read, 'youtube', preference => preference.width === 320);
+
+      // The keys step the chat width instead of seeking, with a visible focus ring. Tab reaches the
+      // separator as a keyboard user would: Firefox shows no ring for programmatic focus after a drag.
+      await separator.focus();
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await separator.evaluate(element => (element.getRootNode() as ShadowRoot).activeElement === element), true, 'Tab reaches the separator');
+      const steps: Array<[string, number]> = [['ArrowLeft', 330], ['Shift+ArrowLeft', 380], ['ArrowRight', 370], ['Home', 280], ['End', 600]];
+      for (const [key, width] of steps) {
+        await page.keyboard.press(key);
+        await page.waitForFunction(next => window.NativeChatTest.nativeChatState()?.width === next, width);
+        assert.equal(await separator.getAttribute('aria-valuenow'), String(width), key);
+      }
+      assert.equal(await page.evaluate(() => (window as Window & { __seeks?: number }).__seeks), 0, 'separator keys seeked the video');
+      const ring = await separator.evaluate(element => ({
+        visible: element.matches(':focus-visible'),
+        outline: getComputedStyle(element.querySelector('.theater-chat-separator-grip')!).outlineStyle
+      }));
+      assert.deepEqual(ring, { visible: true, outline: 'solid' });
+      assertRightDock(await layoutOf(page), `${engine} keyboard`);
+
+      // Double-click restores the default width.
+      const center = await separatorCenter(page);
+      await page.mouse.dblclick(center.x, center.y);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 360);
+      await waitForSaved(read, 'youtube', preference => preference.width === 360);
+
+      // Chat stays on the physical right in a right-to-left UI, and the arrows still point the way it moves.
+      await page.evaluate(() => document.getElementById('theater-everywhere-ui')!.setAttribute('dir', 'rtl'));
+      await separator.focus();
+      await page.keyboard.press('ArrowLeft');
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 370);
+      assertRightDock(await layoutOf(page), `${engine} rtl`);
+      await page.evaluate(() => document.getElementById('theater-everywhere-ui')!.setAttribute('dir', 'ltr'));
+
+      // Hiding the chat hides the separator; showing it brings it back at the same width.
+      await page.keyboard.press('Alt+R');
+      await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
+      layout = await layoutOf(page);
+      assert.equal(layout.separatorHidden, true, JSON.stringify(layout));
+      await page.keyboard.press('Alt+R');
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
+      assertRightDock(await layoutOf(page), `${engine} shown again`);
+
+      // Leaving theater mid-drag leaves nothing behind; re-entry mounts one separator at the kept width.
+      const held = await separatorCenter(page);
+      await page.mouse.move(held.x, held.y);
+      await page.mouse.down();
+      await page.mouse.move(held.x - 40, held.y, { steps: 4 });
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 410);
+      await leaveTheater(page);
+      await page.mouse.up();
+      assert.equal(await page.evaluate(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelectorAll('.theater-chat-separator').length ?? 0), 0);
+      await page.keyboard.press('t');
+      await page.locator('.theater-controls-wrapper.visible').waitFor();
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
+      layout = await layoutOf(page);
+      assert.equal(await page.evaluate(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelectorAll('.theater-chat-separator, .theater-chat-separator-overlay').length), 1);
+      assert.equal(layout.state?.width, 410, JSON.stringify(layout.state));
+      assertRightDock(layout, `${engine} re-entered`);
+      assert.deepEqual(pageErrors(page), []);
+    });
+
     it(`reaches and adjusts the Theme row with W/A/S/D in ${engine}`, { timeout: 120_000 }, async t => {
       const browser = pagesOf(browsers[engine], t);
       const { page, read } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
