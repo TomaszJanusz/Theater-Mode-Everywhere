@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { readProviderWatchPage } from '../watch-playback';
 
 import { iqiyiPlayId } from './page';
-import { iqiyiChapters, normalizeIqiyiPlayInfo, type IqiyiSnapshot } from './play-info';
+import { iqiyiWatchPlayback } from './watch-playback';
+import { iqiyiChapters, normalizeIqiyiPlayInfo, parseIqiyiSnapshot, type IqiyiSnapshot } from './play-info';
 
 const playInfo = (overrides: Record<string, unknown> = {}, program: unknown = { video: [{ duration: 2569 }] }) => ({
   data: { tvid: 4546375215960300, program, p: { bt: 14, et: 2415, ete: 2568, ...overrides } }
@@ -25,9 +25,8 @@ describe('iQIYI play identity', () => {
   });
 
   it('declares AutoTheater only for https www.iq.com episode pages', () => {
-    const read = (href: string) => readProviderWatchPage(new URL(href));
-    const page = read('https://www.iq.com/play/spring-of-the-blade-episode-2-1w9dte7osf8?lang=en_us');
-    assert.deepEqual([page?.provider, page?.identity], ['iqiyi', '1w9dte7osf8']);
+    const read = (href: string) => iqiyiWatchPlayback.pageIdentity(new URL(href));
+    assert.equal(read('https://www.iq.com/play/spring-of-the-blade-episode-2-1w9dte7osf8?lang=en_us'), '1w9dte7osf8');
     for (const href of ['https://www.iq.com/', 'https://www.iq.com/album/spring-of-the-blade-2026-1nby7voujqx',
       'http://www.iq.com/play/x-1w9dte7osf8', 'https://www.iq.com.evil.test/play/x-1w9dte7osf8']) {
       assert.equal(read(href), null, href);
@@ -53,6 +52,14 @@ describe('iQIYI play info', () => {
       { start: 0, end: 14, title: 'Intro' }, { start: 2415, end: 2568, title: 'Outro' }
     ]);
     assert.deepEqual(iqiyiChapters({ ...snapshot, introEnd: 0, outroStart: null }, 2570), []);
+  });
+
+  it('validates the cross-world snapshot again instead of trusting its shape', () => {
+    assert.deepEqual(parseIqiyiSnapshot({ ...snapshot }), snapshot);
+    assert.deepEqual(parseIqiyiSnapshot({ ...snapshot, introEnd: -1, outroStart: 'x' }), { ...snapshot, introEnd: null, outroStart: null });
+    for (const bad of [null, 'x', [], {}, { ...snapshot, tvid: 4546375215960300 }, { ...snapshot, tvid: '1; DROP' }, { ...snapshot, duration: 0 }]) {
+      assert.equal(parseIqiyiSnapshot(bad), null, JSON.stringify(bad));
+    }
   });
 
   it('ignores data that describes another episode or an impossible window', () => {

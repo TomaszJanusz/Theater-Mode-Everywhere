@@ -380,3 +380,86 @@ export async function assertYoutubeProvider(page: Page, context: BrowserContext)
     }, saved);
   }
 }
+
+const IQIYI = 'https://www.iq.com/play/spring-of-the-blade-episode-1-198yzaqjce8?lang=en_us';
+const iqiyiFixture = `<!doctype html><html><head><title>Generic fixture title</title><script>
+window.hostKeys = 0;
+window.__playerdata__ = { __dash: { data: { tvid: 4546375215960300, program: { video: [{ duration: 1 }] }, p: { bt: 0.2, et: 0.6, ete: 0.9 } } } };
+window.addEventListener('keydown', event => {
+  if (event.code === 'KeyT') { window.hostKeys++; event.stopImmediatePropagation(); event.preventDefault(); }
+}, true);
+</script></head><body>
+<h1 class="intl-play-title"><a class="intl-album-title" href="//www.iq.com/album/spring-of-the-blade-2026-1nby7voujqx"><span class="intl-album-title-word-wrap"><span>Spring of The Blade </span></span></a>Episode 1</h1>
+<div id="flashbox"><iqpdiv class="iqp-player"><video id="video" muted style="width:640px;height:360px"></video></iqpdiv></div>
+<ul class="intl-episodes-list"><li class="selected"><a href="//www.iq.com/play/spring-of-the-blade-episode-1-198yzaqjce8">1</a></li></ul>
+<script>
+fetch('/fixture.webm').then(response => response.blob()).then(blob => { document.querySelector('video').src = URL.createObjectURL(blob); });
+</script></body></html>`;
+
+/** iQIYI loads per host: installed-extension evidence on intercepted host URLs, as for Vimeo and Patreon. */
+export async function assertIqiyiProvider(page: Page, context: BrowserContext): Promise<void> {
+  const worker = await extensionWorker(context);
+  const saved = await worker.evaluate(() => chrome.storage.sync.get(['autoEnterTheater', 'iqiyiIntegrationEnabled']));
+  const media = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
+  const handler = async (route: Route) => {
+    if (new URL(route.request().url()).pathname === '/fixture.webm') await route.fulfill({ contentType: 'video/webm', body: media });
+    else await route.fulfill({ contentType: 'text/html', body: iqiyiFixture });
+  };
+  const hosts = /^https:\/\/(?:www\.iq\.com|player\.example\.test|www\.iq\.com\.evil\.test|www\.iqiyi\.com)\//;
+  await context.route(hosts, handler);
+  const query = () => page.evaluate(() => {
+    window.dispatchEvent(new CustomEvent('theater-everywhere-watch-replacement-query', { detail: 'pilot-query' }));
+    const video = document.querySelector('video')!;
+    const result = video.getAttribute('data-te-watch-replacement-response');
+    video.removeAttribute('data-te-watch-replacement-response');
+    return result;
+  });
+  const title = () => page.locator('.theater-title-hud-head').filter({ hasText: 'Spring of The Blade' }).first();
+  try {
+    await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false, iqiyiIntegrationEnabled: true }));
+    await page.goto(IQIYI);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts') && document.querySelector('video')!.readyState >= 2);
+    assert.equal(await query(), 'pilot-query', 'MAIN provider must answer the validated watch bridge');
+    const first = await page.evaluate(() => {
+      const begin = performance.now();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 't', code: 'KeyT', bubbles: true, cancelable: true }));
+      return { entered: document.documentElement.classList.contains('theater-everywhere-html-active'), milliseconds: performance.now() - begin };
+    });
+    assert.equal(first.entered, true, 'first t enters synchronously, without loading or replaying the key');
+    assert.equal(await page.evaluate('window.hostKeys'), 0, 'early key capture beats the host listener');
+    // The title comes from the provider's adapter reading the play heading.
+    await title().waitFor({ state: 'attached' });
+    await page.keyboard.press('Escape');
+
+    // Registration survives preference changes.
+    await worker.evaluate(() => chrome.storage.sync.set({ iqiyiIntegrationEnabled: false }));
+    await page.goto(IQIYI);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-iqiyi-integration-off') && document.querySelector('video')!.readyState >= 2);
+    assert.equal(await query(), 'pilot-query', 'MAIN identity stays available with RTE off');
+    await page.keyboard.press('t');
+    await page.locator('.theater-controls-wrapper').waitFor();
+    assert.equal(await title().count(), 0, 'no service title with RTE off');
+    await worker.evaluate(() => chrome.storage.sync.set({ iqiyiIntegrationEnabled: true }));
+    await page.waitForFunction(() => !document.documentElement.hasAttribute('data-te-iqiyi-integration-off'));
+    await title().waitFor({ state: 'attached' });
+    await page.keyboard.press('Escape');
+
+    // Look-alike hosts and the domestic iqiyi.com stay generic.
+    for (const url of ['https://player.example.test/play/x-198yzaqjce8', 'https://www.iq.com.evil.test/play/x-198yzaqjce8', 'https://www.iqiyi.com/play/x-198yzaqjce8']) {
+      await page.goto(url);
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts') && document.querySelector('video')!.readyState >= 2);
+      assert.equal(await query(), null, `${url} must not load the iQIYI provider`);
+      await page.keyboard.press('t');
+      await page.locator('.theater-controls-wrapper').waitFor();
+      assert.equal(await title().count(), 0, url);
+      await page.keyboard.press('Escape');
+    }
+    console.log(`smoke provider scripts: iQIYI registration in both worlds, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), title through the provider, RTE off/on, generic/spoofed/domestic host passed`);
+  } finally {
+    await context.unroute(hosts, handler);
+    await worker.evaluate(async saved => {
+      await chrome.storage.sync.remove(['autoEnterTheater', 'iqiyiIntegrationEnabled']);
+      await chrome.storage.sync.set(saved);
+    }, saved);
+  }
+}

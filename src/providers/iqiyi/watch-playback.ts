@@ -1,5 +1,5 @@
-import { IQIYI_PLAYER_SELECTOR, selectedIqiyiEpisode } from '../iqiyi-dom';
-import { IQIYI_NAVIGATE_EVENT } from '../iqiyi-main';
+import { IQIYI_PLAYER_SELECTOR, selectedIqiyiEpisode } from './dom';
+import { IQIYI_NAVIGATE_EVENT } from './snapshot';
 import type { WatchPlayback } from '../watch-playback';
 
 import { iqiyiPlayId } from './page';

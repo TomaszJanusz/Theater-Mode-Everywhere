@@ -4,24 +4,28 @@ import { describe, it } from 'node:test';
 import type { AudioTrackController } from '../../media-features/audio-tracks';
 import type { findPlaylistActions } from '../../playlist-nav';
 import { sharedEngineBrowsers } from '../../test-utils/engine-browsers';
-import { bundleModules } from '../../test-utils/player-boot';
+import { bundleModules, PROVIDER_ENTRIES } from '../../test-utils/player-boot';
 import { readStylesheet } from '../../test-utils/styles';
 import { testEngines } from '../../test-utils/test-engines';
 
-import type { IqiyiAdapter } from './adapter';
+import type { IqiyiAdapter, IqiyiServices } from './adapter';
 import type { readIqiyiCaptionLayout } from './captions';
 import type { iqiyiWatchPlayback } from './watch-playback';
 
 const bundle = bundleModules([
+  ...PROVIDER_ENTRIES,
+  "import './providers/iqiyi/isolated';",
   "export { IqiyiAdapter } from './providers/iqiyi/adapter';",
   "export { readIqiyiCaptionLayout } from './providers/iqiyi/captions';",
   "export { iqiyiWatchPlayback } from './providers/iqiyi/watch-playback';",
+  "export { requestMediaProbe } from './media-features/probe';",
   "export { findPlaylistActions } from './playlist-nav';",
   "export { AudioTrackController } from './media-features/audio-tracks';"
 ], 'IqiyiTest');
 const browsers = sharedEngineBrowsers();
 type Api = {
   IqiyiAdapter: typeof IqiyiAdapter;
+  requestMediaProbe: IqiyiServices['requestMediaProbe'];
   readIqiyiCaptionLayout: typeof readIqiyiCaptionLayout;
   iqiyiWatchPlayback: typeof iqiyiWatchPlayback;
   findPlaylistActions: typeof findPlaylistActions;
@@ -65,7 +69,7 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
     await page.goto(EPISODE_1);
     await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
     const read = await page.evaluate(() => {
-      const adapter = new (window as unknown as { IqiyiTest: Api }).IqiyiTest.IqiyiAdapter();
+      const adapter = new (window as unknown as { IqiyiTest: Api }).IqiyiTest.IqiyiAdapter(null, window.IqiyiTest);
       return { title: adapter.getTitle(), subtitle: adapter.getSubtitle(), id: adapter.mediaId() };
     });
     assert.deepEqual(read, { title: 'Spring of The Blade', subtitle: 'Episode 1', id: '198yzaqjce8' });
@@ -77,7 +81,7 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
     await page.goto(EPISODE_1);
     await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
     const report = await page.evaluate(async episode2 => {
-      const adapter = new (window as unknown as { IqiyiTest: Api }).IqiyiTest.IqiyiAdapter();
+      const adapter = new (window as unknown as { IqiyiTest: Api }).IqiyiTest.IqiyiAdapter(null, window.IqiyiTest);
       let notify = () => {};
       const stop = adapter.observeTitle(() => notify());
       const until = async (ready: () => boolean) => { while (!ready()) await new Promise<void>(resolve => { notify = resolve; }); };
@@ -123,7 +127,7 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
     await page.goto(EPISODE_1);
     await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
     const report = await page.evaluate(async () => {
-      const adapter = new (window as unknown as { IqiyiTest: Api }).IqiyiTest.IqiyiAdapter();
+      const adapter = new (window as unknown as { IqiyiTest: Api }).IqiyiTest.IqiyiAdapter(null, window.IqiyiTest);
       const clicks: string[] = [];
       for (const item of document.querySelectorAll('.iqp-pop-subtitle-lang .iqp-langlist-pop-txt')) {
         item.addEventListener('click', () => clicks.push(item.getAttribute('datalid')!));
@@ -146,6 +150,49 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
     assert.deepEqual(report.results, [['active', 'host'], ['active', 'host'], ['off', 'none'], ['failed', 'none'], ['failed', 'none'], ['failed', 'none']]);
     assert.deepEqual(report.clicks, ['3', '5', '-1']);
     assert.equal(report.probe.captions, true);
+  });
+
+  it('hides the host subtitles through the host Off item, and leaves the host alone on dispose', async t => {
+    const page = await (await browsers[engine].newContext(t)).newPage();
+    await page.route('https://www.iq.com/**', route => route.fulfill({ contentType: 'text/html', body: PAGE }));
+    await page.goto(EPISODE_1);
+    await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
+    const report = await page.evaluate(async () => {
+      // A host model: pressing a subtitle item moves its `selected` mark and shows or hides the painted cue.
+      const items = [...document.querySelectorAll<HTMLElement>('.iqp-pop-subtitle-lang .iqp-langlist-pop-txt')];
+      const cue = document.createElement('iqpdiv');
+      cue.setAttribute('data-player-hook', 'subtitleelem');
+      cue.textContent = 'Hello';
+      document.querySelector('.iqp-player')!.append(cue);
+      let presses = 0;
+      for (const item of items) {
+        item.addEventListener('click', () => {
+          presses++;
+          items.forEach(other => other.classList.toggle('selected', other === item));
+          cue.style.display = item.getAttribute('datakey') === 'close' ? 'none' : 'block';
+        });
+      }
+      const state = () => ({ cue: cue.style.display !== 'none', selected: items.find(item => item.classList.contains('selected'))?.getAttribute('datalid') });
+      const adapter = new window.IqiyiTest.IqiyiAdapter(null, window.IqiyiTest);
+      // iQIYI starts on its own default language: merely listing the tracks presses nothing.
+      await adapter.listCaptionTracks();
+      const listed = { ...state(), presses };
+      await adapter.activateCaptionTrack(null);
+      const off = state();
+      await adapter.activateCaptionTrack('iqiyi:5');
+      const japanese = state();
+      await adapter.activateCaptionTrack(null);
+      const offAgain = state();
+      const before = presses;
+      adapter.dispose();
+      return { listed, off, japanese, offAgain, disposePresses: presses - before, after: state() };
+    });
+    assert.deepEqual(report.listed, { cue: true, selected: '3', presses: 0 });
+    assert.deepEqual(report.off, { cue: false, selected: '-1' });
+    assert.deepEqual(report.japanese, { cue: true, selected: '5' });
+    assert.deepEqual(report.offAgain, { cue: false, selected: '-1' });
+    assert.equal(report.disposePresses, 0, 'leaving theater or switching RTE off must not touch the host menu');
+    assert.deepEqual(report.after, report.offAgain);
   });
 
   it('measures only the painted cue lines for the host-caption dock', async t => {
@@ -185,11 +232,11 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
       window.addEventListener('theater-everywhere-media-probe', event => {
         requests++;
         const { requestId } = JSON.parse(String((event as CustomEvent<string>).detail));
-        window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', { detail: { requestId, iqiyi: current } }));
+        window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', { detail: { requestId, providers: { iqiyi: current } } }));
       });
       const video = document.querySelector('video')!;
       Object.defineProperty(video, 'duration', { configurable: true, value: 2570 });
-      const adapter = new (window as unknown as { IqiyiTest: Api }).IqiyiTest.IqiyiAdapter(video);
+      const adapter = new (window as unknown as { IqiyiTest: Api }).IqiyiTest.IqiyiAdapter(video, window.IqiyiTest);
       const first = (await adapter.getChapters()).map(c => [c.title, c.start, c.end]);
       await adapter.getChapters();
       const cached = requests;
@@ -290,7 +337,7 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
     await page.goto(EPISODE_1);
     await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
     const report = await page.evaluate(() => {
-      const adapter = new window.IqiyiTest.IqiyiAdapter();
+      const adapter = new window.IqiyiTest.IqiyiAdapter(null, window.IqiyiTest);
       const list = adapter.listAudioTracks();
       document.querySelector('.iqp-pop-multitrack')!.remove();
       return { list, none: adapter.listAudioTracks() };
@@ -312,7 +359,7 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
     await page.goto(EPISODE_1);
     await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
     const report = await page.evaluate(async episode2 => {
-      const adapter = new window.IqiyiTest.IqiyiAdapter();
+      const adapter = new window.IqiyiTest.IqiyiAdapter(null, window.IqiyiTest);
       const clicks: string[] = [];
       for (const item of document.querySelectorAll('.iqp-pop-multitrack .iqp-langlist-pop-txt')) {
         item.addEventListener('click', () => clicks.push(item.getAttribute('data-player-hook')!));
@@ -353,7 +400,7 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
     await page.goto(EPISODE_1);
     await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
     const report = await page.evaluate(async () => {
-      const adapter = new window.IqiyiTest.IqiyiAdapter();
+      const adapter = new window.IqiyiTest.IqiyiAdapter(null, window.IqiyiTest);
       let notify = () => {};
       let calls = 0;
       const stop = adapter.observeAudioTracks(() => { calls++; notify(); });
@@ -370,7 +417,7 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
       // A second live observer settling means the host's change has been delivered to every
       // observer that was still subscribed; the stopped one must not have counted it.
       let second = 0;
-      const stopSecond = new window.IqiyiTest.IqiyiAdapter().observeAudioTracks(() => { second++; notify(); });
+      const stopSecond = new window.IqiyiTest.IqiyiAdapter(null, window.IqiyiTest).observeAudioTracks(() => { second++; notify(); });
       document.querySelector('.iqp-pop-multitrack [data-player-hook="1"]')!.classList.add('selected');
       while (second === 0) await new Promise<void>(resolve => { notify = resolve; });
       stopSecond();
@@ -392,7 +439,7 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
       }
       let changed = () => {};
       const controller = new AudioTrackController({ preference: () => 'pt', locales: () => ['en'], onChange: () => changed() });
-      const adapter = new IqiyiAdapter();
+      const adapter = new IqiyiAdapter(null, window.IqiyiTest);
       // Automatic selection presses the host item as soon as the list is read.
       controller.bind(adapter);
       const afterAuto = [...clicks];

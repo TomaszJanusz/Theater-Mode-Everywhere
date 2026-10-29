@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "iqiyi",
+  "hosts": [
+    {
+      "domain": "iq.com",
+      "includeSubdomains": true
+    }
+  ],
+  "home": "https://www.iq.com/",
+  "entries": {
+    "isolated": {
+      "file": "isolated.ts",
+      "runAt": "document_start"
+    },
+    "main": {
+      "file": "main.ts",
+      "runAt": "document_start"
+    }
+  }
+}

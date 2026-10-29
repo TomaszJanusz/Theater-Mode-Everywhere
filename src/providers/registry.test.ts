@@ -84,12 +84,8 @@ describe('provider registry', () => {
   });
 
   it('limits iQIYI to iq.com, which needs no MAIN-world patch', () => {
-    assert.equal(isIqiyiHost('www.iq.com'), true);
-    assert.equal(isIqiyiHost('iq.com.'), true);
-    assert.equal(isIqiyiHost('iq.com.evil.test'), false);
-    assert.equal(isIqiyiHost('notiq.com'), false);
-    assert.equal(isIqiyiHost('www.iqiyi.com'), false);
-    assert.deepEqual(matchingProviders('www.iq.com'), ['native', 'iqiyi']);
+    for (const host of ['www.iq.com', 'iq.com.']) assert.deepEqual(matchingProviders(host), ['native', 'iqiyi'], host);
+    for (const host of ['iq.com.evil.test', 'notiq.com', 'www.iqiyi.com']) assert.deepEqual(matchingProviders(host), ['native'], host);
     assert.equal(shouldPatchMainWorld('www.iq.com'), false);
     assert.equal(shouldAttachProvider('iqiyi', { ...defaultMediaProviderFlags(), iqiyi: false }, 'www.iq.com'), false);
     assert.equal(shouldAttachProvider('iqiyi', defaultMediaProviderFlags(), 'www.iq.com'), true);

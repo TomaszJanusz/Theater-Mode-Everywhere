@@ -1,11 +1,16 @@
-import { requestMediaProbe } from '../../media-features/probe';
+import type { MediaProbeSnapshot } from '../../media-features/probe';
 import type { AudioTrackList, CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from '../../media-features/types';
 import { observeProviderDom } from '../dom-watch';
 
 import { observeIqiyiAudioTracks, readIqiyiAudioTracks, selectIqiyiAudioTrack } from './audio';
 import { iqiyiCaptionOffItem, readIqiyiCaptionItems } from './captions';
 import { iqiyiPlayId, readIqiyiTitle } from './page';
-import { iqiyiChapters, type IqiyiSnapshot } from './play-info';
+import { iqiyiChapters, parseIqiyiSnapshot, type IqiyiSnapshot } from './play-info';
+
+/** The isolated runtime's shared probe owner, lent by the registry so the provider bundles no second copy. */
+export type IqiyiServices = {
+  requestMediaProbe(): Promise<MediaProbeSnapshot>;
+};
 
 const FAILED: CaptionActivationResult = { status: 'failed', delivery: 'none', cues: [] };
 
@@ -17,7 +22,7 @@ export class IqiyiAdapter implements MediaFeaturesAdapter {
   private snapshot: IqiyiSnapshot | null = null;
   private loadedFor: string | null = null;
 
-  constructor(private readonly video: HTMLVideoElement | null = null) {}
+  constructor(private readonly video: HTMLVideoElement | null, private readonly services: IqiyiServices) {}
 
   mediaId(): string | null {
     return iqiyiPlayId(window.location.pathname);
@@ -38,7 +43,7 @@ export class IqiyiAdapter implements MediaFeaturesAdapter {
   private async load(): Promise<void> {
     const id = this.mediaId();
     if (this.loadedFor === id && this.snapshot) return;
-    const snapshot = (await requestMediaProbe()).iqiyi ?? null;
+    const snapshot = parseIqiyiSnapshot((await this.services.requestMediaProbe()).providers?.iqiyi);
     // The page swaps its play-info after navigation; keep it only while this episode is still current.
     if (this.mediaId() !== id) return;
     this.snapshot = snapshot;
