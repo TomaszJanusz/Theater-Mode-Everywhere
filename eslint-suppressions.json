@@ -641,6 +641,9 @@
     }
   },
   "src/media-features/heatmap-path.ts": {
+    "sonarjs/no-inverted-boolean-check": {
+      "count": 1
+    },
     "sonarjs/regex-complexity": {
       "count": 1
     },
@@ -704,7 +707,7 @@
   },
   "src/media-features/parsers/bilibili.ts": {
     "import/order": {
-      "count": 6
+      "count": 5
     },
     "local/max-symbol-name-length": {
       "count": 3
@@ -754,6 +757,23 @@
     },
     "sonarjs/super-linear-regex": {
       "count": 2
+    }
+  },
+  "src/media-features/parsers/description-chapters.ts": {
+    "no-useless-escape": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/regex-complexity": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
     }
   },
   "src/media-features/parsers/disney-page.ts": {
@@ -849,22 +869,13 @@
   },
   "src/media-features/parsers/youtube-chapters.ts": {
     "local/max-symbol-name-length": {
-      "count": 4
-    },
-    "no-useless-escape": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    },
-    "sonarjs/no-nested-conditional": {
       "count": 3
     },
-    "sonarjs/regex-complexity": {
+    "sonarjs/cognitive-complexity": {
       "count": 1
     },
-    "sonarjs/super-linear-regex": {
-      "count": 1
+    "sonarjs/no-nested-conditional": {
+      "count": 2
     }
   },
   "src/media-features/parsers/youtube-heatmap-path.ts": {
@@ -872,7 +883,7 @@
       "count": 2
     },
     "sonarjs/no-inverted-boolean-check": {
-      "count": 3
+      "count": 2
     },
     "sonarjs/regex-complexity": {
       "count": 1
@@ -910,7 +921,7 @@
   },
   "src/media-features/patreon-adapter.ts": {
     "import/order": {
-      "count": 4
+      "count": 2
     },
     "sonarjs/cognitive-complexity": {
       "count": 1

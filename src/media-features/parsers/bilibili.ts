@@ -3,7 +3,7 @@ import { parseCaptionPayload } from './captions';
 import { sanitizeCaptionCueText } from '../sanitize';
 import type { CaptionCue, Chapter, PreviewFrame, TimelineHeatmap } from '../types';
 import { isAllowedMediaFetchUrl } from '../fetch-allowlist';
-import { heatmapSvgPath } from './youtube-heatmap-path';
+import { heatmapSvgPath } from '../heatmap-path';
 
 export type BilibiliCaption = {
   id: string;

@@ -20,11 +20,13 @@ import { DisneyAdapter } from './disney-adapter';
 import { captionSegmentsForWindow, dedupeCaptionCues } from './disney-adapter';
 import { MAX_CAPTION_BYTES } from './fetch-allowlist';
 import { isAllowedBrokerFetchUrl, isAllowedMediaFetchUrl, isAllowedPageFetchUrl } from './fetch-allowlist';
+import { heatmapRidgePath, heatmapSvgPath } from './heatmap-path';
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
+import { parseDescriptionChapters } from './parsers/description-chapters';
 import { getMuxPreviewFrame, parseMuxStoryboard } from './parsers/mux-storyboard';
 import { getVimeoPreviewFrame, parseVimeoThumbPreview } from './parsers/vimeo-thumbs';
-import { findYoutubeChapterMarkers, parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
+import { findYoutubeChapterMarkers } from './parsers/youtube-chapters';
 import {
   defaultMediaProviderFlags,
   mediaProviderFlagStorageUpdate,
@@ -86,7 +88,7 @@ describe('immediate provider titles', () => {
     }
   });
 });
-import { heatmapRidgePath, heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
+import { readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
 import {
   findYoutubeHeatmap,
   isYoutubeWatchJsonUrl,
@@ -278,7 +280,7 @@ describe('youtube chapter parser', () => {
 00:12:30 Deep dive`;
 
   it('accepts official timestamp rules', () => {
-    const chapters = parseYoutubeDescriptionChapters(description, 20 * 60);
+    const chapters = parseDescriptionChapters(description, 20 * 60);
     assert.equal(chapters.length, 3);
     assert.equal(chapters[0].start, 0);
     assert.equal(chapters[1].title, 'Architecture');
@@ -287,7 +289,7 @@ describe('youtube chapter parser', () => {
   });
 
   it('accepts a two-stamp Contents list', () => {
-    const chapters = parseYoutubeDescriptionChapters(
+    const chapters = parseDescriptionChapters(
       'Contents:\n00:00:00 - Intro\n00:01:03 - Content\n\n#Mrow #MrowLive #MrowReal',
       702
     );
@@ -300,12 +302,12 @@ describe('youtube chapter parser', () => {
   });
 
   it('rejects a single stamp or a list that does not start at 00:00', () => {
-    assert.equal(parseYoutubeDescriptionChapters('00:00 A').length, 0);
-    assert.equal(parseYoutubeDescriptionChapters('00:10 A\n00:20 B\n00:40 C').length, 0);
+    assert.equal(parseDescriptionChapters('00:00 A').length, 0);
+    assert.equal(parseDescriptionChapters('00:10 A\n00:20 B\n00:40 C').length, 0);
   });
 
   it('keeps chapters when one segment is shorter than 10 seconds', () => {
-    const chapters = parseYoutubeDescriptionChapters(
+    const chapters = parseDescriptionChapters(
       `Chapters!
 
 00:00 - Introduction
@@ -362,7 +364,7 @@ describe('youtube chapter parser', () => {
   });
 
   it('drops timestamps past duration', () => {
-    assert.equal(parseYoutubeDescriptionChapters(description, 30).length, 0);
+    assert.equal(parseDescriptionChapters(description, 30).length, 0);
   });
 });
 
