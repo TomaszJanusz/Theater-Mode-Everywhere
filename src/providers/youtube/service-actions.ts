@@ -19,9 +19,12 @@ export function youtubeAdShowing(doc: Document, element?: HTMLElement): boolean 
   return servicePlayer(doc, YOUTUBE_PLAYER_SELECTOR, element)?.classList.contains('ad-showing') === true;
 }
 
-/** The runtime lends its element tokens and DOM observation; the source bundles neither. */
+/**
+ * The runtime lends its element tokens and DOM observation. Both are required: with the default token the
+ * source would count elements in this script's own copy of native-service-actions, apart from the runtime's.
+ */
 export type YouTubeActionHooks = NativeServiceActionHooks & {
-  elementToken?: (element: Element) => number;
+  elementToken: (element: Element) => number;
   observe: typeof observeProviderDom;
 };
 

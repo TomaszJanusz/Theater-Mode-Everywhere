@@ -7,7 +7,6 @@ import { bilibiliIntlSubtitleUrl } from './parsers/bilibili-intl';
 import { isVikiCaptionUrl, isVikiPreviewUrl } from './parsers/viki';
 import { isYoutubeTimedtextUrl } from './youtube-caption-url';
 
-
 export type MediaFetchRequest = {
   provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'crunchyroll' | 'soop' | 'viki';
   kind: 'caption-track' | 'storyboard-vtt' | 'storyboard-json' | 'chapters';
