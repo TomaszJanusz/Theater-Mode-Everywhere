@@ -31,6 +31,11 @@ export type ProviderChat = {
   shellSelector: string;
   /** Events at the page (document or window) after which the chat may have moved to a new route. */
   navigationEvents: readonly string[];
+  /**
+   * Watches the bound surface for native open/close flips that change no structure, such as a class on a
+   * player wrapper, and calls `changed` (no reads) so the controller re-reads. Returns idempotent cleanup.
+   */
+  observeVisibility?(surface: ChatSurface, changed: () => void): () => void;
   /** Finer structure rules for services whose chat mounts through custom elements or frames. */
   structure?: {
     attributeChanged(target: Element, name: string | null): boolean;

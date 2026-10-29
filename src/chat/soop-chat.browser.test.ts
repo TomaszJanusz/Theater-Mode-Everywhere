@@ -21,12 +21,13 @@ const VOD = 'https://vod.sooplive.com/player/211006561';
 
 // Structure recorded from sooplive.com: the panel `#chatbox` lives in the column `#chatting_area`
 // inside the player's own layout, and the player carries `chat_open` while the panel is shown.
-// The player bar's chat button toggles it; in the fixture a click flips the class like the host.
+// The player bar's chat button toggles it; in the fixture a click flips the class like the host. The panel's
+// own close button drops the class and hides the column inline, which the player button undoes.
 const page = (open: boolean) => `<!doctype html><body>
 <div id="webplayer" class="${open ? 'chat_open ' : ''}list_open"><div id="webplayer_contents">
   <div id="player_area"><div id="player"><video id="livePlayer"></video>
-    <ul><li class="btn_chat"><button id="chatToggle" type="button" onclick="document.getElementById('webplayer').classList.toggle('chat_open'); window.nativeClicks = (window.nativeClicks || 0) + 1">Chat window on/off</button></li></ul></div></div>
-  <div class="wrapping side"><section class="chatting_box"><div id="chatting_area"><div id="chatbox" class="chatbox"><div id="chat_area"></div><input id="draft"><button id="send" type="button">Send</button></div></div></section></div>
+    <ul><li class="btn_chat"><button id="chatToggle" type="button" onclick="const open = document.getElementById('webplayer').classList.toggle('chat_open'); document.getElementById('chatting_area').style.display = open ? '' : 'none'; window.nativeClicks = (window.nativeClicks || 0) + 1">Chat window on/off</button></li></ul></div></div>
+  <div class="wrapping side"><section class="chatting_box"><div id="chatting_area"><div id="chatbox" class="chatbox"><div class="area_header"><a id="chatClose" href="javascript:;" tip="Close" onclick="document.getElementById('webplayer').classList.remove('chat_open'); document.getElementById('chatting_area').style.display = 'none'">Hide Chat Area</a></div><div id="chat_area"></div><input id="draft"><button id="send" type="button">Send</button></div></div></section></div>
 </div></div></body>`;
 
 async function open(t: TestContext, engine: keyof typeof browsers, url: string, body: string): Promise<Page> {
@@ -143,6 +144,54 @@ for (const engine of testEngines()) describe(`${engine} SOOP native chat`, () =>
       return result;
     })()`);
     assert.deepEqual(report, { offered: ['soop', 'battleland/297994793', true], seeded: [true, false], clicks: 1, opened: true, shown: true, whenOpen: null, disabled: null });
+  });
+
+  it('gives the picture the column when the panel close button hides the chat, and reopens it through the player', async t => {
+    const tab = await open(t, engine, LIVE, page(true));
+    await tab.clock.install();
+    await tab.evaluate(`(() => {
+      document.documentElement.classList.add('theater-everywhere-html-active');
+      window.__saved = [];
+      window.__layouts = 0;
+      window.__controller = new NativeChat.ChatController({ document, href: () => ${JSON.stringify(LIVE)}, onChange() {},
+        onLayoutChange: () => window.__layouts++, persistPreference: (provider, preference) => window.__saved.push([provider, preference.visible]) });
+    })()`);
+    const read = () => tab.evaluate(`(() => {
+      const html = document.documentElement;
+      return { visible: window.__controller.state.visible, available: window.__controller.state.available,
+        column: html.hasAttribute('data-theater-chat-visible'), video: html.style.getPropertyValue('--theater-video-width'),
+        hidden: document.getElementById('chatting_area').hasAttribute('data-theater-chat-hidden') };
+    })()`);
+    const shown = await read();
+    assert.deepEqual(shown, { visible: true, available: true, column: true, video: `${1280 - 360}px`, hidden: false });
+
+    await tab.locator('#chatClose').click();
+    await tab.clock.runFor(80);
+    assert.deepEqual(await read(), { visible: false, available: true, column: false, video: '1280px', hidden: true });
+    assert.deepEqual(await tab.evaluate('window.__saved'), [['soop', false]], 'the native close is saved like the theater toggle');
+
+    // Other class flips on the player are not visibility changes.
+    // Neither other class flips on the player nor a timer re-read the page while the chat stays closed.
+    await tab.evaluate(`(() => {
+      window.__lookups = 0;
+      const query = document.querySelector.bind(document);
+      document.querySelector = selector => { if (selector.includes('btn_chat')) window.__lookups++; return query(selector); };
+      document.getElementById('webplayer').classList.toggle('list_open');
+    })()`);
+    await tab.clock.runFor(10_000);
+    assert.equal(await tab.evaluate('window.__lookups'), 0);
+
+    await tab.evaluate('window.__controller.show()');
+    await tab.clock.runFor(80);
+    assert.deepEqual(await read(), shown);
+    assert.equal(await tab.evaluate('window.nativeClicks'), 1, 'reopening goes through the player button once');
+    assert.equal(await tab.evaluate("document.getElementById('chatting_area').style.display"), '');
+
+    await tab.evaluate('window.__controller.dispose()');
+    const disposed = await tab.evaluate(`(() => { document.getElementById('chatClose').click(); return window.__layouts; })()`);
+    await tab.clock.runFor(10_000);
+    assert.deepEqual([await tab.evaluate('window.__layouts'), await tab.evaluate("document.documentElement.hasAttribute('data-theater-chat-active')")],
+      [disposed, false], 'disposal disconnects the observer');
   });
 
   it('keeps the requested theme but leaves SOOP its own appearance', async t => {
