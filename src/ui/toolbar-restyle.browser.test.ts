@@ -106,9 +106,16 @@ for (const engine of testEngines()) {
 
         await arm(page, true);
         await page.clock.runFor(TOOLBAR_AUTO_HIDE_DELAY_MS);
+        if (captions) {
+          // Captions stay clear of the bar until its fade, which runs in real time, has ended.
+          await page.waitForFunction(() => getComputedStyle(document.getElementById('theater-everywhere-ui')!.shadowRoot!
+            .querySelector('.theater-controls-wrapper')!).opacity === '0');
+          await page.clock.runFor(100);
+        }
         assert.deepEqual(await arm(page, false), [], 'hiding the bar wrote page-wide state');
         // Idle hides the pointer over the picture; the page behind the stage keeps its own.
         assert.deepEqual(await cursors(page), { picture: 'none', page: 'auto', bar: pinned });
+        if (captions) assert.equal(await captionBottom(page), CAPTION_DOCK_REST_BOTTOM, 'the captions return to rest');
       }
 
       await page.keyboard.press('Escape');
