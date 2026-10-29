@@ -26,7 +26,7 @@ import {
 } from './playback-data';
 
 
-/** Set while a Viki track is drawn by the player; providers/viki/presentation.css hides the host's own cues on it. */
+/** Set while the menu offers the episode's tracks; providers/viki/presentation.css hides the host's own cues on it. */
 const HIDDEN_ATTRIBUTE = 'data-te-viki-captions-hidden';
 
 const PLAYER = '#vmplayer_id.video-js';
@@ -72,7 +72,8 @@ async function readPlayback(videoId: string): Promise<VikiPlayback | null> {
 
 /**
  * Viki paints subtitles into the player's DOM, so the extension draws its own from the files the
- * page itself lists. The page's cues stay the host's until the viewer picks a track here.
+ * page itself lists. Once those are in the menu, theater hides the page's cues, so Off shows none and a
+ * picked track shows only that one. Without them Viki keeps its own subtitles.
  */
 export class VikiAdapter implements MediaFeaturesAdapter {
   private playback: VikiPlayback | null = null;
@@ -103,6 +104,7 @@ export class VikiAdapter implements MediaFeaturesAdapter {
     const pending = readPlayback(videoId).then(async playback => {
       if (generation !== this.generation || currentVideoId() !== videoId || !playback) return;
       this.playback = playback;
+      this.hostCaptionsHidden(this.offersTracks());
       const previewUrl = playback.previewUrl;
       const body = previewUrl && isVikiPreviewUrl(previewUrl, videoId) ? await this.requestPageFetch(previewUrl, 15000) : null;
       if (generation !== this.generation || this.playback !== playback) return;
@@ -137,7 +139,7 @@ export class VikiAdapter implements MediaFeaturesAdapter {
 
   async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     if (id === null) {
-      this.hostCaptionsHidden(false);
+      this.hostCaptionsHidden(this.offersTracks());
       return { status: 'off', delivery: 'none', cues: [] };
     }
     await this.load();
@@ -238,6 +240,11 @@ export class VikiAdapter implements MediaFeaturesAdapter {
 
   mediaId(): string | null {
     return this.current()?.videoId ?? null;
+  }
+
+  /** The menu lists this episode's tracks, so it, not Viki, describes what is on screen. */
+  private offersTracks(): boolean {
+    return Boolean(this.current()?.captionTracks.length);
   }
 
   private hostCaptionsHidden(hidden: boolean): void {
