@@ -54,8 +54,8 @@ export type ProviderChat = {
   };
 };
 
-/** Only hooks used by the pilot. Stateful shared services are supplied by the owning runtime. */
-export type ProviderHooks = {
+/** Hooks both worlds' entries may register: MAIN's shortcut capture and fetch admission need them too. */
+type SharedProviderHooks = {
   id: MediaProviderId;
   contractVersion: 1;
   watchPlayback: WatchPlayback;
@@ -64,14 +64,6 @@ export type ProviderHooks = {
    * (it has no provider registry), such as YouTube's timedtext, stays in the shared allowlist.
    */
   allowsMediaFetch?(request: MediaFetchRequest, base?: string): boolean;
-  createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
-  /** Native presentation remains active with the data integration disabled. */
-  stage?: ProviderStage;
-  /** A fresh source per composite adapter; the source owns caption measurements and cleanup. */
-  hostCaptions?: () => HostCaptionLayoutSource;
-  /** The adapter leaves its title to native page metadata rather than providing a service title. */
-  titleFromPage?: boolean;
-  launcherPlacement?: LauncherPlacementFactory;
   /** Host events the shared runtime follows on this provider's pages, by what they signal. */
   events?: {
     /** The host starts replacing its page: page reads abort and the theater viewport holds. */
@@ -81,6 +73,19 @@ export type ProviderHooks = {
     /** New media data (title, captions, chapters) may be available; window-level, any target. */
     media?: readonly string[];
   };
+  chat?: ProviderChat;
+};
+
+/** Hooks the isolated-world runtime reads. */
+type IsolatedOnlyHooks = {
+  createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
+  /** Native presentation remains active with the data integration disabled. */
+  stage?: ProviderStage;
+  /** A fresh source per composite adapter; the source owns caption measurements and cleanup. */
+  hostCaptions?: () => HostCaptionLayoutSource;
+  /** The adapter leaves its title to native page metadata rather than providing a service title. */
+  titleFromPage?: boolean;
+  launcherPlacement?: LauncherPlacementFactory;
   /** Host clocks, live bounds and seek dispatch in the isolated world. */
   timeline?: ProviderTimeline;
   timelineMarkers?: (video: HTMLElement) => TimelineMarkerSource | null;
@@ -94,18 +99,34 @@ export type ProviderHooks = {
     /** Host queue actions; each claimed direction (including a confirmed end) hides host controls for it. */
     queue?(root: ParentNode, video: HTMLVideoElement | null | undefined, helpers: PlaylistHelpers): { actions: PlaylistAction[]; claimed: Set<PlaylistDirection> };
   };
-  chat?: ProviderChat;
-  /** MAIN: response harvesting through the core's single fetch, Response and XHR observers. */
+};
+
+/** Hooks the MAIN-world runtime reads. */
+type MainOnlyHooks = {
+  /** Response harvesting through the core's single fetch, Response and XHR observers. */
   harvest?: ProviderHarvest;
-  /** MAIN: a loader for page fetches of this provider's URLs (already admitted by the allowlist); null uses the default. */
+  /** A loader for page fetches of this provider's URLs (already admitted by the allowlist); null uses the default. */
   pageFetch?(url: string): Promise<string | null> | null;
-  /** MAIN: perform a requested seek through the host player; false leaves it to the next provider or the element. */
+  /** Perform a requested seek through the host player; false leaves it to the next provider or the element. */
   seek?(detail: MediaSeekDetail, video: Element | null): boolean;
-  /** MAIN: this provider's entry in the snapshot probe result, read on each probe request. */
+  /** This provider's entry in the snapshot probe result, read on each probe request. */
   probe?(): unknown;
-  /** MAIN: called once at startup, after registration closed and the harvest observers are installed. */
+  /** Called once at startup, after registration closed and the harvest observers are installed. */
   install?: () => void;
 };
+
+type Forbidden<T> = { [K in keyof T]?: never };
+
+/**
+ * What an entry registers in its own world. The other world's hooks are `never`, so a hook the runtime of that
+ * world would silently ignore is a compile error rather than lost behavior.
+ */
+export type IsolatedProviderHooks = SharedProviderHooks & IsolatedOnlyHooks & Forbidden<MainOnlyHooks>;
+export type MainProviderHooks = SharedProviderHooks & MainOnlyHooks & Forbidden<IsolatedOnlyHooks>;
+export type ProviderWorldHooks = { isolated: IsolatedProviderHooks; main: MainProviderHooks };
+
+/** The registry's merged view of a provider: whichever hooks its entries registered. Stateful shared services come from the runtime. */
+export type ProviderHooks = SharedProviderHooks & IsolatedOnlyHooks & MainOnlyHooks;
 
 /**
  * Registered harvest. The core keeps the only wrapper of fetch, Response.json/text and XHR, owns the single fetch
@@ -144,7 +165,7 @@ export type ProviderServices = {
 };
 export type ProviderRuntimeApi<W extends ProviderWorld = ProviderWorld> = {
   contractVersion: 1;
-  register(hooks: ProviderHooks): boolean;
+  register(hooks: ProviderWorldHooks[W]): boolean;
   start(): void;
   services?: ProviderServices[W];
 };
