@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Theater and fullscreen no longer end when a video site briefly hides its player while switching videos; they still end when the player stays gone.
 - Switch Video on Page (Shift+T or the player settings menu) now fills the window with the next video on pages that list several videos, such as a Telegram channel's post list (t.me/s/…). The next video could appear shifted up and to the left, partly or entirely off-screen, with the page showing around it.
 - Theater opens and closes with less of a freeze on large pages such as YouTube. Leaving theater no longer holds up the page, and entering it holds it up for a shorter moment while the player is built. Theater looks and behaves as before.
+- Hovering the subtitle button no longer leaves a keyboard focus ring on it. On long language lists, hovering the button put the cursor in the search field, and moving away then focused the button with the ring that W/A/S/D navigation draws, which stayed when the controls reappeared. Hover now only shows the menu, and closing it with the pointer leaves no focus; keyboard users keep their place on the button.
 
 ## [2.0.8] - 2026-10-28
 

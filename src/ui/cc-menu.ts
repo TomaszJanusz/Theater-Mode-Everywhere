@@ -137,8 +137,10 @@ export class ChoiceMenu {
       this.select(choice.id);
     });
     this.scope.listen(config.closeEvents ?? panel, MENU_CLOSE_EVENT, () => {
+      // Focus stays on the bar only when a key put it on a row. A pointer close, or a text field a click
+      // focused, must not move focus: a script focus() after a focused text field draws the keyboard ring.
       const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
-      if (active && panel.contains(active)) trigger.focus({ preventScroll: true });
+      if (active && active !== this.input && panel.contains(active) && active.matches(':focus-visible')) trigger.focus({ preventScroll: true });
       // A closed menu is not displayed and keeps no scroll offset.
       this.scrolled = 0;
       this.clearSearch();
@@ -189,7 +191,12 @@ export class ChoiceMenu {
     }
     const first = this.list.querySelector<HTMLButtonElement>('button');
     if (key === 'ArrowDown') { first?.focus(); return true; }
-    if (key === 'Enter') { first?.click(); return true; }
+    if (key === 'Enter') {
+      // The pick closes the menu while the field still has focus, so the keyboard user's place is kept here.
+      if (first) this.trigger.focus({ preventScroll: true });
+      first?.click();
+      return true;
+    }
     return false;
   }
 

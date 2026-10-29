@@ -86,7 +86,7 @@ export function bindMenuPopover(options: {
   scope: DisposableScope;
   onBeforeOpen?: () => void;
   prepare?: () => void;
-  /** Focus the leading control for pointer opening as well as keyboard opening. */
+  /** Focus the leading control when a click opens the menu. Hover only reveals it and never moves focus. */
   focusOnOpen?: () => HTMLElement | undefined;
   /** Overrides the first button, for panels whose leading rows can be hidden. */
   firstFocus?: () => HTMLElement | undefined;
@@ -154,9 +154,10 @@ export function bindMenuPopover(options: {
     host.classList.add(OPEN_CLASS);
     if (pin) panel.classList.add(PINNED_CLASS);
     syncExpanded();
-    const focusTarget = focusFirst
-      ? options.firstFocus?.() ?? panel.querySelector<HTMLButtonElement>('button')
-      : options.focusOnOpen?.();
+    // Hover (`pin` false) reveals the menu without taking focus: a pointer must not leave focus behind.
+    let focusTarget: HTMLElement | null | undefined;
+    if (focusFirst) focusTarget = options.firstFocus?.() ?? panel.querySelector<HTMLButtonElement>('button');
+    else if (pin) focusTarget = options.focusOnOpen?.();
     focusTarget?.focus({ preventScroll: true });
     if (!already) {
       userScrolled = false;
