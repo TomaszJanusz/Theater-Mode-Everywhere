@@ -1,7 +1,7 @@
-import { youtubePlayerControl } from '../youtube-player-controls';
+import type { HostSeekDispatch, HostSeekInput, ProviderTimeline, TimelineBounds } from '../timeline/types';
+import { LIVE_EDGE_SECONDS, MAX_LIVE_DVR_SECONDS, MIN_LIVE_DVR_SECONDS } from '../timeline-limits';
 
-import { LIVE_EDGE_SECONDS, MAX_LIVE_DVR_SECONDS, MIN_LIVE_DVR_SECONDS } from './limits';
-import type { HostSeekDispatch, HostSeekInput, ProviderTimeline, TimelineBounds } from './types';
+import { youtubePlayerControl } from './player-controls';
 
 const YOUTUBE_WALL_OFFSET_RESYNC_SECONDS = 5;
 

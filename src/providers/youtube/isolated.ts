@@ -4,6 +4,8 @@ import { providerRuntime } from '../provider-api';
 import { youtubeLauncherPlacement } from './launcher-placement';
 import { findYouTubeQueueNavigation, readYouTubeControls, YOUTUBE_PLAYER_SELECTOR } from './navigation';
 import { createYouTubeServiceActions } from './service-actions';
+import { youtubeSponsorBlockSource } from './sponsorblock';
+import { youtubeTimeline } from './timeline';
 import { youtubeWatchPlayback } from './watch-playback';
 
 const api = providerRuntime('isolated');
@@ -13,6 +15,8 @@ if (services) api?.register({
   watchPlayback: youtubeWatchPlayback,
   createAdapter: video => new YouTubeAdapter(video),
   launcherPlacement: youtubeLauncherPlacement,
+  timeline: youtubeTimeline,
+  timelineMarkers: youtubeSponsorBlockSource,
   navigation: { playerSelector: YOUTUBE_PLAYER_SELECTOR, readControls: readYouTubeControls, queue: findYouTubeQueueNavigation },
   serviceActions: options => createYouTubeServiceActions({ ...options, elementToken: services.serviceElementToken })
 });

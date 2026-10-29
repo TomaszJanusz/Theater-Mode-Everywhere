@@ -3,12 +3,13 @@ import type { ParsedChatLocation } from '../chat/url';
 import type { ServiceActionSource } from '../core/service-actions';
 import type { MediaFetchRequest } from '../media-features/fetch-allowlist';
 import type { MediaProviderId } from '../media-features/provider-flags';
-import type { MediaFeaturesAdapter } from '../media-features/types';
+import type { MediaFeaturesAdapter, TimelineMarkerSource } from '../media-features/types';
 import type { PlaylistAction, PlaylistDirection } from '../playlist-nav';
 
 import type { LauncherPlacementFactory } from './launcher-placement';
 import type { NativeServiceActionHooks } from './native-service-actions';
 import type { CollectedControl, PlaylistHelpers } from './playlist-controls';
+import type { ProviderTimeline } from './timeline/types';
 import type { WatchPlayback } from './watch-playback';
 
 export type ProviderWorld = 'isolated' | 'main';
@@ -35,6 +36,9 @@ export type ProviderHooks = {
   allowsMediaFetch?(request: MediaFetchRequest, base?: string): boolean;
   createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
   launcherPlacement?: LauncherPlacementFactory;
+  /** Host clocks, live bounds and seek dispatch in the isolated world. */
+  timeline?: ProviderTimeline;
+  timelineMarkers?: (video: HTMLElement) => TimelineMarkerSource | null;
   /** `options` binds the source to the theater session's document and surface. */
   serviceActions?: (options: NativeServiceActionHooks) => ServiceActionSource;
   navigation?: {
