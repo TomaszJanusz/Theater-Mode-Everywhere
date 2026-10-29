@@ -106,8 +106,6 @@
       "identifier": 2
     },
     "src/providers": {
-      "serviceId": 1,
-      "domain": 2,
       "identifier": 2
     }
   },

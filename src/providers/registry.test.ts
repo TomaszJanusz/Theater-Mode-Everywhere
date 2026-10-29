@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { defaultMediaProviderFlags } from '../media-features/provider-flags';
 
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isSoopHost, isTencentHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isSoopHost, isTencentHost, isYouTubeHost } from './hosts';
 import {
   matchingProviders,
   markFetchPatched,
