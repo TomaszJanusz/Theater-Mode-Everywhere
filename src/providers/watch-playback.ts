@@ -1,7 +1,10 @@
-import { createSessionId } from '../protocol/frame-messages';
 import { mediaProviderIntegrationEnabled, type MediaProviderFlags, type MediaProviderId } from '../media-features/provider-flags';
 import { hasPlayableTheaterMedia, isSwitchableTheaterVideo } from '../switchable-videos';
 import { PROVIDER_DEFINITIONS } from './registry';
+import {
+  isRequestId, MINIPLAYER_QUERY, MINIPLAYER_RESPONSE, PREPARING_QUERY, PREPARING_RESPONSE, REPLACEMENT_QUERY,
+  REPLACEMENT_RESPONSE, WATCH_QUERY, WATCH_RESPONSE
+} from './watch-bridge';
 
 /** URL qualification first, then provider-specific confirmation of the watch player. */
 export type WatchPlayback = {
@@ -86,60 +89,7 @@ export function observeProviderWatchPlaybackChanges(onChange: () => void): () =>
   };
 }
 
-const WATCH_QUERY = 'theater-everywhere-watch-playback-query';
-const WATCH_RESPONSE = 'data-te-watch-playback-response';
-const REPLACEMENT_QUERY = 'theater-everywhere-watch-replacement-query';
-const REPLACEMENT_RESPONSE = 'data-te-watch-replacement-response';
-const PREPARING_QUERY = 'theater-everywhere-watch-preparing-query';
-const PREPARING_RESPONSE = 'data-te-watch-preparing-response';
-const MINIPLAYER_QUERY = 'theater-everywhere-miniplayer-query';
-const MINIPLAYER_RESPONSE = 'data-te-miniplayer-response';
-
-const isRequestId = (value: unknown): value is string => typeof value === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(value);
-
-/** The response after the request id, or null when MAIN did not answer for this element. */
-function askBridge(video: HTMLVideoElement, query: string, responseAttribute: string): string | null {
-  const doc = video.ownerDocument;
-  const view = doc.defaultView;
-  if (!view) return null;
-  const href = view.location.href;
-  const requestId = createSessionId();
-  view.dispatchEvent(new CustomEvent(query, { detail: requestId }));
-  // Read the attribute on this element: a document query cannot see videos in shadow roots.
-  const response = video.getAttribute(responseAttribute);
-  video.removeAttribute(responseAttribute);
-  if (!response?.startsWith(requestId) || !video.isConnected || view.location.href !== href) return null;
-  return response.slice(requestId.length);
-}
-
-function confirmThroughBridge(video: HTMLVideoElement, query: string, responseAttribute: string): boolean {
-  return askBridge(video, query, responseAttribute) === '';
-}
-
-/** Identity only, never playback state. Synchronous, string-only bridge, like queue navigation, including Firefox. */
-export function confirmProviderWatchVideo(video: HTMLVideoElement): boolean {
-  return confirmThroughBridge(video, WATCH_QUERY, WATCH_RESPONSE);
-}
-
-/** Manual sessions need the same identity check even with the integration disabled. */
-export function confirmWatchReplacement(video: HTMLVideoElement): boolean {
-  return confirmThroughBridge(video, REPLACEMENT_QUERY, REPLACEMENT_RESPONSE);
-}
-
-/** Countdown-only confirmation (`WatchPlayback.preparingVideo`); never sufficient to enter theater. */
-export function confirmProviderPreparingVideo(video: HTMLVideoElement): boolean {
-  return confirmThroughBridge(video, PREPARING_QUERY, PREPARING_RESPONSE);
-}
-
-/**
- * The content identity of a video the host parked in its miniplayer, as its player reports it, or
- * null. Same string-only, top-frame, href-checked bridge as the watch queries; it works with the
- * integration disabled because manual sessions need it.
- */
-export function readMiniplayerIdentity(video: HTMLVideoElement): string | null {
-  const identity = /^:([\w-]{1,64})$/.exec(askBridge(video, MINIPLAYER_QUERY, MINIPLAYER_RESPONSE) ?? '')?.[1];
-  return identity ?? null;
-}
+export { confirmProviderPreparingVideo, confirmProviderWatchVideo, confirmWatchReplacement, readMiniplayerIdentity } from './watch-bridge';
 
 function installQuery(query: string, responseAttribute: string,
   confirm: (page: ProviderWatchPage) => HTMLVideoElement | null | undefined, requireIntegration = true): void {

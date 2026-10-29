@@ -24,7 +24,13 @@
       ],
       "exclude_matches": [
         "*://*.sooplive.com/*",
-        "*://*.sooplive.com./*"
+        "*://*.sooplive.com./*",
+        "*://*.youtube.com/*",
+        "*://*.youtube.com./*",
+        "*://*.youtube-nocookie.com/*",
+        "*://*.youtube-nocookie.com./*",
+        "*://youtu.be/*",
+        "*://youtu.be./*"
       ],
       "js": [
         "content.js",
@@ -54,11 +60,37 @@
     },
     {
       "matches": [
+        "*://*.youtube.com/*",
+        "*://*.youtube.com./*",
+        "*://*.youtube-nocookie.com/*",
+        "*://*.youtube-nocookie.com./*",
+        "*://youtu.be/*",
+        "*://youtu.be./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/youtube/isolated.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
         "<all_urls>"
       ],
       "exclude_matches": [
         "*://*.sooplive.com/*",
-        "*://*.sooplive.com./*"
+        "*://*.sooplive.com./*",
+        "*://*.youtube.com/*",
+        "*://*.youtube.com./*",
+        "*://*.youtube-nocookie.com/*",
+        "*://*.youtube-nocookie.com./*",
+        "*://youtu.be/*",
+        "*://youtu.be./*"
       ],
       "js": [
         "mainWorld.js",
@@ -76,6 +108,24 @@
       "js": [
         "mainWorld.js",
         "providers/soop/main.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://*.youtube.com./*",
+        "*://*.youtube-nocookie.com/*",
+        "*://*.youtube-nocookie.com./*",
+        "*://youtu.be/*",
+        "*://youtu.be./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/youtube/main.js",
         "mainWorldStart.js"
       ],
       "run_at": "document_start",

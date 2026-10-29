@@ -1,16 +1,28 @@
 import { isOnMiniplayerSurface } from '../providers/video-candidates';
-import { readMiniplayerIdentity } from '../providers/watch-playback';
+import { readMiniplayerIdentity } from '../providers/watch-bridge';
 
+import { sanitizeContentTitle } from './content-title';
+import type { MediaFetchRequest } from './fetch-allowlist';
 import { heatmapSvgPath } from './heatmap-path';
-import { parseCaptionPayload } from './parsers/captions';
+import type { parseCaptionPayload } from './parsers/captions';
 import { parseDescriptionChapters } from './parsers/description-chapters';
 import { parseYoutubeMarkerChapters } from './parsers/youtube-chapters';
 import { readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
 import { getStoryboardFrame, parseStoryboardSpec, type StoryboardSet } from './parsers/youtube-storyboard';
 import { PREVIEW_DISPLAY_WIDTH } from './preview-display';
-import type { MediaFetchRequest } from './fetch-allowlist';
 import type { MediaProbeSnapshot } from './probe';
-import { sanitizeContentTitle } from './content-title';
+import type {
+  AudioTrackList,
+  CaptionActivationResult,
+  CaptionCue,
+  CaptionTrack,
+  Chapter,
+  MediaCapabilities,
+  MediaFeaturesAdapter,
+  PreviewFrame,
+  PreviewSource,
+  TimelineHeatmap
+} from './types';
 import {
   queryYouTubeAudioTracks,
   requestYouTubeAudioTrack,
@@ -24,18 +36,6 @@ import {
   firstMatchingYoutubeSnapshot, normalizeYoutubePlayerResponse, normalizeYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls,
   readPublishedYoutubeSnapshot, readYoutubeSnapshotFromDom, type YoutubeCaptionMeta, type YoutubePlayerSnapshot
 } from './youtube-snapshot';
-import type {
-  AudioTrackList,
-  CaptionActivationResult,
-  CaptionCue,
-  CaptionTrack,
-  Chapter,
-  MediaCapabilities,
-  MediaFeaturesAdapter,
-  PreviewFrame,
-  PreviewSource,
-  TimelineHeatmap
-} from './types';
 
 const cueCache = new Map<string, CaptionCue[]>();
 /** Parsed cues for the active track plus a short return window. Not the raw timedtext string. */
@@ -209,13 +209,14 @@ function captionUrlVariants(baseUrl: string): string[] {
   return variants;
 }
 
-/** The isolated runtime's MAIN bridges, lent so the adapter never bundles a second request owner. */
-export type YouTubePageRequests = {
+/** Lent by the isolated runtime: its MAIN bridges (never a second request owner) and its caption parser. */
+export type YouTubeAdapterServices = {
   requestMediaProbe(): Promise<MediaProbeSnapshot>;
   requestPageFetch(url: string, timeoutMs?: number): Promise<string | null>;
+  parseCaptionPayload: typeof parseCaptionPayload;
 };
 
-async function fetchCaptionTrack(url: string, requestPageFetch: YouTubePageRequests['requestPageFetch']): Promise<string | null> {
+async function fetchCaptionTrack(url: string, requestPageFetch: YouTubeAdapterServices['requestPageFetch']): Promise<string | null> {
   let absolute = url;
   try {
     absolute = new URL(url, window.location.href).toString();
@@ -265,7 +266,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   private loadedParked = false;
 
   /** @param video The bound video: parked in the miniplayer, it, not the URL, identifies the content. */
-  constructor(private readonly video: HTMLVideoElement | null, private readonly page: YouTubePageRequests) {}
+  constructor(private readonly video: HTMLVideoElement | null, private readonly page: YouTubeAdapterServices) {}
 
   /**
    * The content id this adapter's data must describe: the URL's, or for a video parked in the
@@ -381,7 +382,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     for (const url of captionUrlVariants(fetchUrl)) {
       const body = await fetchCaptionTrack(url, this.page.requestPageFetch);
       if (!body) continue;
-      const cues = parseCaptionPayload(body);
+      const cues = this.page.parseCaptionPayload(body);
       if (cues.length > 0 && activationMediaId === this.mediaId() && this.snapshotMatchesPage()) {
         rememberParsedCues([track.baseUrl, fetchUrl], cues);
         await requestYoutubePlayerCaptions({ enabled: false });

@@ -956,9 +956,6 @@
     }
   },
   "src/media-features/youtube-adapter.ts": {
-    "import/order": {
-      "count": 3
-    },
     "local/max-symbol-name-length": {
       "count": 1
     },
@@ -1742,12 +1739,17 @@
       "count": 3
     }
   },
+  "src/providers/watch-bridge.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
   "src/providers/watch-playback.ts": {
     "import/order": {
-      "count": 2
+      "count": 1
     },
     "local/max-symbol-name-length": {
-      "count": 4
+      "count": 2
     }
   },
   "src/providers/youtube/chat-palette.ts": {

@@ -7,9 +7,10 @@ import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { bundleModules } from '../test-utils/player-boot';
 import { testEngines } from '../test-utils/test-engines';
 
-// The shipped MAIN order in one script: runtime API, bundled provider registration, then start.
+// The manifest's MAIN order on YouTube in one script: runtime, YouTube's entry, then start.
 const shipped = bundleModules([
   "import './entries/main-world';",
+  "import './providers/youtube/main';",
   "import './entries/main-world-start';",
   "export { readCachedTimedtextBody } from './providers/youtube/player-main';",
   "export { providerRuntime } from './providers/provider-api';",

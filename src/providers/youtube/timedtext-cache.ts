@@ -1,4 +1,4 @@
-import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
+import { MAX_CAPTION_BYTES } from '../../platform/bounded-body';
 import {
   findCachedTimedtextRecord,
   type CachedTimedtext

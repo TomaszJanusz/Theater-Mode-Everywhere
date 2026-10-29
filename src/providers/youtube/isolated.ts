@@ -26,5 +26,5 @@ if (services) api?.register({
     playerSelector: YOUTUBE_PLAYER_SELECTOR, readControls: readYouTubeControls, queue: findYouTubeQueueNavigation,
     surfaces: '.ytp-prev-button, .ytp-next-button, ytd-playlist-panel-renderer'
   },
-  serviceActions: options => createYouTubeServiceActions({ ...options, elementToken: services.serviceElementToken })
+  serviceActions: options => createYouTubeServiceActions({ ...options, elementToken: services.serviceElementToken, observe: services.observeProviderDom })
 });

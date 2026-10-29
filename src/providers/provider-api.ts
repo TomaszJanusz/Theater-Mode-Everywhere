@@ -3,12 +3,14 @@ import type { ChatActivation, ChatSurface } from '../chat/types';
 import type { ParsedChatLocation } from '../chat/url';
 import type { ServiceActionSource } from '../core/service-actions';
 import type { MediaFetchRequest } from '../media-features/fetch-allowlist';
+import type { parseCaptionPayload } from '../media-features/parsers/captions';
 import type { MediaProbeSnapshot } from '../media-features/probe';
 import type { MediaProviderId } from '../media-features/provider-flags';
 import type { MediaFeaturesAdapter, TimelineMarkerSource } from '../media-features/types';
 import type { PlaylistAction, PlaylistDirection } from '../playlist-nav';
 import type { MediaSeekDetail } from '../protocol/media-seek';
 
+import type { observeProviderDom } from './dom-watch';
 import type { LauncherPlacementFactory } from './launcher-placement';
 import type { NativeServiceActionHooks } from './native-service-actions';
 import type { CollectedControl, PlaylistHelpers } from './playlist-controls';
@@ -119,6 +121,9 @@ export type ProviderServices = {
     /** The MAIN-world snapshot probe; registered providers read their own entry of `providers`. */
     requestMediaProbe(): Promise<MediaProbeSnapshot>;
     serviceElementToken(element: Element): number;
+    // Stateless, but large and used by most providers: lent rather than bundled into each provider script.
+    observeProviderDom: typeof observeProviderDom;
+    parseCaptionPayload: typeof parseCaptionPayload;
   };
   main: {
     /** Page-owned media download, marked as the extension's own so the harvest observers skip it. */

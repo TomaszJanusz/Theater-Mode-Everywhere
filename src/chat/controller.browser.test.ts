@@ -5,10 +5,10 @@ import { describe, it, type TestContext } from 'node:test';
 import { chromium, firefox, type Page } from 'playwright';
 
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
-import { BUNDLED_PROVIDERS, bundleModules } from '../test-utils/player-boot';
+import { PROVIDER_ENTRIES, bundleModules } from '../test-utils/player-boot';
 import { testEngines } from '../test-utils/test-engines';
 
-const bundle = (): string => bundleModules([...BUNDLED_PROVIDERS, "export * from './chat/index';"], 'NativeChat');
+const bundle = (): string => bundleModules([...PROVIDER_ENTRIES, "export * from './chat/index';"], 'NativeChat');
 
 /**
  * YouTube's chat hook is registered only in YouTube documents, so fixtures load on its host. Chat frame

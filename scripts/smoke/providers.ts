@@ -40,7 +40,7 @@ export async function assertProviderScripts(page: Page, context: BrowserContext)
       await route.fulfill({ contentType: 'text/html', body: fixture });
     }
   };
-  const hosts = /^https:\/\/(?:vod\.sooplive\.com\.?|stbbs\.sooplive\.com|www\.youtube\.com|sooplive\.com\.evil\.test)\//;
+  const hosts = /^https:\/\/(?:vod\.sooplive\.com\.?|stbbs\.sooplive\.com|player\.example\.test|sooplive\.com\.evil\.test)\//;
   await context.route(hosts, handler);
   try {
     await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false, soopIntegrationEnabled: true }));
@@ -84,7 +84,7 @@ export async function assertProviderScripts(page: Page, context: BrowserContext)
     await page.locator('.theater-title-hud-title').filter({ hasText: 'SOOP pilot recording' }).first().waitFor({ state: 'attached' });
     await page.keyboard.press('Escape');
 
-    for (const url of ['https://www.youtube.com/', 'https://sooplive.com.evil.test/']) {
+    for (const url of ['https://player.example.test/', 'https://sooplive.com.evil.test/']) {
       await page.goto(url);
       await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts') && document.querySelector('video')!.readyState >= 2);
       assert.equal(await page.evaluate('window.earlyHistoryPublications'), 0, url);
@@ -95,7 +95,7 @@ export async function assertProviderScripts(page: Page, context: BrowserContext)
     await page.goto('https://vod.sooplive.com./');
     await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
     assert.equal(await page.evaluate('window.earlyHistoryPublications'), 1, 'terminal DNS dot keeps provider admission');
-    await page.goto('https://www.youtube.com/');
+    await page.goto('https://player.example.test/');
     await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
     // Own-frame admission: generic parent, SOOP child; no top-level-only registration assumption.
     await page.evaluate(url => { const frame = document.createElement('iframe'); frame.src = url; document.body.append(frame); }, SOOP);
@@ -105,11 +105,106 @@ export async function assertProviderScripts(page: Page, context: BrowserContext)
     await frame.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
     assert.equal(await frame.evaluate('window.earlyHistoryPublications'), 1);
     assert.equal(await page.evaluate('window.earlyHistoryPublications'), 0);
-    console.log(`smoke provider scripts: SOOP registration in both worlds, early history, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), navigation, RTE off/on, generic YouTube/spoofed host, own-frame admission passed (installed fixture)`);
+    console.log(`smoke provider scripts: SOOP registration in both worlds, early history, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), navigation, RTE off/on, generic/spoofed host, own-frame admission passed (installed fixture)`);
   } finally {
     await context.unroute(hosts, handler);
     await worker.evaluate(async saved => {
       await chrome.storage.sync.remove(['autoEnterTheater', 'soopIntegrationEnabled']);
+      await chrome.storage.sync.set(saved);
+    }, saved);
+  }
+}
+
+const YOUTUBE = 'https://www.youtube.com/watch?v=abcdefghijk';
+const youtubeFixture = `<!doctype html><html><head><title>Generic fixture title</title><script>
+// The page's first script: YouTube's MAIN hooks must already observe responses, and the entry key must beat this listener.
+window.earlyWrapped = !/\\[native code\\]/.test(Function.prototype.toString.call(window.fetch))
+  && !/\\[native code\\]/.test(Function.prototype.toString.call(Response.prototype.json));
+window.hostKeys = 0;
+window.addEventListener('keydown', event => {
+  if (event.code === 'KeyT') { window.hostKeys++; event.stopImmediatePropagation(); event.preventDefault(); }
+}, true);
+window.ytInitialPlayerResponse = { videoDetails: { videoId: 'abcdefghijk', title: 'YouTube pilot video', lengthSeconds: '2' } };
+</script></head><body>
+<ytd-watch-flexy video-id="abcdefghijk"><div id="movie_player" class="html5-video-player">
+<video class="html5-main-video" muted style="width:640px;height:360px"></video></div></ytd-watch-flexy>
+<script>
+fetch('/fixture.webm').then(response => response.blob()).then(blob => { document.querySelector('video').src = URL.createObjectURL(blob); });
+</script></body></html>`;
+
+/** YouTube loads per host: installed-extension evidence on intercepted host URLs, as for SOOP. */
+export async function assertYoutubeProvider(page: Page, context: BrowserContext): Promise<void> {
+  const worker = await extensionWorker(context);
+  const saved = await worker.evaluate(() => chrome.storage.sync.get(['autoEnterTheater', 'youtubeIntegrationEnabled']));
+  const media = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
+  const handler = async (route: Route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === '/fixture.webm') await route.fulfill({ contentType: 'video/webm', body: media });
+    else await route.fulfill({ contentType: 'text/html; charset=utf-8', body: youtubeFixture });
+  };
+  const hosts = /^https:\/\/(?:www\.youtube\.com\.?|www\.youtube-nocookie\.com|www\.youtube\.com\.evil\.test|player\.example\.test)\//;
+  const ready = () => page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts')
+    && (document.querySelector('video')?.readyState ?? 0) >= 2);
+  await context.route(hosts, handler);
+  try {
+    await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false, youtubeIntegrationEnabled: true }));
+    await page.goto(YOUTUBE);
+    await ready();
+    assert.equal(await page.evaluate('window.earlyWrapped'), true, 'YouTube harvest must observe responses before the first host script');
+    const first = await page.evaluate(() => {
+      const begin = performance.now();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 't', code: 'KeyT', bubbles: true, cancelable: true }));
+      return { entered: document.documentElement.classList.contains('theater-everywhere-html-active'), milliseconds: performance.now() - begin };
+    });
+    assert.equal(first.entered, true, 'first t enters synchronously on YouTube');
+    assert.equal(await page.evaluate('window.hostKeys'), 0, 'early key capture beats the host listener');
+    // Isolated adapter, MAIN probe and snapshot all come from YouTube's own scripts now.
+    await page.locator('.theater-everywhere-title-hud').filter({ hasText: 'YouTube pilot video' }).first().waitFor({ state: 'attached' });
+    // Leaving the watch route through YouTube's SPA events ends a session that began there.
+    await page.evaluate(() => {
+      history.pushState(null, '', '/feed/subscriptions');
+      for (const name of ['yt-navigate-start', 'yt-navigate-finish', 'yt-page-data-updated']) document.dispatchEvent(new Event(name));
+    });
+    await page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+
+    // RTE off keeps generic entry; switching it on without a reload brings YouTube's data back.
+    await worker.evaluate(() => chrome.storage.sync.set({ youtubeIntegrationEnabled: false }));
+    await page.goto(YOUTUBE);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-youtube-integration-off'));
+    await ready();
+    await page.keyboard.press('t');
+    await page.locator('.theater-controls-wrapper').waitFor();
+    await worker.evaluate(() => chrome.storage.sync.set({ youtubeIntegrationEnabled: true }));
+    await page.waitForFunction(() => !document.documentElement.hasAttribute('data-te-youtube-integration-off'));
+    await page.locator('.theater-everywhere-title-hud').filter({ hasText: 'YouTube pilot video' }).first().waitFor({ state: 'attached' });
+    await page.keyboard.press('Escape');
+
+    // A spoofed host stays generic; the terminal DNS dot keeps admission.
+    await page.goto('https://www.youtube.com.evil.test/watch?v=abcdefghijk');
+    await ready();
+    assert.equal(await page.evaluate('window.earlyWrapped'), false, 'no YouTube script on a look-alike host');
+    await page.keyboard.press('t');
+    await page.locator('.theater-controls-wrapper').waitFor();
+    await page.keyboard.press('Escape');
+    await page.goto('https://www.youtube.com./watch?v=abcdefghijk');
+    await ready();
+    assert.equal(await page.evaluate('window.earlyWrapped'), true, 'terminal DNS dot keeps YouTube admission');
+
+    // A third-party page embedding YouTube: the embed frame gets YouTube, the generic parent does not.
+    await page.goto('https://player.example.test/');
+    await ready();
+    const embed = 'https://www.youtube-nocookie.com/embed/abcdefghijk';
+    await page.evaluate(url => { const frame = document.createElement('iframe'); frame.src = url; frame.width = '640'; frame.height = '360'; document.body.append(frame); }, embed);
+    await page.frameLocator('iframe').locator('video').waitFor();
+    const frame = page.frames().find(candidate => candidate.url() === embed)!;
+    await frame.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+    assert.equal(await frame.evaluate('window.earlyWrapped'), true, 'the embed frame registers YouTube');
+    assert.equal(await page.evaluate('window.earlyWrapped'), false, 'the generic parent loads no YouTube script');
+    console.log(`smoke YouTube provider scripts: MAIN hooks before the first host script, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), title through the provider, SPA exit, RTE off/on, spoofed host, terminal dot, embed in a generic page passed (installed fixture)`);
+  } finally {
+    await context.unroute(hosts, handler);
+    await worker.evaluate(async saved => {
+      await chrome.storage.sync.remove(['autoEnterTheater', 'youtubeIntegrationEnabled']);
       await chrome.storage.sync.set(saved);
     }, saved);
   }

@@ -6,7 +6,7 @@ import type { BrowserContextOptions, Frame, Page, Route } from 'playwright';
 
 import type { ChatState } from '../chat';
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
-import { BUNDLED_PROVIDERS, bundleModules, playerStylesheets } from '../test-utils/player-boot';
+import { PROVIDER_ENTRIES, bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import type { sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 
@@ -21,7 +21,7 @@ const UI_CSS = playerStylesheets().ui;
 const browsers = sharedEngineBrowsers();
 const VOD = readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url));
 const BUNDLE = bundleModules([
-  ...BUNDLED_PROVIDERS,
+  ...PROVIDER_ENTRIES,
   "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
   "export { setPlayerUiCss } from './ui/root';",
   "export { installMainWorldRuntime } from './platform/main-world-runtime';",

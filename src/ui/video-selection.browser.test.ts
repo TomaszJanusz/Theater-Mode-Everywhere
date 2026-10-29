@@ -4,11 +4,11 @@ import { it } from 'node:test';
 
 import { chromium, firefox, type Frame, type Page } from 'playwright';
 
-import { BUNDLED_PROVIDERS, bundleModules } from '../test-utils/player-boot';
+import { PROVIDER_ENTRIES, bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 
-const BUNDLE = bundleModules([...BUNDLED_PROVIDERS, "import { bootstrapPlayerRuntime } from './ui/player-runtime'; import { installWatchPlaybackQueries } from './providers/watch-playback'; export { isInactiveStandbyVideo } from './providers/video-candidates'; export { confirmProviderWatchVideo, confirmWatchReplacement } from './providers/watch-playback'; installWatchPlaybackQueries(); bootstrapPlayerRuntime();"], 'VideoSelectionTest');
+const BUNDLE = bundleModules([...PROVIDER_ENTRIES, "import { bootstrapPlayerRuntime } from './ui/player-runtime'; import { installWatchPlaybackQueries } from './providers/watch-playback'; export { isInactiveStandbyVideo } from './providers/video-candidates'; export { confirmProviderWatchVideo, confirmWatchReplacement } from './providers/watch-playback'; installWatchPlaybackQueries(); bootstrapPlayerRuntime();"], 'VideoSelectionTest');
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 
 declare global {

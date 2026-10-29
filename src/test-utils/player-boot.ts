@@ -32,16 +32,17 @@ export function bundleModules(exports: readonly string[], globalName = 'TheaterT
 }
 
 /**
- * First lines of a runtime bundle: providers still packaged with the shared scripts register their hooks before
- * any runtime code runs, as in the real entries. Both worlds share one registry in a fixture.
+ * First lines of a runtime bundle: the fixture runtimes, then YouTube's entries in both worlds, so its hooks register
+ * before any runtime code runs, as the manifest orders runtime, provider and start. Both worlds share one registry in
+ * a fixture; on other hosts the registration is rejected, as it is there.
  */
-export const BUNDLED_PROVIDERS = ["import './test-utils/fixture-runtimes';", "import './entries/bundled-providers-isolated';",
-  "import './entries/bundled-providers-main';"] as const;
+export const PROVIDER_ENTRIES = ["import './test-utils/fixture-runtimes';", "import './providers/youtube/isolated';",
+  "import './providers/youtube/main';"] as const;
 
 /** The player runtime and MAIN-world runtime as global `TheaterTest`, plus extra export lines a test inspects. */
 export function bundlePlayer(extraExports: readonly string[] = []): string {
   return bundleModules([
-    ...BUNDLED_PROVIDERS,
+    ...PROVIDER_ENTRIES,
     "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
     "export { setPlayerUiCss } from './ui/root';",
     "export { installMainWorldRuntime } from './platform/main-world-runtime';",

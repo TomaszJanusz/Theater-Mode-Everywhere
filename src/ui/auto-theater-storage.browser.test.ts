@@ -5,7 +5,7 @@ import { it } from 'node:test';
 import { chromium, firefox, type BrowserContext, type Frame, type Page } from 'playwright';
 
 import { mediaProviderFlagStorageKeys } from '../media-features/provider-flags';
-import { BUNDLED_PROVIDERS, bundleModules, playerStylesheets } from '../test-utils/player-boot';
+import { PROVIDER_ENTRIES, bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 
@@ -14,7 +14,7 @@ import { AUTO_ENTER_NOTICE_DELAY_MS } from './auto-theater-runtime';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 
 const BUNDLE = bundleModules([
-  ...BUNDLED_PROVIDERS,
+  ...PROVIDER_ENTRIES,
   "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
   "export { installMainWorldRuntime } from './platform/main-world-runtime';",
   "export { setPlayerUiCss } from './ui/root';"

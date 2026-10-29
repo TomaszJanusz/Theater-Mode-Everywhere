@@ -1,3 +1,4 @@
+import { MAX_CAPTION_BYTES } from '../platform/bounded-body';
 import { PROVIDER_CATALOG } from '../providers/catalog';
 import { providerRegistry } from '../providers/runtime-registration';
 
@@ -5,8 +6,6 @@ import { isCrunchyrollCaptionFileUrl } from './crunchyroll-cdn';
 import { bilibiliIntlSubtitleUrl } from './parsers/bilibili-intl';
 import { isVikiCaptionUrl, isVikiPreviewUrl } from './parsers/viki';
 import { isYoutubeTimedtextUrl } from './youtube-caption-url';
-
-const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
 
 export type MediaFetchRequest = {
   provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'crunchyroll' | 'soop' | 'viki';
