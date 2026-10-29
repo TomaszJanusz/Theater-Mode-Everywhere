@@ -12,7 +12,7 @@ import { applyUiDirection, t } from './messages';
 import { mountPlayerUi, queryPlayerUi } from './root';
 
 type HandleState = 'idle' | 'hover' | 'focus' | 'dragging' | 'previewing';
-interface Args { state: HandleState; accent: AccentColorPreset; width: number; settle?: boolean }
+interface Args { state: HandleState; accent: AccentColorPreset; width: number; settle?: boolean; playerUiIdle?: boolean }
 
 /**
  * The production separator in the real player-UI root, beside a stand-in chat column. The story owns
@@ -71,6 +71,7 @@ const meta: Meta<Args> = {
       separator.update({ shown: true, width });
     }
     show(args.width);
+    separator.setChromeVisible(!args.playerUiIdle);
     mountPlayerUi(separator.element);
     const host = document.getElementById('theater-everywhere-ui')!;
     // The runtime paints the UI host with the configured accent; the separator inherits it.
@@ -125,6 +126,10 @@ export const Idle: Story = {
     await expect(separator().hasAttribute('data-dragging')).toBe(held);
     await expect(separator().querySelectorAll('.theater-chat-separator-overlay').length).toBe(held ? 1 : 0);
     if (args.state === 'focus') await waitFor(() => expect(separator().matches(':focus')).toBe(true));
+    // At rest only the accent grip shows; pointed at, held or focused, it is outlined.
+    const ring = getComputedStyle(separator().querySelector('.theater-chat-separator-grip')!).boxShadow;
+    if (args.state === 'idle') await expect(ring).toBe('none');
+    else await waitFor(() => expect(ring === 'none').toBe(false));
     // Live, the chat is at the pointer; previewing, only the separator is, until the pointer rests.
     if (held) await expect(separator().dataset.dragMode).toBe(args.state === 'dragging' ? 'live' : 'preview');
     if (args.state === 'dragging') await expect(separator().style.transform).toBe('');
@@ -142,6 +147,19 @@ export const PreviewSettles: Story = {
   tags: ['no-shot'],
   args: { state: 'previewing', settle: true },
   play: async context => { await Idle.play?.(context); }
+};
+
+/** With the player UI idle the separator fades with it; pointing at it brings it back. */
+export const FadesWithPlayerUi: Story = {
+  tags: ['no-shot'],
+  args: { playerUiIdle: true },
+  play: async () => {
+    await waitFor(() => expect(getComputedStyle(separator()).opacity).toBe('0'));
+    separator().dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+    await waitFor(() => expect(getComputedStyle(separator()).opacity).toBe('1'));
+    separator().dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' }));
+    await waitFor(() => expect(getComputedStyle(separator()).opacity).toBe('0'));
+  }
 };
 
 /** Keyboard steps and the double-click reset go through the same `setWidth` as a drag. */

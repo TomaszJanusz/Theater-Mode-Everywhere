@@ -37,6 +37,8 @@ export interface ChatSeparatorOptions {
 export interface ChatSeparator {
   element: HTMLElement;
   update(state: ChatSeparatorState): void;
+  /** Follows the player UI's idle state; pointing at, holding or focusing the separator still shows it. */
+  setChromeVisible(visible: boolean): void;
 }
 
 const STEP_PX = 10;
@@ -157,6 +159,9 @@ export function createChatSeparator(options: ChatSeparatorOptions): ChatSeparato
 
   return {
     element,
+    setChromeVisible(visible) {
+      element.toggleAttribute('data-chrome-hidden', !visible);
+    },
     update(state) {
       width = clamp(state.width);
       element.setAttribute('aria-valuenow', String(width));

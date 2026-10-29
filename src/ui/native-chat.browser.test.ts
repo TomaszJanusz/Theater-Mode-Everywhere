@@ -823,6 +823,78 @@ describe('native chat browser session', () => {
       assert.deepEqual(pageErrors(page), []);
     });
 
+    it(`fades the separator with the idle player UI, keeps it while held or focused, and leaves the page untouched in ${engine}`, { timeout: 120_000 }, async t => {
+      const browser = pagesOf(browsers[engine], t);
+      const { page } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
+      await boot(page);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible);
+      const separator = page.locator('.theater-chat-separator');
+      const look = () => separator.evaluate(element => ({
+        hidden: element.hasAttribute('data-chrome-hidden'),
+        opacity: getComputedStyle(element).opacity,
+        ring: getComputedStyle(element.querySelector('.theater-chat-separator-grip')!).boxShadow,
+        hit: element.contains(element.getRootNode() instanceof ShadowRoot
+          ? (element.getRootNode() as ShadowRoot).elementFromPoint(element.getBoundingClientRect().left + 4, innerHeight / 2) : null)
+      }));
+      // The fade is our own attribute in the player UI; the host page's root and body never change for it.
+      await page.evaluate(() => {
+        const probe = window as Window & { __rootMutations?: string[] };
+        probe.__rootMutations = [];
+        new MutationObserver(records => {
+          for (const record of records) probe.__rootMutations!.push(`${(record.target as Element).tagName}.${record.attributeName}`);
+        }).observe(document.documentElement, { attributes: true });
+        new MutationObserver(records => {
+          for (const record of records) probe.__rootMutations!.push(`${(record.target as Element).tagName}.${record.attributeName}`);
+        }).observe(document.body, { attributes: true });
+      });
+
+      // Shown with the player UI, as a plain accent grip: no outline at rest.
+      await page.mouse.move(300, 300);
+      let state = await look();
+      assert.equal(state.hidden, false);
+      assert.equal(state.opacity, '1');
+      assert.equal(state.ring, 'none', 'no outline at rest');
+
+      // Idle: the separator fades with the bar but still answers the pointer.
+      await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!
+        .querySelector('.theater-chat-separator')!.hasAttribute('data-chrome-hidden'), null, { timeout: 8000 });
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('theater-everywhere-ui')!.shadowRoot!
+        .querySelector('.theater-chat-separator')!).opacity === '0');
+      state = await look();
+      assert.equal(state.hit, true, 'the faded separator is still where the pointer can find it');
+
+      // Pointing at the handle brings it back, outlined.
+      const box = (await separator.boundingBox())!;
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 3 });
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('theater-everywhere-ui')!.shadowRoot!
+        .querySelector('.theater-chat-separator')!).opacity === '1');
+      assert.notEqual((await look()).ring, 'none', 'outlined while pointed at');
+      // Fading out and back in wrote nothing on the host page's root or body (a drag writes the chat geometry there).
+      assert.deepEqual(await page.evaluate(() => (window as Window & { __rootMutations?: string[] }).__rootMutations), []);
+
+      // Held through an idle period, it stays visible.
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width / 2 - 30, box.y + box.height / 2, { steps: 3 });
+      await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!
+        .querySelector('.theater-chat-separator')!.hasAttribute('data-chrome-hidden'), null, { timeout: 8000 });
+      state = await look();
+      assert.equal(state.opacity, '1', 'visible while dragged');
+      await page.mouse.up();
+
+      // Keyboard focus keeps it through an idle period too.
+      await page.mouse.move(300, 300);
+      await separator.focus();
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Shift+Tab');
+      await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!
+        .querySelector('.theater-chat-separator')!.hasAttribute('data-chrome-hidden'), null, { timeout: 8000 });
+      state = await look();
+      assert.equal(state.opacity, '1', 'visible while keyboard-focused');
+      assert.notEqual(state.ring, 'none', 'outlined while focused');
+
+      assert.deepEqual(pageErrors(page), []);
+    });
+
     it(`reaches and adjusts the Theme row with W/A/S/D in ${engine}`, { timeout: 120_000 }, async t => {
       const browser = pagesOf(browsers[engine], t);
       const { page, read } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });

@@ -151,6 +151,10 @@ export function mountNativeChatControls(
   });
   ctx.mountPlayerUi(separator.element);
   scope.add(() => separator.element.remove());
+  // The player UI's idle state, as the header HUD follows it: the separator fades with the bar.
+  const syncChromeVisibility = () => separator.setChromeVisible(ctx.ui().toolbarVisible);
+  scope.add(ctx.uiStore.subscribe(syncChromeVisibility));
+  syncChromeVisibility();
 
   const themeRow = document.createElement('label');
   themeRow.className = 'theater-settings-row theater-chat-theme-row';

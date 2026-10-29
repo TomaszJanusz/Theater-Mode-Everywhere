@@ -1531,8 +1531,9 @@ button.theater-time-end:focus-visible,
 
 /* Splitter between the picture and a right-docked chat. The host ends where the chat starts, so
  * the hit area straddles the host's right edge: mostly over the picture, a little over the chat.
- * Its fill is the user's accent; a dark inner and light outer hairline keep the grip and line at
- * least 3:1 against light and dark chat backgrounds whatever that accent is. */
+ * At rest it is only the accent grip, and it fades with the rest of the player UI when that idles.
+ * Pointed at, held or focused, a dark inner and light outer hairline keep the grip at least 3:1
+ * against light and dark chat whatever the accent, and a thin accent line marks the edge. */
 .theater-chat-separator {
   --chat-separator-hit: 12px;
   --chat-separator-over-chat: 4px;
@@ -1548,8 +1549,13 @@ button.theater-time-end:focus-visible,
   touch-action: none;
   user-select: none;
   outline: none;
-  /* Its position follows the pointer; the reduced-motion duration must not animate it either. */
-  transition-property: none;
+  /* Only the fade animates: its position follows the pointer, and the reduced-motion duration must
+   * not animate that either. The fade matches the controls bar's. */
+  transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.theater-chat-separator[data-chrome-hidden]:not([data-hover], [data-dragging], :focus-visible) {
+  opacity: 0;
 }
 
 .theater-chat-separator[hidden] {
@@ -1569,10 +1575,9 @@ button.theater-time-end:focus-visible,
   position: absolute;
   top: 0;
   bottom: 0;
-  right: calc(var(--chat-separator-over-chat) - 1.5px);
-  width: 3px;
+  right: calc(var(--chat-separator-over-chat) - 1px);
+  width: 2px;
   background: var(--accent-color, #6366f1);
-  box-shadow: var(--chat-separator-ring);
   opacity: 0;
   transition: opacity 0.12s ease;
   pointer-events: none;
@@ -1587,8 +1592,7 @@ button.theater-time-end:focus-visible,
   margin-top: -20px;
   border-radius: 3px;
   background: var(--accent-color, #6366f1);
-  box-shadow: var(--chat-separator-ring);
-  transition: height 0.12s ease, margin-top 0.12s ease;
+  transition: height 0.12s ease, margin-top 0.12s ease, box-shadow 0.12s ease;
   pointer-events: none;
 }
 
@@ -1596,6 +1600,12 @@ button.theater-time-end:focus-visible,
 .theater-chat-separator[data-dragging]::before,
 .theater-chat-separator:focus-visible::before {
   opacity: 1;
+}
+
+.theater-chat-separator[data-hover] .theater-chat-separator-grip,
+.theater-chat-separator[data-dragging] .theater-chat-separator-grip,
+.theater-chat-separator:focus-visible .theater-chat-separator-grip {
+  box-shadow: var(--chat-separator-ring);
 }
 
 .theater-chat-separator[data-dragging] .theater-chat-separator-grip {
@@ -1608,6 +1618,7 @@ button.theater-time-end:focus-visible,
   outline-offset: 4px;
 }
 
+:host([data-motion="reduced"]) .theater-chat-separator,
 :host([data-motion="reduced"]) .theater-chat-separator::before,
 :host([data-motion="reduced"]) .theater-chat-separator-grip {
   transition: none;

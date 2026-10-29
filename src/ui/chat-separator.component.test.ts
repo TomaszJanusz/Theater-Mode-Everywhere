@@ -91,6 +91,22 @@ describe('chat separator drag', () => {
     expect(clock.pending).toBe(0);
   });
 
+  test('follows fast moves within the same frame while writes fit the budget', () => {
+    const { frames, applied, element, pointer, drawnWidth, width } = mount();
+    pointer('pointerdown', 1000);
+    frames.tick(16.7);
+    // Several moves between two frames: the frame applies the latest, and the content is never a frame behind.
+    for (const [moves, expected] of [[[960, 900, 840], 520], [[700], 600], [[1100, 1250], 280], [[1050], 310]] as const) {
+      for (const x of moves) pointer('pointermove', x);
+      frames.tick(16.7);
+      expect(element.dataset.dragMode).toBe('live');
+      expect(width()).toBe(expected);
+      expect(drawnWidth()).toBe(expected);
+    }
+    expect(applied).toEqual([520, 600, 280, 310]);
+    pointer('pointerup', 1050);
+  });
+
   test('applies the pointer width on release while previewing, and keys stay immediate', () => {
     const { frames, clock, applied, element, pointer, width } = mount();
     let x = 1000;
