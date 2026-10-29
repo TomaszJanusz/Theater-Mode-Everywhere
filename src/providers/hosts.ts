@@ -19,11 +19,6 @@ export function isVimeoHost(hostname = currentHost()): boolean {
   return host === 'vimeo.com' || host.endsWith('.vimeo.com');
 }
 
-export function isPatreonHost(hostname = currentHost()): boolean {
-  const host = normalizeHost(hostname);
-  return host === 'patreon.com' || host.endsWith('.patreon.com');
-}
-
 export function isTwitchHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);
   return host === 'twitch.tv' || host.endsWith('.twitch.tv');

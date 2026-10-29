@@ -761,9 +761,6 @@
     }
   },
   "src/media-features/parsers/mux-storyboard.ts": {
-    "import/order": {
-      "count": 2
-    },
     "sonarjs/cognitive-complexity": {
       "count": 2
     },
@@ -890,7 +887,7 @@
   },
   "src/media-features/resolve-adapter.ts": {
     "local/max-symbol-name-length": {
-      "count": 6
+      "count": 5
     }
   },
   "src/media-features/sanitize.ts": {
@@ -1025,7 +1022,7 @@
       "count": 1
     },
     "sonarjs/cognitive-complexity": {
-      "count": 3
+      "count": 2
     },
     "sonarjs/no-nested-conditional": {
       "count": 2
@@ -1533,29 +1530,6 @@
   "src/providers/patreon/adapter.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
-    },
-    "sonarjs/no-dead-store": {
-      "count": 1
-    }
-  },
-  "src/providers/patreon/main.ts": {
-    "import/order": {
-      "count": 1
-    },
-    "local/max-symbol-name-length": {
-      "count": 2
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    },
-    "sonarjs/duplicates-in-character-class": {
-      "count": 3
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 1
-    },
-    "sonarjs/super-linear-regex": {
-      "count": 2
     }
   },
   "src/providers/patreon/page-assets.ts": {
@@ -1570,6 +1544,23 @@
     },
     "sonarjs/super-linear-regex": {
       "count": 1
+    }
+  },
+  "src/providers/patreon/snapshot.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/duplicates-in-character-class": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 2
     }
   },
   "src/providers/patreon/watch-playback.browser.test.ts": {

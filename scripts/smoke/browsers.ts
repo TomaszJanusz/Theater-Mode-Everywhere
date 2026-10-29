@@ -13,7 +13,7 @@ import { assertEmbeddedKeysAndFullscreen } from './frames';
 import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist } from './helpers';
 import { assertFeatureHighlights } from './highlights';
 import { assertPinStorage } from './pin-storage';
-import { assertProviderScripts, assertYoutubeProvider } from './providers';
+import { assertPatreonProvider, assertProviderScripts, assertYoutubeProvider } from './providers';
 import { assertRteSettings, assertPictureLayout } from './settings';
 
 interface EntryScenarios {
@@ -51,6 +51,7 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     const page = context.pages()[0] || await context.newPage();
     if (process.env.THEATER_SMOKE_PROVIDERS_ONLY === '1') {
       await assertProviderScripts(page, context);
+      await assertPatreonProvider(page, context);
       await assertYoutubeProvider(page, context);
       return;
     }
@@ -104,6 +105,7 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
 
     await assertAutoTheater(page, context);
     await assertProviderScripts(page, context);
+    await assertPatreonProvider(page, context);
     await assertYoutubeProvider(page, context);
     await scenarios.assertParentBlacklist(page, origin, context);
     await setBlacklist(context, []);
@@ -207,6 +209,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
     const page = context.pages()[0] || await context.newPage();
     if (process.env.THEATER_SMOKE_PROVIDERS_ONLY === '1') {
       await assertProviderScripts(page, context);
+      await assertPatreonProvider(page, context);
       await assertYoutubeProvider(page, context);
       return;
     }
@@ -232,6 +235,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
     await assertEmbeddedKeysAndFullscreen(page, origin);
     console.log('smoke:firefox host-claimed keys and embedded fullscreen ownership passed');
     await assertProviderScripts(page, context);
+    await assertPatreonProvider(page, context);
     await assertYoutubeProvider(page, context);
     await scenarios.assertParentBlacklist(page, origin, context);
     await setBlacklist(context, []);

@@ -5,6 +5,7 @@ import { defaultMediaProviderFlags, MEDIA_PROVIDER_IDS } from '../media-features
 
 import { bilibiliVideoIdentity } from './bilibili/watch-playback';
 import { bilibiliIntlVideoIdentity } from './bilibili-intl/watch-playback';
+import { patreonWatchPlayback } from './patreon/watch-playback';
 import { providerDefinition, shouldAttachProvider } from './registry';
 import { autoTheaterAvailability, leftProviderWatchPage, readProviderWatchPage } from './watch-playback';
 import { youtubeWatchPlayback } from './youtube/watch-playback';
@@ -25,15 +26,16 @@ describe('positive provider watch declarations', () => {
   });
 
   it('keeps extracted providers unavailable until their host script registers', () => {
-    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk']] as const) {
+    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk']] as const) {
       assert.equal(providerDefinition(id).watchPlayback, undefined);
       assert.equal(read(href), null);
     }
   });
 
   it('limits the countdown-only preparing confirmation to providers that declare it', () => {
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['patreon', 'twitch', 'bilibili', 'bilibiliIntl', 'iqiyi']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['twitch', 'bilibili', 'bilibiliIntl', 'iqiyi']);
     assert.ok(youtubeWatchPlayback.preparingVideo);
+    assert.ok(patreonWatchPlayback.preparingVideo);
     assert.ok(youtubeWatchPlayback.refreshEvents?.includes('yt-navigate-start'));
   });
 
@@ -62,13 +64,13 @@ describe('positive provider watch declarations', () => {
     const expected = { provider: 'patreon', identity: '12345678' };
     for (const href of ['https://www.patreon.com/posts/my-post-12345678', 'https://www.patreon.com/posts/12345678', 'https://www.patreon.com/creator/posts/my-post-12345678/',
       'https://patreon.com/posts/my-post-12345678?utm_source=x&utm_medium=y#comments', 'https://www.patreon.com/posts/12345678/']) {
-      assert.deepEqual(read(href), expected, href);
+      assert.equal(patreonWatchPlayback.pageIdentity(new URL(href)), expected.identity, href);
     }
     for (const href of ['https://www.patreon.com/', 'https://www.patreon.com/home', 'https://www.patreon.com/creator', 'https://www.patreon.com/creator/posts', 'https://www.patreon.com/creator/collections',
       'https://www.patreon.com/collection/123', 'https://www.patreon.com/c/creator/posts/my-post-12345678', 'https://www.patreon.com/c/posts/my-post-12345678', 'https://www.patreon.com/posts/my-post',
       'https://www.patreon.com/posts/my-post-12345678/extra', 'https://www.patreon.com/a/b/posts/1', 'https://www.patreon.com/settings', 'https://www.patreon.com/messages/posts/abc123',
       'https://patreon.com.evil.test/posts/my-post-12345678', 'https://creator.patreon.com/posts/my-post-12345678']) {
-      assert.equal(read(href), null, href);
+      assert.equal(patreonWatchPlayback.pageIdentity(new URL(href)), null, href);
     }
   });
 
@@ -76,7 +78,7 @@ describe('positive provider watch declarations', () => {
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://twitch.tv.evil.test/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi', 'viki']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['vimeo', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi', 'viki']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
@@ -125,8 +127,6 @@ describe('AutoTheater availability', () => {
     assert.equal(autoTheaterAvailability('www.bilibili.com', { ...flags, bilibili: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('www.bilibili.com', flags, false), 'unsupported');
     assert.equal(autoTheaterAvailability('example.com', flags, true), 'unsupported');
-    assert.equal(autoTheaterAvailability('www.patreon.com', flags, true), 'available');
-    assert.equal(autoTheaterAvailability('www.patreon.com', { ...flags, patreon: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('www.twitch.tv', flags, true), 'available');
     assert.equal(autoTheaterAvailability('www.viki.com', flags, true), 'available');
     assert.equal(autoTheaterAvailability('www.viki.com', { ...flags, viki: false }, true), 'integrationOff');
@@ -135,6 +135,7 @@ describe('AutoTheater availability', () => {
     assert.equal(autoTheaterAvailability('example.com', { ...flags, twitch: false }, true), 'unsupported');
     // Extracted providers are available once their host script registers (covered by the browser runtime tests).
     assert.equal(autoTheaterAvailability('www.youtube.com', flags, true), 'unsupported');
+    assert.equal(autoTheaterAvailability('www.patreon.com', flags, true), 'unsupported');
   });
 });
 

@@ -4,6 +4,7 @@ import { providerRegistry } from '../providers/runtime-registration';
 
 import { isCrunchyrollCaptionFileUrl } from './crunchyroll-cdn';
 import { bilibiliIntlSubtitleUrl } from './parsers/bilibili-intl';
+import { isMuxCaptionUrl, isMuxStoryboardUrl } from './parsers/mux-storyboard';
 import { isVikiCaptionUrl, isVikiPreviewUrl } from './parsers/viki';
 import { isYoutubeTimedtextUrl } from './youtube-caption-url';
 
@@ -77,18 +78,10 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
 
   if (request.provider === 'youtube' && request.kind === 'caption-track') return isYoutubeTimedtextUrl(request.url, base);
 
-  if (request.provider === 'patreon' && (request.kind === 'storyboard-vtt' || request.kind === 'storyboard-json')) {
-    const hostOk = parsed.hostname.replace(/^www\./i, '').toLowerCase() === 'image.mux.com';
-    const pathOk = request.kind === 'storyboard-json'
-      ? /\/[^/]+\/storyboard\.json$/i.test(parsed.pathname)
-      : /\/[^/]+\/storyboard\.vtt$/i.test(parsed.pathname);
-    return hostOk && pathOk;
-  }
+  // The background broker has no provider registry, so Patreon's Mux rules stay here for its fallback fetch.
+  if (request.provider === 'patreon' && (request.kind === 'storyboard-vtt' || request.kind === 'storyboard-json')) return isMuxStoryboardUrl(parsed, request.kind);
 
-  if (request.provider === 'patreon' && request.kind === 'caption-track') {
-    const hostOk = parsed.hostname.replace(/^www\./i, '').toLowerCase() === 'stream.mux.com';
-    return hostOk && /\/[^/]+\/text\/[^/]+\.vtt$/i.test(parsed.pathname);
-  }
+  if (request.provider === 'patreon' && request.kind === 'caption-track') return isMuxCaptionUrl(parsed);
 
   if (request.provider === 'twitch' && request.kind === 'storyboard-json') {
     const host = parsed.hostname.replace(/^www\./i, '').toLowerCase();
@@ -130,7 +123,7 @@ export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest)
   return isAllowedMediaFetchUrl({ ...request, url: finalUrl });
 }
 
-const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'viki', ...PROVIDER_CATALOG.map(item => item.id)];
+const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'twitch', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'viki', ...PROVIDER_CATALOG.map(item => item.id)];
 // Netflix stays off this list. Public playback renders subtitles in the host
 // player and did not expose a caption or storyboard URL safe to fetch.
 const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json', 'chapters'];

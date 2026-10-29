@@ -1,5 +1,6 @@
-import { parseTimestamp } from './captions';
 import type { PreviewFrame } from '../types';
+
+import { parseTimestamp } from './captions';
 
 export type MuxStoryboardCue = {
   start: number;
@@ -213,4 +214,17 @@ export function getMuxPreviewFrame(
       sheetHeight: cue.sheetHeight
     }
   };
+}
+
+const muxHost = (url: URL) => url.hostname.replace(/^www\./i, '').toLowerCase();
+
+/** A Mux storyboard file (`image.mux.com/<playback id>/storyboard.vtt|json`) as a parsed URL. */
+export function isMuxStoryboardUrl(url: URL, kind: 'storyboard-vtt' | 'storyboard-json'): boolean {
+  const file = kind === 'storyboard-json' ? /\/[^/]+\/storyboard\.json$/i : /\/[^/]+\/storyboard\.vtt$/i;
+  return muxHost(url) === 'image.mux.com' && file.test(url.pathname);
+}
+
+/** A Mux text track (`stream.mux.com/<playback id>/text/<track id>.vtt`) as a parsed URL. */
+export function isMuxCaptionUrl(url: URL): boolean {
+  return muxHost(url) === 'stream.mux.com' && /\/[^/]+\/text\/[^/]+\.vtt$/i.test(url.pathname);
 }

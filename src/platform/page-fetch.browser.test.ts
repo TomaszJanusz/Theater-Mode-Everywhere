@@ -20,8 +20,8 @@ const exports = [
   "export { readBoundedBytes } from './platform/bounded-body';",
   "export { readPageResponseBytes } from './platform/page-body';"
 ];
-// Fixture pages register YouTube's MAIN hooks as the shipped scripts do; the installed extension already has its own.
-const bundle = bundleModules([...PROVIDER_ENTRIES, ...exports], 'BridgeTest');
+// Fixture pages register YouTube's and Patreon's MAIN hooks (the page below is a Patreon post) as the shipped scripts do; the installed extension already has its own.
+const bundle = bundleModules([...PROVIDER_ENTRIES, "import './providers/patreon/main';", ...exports], 'BridgeTest');
 const installedRequester = bundleModules(exports, 'BridgeTest');
 
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
