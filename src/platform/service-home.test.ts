@@ -15,7 +15,7 @@ it('resolves declared homes using descriptor admission, including terminal dots 
 });
 
 it('preserves legacy destinations and generic origin fallback without a declaration', () => {
-  assert.equal(serviceHomeUrl('https://player.vimeo.com/video/123'), 'https://vimeo.com/');
+  assert.equal(serviceHomeUrl('https://player.twitch.tv/?video=123'), 'https://www.twitch.tv/');
   assert.equal(serviceHomeUrl('https://www.youtube.com/watch?v=123'), 'https://www.youtube.com/');
   assert.equal(serviceHomeUrl('https://player.example.test:8443/video'), 'https://player.example.test:8443/');
   assert.equal(serviceHomeUrl('https://vimeo.com.evil.test/'), 'https://vimeo.com.evil.test/');
