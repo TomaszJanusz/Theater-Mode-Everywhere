@@ -1,4 +1,5 @@
 import type { DisposableScope } from '../core/disposable-scope';
+import { measureNextFrame } from '../core/frame-batch';
 import { AUDIO_PREF_STORAGE_KEY, resolveAudioPreferences, upsertAudioPreference } from '../media-features/audio-preference';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
@@ -108,7 +109,6 @@ import {
   queryPlayerUiAll,
   PLAYER_NATIVE_ACTIVATION_SELECTOR
 } from './root';
-import { measureNextFrame } from '../core/frame-batch';
 import { FrameCoordinator } from '../core/frame-coordinator';
 import { PlayerSession, type PlayerCommand } from '../core/player-session';
 import { resolveDomainPolicy } from '../platform/domain-policy';
@@ -899,11 +899,11 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
 }
 
 function applyTheaterPictureLayout(): void {
-  measureTheaterPictureLayout()();
+  measurePictureLayout()();
 }
 
 /** Reads the picture's frame; the returned write positions the picture and the layout's properties. */
-function measureTheaterPictureLayout(): () => void {
+function measurePictureLayout(): () => void {
   const fit = ui().videoFit;
   const frame = currentPictureFrame();
   const position = objectPositionForPicture(fit, ui().pictureAlign, frame, picturePositionOptions());
@@ -2351,7 +2351,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     bindingScope.measureFrame(() => {
       pictureLayoutScheduled = false;
       if (session.element?.tagName !== 'VIDEO') return;
-      return measureTheaterPictureLayout();
+      return measurePictureLayout();
     });
   };
   bindingScope.listen(window, 'resize', schedulePictureLayout);
@@ -2700,15 +2700,14 @@ function refreshHostPlayerLayout(): void {
   };
   // Hosts measure their player in resize handlers. The first dispatch waits for the frame, which still
   // precedes the next paint: from the calling task it would make the host lay out the page once more.
-  // Dispatched after the frame's reads, so the host's own measurements share their layout.
+  // Both dispatches follow the frame's reads, so the host's measurements share that frame's layout.
+  const fireLast = () => {
+    fire();
+    hostPlayerLayoutRefreshPending = false;
+  };
   measureNextFrame(window, () => () => {
     fire();
-    window.setTimeout(() => {
-      measureNextFrame(window, () => () => {
-        fire();
-        hostPlayerLayoutRefreshPending = false;
-      });
-    }, 120);
+    window.setTimeout(() => { measureNextFrame(window, () => fireLast); }, 120);
   });
 }
 

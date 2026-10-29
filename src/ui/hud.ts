@@ -1,8 +1,9 @@
+import { measureNextFrame } from '../core/frame-batch';
+
 import { HUD_FADE_OUT_MS, HUD_PLATE_CLASS } from './hud-plate';
 import { createLanguageHud } from './language-hud';
 import { createSvgIcon } from './svg-icon';
 import { isMotionReduced } from '../appearance-runtime';
-import { measureNextFrame } from '../core/frame-batch';
 import { splitTitleForTruncation, type TitleSegment } from './title-truncation';
 import { announcePlayerStatus } from './root';
 import { contentTitle, type ContentTitle } from '../media-features/content-title';
