@@ -65,7 +65,7 @@ export function harvestTencentBody(url: string, body: string): void {
 /** Consume the single qualified clone supplied by MAIN. */
 export function captureTencentNetworkResponse(url: string, response: Response): void {
   if (!tencentIntegrationEnabled() || !isTencentMetadataUrl(url) || !response.ok) return;
-  void readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined, tencentIntegrationEnabled)
+  void readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined, { isCurrent: tencentIntegrationEnabled })
     .then((buffer) => { if (buffer) harvestTencentBody(url, new TextDecoder().decode(buffer)); }).catch(() => {});
 }
 

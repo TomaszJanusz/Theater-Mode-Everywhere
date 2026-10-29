@@ -1,9 +1,8 @@
 import type { FrameMeasure } from '../core/frame-batch';
 import { createVisibleRefresh } from '../core/visible-refresh';
 
-const FLAGS = ['data-te-youtube-integration-off', 'data-te-netflix-integration-off', 'data-te-disney-integration-off'];
-const EVENTS = ['DOMContentLoaded', 'readystatechange', 'popstate', 'resize', 'loadedmetadata', 'emptied', 'durationchange', 'play', 'pause', 'seeked', 'ended',
-  'yt-navigate-start', 'yt-navigate-finish', 'yt-page-data-updated', 'yt-player-updated'];
+const FLAGS = ['data-te-netflix-integration-off', 'data-te-disney-integration-off'];
+const EVENTS = ['DOMContentLoaded', 'readystatechange', 'popstate', 'resize', 'loadedmetadata', 'emptied', 'durationchange', 'play', 'pause', 'seeked', 'ended'];
 
 /** Providers choose observed surfaces; discovery only examines changed subtrees. */
 export function observeProviderDom(options: {
@@ -14,7 +13,10 @@ export function observeProviderDom(options: {
   enabled?: () => boolean;
   relevant?: (record: MutationRecord) => boolean;
   ignore?: (record: MutationRecord) => boolean;
+  /** Host events after which surfaces may have changed, such as SPA navigation. */
   events?: readonly string[];
+  /** Root attributes whose flips re-discover the surfaces, such as a provider's integration-off flag. */
+  flags?: readonly string[];
   pollWhenEmpty?: boolean;
   /**
    * The 1 Hz fallback only covers changes the observers cannot see. A provider that knows when
@@ -72,7 +74,7 @@ export function observeProviderDom(options: {
   const discover = () => {
     if (doc.documentElement && flagsRoot !== doc.documentElement) {
       flagsRoot = doc.documentElement;
-      flags.observe(flagsRoot, { attributes: true, attributeFilter: FLAGS });
+      flags.observe(flagsRoot, { attributes: true, attributeFilter: [...FLAGS, ...options.flags ?? []] });
     }
     if (!dirty && [...roots].every(root => root.isConnected)) {
       for (const host of shadowHosts) {

@@ -1,10 +1,10 @@
 import { isBilibiliIntlHost } from './hosts';
 import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
 import { CRUNCHYROLL_HARVEST_EVENT } from './crunchyroll/main';
+import { registeredEvents } from './runtime-registration';
 
 /** Provider publication events consumed uniformly by the media controller. */
 const PROVIDER_MEDIA_EVENTS = [
-  'theater-everywhere-youtube-harvest',
   'theater-everywhere-twitch-harvest',
   'theater-everywhere-disney-harvest',
   'theater-everywhere-netflix-harvest',
@@ -12,11 +12,13 @@ const PROVIDER_MEDIA_EVENTS = [
 ] as const;
 
 export function observeProviderMediaChanges(onChange: () => void): () => void {
-  document.addEventListener('yt-navigate-finish', onChange);
+  // Registered events may target the document or the window; capture at the window sees both.
+  const registered = registeredEvents('media');
   for (const event of PROVIDER_MEDIA_EVENTS) window.addEventListener(event, onChange);
+  for (const event of registered) window.addEventListener(event, onChange, true);
   return () => {
-    document.removeEventListener('yt-navigate-finish', onChange);
     for (const event of PROVIDER_MEDIA_EVENTS) window.removeEventListener(event, onChange);
+    for (const event of registered) window.removeEventListener(event, onChange, true);
   };
 }
 

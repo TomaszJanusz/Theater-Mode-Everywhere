@@ -83,6 +83,7 @@ import {
   mountProviderStages,
   onProviderStructuralMutation,
   pinProviderViewport,
+  hostNavigationStarts,
   remountProviderStages,
   unmountProviderStages
 } from '../providers/stage';
@@ -2367,7 +2368,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     scheduleStabilize(true);
   };
   bindingScope.listen(video, 'emptied', holdViewport);
-  bindingScope.listen(document, 'yt-navigate-start', holdViewport);
+  for (const name of hostNavigationStarts()) bindingScope.listen(document, name, holdViewport);
   bindingScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
   // The player API reports the next queue item's identity by the time its media plays.
   for (const type of ['loadedmetadata', 'playing']) {

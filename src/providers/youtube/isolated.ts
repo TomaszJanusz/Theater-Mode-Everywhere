@@ -1,6 +1,7 @@
 import { YouTubeAdapter } from '../../media-features/youtube-adapter';
 import { providerRuntime } from '../provider-api';
 
+import { youtubeEvents } from './events';
 import { youtubeLauncherPlacement } from './launcher-placement';
 import { findYouTubeQueueNavigation, readYouTubeControls, YOUTUBE_PLAYER_SELECTOR } from './navigation';
 import { createYouTubeServiceActions } from './service-actions';
@@ -17,6 +18,10 @@ if (services) api?.register({
   launcherPlacement: youtubeLauncherPlacement,
   timeline: youtubeTimeline,
   timelineMarkers: youtubeSponsorBlockSource,
-  navigation: { playerSelector: YOUTUBE_PLAYER_SELECTOR, readControls: readYouTubeControls, queue: findYouTubeQueueNavigation },
+  events: youtubeEvents,
+  navigation: {
+    playerSelector: YOUTUBE_PLAYER_SELECTOR, readControls: readYouTubeControls, queue: findYouTubeQueueNavigation,
+    surfaces: '.ytp-prev-button, .ytp-next-button, ytd-playlist-panel-renderer'
+  },
   serviceActions: options => createYouTubeServiceActions({ ...options, elementToken: services.serviceElementToken })
 });

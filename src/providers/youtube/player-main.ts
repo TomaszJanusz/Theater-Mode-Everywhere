@@ -28,6 +28,7 @@ import { parseYoutubeCaptions } from '../../protocol/page-requests';
 import { isYouTubeHost } from '../hosts';
 import { MINIPLAYER_SURFACE } from '../video-candidates';
 import { installYouTubeAudio } from './audio-main';
+import { YOUTUBE_HARVEST_EVENT, youtubeEvents } from './events';
 import { youtubePlayerControl } from './player-controls';
 import { installYouTubeQueueNavigation } from './queue-main';
 import {
@@ -54,7 +55,7 @@ function notifyYoutubeHarvest(): void {
   if (youtubeHarvestNotifyTimer) return;
   youtubeHarvestNotifyTimer = window.setTimeout(() => {
     youtubeHarvestNotifyTimer = 0;
-    window.dispatchEvent(new CustomEvent('theater-everywhere-youtube-harvest'));
+    window.dispatchEvent(new CustomEvent(YOUTUBE_HARVEST_EVENT));
   }, 80);
 }
 
@@ -345,7 +346,7 @@ export function captureTimedtextResponse(url: string, response: Response): void 
   if (!finalUrl || !/timedtext/i.test(finalUrl) || !response || !response.ok) return;
   const generation = captionOperation;
   readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined,
-    () => generation === captionOperation && youtubeIntegrationEnabled()).then((buffer) => {
+    { isCurrent: () => generation === captionOperation && youtubeIntegrationEnabled(), navigationStart: youtubeEvents.navigationStart }).then((buffer) => {
     if (buffer) cacheTimedtextBody(finalUrl, new TextDecoder().decode(buffer));
   }).catch(() => {});
 }
@@ -528,7 +529,7 @@ async function fetchTimedtextDirect(url: string): Promise<string | null> {
     try {
       const response = await fetchPageMedia(candidate, { credentials: 'include', signal: controller.signal });
       if (!response) continue;
-      const buffer = await readPageResponseBytes(response, MAX_CAPTION_BYTES, controller.signal, current);
+      const buffer = await readPageResponseBytes(response, MAX_CAPTION_BYTES, controller.signal, { isCurrent: current, navigationStart: youtubeEvents.navigationStart });
       if (!buffer) continue;
       const text = new TextDecoder().decode(buffer);
       if (!text || text.trim().length < 20) continue;
