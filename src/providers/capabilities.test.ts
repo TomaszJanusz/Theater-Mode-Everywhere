@@ -9,15 +9,15 @@ import { parseAst } from 'vite';
 import { brightestStop, hexRgb, luminance, over } from '../../options/rte-colors';
 import { NetflixAdapter } from '../media-features/netflix-adapter';
 import { MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
-import { VimeoAdapter } from '../media-features/vimeo-adapter';
 
 import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from './capabilities';
 import { PROVIDER_CATALOG } from './catalog';
 import { providerDefinition } from './registry';
+import { VimeoAdapter } from './vimeo/adapter';
 
 const read = (path: string) => readFileSync(resolve(__dirname, path), 'utf8');
 const folders: Record<string, string> = { bilibiliIntl: 'bilibili-intl' };
-const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'patreon', 'viki']);
+const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'patreon', 'viki', 'vimeo']);
 
 /** Static method/source checks deliberately complement the existing behavioral
  * adapter and service-action suites without reproducing their host fixtures.

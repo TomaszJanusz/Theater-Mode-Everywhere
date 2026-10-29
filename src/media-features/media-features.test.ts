@@ -16,7 +16,7 @@ import {
 } from './caption-dock';
 import { captionPreferenceHost, findPreferredCaptionTrack, languagesCompatible, pickCaptionTrack, resolveCaptionPreferenceMap } from './caption-preference';
 import { CompositeMediaAdapter, preferProviderCaptionTracks } from './composite-adapter';
-import { findDisneyContentTitle, readDisneyPlayerHeader, resolveDisneyTitle, vimeoPageTitle } from './content-title';
+import { findDisneyContentTitle, readDisneyPlayerHeader, resolveDisneyTitle } from './content-title';
 import { classifyCaptionWord, findActiveCues, visibleCaptionLines } from './cue-index';
 import { DisneyAdapter } from './disney-adapter';
 import { captionSegmentsForWindow, dedupeCaptionCues } from './disney-adapter';
@@ -27,7 +27,6 @@ import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from '
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
 import { parseDescriptionChapters } from './parsers/description-chapters';
 import { getMuxPreviewFrame, parseMuxStoryboard } from './parsers/mux-storyboard';
-import { getVimeoPreviewFrame, parseVimeoThumbPreview } from './parsers/vimeo-thumbs';
 import { findYoutubeChapterMarkers } from './parsers/youtube-chapters';
 import {
   defaultMediaProviderFlags,
@@ -391,39 +390,6 @@ describe('youtube storyboard parser', () => {
   });
 });
 
-describe('vimeo thumb preview parser', () => {
-  const spec = {
-    url: 'https://videoapi-sprites.vimeocdn.com/video-sprites/image/abc.0.webp?Expires=1&Signature=sig',
-    width: 4686,
-    height: 2640,
-    frameWidth: 426,
-    frameHeight: 240,
-    columns: 11,
-    frames: 120
-  };
-
-  it('maps hover time onto a sprite tile without a new URL per nearby frame', () => {
-    const sprite = parseVimeoThumbPreview(spec, 635);
-    assert.ok(sprite);
-    const first = getVimeoPreviewFrame(sprite!, 0, 635);
-    const nearby = getVimeoPreviewFrame(sprite!, 4, 635);
-    assert.ok(first && nearby);
-    assert.equal(first!.image.url, nearby!.image.url);
-    assert.equal(first!.image.x, 0);
-    assert.equal(first!.image.y, 0);
-    assert.equal(first!.image.tileWidth, 426);
-    assert.equal(first!.image.sheetWidth, 4686);
-    const later = getVimeoPreviewFrame(sprite!, 60, 635);
-    assert.ok(later);
-    assert.equal(later!.image.url, first!.image.url);
-    assert.notEqual(later!.image.x + later!.image.y, 0);
-  });
-
-  it('rejects non-vimeocdn hosts', () => {
-    assert.equal(parseVimeoThumbPreview({ ...spec, url: 'https://evil.example/abc.0.webp' }, 10), null);
-  });
-});
-
 describe('mux storyboard parser', () => {
   const vtt = `WEBVTT
 
@@ -590,24 +556,6 @@ describe('disney playing title', () => {
       openGraphTitle: null
     });
     assert.deepEqual(newer, { title: 'Dark Phoenix', source: 'player', changed: true });
-  });
-});
-
-describe('vimeo page title', () => {
-  it('prefers the open-graph title and strips the site suffix', () => {
-    assert.equal(
-      vimeoPageTitle('Les Bêtes', 'Verify to continue', 'Les Bêtes | Videos & Movies on Vimeo'),
-      'Les Bêtes'
-    );
-    assert.equal(
-      vimeoPageTitle(null, 'Verify to continue', 'Les Bêtes | Videos & Movies on Vimeo'),
-      'Les Bêtes'
-    );
-  });
-
-  it('ignores the marketing homepage and login gates', () => {
-    assert.equal(vimeoPageTitle('Vimeo', 'Vimeo - All-in-One Video Platform', 'Vimeo'), null);
-    assert.equal(vimeoPageTitle(null, 'Log in', 'Join'), null);
   });
 });
 

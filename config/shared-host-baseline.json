@@ -268,11 +268,9 @@
   },
   "vimeo": {
     "src/media-features": {
-      "hostCheck": 1,
-      "serviceId": 6,
-      "domain": 4,
-      "identifier": 38,
-      "file": 2
+      "serviceId": 4,
+      "domain": 3,
+      "identifier": 15
     },
     "src/platform": {
       "hostCheck": 2,
@@ -286,8 +284,8 @@
       "identifier": 12
     },
     "src/providers/navigation": {
-      "domain": 4,
-      "identifier": 9,
+      "domain": 3,
+      "identifier": 8,
       "file": 1
     }
   },

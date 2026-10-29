@@ -1,5 +1,7 @@
-import { sanitizeContentTitle, vimeoPageTitle } from '../../media-features/content-title';
+import { sanitizeContentTitle } from '../../media-features/content-title';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
+
+import { vimeoPageTitle } from './title';
 
 export function vimeoIntegrationEnabled(): boolean {
   return mediaProviderIntegrationEnabled('vimeo');

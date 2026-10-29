@@ -564,7 +564,7 @@
   },
   "src/media-features/content-title.ts": {
     "sonarjs/super-linear-regex": {
-      "count": 2
+      "count": 1
     }
   },
   "src/media-features/controller.test.ts": {
@@ -919,11 +919,6 @@
       "count": 1
     },
     "sonarjs/pseudo-random": {
-      "count": 1
-    }
-  },
-  "src/media-features/vimeo-adapter.ts": {
-    "import/order": {
       "count": 1
     }
   },
@@ -1717,6 +1712,11 @@
   "src/providers/video-candidates.ts": {
     "local/max-symbol-name-length": {
       "count": 3
+    }
+  },
+  "src/providers/vimeo/title.ts": {
+    "sonarjs/super-linear-regex": {
+      "count": 1
     }
   },
   "src/providers/watch-bridge.ts": {
