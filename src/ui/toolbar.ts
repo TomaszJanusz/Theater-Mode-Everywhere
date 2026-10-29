@@ -4,6 +4,7 @@ import {
   CAPTION_DOCK_RAISED_EDGE,
   CAPTION_DOCK_REST_BOTTOM,
   CAPTION_LINE_LIMIT_MIN,
+  OVERLAY_CAPTIONS_CLASS,
   captionDockMotion,
   computeCaptionDockBottom,
   raisedCaptionLineLimit,
@@ -341,8 +342,13 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
       applyCaptionDockMotion(hostCaption?.motionTarget ?? null, motion, captionDockMotionMode);
       captionDockLifted = lifted;
       const nextBottom = `${bottom}px`;
-      if (root.style.getPropertyValue('--theater-caption-bottom') !== nextBottom) {
-        root.style.setProperty('--theater-caption-bottom', nextBottom);
+      // The overlay reads its own copy. The page copy serves host caption renderers; while the
+      // overlay replaces them it stays as it is, since a change to a custom property on <html>
+      // restyles the whole host page on every bar show and hide.
+      for (const target of [dockOverlayCache, root.classList.contains(OVERLAY_CAPTIONS_CLASS) ? null : root]) {
+        if (target && target.style.getPropertyValue('--theater-caption-bottom') !== nextBottom) {
+          target.style.setProperty('--theater-caption-bottom', nextBottom);
+        }
       }
     };
   }

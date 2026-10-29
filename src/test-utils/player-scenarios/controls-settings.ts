@@ -451,7 +451,7 @@ export async function preparePinAndMenus(page: Page) {
       headerOpacity: header ? getComputedStyle(header).opacity : null,
       homePointerEvents: home ? getComputedStyle(home).pointerEvents : null,
       captionsLifted: document.querySelector('video#player')?.classList.contains('controls-visible'),
-      captionBottom: parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom'))
+      captionBottom: parseFloat(getComputedStyle(root!.querySelector('.theater-caption-overlay')!).getPropertyValue('--theater-caption-bottom'))
     };
   });
   if (!idle.cursorHidden || idle.headerOpacity !== '0' || idle.homePointerEvents !== 'none'
