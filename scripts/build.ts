@@ -9,6 +9,9 @@ import { assertSelfContainedBundles } from './bundle-integrity';
 import { assertProviderSources, classicEntries, discoverDescriptors } from './provider-descriptors';
 
 /** Stateful runtime owners a provider entry must receive through its runtime's services, never bundle. */
+// Chat code that only the isolated world needs. The MAIN script must reach chat through
+// `chat/events` and `chat/url`, not the `chat` barrel, or the Twitch theme palette (~22 KB) ships to every host.
+const ISOLATED_ONLY_CHAT = /\/src\/chat\/(?:adapters\/|controller\.ts$|detect\.ts$)/;
 const RUNTIME_OWNERS = /\/src\/(?:providers\/(?:registry|runtime-registration)|media-features\/probe|platform\/(?:harvest-ownership|page-fetch))\.ts$/;
 
 function copyFolderRecursiveSync(source: string, target: string) {
@@ -71,6 +74,19 @@ function zipDirectory(sourceDir: string, outPath: string): Promise<void> {
   });
 }
 
+function assertBundleBoundary(entryName: string, normalized: string, id: string, migrated: string[]): void {
+  const isProviderBundle = entryName.startsWith('providers/');
+  if (!isProviderBundle && migrated.some(directory => normalized.includes(directory))) {
+    throw new Error(`${entryName} includes extracted provider code: ${id}`);
+  }
+  if (entryName === 'mainWorld' && ISOLATED_ONLY_CHAT.test(normalized)) {
+    throw new Error(`${entryName} includes isolated-world chat code: ${id}`);
+  }
+  if (isProviderBundle && RUNTIME_OWNERS.test(normalized)) {
+    throw new Error(`${entryName} duplicates runtime state: ${id}`);
+  }
+}
+
 async function buildClassicScript(
   entryName: string,
   entryFile: string,
@@ -88,12 +104,7 @@ async function buildClassicScript(
         for (const [id, module] of Object.entries(chunk.modules)) {
           if (!module.renderedLength) continue;
           const normalized = id.replaceAll('\\', '/');
-          if (!entryName.startsWith('providers/') && migrated.some(directory => normalized.includes(directory))) {
-            throw new Error(`${entryName} includes extracted provider code: ${id}`);
-          }
-          if (entryName.startsWith('providers/') && RUNTIME_OWNERS.test(normalized)) {
-            throw new Error(`${entryName} duplicates runtime state: ${id}`);
-          }
+          assertBundleBoundary(entryName, normalized, id, migrated);
         }
       }
     } }],
