@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "播放器"
   },
-  "nativeChatWidth": {
-    "message": "宽度"
+  "nativeChatResize": {
+    "message": "调整聊天宽度"
   },
   "nativeChatThemeUnavailable": {
     "message": "聊天使用服务的外观设置。所选主题在此页面不可用。"

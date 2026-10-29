@@ -38,7 +38,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   settingsSectionChat: "Chat",
   settingsSectionAudio: "Audio",
   settingsSectionPlayer: "Player",
-  nativeChatWidth: "Width",
+  nativeChatResize: "Resize chat",
   nativeChatTheme: "Theme",
   nativeChatThemeLight: "Light",
   nativeChatThemeNative: "Service settings",

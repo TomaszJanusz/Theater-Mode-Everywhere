@@ -8,7 +8,6 @@
 
 @import "../host-frame.css";
 
-.theater-chat-width-row[hidden],
 .theater-chat-theme-row[hidden],
 .theater-chat-theme-hint[hidden],
 .theater-chat-toggle[hidden] {
@@ -1422,8 +1421,7 @@ button.theater-time-end:focus-visible,
 .theater-settings-stepper-row:has(:focus-visible),
 .theater-cc-search-input:focus,
 .player-settings-btn:focus-visible,
-.theater-chat-theme-select:focus-visible,
-.theater-chat-width-slider:focus-visible {
+.theater-chat-theme-select:focus-visible {
   outline: 2px solid var(--accent-color, #6366f1) !important;
   outline-offset: -2px !important;
 }
@@ -1519,7 +1517,6 @@ button.theater-time-end:focus-visible,
   display: contents !important;
 }
 
-.theater-chat-width-row,
 .theater-chat-theme-row {
   display: flex !important;
   flex-wrap: wrap !important;
@@ -1532,42 +1529,119 @@ button.theater-time-end:focus-visible,
   font-size: 12px !important;
 }
 
-.theater-chat-inline,
+/* Splitter between the picture and a right-docked chat. The host ends where the chat starts, so
+ * the hit area straddles the host's right edge: mostly over the picture, a little over the chat.
+ * At rest it is only the accent grip, and it fades with the rest of the player UI when that idles.
+ * Pointed at, held or focused, a dark inner and light outer hairline keep the grip at least 3:1
+ * against light and dark chat whatever the accent, and a thin accent line marks the edge. */
+.theater-chat-separator {
+  --chat-separator-hit: 12px;
+  --chat-separator-over-chat: 4px;
+  --chat-separator-ring: 0 0 0 1px rgb(9 9 11 / 72%), 0 0 0 2px rgb(255 255 255 / 55%);
+
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(100% + var(--chat-separator-over-chat) - var(--chat-separator-hit));
+  width: var(--chat-separator-hit);
+  cursor: col-resize;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  outline: none;
+  /* Only the fade animates: its position follows the pointer, and the reduced-motion duration must
+   * not animate that either. The fade matches the controls bar's. */
+  transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.theater-chat-separator[data-chrome-hidden]:not([data-hover], [data-dragging], :focus-visible) {
+  opacity: 0;
+}
+
+.theater-chat-separator[hidden] {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .theater-chat-separator {
+    --chat-separator-hit: 28px;
+    --chat-separator-over-chat: 8px;
+  }
+}
+
+/* The full-height line marks the edge while it is being pointed at, held or focused. */
+.theater-chat-separator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(var(--chat-separator-over-chat) - 1px);
+  width: 2px;
+  background: var(--accent-color, #6366f1);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  pointer-events: none;
+}
+
+.theater-chat-separator-grip {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--chat-separator-over-chat) - 3px);
+  width: 6px;
+  height: 40px;
+  margin-top: -20px;
+  border-radius: 3px;
+  background: var(--accent-color, #6366f1);
+  transition: height 0.12s ease, margin-top 0.12s ease, box-shadow 0.12s ease;
+  pointer-events: none;
+}
+
+.theater-chat-separator[data-hover]::before,
+.theater-chat-separator[data-dragging]::before,
+.theater-chat-separator:focus-visible::before {
+  opacity: 1;
+}
+
+.theater-chat-separator[data-hover] .theater-chat-separator-grip,
+.theater-chat-separator[data-dragging] .theater-chat-separator-grip,
+.theater-chat-separator:focus-visible .theater-chat-separator-grip {
+  box-shadow: var(--chat-separator-ring);
+}
+
+.theater-chat-separator[data-dragging] .theater-chat-separator-grip {
+  height: 56px;
+  margin-top: -28px;
+}
+
+.theater-chat-separator:focus-visible .theater-chat-separator-grip {
+  outline: 2px solid var(--accent-color, #6366f1);
+  outline-offset: 4px;
+}
+
+:host([data-motion="reduced"]) .theater-chat-separator,
+:host([data-motion="reduced"]) .theater-chat-separator::before,
+:host([data-motion="reduced"]) .theater-chat-separator-grip {
+  transition: none;
+}
+
+/* While dragging, this layer spans the window, the chat frame included, so the moves stay with
+ * the separator even where pointer capture does not cross into the frame. */
+.theater-chat-separator-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -100vw;
+  right: -100vw;
+  cursor: col-resize;
+}
+
 .theater-chat-theme-control {
   position: relative !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
+  display: block !important;
   width: 188px !important;
   flex: 0 0 188px !important;
   margin-inline-start: auto !important;
   min-width: 0 !important;
-}
-
-.theater-chat-width-slider {
-  flex: 1 1 auto !important;
-  width: auto !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-  accent-color: var(--accent-color, #6366f1) !important;
-}
-
-.theater-chat-width-slider:disabled {
-  opacity: var(--appearance-content-opacity, 0.45) !important;
-}
-
-.theater-chat-width-value {
-  flex: 0 0 auto !important;
-  min-width: 46px !important;
-  color: var(--appearance-ink, #cbd5e1) !important;
-  font-size: 12px !important;
-  line-height: 1.35 !important;
-  text-align: end !important;
-  font-variant-numeric: tabular-nums !important;
-}
-
-.theater-chat-theme-control {
-  display: block !important;
 }
 
 .theater-chat-theme-arrow {

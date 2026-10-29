@@ -1,5 +1,6 @@
 import {
   ChatController,
+  clampChatWidth,
   DEFAULT_CHAT_WIDTH_PX,
   MAX_CHAT_WIDTH_PX,
   MIN_CHAT_WIDTH_PX,
@@ -11,7 +12,7 @@ import {
 } from '../chat';
 import type { DisposableScope } from '../core/disposable-scope';
 
-import { holdMenuPosition } from './menu-popover';
+import { createChatSeparator } from './chat-separator';
 import { queryPlayerUi } from './root';
 import type { PlayerChromeContext } from './runtime-context';
 import { shortcutAriaKeyshortcuts, shortcutMarkup } from './shortcut-display';
@@ -68,7 +69,7 @@ export function hydrateChatPreferences(value: unknown): void {
     if (typeof pref.visible === 'boolean' && typeof pref.width === 'number' && Number.isFinite(pref.width)) {
       next[provider] = {
         visible: pref.visible,
-        width: Math.min(MAX_CHAT_WIDTH_PX, Math.max(MIN_CHAT_WIDTH_PX, pref.width)),
+        width: clampChatWidth(pref.width),
         theme: normalizeChatTheme(pref.theme)
       };
     }
@@ -140,33 +141,20 @@ export function mountNativeChatControls(
     : null;
   const chatMount = chatSection?.querySelector('.theater-settings-section-body') ?? settingsPanel.querySelector('.theater-settings-body');
 
-  const widthRow = document.createElement('label');
-  widthRow.className = 'theater-settings-row theater-chat-width-row';
-  const widthIcon = document.createElement('span');
-  widthIcon.className = 'theater-settings-icon';
-  ctx.actions.setIcon(widthIcon, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 8-4 4 4 4"/></svg>');
-  const widthLabel = document.createElement('span');
-  widthLabel.className = 'theater-settings-label';
-  widthLabel.textContent = ctx.t('nativeChatWidth');
-  const widthControl = document.createElement('span');
-  widthControl.className = 'theater-chat-inline';
-  const slider = document.createElement('input');
-  slider.type = 'range';
-  slider.min = String(MIN_CHAT_WIDTH_PX);
-  slider.max = String(MAX_CHAT_WIDTH_PX);
-  slider.step = '10';
-  slider.setAttribute('aria-label', ctx.t('nativeChatWidth'));
-  slider.className = 'theater-chat-width-slider';
-  const widthValue = document.createElement('output');
-  widthValue.className = 'theater-chat-width-value';
-  widthControl.append(slider, widthValue);
-  widthRow.append(widthIcon, widthLabel, widthControl);
-  chatMount?.append(widthRow);
-  scope.listen(slider, 'pointerdown', () => holdMenuPosition(settingsPanel));
-  scope.listen(slider, 'input', () => {
-    holdMenuPosition(settingsPanel);
-    controller?.setWidth(Number(slider.value));
+  const separator = createChatSeparator({
+    scope,
+    label: ctx.t('nativeChatResize'),
+    min: MIN_CHAT_WIDTH_PX,
+    max: MAX_CHAT_WIDTH_PX,
+    defaultWidth: DEFAULT_CHAT_WIDTH_PX,
+    setWidth: width => controller?.setWidth(width)
   });
+  ctx.mountPlayerUi(separator.element);
+  scope.add(() => separator.element.remove());
+  // The player UI's idle state, as the header HUD follows it: the separator fades with the bar.
+  const syncChromeVisibility = () => separator.setChromeVisible(ctx.ui().toolbarVisible);
+  scope.add(ctx.uiStore.subscribe(syncChromeVisibility));
+  syncChromeVisibility();
 
   const themeRow = document.createElement('label');
   themeRow.className = 'theater-settings-row theater-chat-theme-row';
@@ -216,10 +204,7 @@ export function mountNativeChatControls(
     button.classList.toggle('active', Boolean(state?.visible));
     if (chatSection) chatSection.hidden = !available;
     if (chatSeparator) chatSeparator.hidden = !available;
-    widthRow.hidden = !state?.available || state.dock !== 'right';
-    slider.disabled = !state?.visible;
-    slider.value = String(state?.width ?? DEFAULT_CHAT_WIDTH_PX);
-    widthValue.value = slider.value + ' px';
+    separator.update({ shown: Boolean(state?.visible) && state?.dock === 'right', width: state?.width ?? DEFAULT_CHAT_WIDTH_PX });
     themeRow.hidden = !state?.available;
     const themeUnavailable = state?.themeStatus === 'unavailable';
     themeSelect.disabled = !state?.available;

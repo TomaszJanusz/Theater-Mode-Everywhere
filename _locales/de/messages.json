@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "Player"
   },
-  "nativeChatWidth": {
-    "message": "Breite"
+  "nativeChatResize": {
+    "message": "Chatbreite ändern"
   },
   "nativeChatThemeUnavailable": {
     "message": "Der Chat verwendet das Erscheinungsbild des Dienstes. Das gewählte Design ist auf dieser Seite nicht verfügbar."

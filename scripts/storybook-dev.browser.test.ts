@@ -83,11 +83,11 @@ for (const engine of testEngines()) {
     assert.equal(indexResponse.status(), 200);
     const index = await indexResponse.json() as { entries: Record<string, { type: string; title: string }> };
     const stories = Object.keys(index.entries).filter(id => index.entries[id].type === 'story');
-    assert.equal(stories.length, 45, '44 component stories plus Extension/Player UI');
+    assert.equal(stories.length, 54, '53 component stories plus Extension/Player UI');
     assert.ok(stories.includes(PLAYER_STORY));
     assert.deepEqual([...new Set(stories.map(id => index.entries[id].title))].sort(), [
       'Extension/Player UI',
-      'Components/Auto-theater notice', 'Components/Caption notice', 'Components/Control button tooltip',
+      'Components/Auto-theater notice', 'Components/Caption notice', 'Components/Chat separator', 'Components/Control button tooltip',
       'Components/HUD', 'Components/Language notice', 'Components/Speed control', 'Components/Stepper', 'Components/Title HUD', 'Components/Volume control'
     ].sort());
 

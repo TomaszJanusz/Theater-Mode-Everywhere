@@ -19,6 +19,7 @@ export { isChatDocument } from './url';
 export { installChatShortcutRelay, isChatShortcutMessage } from './shortcut-relay';
 export {
   CHAT_DOCK_BREAKPOINT_PX,
+  clampChatWidth,
   DEFAULT_CHAT_WIDTH_PX,
   MAX_CHAT_WIDTH_PX,
   MIN_CHAT_WIDTH_PX

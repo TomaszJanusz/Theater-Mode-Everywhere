@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "المشغل"
   },
-  "nativeChatWidth": {
-    "message": "العرض"
+  "nativeChatResize": {
+    "message": "تغيير حجم الدردشة"
   },
   "nativeChatThemeUnavailable": {
     "message": "تستخدم الدردشة مظهر الخدمة. المظهر المحدد غير متاح في هذه الصفحة."

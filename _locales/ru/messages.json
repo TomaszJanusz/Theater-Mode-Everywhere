@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "Плеер"
   },
-  "nativeChatWidth": {
-    "message": "Ширина"
+  "nativeChatResize": {
+    "message": "Изменить ширину чата"
   },
   "nativeChatThemeUnavailable": {
     "message": "Чат использует оформление сервиса. Выбранная тема недоступна на этой странице."

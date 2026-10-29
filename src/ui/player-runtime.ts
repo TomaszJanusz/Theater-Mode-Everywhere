@@ -1629,6 +1629,8 @@ function initialize(): void {
     if (activeEl?.matches('.theater-cc-menu-item') && ['ArrowUp', 'ArrowDown', 'Escape'].includes(event.key)) return false;
     if (activeEl?.matches('input[type=range]')
         && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;
+    // The chat separator resizes the chat with these keys instead of seeking (see chat-separator.ts).
+    if (activeEl?.matches('.theater-chat-separator') && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return false;
     if (event.key === 'Escape') {
       // The slider panel consumes Escape only while it is open (see bindSliderPopover).
       const sliderPanel = activeEl?.closest('.theater-volume-container, .theater-speed-container')
@@ -2574,11 +2576,24 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
 
   // Sample native chat before provider presentation can hide the page's panels.
   // Entry and exit lay the player out themselves; restyling in between only forces extra layouts.
+  // The chat has just written its geometry (once per frame while its separator is dragged). The
+  // picture is measured in the frame's read phase, after the browser's own layout, rather than
+  // forcing a restyle of the host page between the chat's writes and the picture's.
+  let chatLayoutScheduled = false;
   startNativeChatSession(() => {
     if (!session.isActive) return;
-    if (session.element) applyTheaterElementInlineStyles(session.element);
     updateCaptionDock();
     window.dispatchEvent(new CustomEvent('theater-everywhere-chat-layout'));
+    if (chatLayoutScheduled) return;
+    chatLayoutScheduled = true;
+    const epoch = session.currentEpoch;
+    session.runtimeScope.measureFrame(() => {
+      chatLayoutScheduled = false;
+      const target = session.element;
+      if (!target || !session.isActive || session.currentEpoch !== epoch) return;
+      pinProviderViewport(target, applyTheaterViewportPin);
+      return measurePictureLayout();
+    });
   });
   markTheaterVideo(element);
   mountTheaterStage();

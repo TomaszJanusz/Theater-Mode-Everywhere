@@ -835,8 +835,8 @@
   "settingsSectionPlayer": {
     "message": "Odtwarzacz"
   },
-  "nativeChatWidth": {
-    "message": "Szerokość"
+  "nativeChatResize": {
+    "message": "Zmień szerokość czatu"
   },
   "nativeChatThemeUnavailable": {
     "message": "Czat używa wyglądu serwisu. Wybrany motyw jest niedostępny na tej stronie."
