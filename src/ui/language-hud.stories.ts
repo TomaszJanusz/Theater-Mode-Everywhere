@@ -59,6 +59,15 @@ function language(steps: (stage: HudStage) => Array<LanguageChanges | number>, e
   }, { leaveAfterMs });
 }
 
+const subtitles = (detail: string): LanguageChanges => ({ subtitles: { kind: 'status', title: t('subtitlesMenuTitle'), detail } });
+
+/** Values of different widths: the labels sit on the plate's end edge and the values end beside them. */
+export const ShortValues = language(() => [subtitles('Off'), audio('English')],
+  () => [['subtitles', t('subtitlesMenuTitle'), 'Off'], AUDIO_ROW('English')], LANGUAGE_MIN_VISIBLE_MS);
+export const LongValues = language(() => [subtitles('Português (Brasil), automatic'), audio('Français (France), audio description')],
+  () => [['subtitles', t('subtitlesMenuTitle'), 'Português (Brasil), automatic'], AUDIO_ROW('Français (France), audio description')],
+  LANGUAGE_MIN_VISIBLE_MS);
+
 /** The track a pick or the saved language switched to, or that was already playing. */
 export const AudioOnly = language(() => [audio()], () => [AUDIO_ROW()], LANGUAGE_MIN_VISIBLE_MS);
 
