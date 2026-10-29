@@ -5,6 +5,15 @@ import path from 'node:path';
 import type { BrowserContext, Page, Route } from './helpers';
 import { extensionWorker, ROOT } from './helpers';
 
+/** Asks the MAIN-world watch bridge about the page's player; null means no provider answered. */
+const watchBridgeQuery = (page: Page) => () => page.evaluate(() => {
+  window.dispatchEvent(new CustomEvent('theater-everywhere-watch-replacement-query', { detail: 'pilot-query' }));
+  const video = document.querySelector('video')!;
+  const result = video.getAttribute('data-te-watch-replacement-response');
+  video.removeAttribute('data-te-watch-replacement-response');
+  return result;
+});
+
 const SOOP = 'https://vod.sooplive.com/player/211006561';
 const fixture = `<!doctype html><html><head><title>Generic fixture title</title><script>
 window.historyPublications = 0;
@@ -226,13 +235,7 @@ export async function assertVimeoProvider(page: Page, context: BrowserContext): 
   };
   const hosts = /^https:\/\/(?:vimeo\.com\.?|player\.vimeo\.com|player\.example\.test|vimeo\.com\.evil\.test)\//;
   await context.route(hosts, handler);
-  const query = () => page.evaluate(() => {
-    window.dispatchEvent(new CustomEvent('theater-everywhere-watch-replacement-query', { detail: 'pilot-query' }));
-    const video = document.querySelector('video')!;
-    const result = video.getAttribute('data-te-watch-replacement-response');
-    video.removeAttribute('data-te-watch-replacement-response');
-    return result;
-  });
+  const query = watchBridgeQuery(page);
   try {
     await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false, vimeoIntegrationEnabled: true }));
     await page.goto(VIMEO);
@@ -407,13 +410,7 @@ export async function assertIqiyiProvider(page: Page, context: BrowserContext): 
   };
   const hosts = /^https:\/\/(?:www\.iq\.com|player\.example\.test|www\.iq\.com\.evil\.test|www\.iqiyi\.com)\//;
   await context.route(hosts, handler);
-  const query = () => page.evaluate(() => {
-    window.dispatchEvent(new CustomEvent('theater-everywhere-watch-replacement-query', { detail: 'pilot-query' }));
-    const video = document.querySelector('video')!;
-    const result = video.getAttribute('data-te-watch-replacement-response');
-    video.removeAttribute('data-te-watch-replacement-response');
-    return result;
-  });
+  const query = watchBridgeQuery(page);
   const title = () => page.locator('.theater-title-hud-head').filter({ hasText: 'Spring of The Blade' }).first();
   try {
     await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false, iqiyiIntegrationEnabled: true }));

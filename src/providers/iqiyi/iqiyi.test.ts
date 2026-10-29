@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 
 
 import { iqiyiPlayId } from './page';
-import { iqiyiWatchPlayback } from './watch-playback';
 import { iqiyiChapters, normalizeIqiyiPlayInfo, parseIqiyiSnapshot, type IqiyiSnapshot } from './play-info';
+import { iqiyiWatchPlayback } from './watch-playback';
 
 const playInfo = (overrides: Record<string, unknown> = {}, program: unknown = { video: [{ duration: 2569 }] }) => ({
   data: { tvid: 4546375215960300, program, p: { bt: 14, et: 2415, ete: 2568, ...overrides } }

@@ -1,8 +1,9 @@
-import { IQIYI_PLAYER_SELECTOR, selectedIqiyiEpisode } from './dom';
-import { IQIYI_NAVIGATE_EVENT } from './snapshot';
 import type { WatchPlayback } from '../watch-playback';
 
+import { IQIYI_PLAYER_SELECTOR, selectedIqiyiEpisode } from './dom';
 import { iqiyiPlayId } from './page';
+import { IQIYI_NAVIGATE_EVENT } from './snapshot';
+
 
 /**
  * The episode's own player video: a direct child of the one `iqp-player`. Ad videos live in the
