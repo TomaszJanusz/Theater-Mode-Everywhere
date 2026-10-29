@@ -20,6 +20,7 @@ if (services) api?.register({
   navigation: { playerSelector: SOOP_PLAYER_SELECTOR, readControls: readSoopControls },
   chat: soopChat,
   serviceActions() {
+    // The registry hook gets no document/element options; SOOP's player lives in the light DOM of the page document.
     const source = createSoopServiceActions({ elementToken: services.serviceElementToken });
     return { ...source, subscribe: changed => observeProviderDom({ root: document, selector: SOOP_PLAYER_SELECTOR,
       changed, enabled: () => mediaProviderIntegrationEnabled('soop'), relevant: record => {

@@ -15,6 +15,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { manifestScriptsForUrl } from './provider-descriptors';
+
 type ComparisonPair = {
   id: string;
   title: string;
@@ -684,7 +686,7 @@ async function captureKeyboardShortcutSource(
       await cdp.call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 640, y: 400 }, sessionId);
       await dispatchCaptureShortcut(cdp, sessionId, 'T');
       if (!(await waitForExpressionResult(cdp, sessionId, '!!document.querySelector(".theater-everywhere-video-active")', 2_000))) {
-        await injectContentScriptFallback(cdp, sessionId, locale, extensionPath);
+        await injectContentScriptFallback(cdp, sessionId, locale, { extensionPath, pageUrl: capturePageUrl });
         await dispatchCaptureShortcut(cdp, sessionId, 'T');
       }
       await waitForExpression(cdp, sessionId, '!!document.querySelector(".theater-everywhere-video-active")', 20_000);
@@ -935,10 +937,12 @@ async function injectContentScriptFallback(
   cdp: CdpClient,
   sessionId: string,
   locale: LocalePack,
-  extensionPath: string,
+  { extensionPath, pageUrl }: { extensionPath: string; pageUrl: string },
 ): Promise<void> {
   const css = readFileSync(join(extensionPath, 'content.css'), 'utf8');
-  const js = readFileSync(join(extensionPath, 'content.js'), 'utf8');
+  // content.js only registers; the manifest's start scripts run the player, so inject what it lists for this URL.
+  const manifest = JSON.parse(readFileSync(join(extensionPath, 'manifest.json'), 'utf8'));
+  const scripts = manifestScriptsForUrl(manifest, pageUrl).map(file => readFileSync(join(extensionPath, file), 'utf8'));
   const messages = Object.fromEntries(
     Object.entries(locale.messages).map(([key, value]) => [key, value.message ?? '']),
   );
@@ -966,10 +970,12 @@ async function injectContentScriptFallback(
     'const style = document.createElement("style");',
     `style.textContent = ${JSON.stringify(css)};`,
     'document.documentElement.appendChild(style);',
+    `for (const source of ${JSON.stringify(scripts)}) {`,
     'const script = document.createElement("script");',
-    `script.textContent = ${JSON.stringify(js)};`,
+    'script.textContent = source;',
     'document.documentElement.appendChild(script);',
     'script.remove();',
+    '}',
     'return true;',
     '})()',
   ].join(''));
