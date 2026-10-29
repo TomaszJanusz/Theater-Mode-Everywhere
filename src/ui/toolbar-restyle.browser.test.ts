@@ -9,7 +9,6 @@ import { bootPlayer, enterTheater } from '../test-utils/player-boot';
 import { testEngines } from '../test-utils/test-engines';
 import { canvasVideoFixture, serveFixture } from '../test-utils/video-fixtures';
 
-
 import { TOOLBAR_AUTO_HIDE_DELAY_MS } from './toolbar';
 
 // A class or inline style change on <html>/<body> restyles the whole host page; on YouTube that is
