@@ -50,7 +50,6 @@ import {
 import { installTwitchNavigation } from '../providers/twitch/navigation';
 import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/main';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
-import { publishYoutubeProbeSnapshot, readYoutubeSnapshot, youtubeIntegrationEnabled } from '../providers/youtube/player-main';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
 import { matchesShortcut } from '../ui/shortcuts';
@@ -69,6 +68,16 @@ function installProviders(): void {
   for (const hooks of providerRegistry.all()) {
     try { hooks.install?.(); } catch { providerRegistry.fail(hooks.id); }
   }
+}
+
+/** Registered providers answer the probe for themselves; a failing read reports null like the others. */
+function probeProviders(): Record<string, unknown> {
+  const providers: Record<string, unknown> = {};
+  for (const hooks of providerRegistry.all()) {
+    if (!hooks.probe) continue;
+    try { providers[hooks.id] = hooks.probe(); } catch { providers[hooks.id] = null; }
+  }
+  return providers;
 }
 
 function wrapsFetch(harvests: readonly ProviderHarvest[]): boolean {
@@ -477,17 +486,11 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
     const requestId = parseProbeRequest((event as CustomEvent<unknown>).detail);
     if (requestId === null) return;
-    let youtube: Record<string, unknown> | null = null;
     let vimeo: Record<string, unknown> | null = null;
     let patreon: Record<string, unknown> | null = null;
     let twitch: Record<string, unknown> | null = null;
     let disney: Record<string, unknown> | null = null;
     let netflix: Record<string, unknown> | null = null;
-    try {
-      youtube = youtubeIntegrationEnabled() ? readYoutubeSnapshot() : null;
-    } catch {
-      youtube = null;
-    }
     try {
       vimeo = vimeoIntegrationEnabled() ? readVimeoSnapshot() : null;
     } catch {
@@ -513,9 +516,8 @@ export function installMainWorldRuntime(): void {
     } catch {
       netflix = null;
     }
-    publishYoutubeProbeSnapshot(youtube);
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, youtube, vimeo, patreon, twitch, disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot(), iqiyi: readIqiyiSnapshot() }
+      detail: { requestId, providers: probeProviders(), vimeo, patreon, twitch, disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot(), iqiyi: readIqiyiSnapshot() }
     }));
     // Bilibili needs asynchronous metadata. Keep the original fast probe for
     // other adapters and deliver Bilibili's result through its own event.

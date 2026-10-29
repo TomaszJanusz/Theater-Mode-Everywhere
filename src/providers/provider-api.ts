@@ -3,6 +3,7 @@ import type { ChatActivation, ChatSurface } from '../chat/types';
 import type { ParsedChatLocation } from '../chat/url';
 import type { ServiceActionSource } from '../core/service-actions';
 import type { MediaFetchRequest } from '../media-features/fetch-allowlist';
+import type { MediaProbeSnapshot } from '../media-features/probe';
 import type { MediaProviderId } from '../media-features/provider-flags';
 import type { MediaFeaturesAdapter, TimelineMarkerSource } from '../media-features/types';
 import type { PlaylistAction, PlaylistDirection } from '../playlist-nav';
@@ -86,6 +87,8 @@ export type ProviderHooks = {
   pageFetch?(url: string): Promise<string | null> | null;
   /** MAIN: perform a requested seek through the host player; false leaves it to the next provider or the element. */
   seek?(detail: MediaSeekDetail, video: Element | null): boolean;
+  /** MAIN: this provider's entry in the snapshot probe result, read on each probe request. */
+  probe?(): unknown;
   /** MAIN: called once at startup, after registration closed and the harvest observers are installed. */
   install?: () => void;
 };
@@ -112,7 +115,9 @@ export type ProviderHarvest = {
 /** Stateful shared owners each world's runtime lends to providers, so no provider bundles a second instance. */
 export type ProviderServices = {
   isolated: {
-    requestPageFetch(url: string): Promise<string | null>;
+    requestPageFetch(url: string, timeoutMs?: number): Promise<string | null>;
+    /** The MAIN-world snapshot probe; registered providers read their own entry of `providers`. */
+    requestMediaProbe(): Promise<MediaProbeSnapshot>;
     serviceElementToken(element: Element): number;
   };
   main: {

@@ -8,16 +8,8 @@ import { parseYoutubeMarkerChapters } from './parsers/youtube-chapters';
 import { readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
 import { getStoryboardFrame, parseStoryboardSpec, type StoryboardSet } from './parsers/youtube-storyboard';
 import { PREVIEW_DISPLAY_WIDTH } from './preview-display';
-import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
-import {
-  normalizeYoutubePlayerResponse,
-  readYoutubeSnapshotFromDom,
-  requestMediaProbe,
-  requestPageFetch,
-  requestYoutubePlayerCaptions,
-  type YoutubeCaptionMeta,
-  type YoutubePlayerSnapshot
-} from './probe';
+import type { MediaFetchRequest } from './fetch-allowlist';
+import type { MediaProbeSnapshot } from './probe';
 import { sanitizeContentTitle } from './content-title';
 import {
   queryYouTubeAudioTracks,
@@ -26,7 +18,12 @@ import {
   YOUTUBE_AUDIO_PLAYER_ID,
   youtubeAudioTrack
 } from './youtube-audio-tracks';
-import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
+import { isYoutubeTimedtextUrl } from './youtube-caption-url';
+import { requestYoutubePlayerCaptions } from './youtube-player-captions';
+import {
+  firstMatchingYoutubeSnapshot, normalizeYoutubePlayerResponse, normalizeYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls,
+  readPublishedYoutubeSnapshot, readYoutubeSnapshotFromDom, type YoutubeCaptionMeta, type YoutubePlayerSnapshot
+} from './youtube-snapshot';
 import type {
   AudioTrackList,
   CaptionActivationResult,
@@ -212,7 +209,13 @@ function captionUrlVariants(baseUrl: string): string[] {
   return variants;
 }
 
-async function fetchCaptionTrack(url: string): Promise<string | null> {
+/** The isolated runtime's MAIN bridges, lent so the adapter never bundles a second request owner. */
+export type YouTubePageRequests = {
+  requestMediaProbe(): Promise<MediaProbeSnapshot>;
+  requestPageFetch(url: string, timeoutMs?: number): Promise<string | null>;
+};
+
+async function fetchCaptionTrack(url: string, requestPageFetch: YouTubePageRequests['requestPageFetch']): Promise<string | null> {
   let absolute = url;
   try {
     absolute = new URL(url, window.location.href).toString();
@@ -225,7 +228,7 @@ async function fetchCaptionTrack(url: string): Promise<string | null> {
     kind: 'caption-track',
     url: absolute
   };
-  if (!isAllowedMediaFetchUrl(request)) return null;
+  if (!isYoutubeTimedtextUrl(request.url)) return null;
 
   const fromPage = usableCaptionBody(await requestPageFetch(absolute, 15000));
   if (fromPage) return fromPage;
@@ -262,7 +265,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   private loadedParked = false;
 
   /** @param video The bound video: parked in the miniplayer, it, not the URL, identifies the content. */
-  constructor(private readonly video: HTMLVideoElement | null = null) {}
+  constructor(private readonly video: HTMLVideoElement | null, private readonly page: YouTubePageRequests) {}
 
   /**
    * The content id this adapter's data must describe: the URL's, or for a video parked in the
@@ -275,12 +278,12 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
 
   async load(): Promise<void> {
     const previousId = this.lastVideoId;
-    const probed = await requestMediaProbe();
+    const probed = await this.page.requestMediaProbe();
     const expected = this.expected();
     this.loadedParked = expected.strict;
     const boot = (window as unknown as { ytInitialPlayerResponse?: unknown }).ytInitialPlayerResponse;
     this.snapshot = firstMatchingYoutubeSnapshot(expected.id, [
-      probed.youtube,
+      normalizeYoutubeSnapshot(probed.providers?.youtube),
       readPublishedYoutubeSnapshot(),
       readYoutubeSnapshotFromDom(),
       boot ? normalizeYoutubePlayerResponse(boot) : null
@@ -376,7 +379,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     }
 
     for (const url of captionUrlVariants(fetchUrl)) {
-      const body = await fetchCaptionTrack(url);
+      const body = await fetchCaptionTrack(url, this.page.requestPageFetch);
       if (!body) continue;
       const cues = parseCaptionPayload(body);
       if (cues.length > 0 && activationMediaId === this.mediaId() && this.snapshotMatchesPage()) {

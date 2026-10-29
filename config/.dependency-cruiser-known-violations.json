@@ -771,20 +771,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/platform/main-world-runtime.ts",
-    "to": "src/providers/youtube/player-main.ts",
-    "unresolvedTo": "../providers/youtube/player-main",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/ui/controls.ts",
     "to": "src/providers/timeline/index.ts",
     "unresolvedTo": "../providers/timeline",
