@@ -112,6 +112,12 @@ type MainOnlyHooks = {
   seek?(detail: MediaSeekDetail, video: Element | null): boolean;
   /** This provider's entry in the snapshot probe result, read on each probe request. */
   probe?(): unknown;
+  /**
+   * A snapshot that needs page requests, such as metadata APIs: answered once per isolated `requestProviderProbe`,
+   * after it settles (a rejection answers null). The provider still rejects its own stale results, such as after a
+   * route change; a newer request supersedes an older one.
+   */
+  probeAsync?(): Promise<unknown>;
   /** Called once at startup, after registration closed and the harvest observers are installed. */
   install?: () => void;
 };
@@ -154,6 +160,8 @@ export type ProviderServices = {
     requestPageFetch(url: string, timeoutMs?: number): Promise<string | null>;
     /** The MAIN-world snapshot probe; registered providers read their own entry of `providers`. */
     requestMediaProbe(): Promise<MediaProbeSnapshot>;
+    /** The provider's own MAIN `probeAsync` value, unvalidated; null on timeout, refusal or a newer request. */
+    requestProviderProbe(provider: MediaProviderId, timeoutMs?: number): Promise<unknown>;
     serviceElementToken(element: Element): number;
     // Stateless, but large and used by most providers: lent rather than bundled into each provider script.
     observeProviderDom: typeof observeProviderDom;

@@ -3,9 +3,13 @@ import { describe, it } from 'node:test';
 
 import {
   encodeProbeRequest,
+  encodeProbeAsyncReply,
+  encodeProbeAsyncRequest,
   encodeTwitchCaptions,
   encodeYoutubeCaptions,
   parseProbeRequest,
+  parseProbeAsyncReply,
+  parseProbeAsyncRequest,
   parseTwitchCaptions,
   parseYoutubeCaptions
 } from './page-requests';
@@ -24,6 +28,25 @@ describe('page request details', () => {
 
   it('round-trips a media probe request id', () => {
     assert.equal(parseProbeRequest(encodeProbeRequest(7)), 7);
+  });
+
+  it('round-trips a provider probe request and its reply', () => {
+    assert.deepEqual(parseProbeAsyncRequest(encodeProbeAsyncRequest({ requestId: 2, provider: 'bilibiliIntl' })), { requestId: 2, provider: 'bilibiliIntl' });
+    const request = { requestId: 2, provider: 'bilibili' };
+    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply({ ...request, value: { videoId: 'BV1' } }), request), { value: { videoId: 'BV1' } });
+    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply({ ...request, value: undefined }), request), { value: null });
+    assert.equal(parseProbeAsyncReply(encodeProbeAsyncReply({ requestId: 3, provider: 'bilibili', value: 1 }), request), null);
+    assert.equal(parseProbeAsyncReply(encodeProbeAsyncReply({ requestId: 2, provider: 'bilibiliIntl', value: 1 }), request), null);
+  });
+
+  it('rejects provider probe messages without a correlatable id or provider', () => {
+    for (const raw of [...HOSTILE, '{"requestId":1}', '{"requestId":1,"provider":"a.b"}', '{"requestId":0,"provider":"x"}', '{"requestId":1.5,"provider":"x"}']) {
+      assert.equal(parseProbeAsyncRequest(raw), null, String(raw));
+      assert.equal(parseProbeAsyncReply(raw, { requestId: 1, provider: 'x' }), null, String(raw));
+    }
+    assert.equal(parseProbeAsyncReply('{"requestId":1,"provider":"x"}', { requestId: 1, provider: 'x' }), null, 'a reply names its value, even null');
+    assert.equal(encodeProbeAsyncReply({ requestId: 1, provider: 'x', value: 10n }), null);
+    assert.equal(encodeProbeAsyncReply({ requestId: 1, provider: 'x', value: 'x'.repeat(1024 * 1024) }), null);
   });
 
   it('round-trips Twitch and YouTube caption requests', () => {

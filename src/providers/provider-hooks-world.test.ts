@@ -11,7 +11,7 @@ it('provider hooks are typed per world', () => {
   const isolated = {} as ProviderRuntimeApi<'isolated'>;
   const never = (_register: () => void) => {};
   never(() => {
-    main.register({ ...base, probe: () => null, install() {} });
+    main.register({ ...base, probe: () => null, probeAsync: async () => null, install() {} });
     isolated.register({ ...base, createAdapter: () => { throw new Error('type only'); }, stage: {} as NonNullable<IsolatedProviderHooks['stage']> });
     // Hooks both worlds share register in either.
     main.register({ ...base, chat: undefined, events: { media: [] } });
@@ -23,6 +23,8 @@ it('provider hooks are typed per world', () => {
     main.register({ ...base, hostCaptions: () => { throw new Error('type only'); } });
     // @ts-expect-error a MAIN-world hook is silently ignored in the isolated world
     isolated.register({ ...base, install() {} });
+    // @ts-expect-error likewise for the asynchronous probe, which MAIN answers from its own registry
+    isolated.register({ ...base, probeAsync: async () => null });
     // @ts-expect-error likewise for harvest
     isolated.register({ ...base, harvest: {} as NonNullable<MainProviderHooks['harvest']> });
     // @ts-expect-error a hook object held in a variable is checked too

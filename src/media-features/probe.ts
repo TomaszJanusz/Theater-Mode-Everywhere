@@ -1,4 +1,4 @@
-import { encodeProbeRequest } from '../protocol/page-requests';
+import { encodeProbeRequest, encodeProbeAsyncRequest, parseProbeAsyncReply, PROBE_ASYNC_EVENT, PROBE_ASYNC_REPLY_EVENT } from '../protocol/page-requests';
 import { createWorldMessage, readWorldEnvelope } from '../protocol/world-messages';
 import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
 import type { CrunchyrollSnapshot } from '../providers/crunchyroll/main';
@@ -123,6 +123,37 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
         : MEDIA_PROBE_RESULT_EVENT;
     window.addEventListener(resultEvent, onResult as EventListener);
     window.dispatchEvent(new CustomEvent(MEDIA_PROBE_EVENT, { detail: encodeProbeRequest(id) }));
+  });
+}
+
+/** Settles the provider's pending probe with null when a newer request for it supersedes it. */
+const pendingProviderProbes = new Map<string, () => void>();
+let providerProbeId = 0;
+
+/**
+ * A registered provider's asynchronous MAIN-world probe (`probeAsync`), for snapshots that need page requests.
+ * Resolves to the provider's unvalidated value, or null on timeout, a MAIN refusal, or when a newer request for the
+ * same provider supersedes this one: only the latest request's reply is ever delivered.
+ */
+export function requestProviderProbe(provider: string, timeoutMs = 8000, target: EventTarget = window): Promise<unknown> {
+  pendingProviderProbes.get(provider)?.();
+  return new Promise((resolve) => {
+    const finish = (value: unknown) => {
+      if (pendingProviderProbes.get(provider) === cancel) pendingProviderProbes.delete(provider);
+      clearTimeout(timer);
+      target.removeEventListener(PROBE_ASYNC_REPLY_EVENT, onResult);
+      resolve(value);
+    };
+    const cancel = () => finish(null);
+    const request = { requestId: ++providerProbeId, provider };
+    const onResult = (event: Event) => {
+      const reply = parseProbeAsyncReply((event as CustomEvent<unknown>).detail, request);
+      if (reply) finish(reply.value);
+    };
+    const timer = setTimeout(cancel, timeoutMs);
+    pendingProviderProbes.set(provider, cancel);
+    target.addEventListener(PROBE_ASYNC_REPLY_EVENT, onResult);
+    target.dispatchEvent(new CustomEvent(PROBE_ASYNC_EVENT, { detail: encodeProbeAsyncRequest(request) }));
   });
 }
 

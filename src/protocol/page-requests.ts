@@ -1,6 +1,6 @@
 /**
- * Isolated -> MAIN requests that expect a correlated reply (media probe, Twitch and YouTube
- * caption toggles). Firefox hides objects created in the content-script compartment from page
+ * Isolated -> MAIN requests that expect a correlated reply (media probe, provider probe, Twitch and
+ * YouTube caption toggles), and the provider probe's reply. Firefox hides objects created in the content-script compartment from page
  * code (`Permission denied to access property`), so each `detail` crosses worlds as a JSON
  * string and MAIN validates it on receipt. A request that does not parse is dropped, so a
  * stale or foreign dispatch can never change page state or be answered.
@@ -8,8 +8,8 @@
 const MAX_REQUEST_CHARS = 1000;
 const MAX_FIELD_CHARS = 200;
 
-function parseRecord(raw: unknown): Record<string, unknown> | null {
-  if (typeof raw !== 'string' || raw.length > MAX_REQUEST_CHARS) return null;
+function parseRecord(raw: unknown, maxChars = MAX_REQUEST_CHARS): Record<string, unknown> | null {
+  if (typeof raw !== 'string' || raw.length > maxChars) return null;
   let data: unknown;
   try {
     data = JSON.parse(raw);
@@ -40,6 +40,49 @@ export function encodeProbeRequest(requestId: number): string {
 export function parseProbeRequest(raw: unknown): number | null {
   const record = parseRecord(raw);
   return record ? requestNumber(record.requestId) : null;
+}
+
+export const PROBE_ASYNC_EVENT = 'theater-everywhere-probe-async';
+export const PROBE_ASYNC_REPLY_EVENT = 'theater-everywhere-probe-async-reply';
+
+/** A registered provider's asynchronous probe; `provider` is looked up in MAIN's own registry. */
+export type ProbeAsyncRequest = { requestId: number; provider: string };
+
+/** MAIN -> isolated. `value` is the provider's own snapshot, still unvalidated: the provider parses it. */
+export type ProbeAsyncReply = ProbeAsyncRequest & { value: unknown };
+
+/** Snapshots carry metadata (track lists, storyboards), never media; anything larger is dropped. */
+const MAX_PROBE_REPLY_CHARS = 1024 * 1024;
+
+function providerId(value: unknown): string | null {
+  return typeof value === 'string' && /^[A-Za-z]{1,40}$/.test(value) ? value : null;
+}
+
+export function encodeProbeAsyncRequest(request: ProbeAsyncRequest): string {
+  return JSON.stringify(request);
+}
+
+export function parseProbeAsyncRequest(raw: unknown): ProbeAsyncRequest | null {
+  const record = parseRecord(raw);
+  const requestId = record && requestNumber(record.requestId);
+  const provider = record && providerId(record.provider);
+  return requestId && provider ? { requestId, provider } : null;
+}
+
+/** Null when the value does not serialize or is too large; the caller then answers with a null value. */
+export function encodeProbeAsyncReply(reply: ProbeAsyncReply): string | null {
+  try {
+    const text = JSON.stringify({ requestId: reply.requestId, provider: reply.provider, value: reply.value ?? null });
+    return text.length <= MAX_PROBE_REPLY_CHARS ? text : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The reply's value when `raw` answers exactly `request`, else null: a reply to another request or provider never resolves this one. */
+export function parseProbeAsyncReply(raw: unknown, request: ProbeAsyncRequest): { value: unknown } | null {
+  const record = parseRecord(raw, MAX_PROBE_REPLY_CHARS);
+  return record?.requestId === request.requestId && record.provider === request.provider && 'value' in record ? { value: record.value } : null;
 }
 
 export type TwitchCaptionsRequest = { enabled: boolean; requestId: string };
