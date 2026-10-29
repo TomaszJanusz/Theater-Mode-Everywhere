@@ -35,7 +35,7 @@ import {
   resolveMediaProviderFlags,
   richTheaterExperienceEnabled
 } from './provider-flags';
-import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
+import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachTwitchAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { YouTubeAdapter } from './youtube-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls } from './youtube-snapshot';
@@ -1518,8 +1518,8 @@ describe('provider integration flags', () => {
     assert.equal(flags.netflix, false);
     assert.equal(shouldAttachYouTubeAdapter({ ...allOn, youtube: false }, 'www.youtube.com'), false);
     assert.equal(shouldAttachYouTubeAdapter(allOn, 'www.youtube.com'), true);
-    assert.equal(shouldAttachVimeoAdapter({ ...allOn, vimeo: false }, 'vimeo.com'), false);
-    assert.equal(shouldAttachVimeoAdapter(allOn, 'player.vimeo.com'), true);
+    assert.equal(shouldAttachProvider('vimeo', { ...allOn, vimeo: false }, 'vimeo.com'), false);
+    assert.equal(shouldAttachProvider('vimeo', allOn, 'player.vimeo.com'), true);
     assert.equal(shouldAttachYouTubeAdapter(allOn, 'example.com'), false);
     assert.equal(shouldAttachProvider('patreon', allOn, 'www.patreon.com'), true);
     assert.equal(shouldAttachProvider('patreon', { ...allOn, patreon: false }, 'www.patreon.com'), false);

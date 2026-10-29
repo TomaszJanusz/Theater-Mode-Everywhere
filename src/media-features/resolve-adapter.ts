@@ -9,7 +9,6 @@ import { NetflixAdapter } from '../providers/netflix/adapter';
 import { PROVIDER_DEFINITIONS, shouldAttachProvider } from '../providers/registry';
 import { TencentAdapter } from '../providers/tencent/adapter';
 import { TwitchAdapter } from '../providers/twitch/adapter';
-import { VimeoAdapter } from '../providers/vimeo/adapter';
 
 import { CompositeMediaAdapter } from './composite-adapter';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from './provider-flags';
@@ -18,10 +17,6 @@ import type { MediaFeaturesAdapter } from './types';
 
 export function shouldAttachYouTubeAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
   return shouldAttachProvider('youtube', flags, hostname);
-}
-
-export function shouldAttachVimeoAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
-  return shouldAttachProvider('vimeo', flags, hostname);
 }
 
 export function shouldAttachTwitchAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
@@ -52,7 +47,6 @@ export function createMediaFeaturesAdapter(
 ): MediaFeaturesAdapter {
   const surface = coercePlaybackSurface(media);
   const adapters: MediaFeaturesAdapter[] = [];
-  if (shouldAttachVimeoAdapter(flags)) adapters.push(new VimeoAdapter());
   if (shouldAttachTwitchAdapter(flags)) adapters.push(new TwitchAdapter());
   if (shouldAttachDisneyAdapter(flags)) adapters.push(new DisneyAdapter());
   if (shouldAttachNetflixAdapter(flags)) adapters.push(new NetflixAdapter());

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "vimeo",
+  "hosts": [
+    {
+      "domain": "vimeo.com",
+      "includeSubdomains": true
+    }
+  ],
+  "entries": {
+    "isolated": {
+      "file": "isolated.ts",
+      "runAt": "document_start"
+    },
+    "main": {
+      "file": "main.ts",
+      "runAt": "document_start"
+    }
+  }
+}

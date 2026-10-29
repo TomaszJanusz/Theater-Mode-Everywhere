@@ -137,7 +137,7 @@ it('admits providers by each document hostname and preserves the generic path el
     assert.deepEqual(files, ['mainWorld.js', 'providers/youtube/main.js', 'mainWorldStart.js', 'content.js', 'providers/youtube/isolated.js', 'contentStart.js'], host);
   }
   // youtu.be is exact; spoofed and look-alike hosts keep the generic path.
-  for (const host of ['www.youtu.be', 'youtube.com.evil.test', 'notyoutube.com', 'youtube.co', 'www.vimeo.com', 'example.test', 'sooplive.com.evil.test', 'notsooplive.com', 'sooplive.co.kr', 'afreecatv.com']) {
+  for (const host of ['www.youtu.be', 'youtube.com.evil.test', 'notyoutube.com', 'youtube.co', 'vimeo.com.evil.test', 'notvimeo.com', 'example.test', 'sooplive.com.evil.test', 'notsooplive.com', 'sooplive.co.kr', 'afreecatv.com']) {
     assert.deepEqual(manifestScriptsForUrl(manifest, `https://${host}/`), ['mainWorld.js', 'mainWorldStart.js', 'content.js', 'contentStart.js'], host);
   }
 });

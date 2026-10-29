@@ -14,11 +14,6 @@ export function isYouTubeHost(hostname = currentHost()): boolean {
   return catalogHost('youtube', hostname);
 }
 
-export function isVimeoHost(hostname = currentHost()): boolean {
-  const host = normalizeHost(hostname);
-  return host === 'vimeo.com' || host.endsWith('.vimeo.com');
-}
-
 export function isTwitchHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);
   return host === 'twitch.tv' || host.endsWith('.twitch.tv');

@@ -27,6 +27,8 @@
         "*://*.patreon.com./*",
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*",
+        "*://*.vimeo.com/*",
+        "*://*.vimeo.com./*",
         "*://*.youtube.com/*",
         "*://*.youtube.com./*",
         "*://*.youtube-nocookie.com/*",
@@ -78,6 +80,22 @@
     },
     {
       "matches": [
+        "*://*.vimeo.com/*",
+        "*://*.vimeo.com./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/vimeo/isolated.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
         "*://*.youtube.com/*",
         "*://*.youtube.com./*",
         "*://*.youtube-nocookie.com/*",
@@ -105,6 +123,8 @@
         "*://*.patreon.com./*",
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*",
+        "*://*.vimeo.com/*",
+        "*://*.vimeo.com./*",
         "*://*.youtube.com/*",
         "*://*.youtube.com./*",
         "*://*.youtube-nocookie.com/*",
@@ -142,6 +162,20 @@
       "js": [
         "mainWorld.js",
         "providers/soop/main.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.vimeo.com/*",
+        "*://*.vimeo.com./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/vimeo/main.js",
         "mainWorldStart.js"
       ],
       "run_at": "document_start",

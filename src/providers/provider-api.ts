@@ -92,7 +92,8 @@ type IsolatedOnlyHooks = {
   /** `options` binds the source to the theater session's document and surface. */
   serviceActions?: (options: NativeServiceActionHooks) => ServiceActionSource;
   navigation?: {
-    playerSelector: string;
+    /** Scopes the host's controls to the player holding the video; without it every control on the page counts. */
+    playerSelector?: string;
     readControls(root: ParentNode): CollectedControl[];
     /** Host surfaces whose changes can alter navigation; any mutation inside them counts. */
     surfaces?: string;

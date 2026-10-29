@@ -12,25 +12,6 @@ export const MEDIA_PROBE_RESULT_EVENT = 'theater-everywhere-media-probe-result';
 export const MEDIA_FETCH_EVENT = 'theater-everywhere-media-fetch';
 export const MEDIA_FETCH_RESULT_EVENT = 'theater-everywhere-media-fetch-result';
 
-export type VimeoThumbPreview = {
-  url: string;
-  width: number;
-  height: number;
-  frameWidth: number;
-  frameHeight: number;
-  columns: number;
-  frames: number;
-};
-
-export type VimeoPlayerSnapshot = {
-  duration?: number;
-  videoId?: string;
-  title?: string;
-  textTracks?: Array<{ id?: string | number; label?: string; language?: string; kind?: string }>;
-  chapters?: Array<{ startTime?: number; title?: string }>;
-  thumbPreview?: VimeoThumbPreview;
-};
-
 export type TwitchCaptionMeta = {
   id: string;
   language: string;
@@ -90,7 +71,6 @@ export type NetflixProbeSnapshot = {
 export type MediaProbeSnapshot = {
   /** Registered providers' snapshots by provider id, unvalidated: each provider normalizes its own. */
   providers?: Record<string, unknown>;
-  vimeo?: VimeoPlayerSnapshot | null;
   twitch?: TwitchPlayerSnapshot | null;
   disney?: DisneyPlayerSnapshot | null;
   netflix?: NetflixProbeSnapshot | null;
@@ -128,7 +108,6 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
       window.removeEventListener(resultEvent, onResult as EventListener);
       resolve({
         providers: plainRecord(snapshot.providers),
-        vimeo: snapshot.vimeo ?? null,
         twitch: snapshot.twitch ?? null,
         disney: snapshot.disney ?? null,
         netflix: snapshot.netflix ?? null,

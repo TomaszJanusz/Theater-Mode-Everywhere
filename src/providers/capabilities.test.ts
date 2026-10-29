@@ -109,23 +109,22 @@ describe('provider capability declarations', () => {
       const navigation = read('./navigation/factory.ts');
       // Follow imports that are actually called, so adding a registered source
       // to a previously unsupported provider also trips the declaration guard.
-      const navFile = provider.id === 'vimeo' ? 'vimeo-showcase' : folder;
       // A provider migrating hook by hook may still register a feature through the shared factory.
       const entryNavigation = extracted && /readControls:/.test(entry);
       const hasActions = (extracted && registeredFrom(entry, './service-actions')) || registeredFrom(actions, `./${folder}/service-actions`);
-      const hasNavigation = entryNavigation || registeredFrom(navigation, `./${navFile}`);
+      const hasNavigation = entryNavigation || registeredFrom(navigation, `./${folder}`);
       // Playlists use the registered PlaylistAction contract, not caption HLS
       // playlists or contextual skip/up-next actions (such as Crunchyroll's).
       assert.equal(hasNavigation, provider.capabilities.playlists.status !== 'no', `${provider.id}.playlists`);
       if (hasNavigation) assert.equal(provider.capabilities.playlists.status, 'conditional');
       assert.equal(hasActions || hasNavigation, provider.capabilities.quickActions.status !== 'no');
       if (hasActions) assert.match(read(`./${folder}/service-actions.ts`), /activate|nativeServiceActionSource/);
-      if (hasNavigation) assert.match(read(entryNavigation ? `./${folder}/navigation.ts` : `./navigation/${navFile}.ts`), /next|collectElement/i);
+      if (hasNavigation) assert.match(read(entryNavigation ? `./${folder}/navigation.ts` : `./navigation/${folder}.ts`), /next|collectElement/i);
     });
   }
 
   it('does not advertise empty Vimeo caption and Netflix chapter interface stubs', async () => {
-    const vimeo = new VimeoAdapter();
+    const vimeo = new VimeoAdapter({ requestMediaProbe: async () => ({}) });
     assert.deepEqual(await vimeo.listCaptionTracks(), []);
     assert.equal((await vimeo.activateCaptionTrack('anything')).status, 'failed');
     assert.deepEqual(await NetflixAdapter.prototype.getChapters(), []);

@@ -1,6 +1,6 @@
 import { PROVIDER_CATALOG } from '../providers/catalog';
 import { descriptorHomeUrl } from '../providers/descriptor-hosts';
-import { isCrunchyrollHost, isDisneyHost, isTwitchHost, isVimeoHost, isYouTubeHost } from '../providers/hosts';
+import { isCrunchyrollHost, isDisneyHost, isTwitchHost, isYouTubeHost } from '../providers/hosts';
 
 /** Resolve the service homepage, including hosts used only for embedded players. */
 export function serviceHomeUrl(pageUrl: string): string | null {
@@ -10,7 +10,6 @@ export function serviceHomeUrl(pageUrl: string): string | null {
     const declared = descriptorHomeUrl(PROVIDER_CATALOG, url.hostname);
     if (declared) return declared;
     if (isYouTubeHost(url.hostname)) return 'https://www.youtube.com/';
-    if (isVimeoHost(url.hostname)) return 'https://vimeo.com/';
     if (isTwitchHost(url.hostname)) return 'https://www.twitch.tv/';
     if (isDisneyHost(url.hostname)) return 'https://www.disneyplus.com/';
     if (isCrunchyrollHost(url.hostname)) return 'https://www.crunchyroll.com/';

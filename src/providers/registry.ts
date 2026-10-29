@@ -8,7 +8,7 @@ import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
 import { PROVIDER_CATALOG } from './catalog';
 import { descriptorMatchesHost } from './descriptor-hosts';
 import { disneyWatchPlayback } from './disney/watch-playback';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isTencentHost, isTwitchHost, isVikiHost, isVimeoHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isTencentHost, isTwitchHost, isVikiHost } from './hosts';
 import { IqiyiAdapter } from './iqiyi/adapter';
 import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
 import type { LauncherPlacementFactory } from './launcher-placement';
@@ -17,7 +17,6 @@ import { providerRegistry } from './runtime-registration';
 import { twitchWatchPlayback } from './twitch/watch-playback';
 import { VikiAdapter } from './viki/adapter';
 import { vikiWatchPlayback } from './viki/watch-playback';
-import { vimeoWatchPlayback } from './vimeo/watch-playback';
 import type { WatchPlayback } from './watch-playback';
 
 export const MAIN_WORLD_BOOT_KEY = Symbol.for('theater-everywhere.main-world');
@@ -38,7 +37,6 @@ export type ProviderDefinition = {
 
 export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'native', matchesHost: () => true },
-  { id: 'vimeo', matchesHost: (hostname) => isVimeoHost(hostname), watchPlayback: vimeoWatchPlayback },
   { id: 'twitch', matchesHost: (hostname) => isTwitchHost(hostname), watchPlayback: twitchWatchPlayback },
   { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname), watchPlayback: disneyWatchPlayback },
   { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname), watchPlayback: netflixWatchPlayback },
