@@ -265,8 +265,7 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     const obstacles: DockRect[] = [];
     // The bar still paints while fading out. Keep captions clear until its
     // transition ends, just as contextual actions keep clear of the same bar.
-    const controls = controlsCache && (controlsCache.classList.contains('visible')
-      || Number.parseFloat(getComputedStyle(controlsCache).opacity) > 0.01) ? controlsCache : null;
+    const controls = controlsCache && controlsBarShowing(controlsCache) ? controlsCache : null;
     if (controls) {
       const rect = controls.getBoundingClientRect();
       if (rect.width > 1 && rect.height > 1) {
@@ -324,6 +323,31 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     }
   }
 
+  // The picture carries the class instead of <html>: every element inherits `cursor`, so
+  // changing it on <html> restyled the whole host page on each show and auto-hide.
+  let cursorHiddenOn: HTMLElement | null = null;
+  function hideCursorOn(target: HTMLElement | null): void {
+    if (cursorHiddenOn !== target) cursorHiddenOn?.classList.remove(CURSOR_HIDDEN_CLASS);
+    target?.classList.add(CURSOR_HIDDEN_CLASS);
+    cursorHiddenOn = target;
+  }
+
+  // Bars whose fade-out has finished since they last lost `visible`. Opacity changes only
+  // with that class, so the bar stays transparent until it is shown again and needs no
+  // further style reads, which would force the host page's pending restyle.
+  const fadedOutBars = new WeakSet<HTMLElement>();
+  function controlsBarShowing(bar: HTMLElement): boolean {
+    if (bar.classList.contains('visible')) {
+      fadedOutBars.delete(bar);
+      return true;
+    }
+    if (fadedOutBars.has(bar)) return false;
+    // The bar still paints while fading out.
+    if (Number.parseFloat(getComputedStyle(bar).opacity) > 0.01) return true;
+    fadedOutBars.add(bar);
+    return false;
+  }
+
   function applyVisibility(active: boolean): void {
     if (ctx.ui().helpOpen && !ctx.refs.helpOverlay?.isConnected) ctx.actions.hideHelpOverlay(false);
     const controls = ctx.queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
@@ -347,6 +371,7 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     controls.classList.toggle('pinned', ctx.ui().keepControlsVisible);
     const wasVisible = controls.classList.contains('visible');
     controls.classList.toggle('visible', visibility.controlsVisible);
+    if (visibility.controlsVisible) fadedOutBars.delete(controls);
     if (visibility.controlsVisible && !wasVisible) (controls as ExtendedHTMLDivElement)._syncPlaybackChrome?.();
     if (header) {
       header.classList.toggle('visible', visibility.headerVisible);
@@ -355,7 +380,7 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     if (ctx.session.element.tagName === 'VIDEO') {
       ctx.session.element.classList.toggle('controls-visible', visibility.controlsVisible);
     }
-    document.documentElement.classList.toggle(CURSOR_HIDDEN_CLASS, !visibility.cursorVisible);
+    hideCursorOn(visibility.cursorVisible ? null : ctx.session.element);
     ctx.uiStore.dispatch({ type: 'SET_TOOLBAR_VISIBLE', value: visibility.headerVisible });
     // Resolve the collision before the first frame of the controls' fade-in.
     updateCaptionDock(visibility.controlsVisible && !wasVisible);
@@ -491,6 +516,8 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     hideToolbar,
     updateCaptionDock,
     resetCaptionDock,
+    controlsBarShowing,
+    releaseCursor: () => hideCursorOn(null),
     closeTheaterPopovers,
     blurMouseToggle,
     preventDoubleToggle,

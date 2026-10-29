@@ -217,6 +217,7 @@ const controls = createControls(ctx, buttonTooltip.bind, () => {
   hud.removeCaptionHud();
   hud.removeCenteredHud();
   toolbar.resetCaptionDock();
+  toolbar.releaseCursor();
 });
 
 const {
@@ -712,6 +713,7 @@ function bindChromeActions(): void {
     hideToolbar,
     scheduleToolbarHide: toolbar.scheduleToolbarHide,
     updateCaptionDock,
+    controlsBarShowing: toolbar.controlsBarShowing,
     closeTheaterPopovers,
     blurMouseToggle: toolbar.blurMouseToggle,
     hideHelpOverlay,
