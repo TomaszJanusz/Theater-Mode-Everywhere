@@ -21,7 +21,10 @@ import type { WatchPlayback } from './watch-playback';
 export type ProviderWorld = 'isolated' | 'main';
 export type ProviderChat = {
   parseLocation(url: URL): ParsedChatLocation | null;
+  /** Hosts that can show a watch-page chat. */
   matchesHost(hostname: string): boolean;
+  /** Hosts whose chat elements keep their keys, when wider than `matchesHost` (a chat outside watch routes). */
+  matchesEventHost?(hostname: string): boolean;
   detect(document: Document, href: string): ChatSurface | null;
   /** `surface` is the chat already detected, if any; a service may offer activation only while it is collapsed. */
   activation(document: Document, href: string, surface?: ChatSurface | null): ChatActivation | null;
@@ -51,6 +54,8 @@ export type ProviderChat = {
     /** The document that holds the chat's palette, such as the chat iframe's. */
     document(surface: ChatSurface): Document | null;
     adapter(document: Document, surface: ChatSurface): ChatThemeAdapter;
+    /** Service layers outside the chat (menus, emote pickers) that carry the palette; adding or removing one re-applies it. */
+    portals?: string;
   };
 };
 
@@ -81,6 +86,11 @@ type IsolatedOnlyHooks = {
   createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
   /** Native presentation remains active with the data integration disabled. */
   stage?: ProviderStage;
+  /** Video discovery rules, active with the data integration disabled like `stage`. */
+  discovery?: {
+    /** A still-connected video the host has emptied for good, which a loaded replacement may supersede. */
+    abandonedVideo(video: HTMLVideoElement): boolean;
+  };
   /** A fresh source per composite adapter; the source owns caption measurements and cleanup. */
   hostCaptions?: () => HostCaptionLayoutSource;
   /** The adapter leaves its title to native page metadata rather than providing a service title. */
@@ -141,6 +151,11 @@ export type ProviderHarvest = {
   /** Targets whose fetch body the provider reads itself: `response` gets the one owned clone (text/JSON only, capped). */
   cloneTargets?: readonly string[];
   response?(target: string, url: string, clone: Response): void;
+  /**
+   * Targets whose XHR `blob` bodies the core reads as text (within the text cap) and passes to `text`, for hosts that
+   * request metadata as Blobs. The read is asynchronous: a body that resolves after the page URL changed is dropped.
+   */
+  blobTextTargets?: readonly string[];
   /**
    * False on hosts that replace fetch with their own transport, where a wrapper breaks playback (Twitch's VOD
    * seeking): Response and XHR observers still harvest. Any registered provider can veto the wrapper this way.

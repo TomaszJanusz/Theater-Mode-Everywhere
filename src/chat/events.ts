@@ -31,7 +31,8 @@ function matchesServiceChat(element: Element): boolean {
   }
   if (isTwitchHost(host) && element.matches(TWITCH_CHAT_EVENT_SELECTOR)) return true;
   const chat = registeredChat();
-  return Boolean(chat?.matchesHost(host) && (element.matches(chat.eventSelector) || chat.matchesEvent?.(element)));
+  if (!chat || !(chat.matchesEventHost?.(host) ?? chat.matchesHost(host))) return false;
+  return element.matches(chat.eventSelector) || Boolean(chat.matchesEvent?.(element));
 }
 
 function documentOf(event: Event): Document | null {

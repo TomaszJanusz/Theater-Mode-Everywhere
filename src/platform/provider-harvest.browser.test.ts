@@ -75,4 +75,40 @@ for (const engine of testEngines()) describe(`${engine} registered MAIN harvest`
     assert.equal(await wrapped(undefined), true, 'a registered harvest wraps fetch by default');
     assert.equal(await wrapped(false), false, 'wrapFetch: false keeps the host transport untouched');
   });
+
+  it('reads opted-in XHR Blob bodies as text and drops a read that outlives the page URL', async t => {
+    const page = await open(t, engine);
+    await page.addScriptTag({ content: fixture });
+    await page.evaluate(`(async () => {
+      HarvestVeto.exposeFixtureRuntime('main');
+      window.__seen = [];
+      HarvestVeto.providerRuntime('main').register({ id: 'youtube', contractVersion: 1,
+        watchPlayback: { pageIdentity: () => null, mainVideo: () => null },
+        harvest: { qualify: url => /\\/(meta|other)/.exec(url)?.[1] ?? null, blobTextTargets: ['meta'],
+          text: (target, url, text) => window.__seen.push(target + ' ' + new URL(url).pathname + ' ' + text) } });
+      HarvestVeto.installMainWorldRuntime();
+      const load = (path, onLoadEnd) => new Promise(resolve => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', path);
+        xhr.responseType = 'blob';
+        xhr.send();
+        xhr.addEventListener('loadend', () => { onLoadEnd?.(); resolve(); });
+      });
+      await load('/meta/current');
+      await load('/other/ignored');
+      // The page navigates while the body is still being read: that read belongs to the previous URL.
+      const read = Blob.prototype.text;
+      let finish;
+      let pending;
+      Blob.prototype.text = function() { pending = read.call(this); return new Promise(resolve => { finish = () => resolve(pending); }); };
+      await load('/meta/stale', () => history.pushState(null, '', '/watch?v=another1234'));
+      Blob.prototype.text = read;
+      finish();
+      await pending;
+      // The next request's network round trip runs the stale read's continuation first.
+      await load('/meta/after');
+    })()`);
+    await page.waitForFunction('window.__seen.length >= 2');
+    assert.deepEqual(await page.evaluate('window.__seen'), [`meta /meta/current ${WATCH}`, `meta /meta/after ${WATCH}`]);
+  });
 });

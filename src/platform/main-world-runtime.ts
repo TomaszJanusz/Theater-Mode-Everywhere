@@ -146,6 +146,19 @@ export function installMainWorldRuntime(): void {
     }
   }
 
+  /** Opted-in Blob bodies only, read as text once; a read that outlives the page URL it was requested on is stale. */
+  function harvestBlobText(target: ProviderTarget, url: string, body: unknown): void {
+    if (!target.harvest.blobTextTargets?.includes(target.id) || !(body instanceof Blob) || body.size > MAX_CAPTION_BYTES) return;
+    const href = window.location.href;
+    body.text().then((text) => {
+      try {
+        if (text && window.location.href === href) harvestText(target, url, text);
+      } catch (error) {
+        noteWrapperFailure('xhr', error);
+      }
+    }).catch(() => {});
+  }
+
   /** Each selected consumer owns this single clone. Its text/json read bypasses the host Response observers to avoid a second harvest. */
   function consumeFetchClone(target: HarvestTarget | null, url: string, response: Response): void {
     if (isProviderTarget(target)) {
@@ -255,6 +268,7 @@ export function installMainWorldRuntime(): void {
     installXhrHarvest(XMLHttpRequest.prototype, (xhr, url) => {
       const target = harvestTarget(url);
       if (!target) return;
+      if (isProviderTarget(target) && xhr.responseType === 'blob') { harvestBlobText(target, url, xhr.response); return; }
       if (target === 'crunchyroll-url') { harvestCrunchyrollBody(url, ''); return; }
       if (target === 'twitch-storyboard') { harvestTwitchXhr(url, null, xhr); return; }
       const format = harvestBodyFormat(formatTarget(target), xhr.responseType);

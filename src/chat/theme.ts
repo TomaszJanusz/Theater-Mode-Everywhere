@@ -11,7 +11,6 @@ export const CHAT_THEME_ATTRIBUTE = 'data-theater-chat-theme';
 /** Fallback for palette edits that do not mutate the DOM, such as a CSS rule property change. */
 const THEME_POLL_MS = 700;
 
-const THEME_NODE_SELECTOR = `style, link, ${TWITCH_CHAT_PORTAL_SELECTOR}`;
 
 export function normalizeChatTheme(value: unknown): ChatTheme {
   return value === 'light' || value === 'native' || value === 'dark' ? value : 'native';
@@ -129,9 +128,10 @@ export class ChatThemeSession {
     this.observer = null;
     this.observedDoc = null;
     if (!doc?.documentElement || this.surface?.root.ownerDocument.hidden) return;
+    const portals = [TWITCH_CHAT_PORTAL_SELECTOR, registeredChat()?.theme?.portals].filter(Boolean).join(', ');
     const observer = new MutationObserver((records) => {
       if (this.surface?.root.ownerDocument.hidden) return;
-      if (!records.some(themeDomChanged)) return;
+      if (!records.some(record => themeDomChanged(record, portals))) return;
       const previous = this.status;
       this.apply(true);
       if (this.status !== previous) this.onStatusChange();
@@ -204,18 +204,18 @@ function themeDocument(surface: ChatSurface): Document | null {
   catch { return null; }
 }
 
-/** Style, link, and portal nodes. Chat transcripts and our own UI are ignored before any subtree scan. */
-function themeDomChanged(record: MutationRecord): boolean {
+/** Style, link, and service portal nodes. Chat transcripts and our own UI are ignored before any subtree scan. */
+function themeDomChanged(record: MutationRecord, portals: string): boolean {
   if (record.type !== 'childList') return false;
+  const themeNodes = ['style', 'link', portals].filter(Boolean).join(', ');
   for (const node of [...record.addedNodes, ...record.removedNodes]) {
     if (!(node instanceof Element)) continue;
-    const tag = node.tagName;
-    if (tag === 'STYLE' || tag === 'LINK' || node.matches(TWITCH_CHAT_PORTAL_SELECTOR)) return true;
+    if (node.matches(themeNodes)) return true;
     if (registeredChat()?.structure?.transcript(node) || node.classList.contains('chat-line__message') || node.classList.contains('chat-line')) continue;
     if (node.id === 'theater-everywhere-ui' || node.closest('#theater-everywhere-ui')) continue;
     const parent = node.parentElement;
     if (parent !== node.ownerDocument.head && parent !== node.ownerDocument.body) continue;
-    if (node.querySelector(THEME_NODE_SELECTOR)) return true;
+    if (node.querySelector(themeNodes)) return true;
   }
   return false;
 }
