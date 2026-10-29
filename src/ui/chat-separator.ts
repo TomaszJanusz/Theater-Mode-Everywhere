@@ -1,5 +1,7 @@
 import type { DisposableScope } from '../core/disposable-scope';
 
+import { systemClock, type UiClock } from './ui-clock';
+
 /** What the separator shows: the right-docked chat's width, or nothing when there is no side chat. */
 export interface ChatSeparatorState {
   shown: boolean;
@@ -15,6 +17,8 @@ export interface ChatSeparatorOptions {
   defaultWidth: number;
   /** Clamps and applies a width; the next `update` reports what was applied. */
   setWidth: (width: number) => void;
+  /** Times the pause after which a drag applies its width. */
+  clock?: UiClock;
 }
 
 export interface ChatSeparator {
@@ -24,15 +28,34 @@ export interface ChatSeparator {
 
 const STEP_PX = 10;
 const LARGE_STEP_PX = 50;
+/** A drag applies its width once the pointer has rested this long, and on release. */
+export const CHAT_SEPARATOR_SETTLE_MS = 120;
+
+/**
+ * The width a separator key asks for, or null for a key it leaves alone. Chat always sits on the
+ * physical right, in right-to-left interfaces too, so the arrows move the splitter the way they
+ * point: Left widens the chat and Right narrows it. Home and End give the chat its smallest and
+ * largest width, as the separator role's value is the chat width.
+ */
+export function keyboardChatWidth(key: string, large: boolean, width: number, range: { min: number; max: number }): number | null {
+  const step = large ? LARGE_STEP_PX : STEP_PX;
+  switch (key) {
+    case 'ArrowLeft': return width + step;
+    case 'ArrowRight': return width - step;
+    case 'Home': return range.min;
+    case 'End': return range.max;
+    default: return null;
+  }
+}
 
 /**
  * The vertical splitter between the picture and a right-docked chat. Pointer and keyboard both
- * end in `setWidth`; a drag applies at most one width per animation frame, so the chat geometry
- * and the picture layout it triggers are written and read once per frame.
+ * end in `setWidth`.
  *
- * Chat always sits on the physical right, in right-to-left interfaces too, so the arrows move the
- * splitter the way they point: Left widens the chat and Right narrows it. Home and End give the
- * chat its smallest and largest width, as the separator role's value is the chat width.
+ * A width change restyles the whole host page (the chat geometry lives on its root) and makes the
+ * service's chat lay itself out again; on YouTube that is far more than a frame. So while the
+ * pointer moves, only the separator follows it, translated inside the player UI, which restyles
+ * nothing else; the chat and the picture take the width when the pointer rests and on release.
  */
 export function createChatSeparator(options: ChatSeparatorOptions): ChatSeparator {
   const { scope, min, max } = options;
@@ -50,8 +73,14 @@ export function createChatSeparator(options: ChatSeparatorOptions): ChatSeparato
   grip.setAttribute('aria-hidden', 'true');
   element.append(grip);
 
+  const clock = options.clock ?? systemClock;
   let width = options.defaultWidth;
-  let drag: { pointerId: number; startX: number; startWidth: number; pending: number | null; frame: number; scope: DisposableScope } | null = null;
+  let drag: {
+    pointerId: number; startX: number; startWidth: number;
+    /** Where the pointer has put the edge; `width` catches up when the drag settles. */
+    preview: number;
+    frame: number; settle: number | undefined; scope: DisposableScope;
+  } | null = null;
 
   const clamp = (value: number) => Math.min(max, Math.max(min, Math.round(value)));
   const apply = (next: number) => {
@@ -59,18 +88,17 @@ export function createChatSeparator(options: ChatSeparatorOptions): ChatSeparato
     if (value !== width) options.setWidth(value);
   };
 
-  const flush = () => {
-    if (!drag || drag.pending === null) return;
-    const next = drag.pending;
-    drag.pending = null;
-    apply(next);
+  /** The applied edge is the host's right edge; the preview sits `width - preview` px from it. */
+  const place = () => {
+    const offset = drag ? width - drag.preview : 0;
+    element.style.transform = offset ? `translateX(${offset}px)` : '';
   };
 
-  /** Applies the last move unless the chat went away under the pointer. */
+  /** Applies the previewed width unless the chat went away under the pointer. */
   const endDrag = (commit = true) => {
     if (!drag) return;
     const current = drag;
-    if (commit) flush();
+    if (commit) apply(current.preview);
     drag = null;
     current.scope.dispose();
   };
@@ -91,7 +119,8 @@ export function createChatSeparator(options: ChatSeparatorOptions): ChatSeparato
     event.preventDefault();
     event.stopPropagation();
     const dragScope = scope.child();
-    drag = { pointerId: event.pointerId, startX: event.clientX, startWidth: width, pending: null, frame: 0, scope: dragScope };
+    drag = { pointerId: event.pointerId, startX: event.clientX, startWidth: width, preview: width, frame: 0, settle: undefined, scope: dragScope };
+    const current = drag;
     try {
       element.setPointerCapture(event.pointerId);
       dragScope.add(() => {
@@ -105,8 +134,10 @@ export function createChatSeparator(options: ChatSeparatorOptions): ChatSeparato
     element.append(overlay);
     element.toggleAttribute('data-dragging', true);
     dragScope.add(() => {
+      clock.clearTimeout(current.settle);
       overlay.remove();
       element.removeAttribute('data-dragging');
+      element.style.removeProperty('transform');
     });
   });
 
@@ -114,11 +145,16 @@ export function createChatSeparator(options: ChatSeparatorOptions): ChatSeparato
     const current = drag;
     if (!current || event.pointerId !== current.pointerId) return;
     event.preventDefault();
-    current.pending = current.startWidth + current.startX - event.clientX;
+    current.preview = clamp(current.startWidth + current.startX - event.clientX);
+    clock.clearTimeout(current.settle);
+    current.settle = clock.setTimeout(() => {
+      current.settle = undefined;
+      if (drag === current) apply(current.preview);
+    }, CHAT_SEPARATOR_SETTLE_MS);
     if (current.frame) return;
     current.frame = current.scope.raf(() => {
       current.frame = 0;
-      if (drag === current) flush();
+      if (drag === current) place();
     });
   });
 
@@ -136,15 +172,8 @@ export function createChatSeparator(options: ChatSeparatorOptions): ChatSeparato
 
   scope.listen(element, 'keydown', (event: KeyboardEvent) => {
     if (event.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
-    const step = event.shiftKey ? LARGE_STEP_PX : STEP_PX;
-    let next: number;
-    switch (event.key) {
-      case 'ArrowLeft': next = width + step; break;
-      case 'ArrowRight': next = width - step; break;
-      case 'Home': next = min; break;
-      case 'End': next = max; break;
-      default: return;
-    }
+    const next = keyboardChatWidth(event.key, event.shiftKey, width, options);
+    if (next === null) return;
     // The page's own shortcuts (seeking on YouTube) must not also take the key.
     event.preventDefault();
     event.stopPropagation();
@@ -156,6 +185,7 @@ export function createChatSeparator(options: ChatSeparatorOptions): ChatSeparato
     update(state) {
       width = clamp(state.width);
       element.setAttribute('aria-valuenow', String(width));
+      if (drag) place();
       if (element.hidden === !state.shown) return;
       element.hidden = !state.shown;
       if (!state.shown) {

@@ -1548,6 +1548,8 @@ button.theater-time-end:focus-visible,
   touch-action: none;
   user-select: none;
   outline: none;
+  /* Its position follows the pointer; the reduced-motion duration must not animate it either. */
+  transition-property: none;
 }
 
 .theater-chat-separator[hidden] {
