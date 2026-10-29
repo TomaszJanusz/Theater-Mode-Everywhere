@@ -1,3 +1,5 @@
+import { measureNextFrame, type FrameMeasure } from './frame-batch';
+
 type Disposer = () => void;
 
 export class DisposableScope {
@@ -73,6 +75,23 @@ export class DisposableScope {
     });
     unregister = this.add(() => cancelAnimationFrame(id));
     return id;
+  }
+
+  /** {@link measureNextFrame} owned by this scope: disposal drops the read and its writes. */
+  measureFrame(measure: FrameMeasure): void {
+    if (this.disposed) return;
+    if (typeof window === 'undefined' || typeof requestAnimationFrame !== 'function') {
+      this.timeout(() => { measure()?.(); }, 0);
+      return;
+    }
+    let unregister: Disposer = () => {};
+    const cancel = measureNextFrame(window, () => {
+      unregister();
+      if (this.disposed) return;
+      const write = measure();
+      return write && (() => { if (!this.disposed) write(); });
+    });
+    unregister = this.add(cancel);
   }
 
   child(): DisposableScope {

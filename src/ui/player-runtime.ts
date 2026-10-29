@@ -1,4 +1,5 @@
 import type { DisposableScope } from '../core/disposable-scope';
+import { measureNextFrame } from '../core/frame-batch';
 import { AUDIO_PREF_STORAGE_KEY, resolveAudioPreferences, upsertAudioPreference } from '../media-features/audio-preference';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
@@ -898,31 +899,38 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
 }
 
 function applyTheaterPictureLayout(): void {
+  measurePictureLayout()();
+}
+
+/** Reads the picture's frame; the returned write positions the picture and the layout's properties. */
+function measurePictureLayout(): () => void {
   const fit = ui().videoFit;
   const frame = currentPictureFrame();
   const position = objectPositionForPicture(fit, ui().pictureAlign, frame, picturePositionOptions());
   const letterbox = horizontalLetterboxPx(frame);
-  const root = document.documentElement;
-  const previous = root.style.getPropertyValue('--theater-object-position');
-  if (previous !== '' && previous !== position && !isMotionReduced()) beginPictureMove();
-  root.classList.toggle(
-    'theater-everywhere-picture-top',
-    raisedCaptionsUseBand(position, letterbox)
-  );
-  document.documentElement.style.setProperty('--theater-object-fit', fit);
-  document.documentElement.style.setProperty('--theater-object-position', position);
-  root.style.setProperty('--theater-letterbox', `${Math.round(letterbox)}px`);
-  // Raised playback puts the whole letterbox below the picture. Other fits
-  // and unavailable media dimensions use the playback viewport's center.
-  const pictureHeight = frame.viewportHeight - (position === 'center top' ? letterbox : 0);
-  root.style.setProperty('--theater-hud-center-y', `${pictureHeight / 2}px`);
-  if (session.element) {
-    session.element.style.setProperty('object-fit', fit, 'important');
-    session.element.style.setProperty('--theater-object-fit', fit);
-    session.element.style.setProperty('object-position', position, 'important');
-    session.element.style.setProperty('--theater-object-position', position);
-  }
-  updateCaptionDock();
+  return () => {
+    const root = document.documentElement;
+    const previous = root.style.getPropertyValue('--theater-object-position');
+    if (previous !== '' && previous !== position && !isMotionReduced()) beginPictureMove();
+    root.classList.toggle(
+      'theater-everywhere-picture-top',
+      raisedCaptionsUseBand(position, letterbox)
+    );
+    document.documentElement.style.setProperty('--theater-object-fit', fit);
+    document.documentElement.style.setProperty('--theater-object-position', position);
+    root.style.setProperty('--theater-letterbox', `${Math.round(letterbox)}px`);
+    // Raised playback puts the whole letterbox below the picture. Other fits
+    // and unavailable media dimensions use the playback viewport's center.
+    const pictureHeight = frame.viewportHeight - (position === 'center top' ? letterbox : 0);
+    root.style.setProperty('--theater-hud-center-y', `${pictureHeight / 2}px`);
+    if (session.element) {
+      session.element.style.setProperty('object-fit', fit, 'important');
+      session.element.style.setProperty('--theater-object-fit', fit);
+      session.element.style.setProperty('object-position', position, 'important');
+      session.element.style.setProperty('--theater-object-position', position);
+    }
+    updateCaptionDock();
+  };
 }
 
 function applyTheaterVideoFit(mode: VideoFitMode = ui().videoFit): void {
@@ -2326,7 +2334,9 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     if (relayoutHost) hostRelayoutQueued = true;
     if (stabilizeScheduled) return;
     stabilizeScheduled = true;
-    bindingScope.raf(() => {
+    // In the frame's read phase: while the host rebuilds its page, the pin's measurement then shares
+    // the frame's own layout instead of forcing the host's pending restyle.
+    bindingScope.measureFrame(() => {
       stabilizeScheduled = false;
       const target = session.element;
       if (!(target instanceof HTMLVideoElement)) return;
@@ -2338,10 +2348,10 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   const schedulePictureLayout = (): void => {
     if (pictureLayoutScheduled) return;
     pictureLayoutScheduled = true;
-    bindingScope.raf(() => {
+    bindingScope.measureFrame(() => {
       pictureLayoutScheduled = false;
       if (session.element?.tagName !== 'VIDEO') return;
-      applyTheaterPictureLayout();
+      return measurePictureLayout();
     });
   };
   bindingScope.listen(window, 'resize', schedulePictureLayout);
@@ -2350,10 +2360,11 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   }, true);
   bindingScope.listen(document, 'fullscreenchange', schedulePictureLayout);
 
+  // The host starts replacing its page; the pin waits for the frame, which still precedes its paint.
   const holdViewport = (): void => {
     if (session.element !== video) return;
     refreshTheaterAncestors(video);
-    stabilizeLayout(video, true);
+    scheduleStabilize(true);
   };
   bindingScope.listen(video, 'emptied', holdViewport);
   bindingScope.listen(document, 'yt-navigate-start', holdViewport);
@@ -2689,12 +2700,14 @@ function refreshHostPlayerLayout(): void {
   };
   // Hosts measure their player in resize handlers. The first dispatch waits for the frame, which still
   // precedes the next paint: from the calling task it would make the host lay out the page once more.
-  requestAnimationFrame(() => {
+  // Both dispatches follow the frame's reads, so the host's measurements share that frame's layout.
+  const fireLast = () => {
     fire();
-    window.setTimeout(() => {
-      fire();
-      hostPlayerLayoutRefreshPending = false;
-    }, 120);
+    hostPlayerLayoutRefreshPending = false;
+  };
+  measureNextFrame(window, () => () => {
+    fire();
+    window.setTimeout(() => { measureNextFrame(window, () => fireLast); }, 120);
   });
 }
 

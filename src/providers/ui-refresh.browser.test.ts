@@ -34,6 +34,9 @@ for (const engine of testEngines()) describe(`${engine} UI refresh ownership`, (
           let id = 0, now = 0, hidden = false, reads = 0;
           const oldRaf = window.requestAnimationFrame, oldCancel = window.cancelAnimationFrame;
           const oldTimeout = window.setTimeout, oldClear = window.clearTimeout;
+          // Without a resize observer the shared read phase runs straight from the faked frame.
+          const oldObserver = window.ResizeObserver;
+          Object.assign(window, { ResizeObserver: undefined });
           window.requestAnimationFrame = callback => { frames.set(++id, callback); return id; };
           window.cancelAnimationFrame = key => { frames.delete(key); };
           window.setTimeout = ((run: () => void, ms: number) => { timers.set(++id, { run, at: now + ms }); return id; }) as typeof window.setTimeout;
@@ -94,6 +97,7 @@ for (const engine of testEngines()) describe(`${engine} UI refresh ownership`, (
           const disposed = { reads: reads - beforeDispose, timers: timers.size, frames: frames.size };
           container.remove();
           window.requestAnimationFrame = oldRaf; window.cancelAnimationFrame = oldCancel;
+          Object.assign(window, { ResizeObserver: oldObserver });
           window.setTimeout = oldTimeout; window.clearTimeout = oldClear;
           delete (document as unknown as { hidden?: boolean }).hidden;
           return { initial, burst, ownUpdates, beforeSecond, fallback, hiddenTimers, hiddenReads, returnReads,
@@ -124,6 +128,7 @@ for (const engine of testEngines()) describe(`${engine} UI refresh ownership`, (
       const frames = new Map<number, FrameRequestCallback>();
       const timers = new Map<number, { at: number; run: () => void }>();
       let serial = 0, now = 0, hidden = false, reads = 0;
+      Object.assign(window, { ResizeObserver: undefined });
       window.requestAnimationFrame = cb => { frames.set(++serial, cb); return serial; };
       window.cancelAnimationFrame = id => { frames.delete(id); };
       window.setTimeout = ((run: () => void, ms: number) => { timers.set(++serial, { at: now + ms, run }); return serial; }) as typeof window.setTimeout;
@@ -198,6 +203,7 @@ for (const engine of testEngines()) describe(`${engine} UI refresh ownership`, (
     const report = await page.evaluate(async () => {
       const api = (window as unknown as { RefreshTest: Api }).RefreshTest;
       const frames = new Map<number, FrameRequestCallback>(); let serial = 0;
+      Object.assign(window, { ResizeObserver: undefined });
       window.requestAnimationFrame = cb => { frames.set(++serial, cb); return serial; };
       window.cancelAnimationFrame = id => { frames.delete(id); };
       let reads = 0, progressReads = 0, layouts = 0, placements = 0, menu = false, hidden = false;

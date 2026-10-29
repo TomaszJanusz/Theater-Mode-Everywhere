@@ -1,4 +1,5 @@
 import { AudioTrackController, type AudioTrackOptions } from './audio-tracks';
+import { OVERLAY_CAPTIONS_CLASS } from './caption-dock';
 import { timelineTickPositions } from './timeline-ticks';
 import { createTimelineMarkerSource } from '../providers/timeline/markers';
 import { normalizeCaptionLabel, normalizeLanguageCode, pickCaptionTrack, type CaptionLanguageChoice, type CaptionLanguagePreference } from './caption-preference';
@@ -62,7 +63,7 @@ export type MediaFeaturesBindings = {
 
 function setOverlayCaptionsClass(on: boolean): void {
   if (typeof document === 'undefined') return;
-  document.documentElement.classList.toggle('theater-using-overlay-captions', on);
+  document.documentElement.classList.toggle(OVERLAY_CAPTIONS_CLASS, on);
 }
 
 export type TooltipMediaExtras = {
@@ -655,9 +656,11 @@ export class MediaFeaturesController {
     this.renderer.setStyle(style);
   }
 
-  setCaptionLineLimit(maxLines: number): void {
-    if (!this.renderer.setMaxLines(maxLines)) return;
+  /** Returns whether the cap changed; overlay captions are then redrawn at once. */
+  setCaptionLineLimit(maxLines: number): boolean {
+    if (!this.renderer.setMaxLines(maxLines)) return false;
     if (this.usingOverlayCaptions) this.renderer.update(displayMediaTime(this.video));
+    return true;
   }
 
   /**

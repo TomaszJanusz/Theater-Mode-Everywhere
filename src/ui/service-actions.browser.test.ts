@@ -136,13 +136,13 @@ describe('service action CTA', () => {
     };
     assert.deepEqual(await corner(), { right: 24, bottom: 24 }, 'no picture insets keeps the HUD inset from the screen edge');
 
-    await page.evaluate(`(() => { window.__insets = { end: 320, bottom: 80 }; window.__notify(); })()`);
+    await page.evaluate(`(() => { window.__insets = { end: 320, bottom: 80 }; window.__notify()(); })()`);
     assert.deepEqual(await corner(), { right: 344, bottom: 104 }, 'letterbox and chat offsets move the CTA into the picture corner');
 
     await page.evaluate(`(() => { window.__toolbar = true; })()`);
     await page.waitForFunction(() => document.querySelector('.theater-service-action-host')!.classList.contains('toolbar-visible'));
     assert.equal((await corner()).bottom, 124, 'the bar still lifts a CTA that sits lower than the bar top');
-    await page.evaluate(`(() => { window.__insets = { end: 320, bottom: 200 }; window.__notify(); })()`);
+    await page.evaluate(`(() => { window.__insets = { end: 320, bottom: 200 }; window.__notify()(); })()`);
     assert.equal((await corner()).bottom, 224, 'a deeper letterbox keeps the CTA at the picture corner above the bar');
 
     const tops = await page.locator('.theater-service-action').evaluateAll(buttons => buttons.map(button => {

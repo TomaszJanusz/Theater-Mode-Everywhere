@@ -41,6 +41,11 @@ export class ChoiceMenu {
   private composing = false;
   private query = '';
   private action: HTMLButtonElement | null = null;
+  /**
+   * The list's scroll offset, kept from its scroll events. Reading `scrollTop` on a refresh
+   * forced the host page's pending restyle, and refreshes follow host changes such as navigation.
+   */
+  private scrolled = 0;
 
   constructor(
     private readonly panel: HTMLElement,
@@ -123,6 +128,7 @@ export class ChoiceMenu {
       if (event.key === 'ArrowUp' && index === 0 && !this.search.hidden) this.input.focus({ preventScroll: true });
       else rows[(index + (event.key === 'ArrowDown' ? 1 : rows.length - 1)) % rows.length]?.focus();
     });
+    this.scope.listen(this.list, 'scroll', () => { this.scrolled = this.list.scrollTop; }, { passive: true });
     this.scope.listen(this.list, 'click', (event: MouseEvent) => {
       const button = event.target instanceof Element ? event.target.closest('button') : null;
       if (!button || !this.list.contains(button)) return;
@@ -133,6 +139,8 @@ export class ChoiceMenu {
     this.scope.listen(config.closeEvents ?? panel, MENU_CLOSE_EVENT, () => {
       const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
       if (active && panel.contains(active)) trigger.focus({ preventScroll: true });
+      // A closed menu is not displayed and keeps no scroll offset.
+      this.scrolled = 0;
       this.clearSearch();
     });
   }
@@ -189,6 +197,7 @@ export class ChoiceMenu {
     this.query = searchText(this.input.value);
     this.render();
     this.list.scrollTop = 0;
+    this.scrolled = 0;
   }
 
   private render(): void {
@@ -228,11 +237,10 @@ export class ChoiceMenu {
       empty.textContent = this.query ? this.config.noMatchesLabel : this.config.emptyLabel;
       fragment.append(empty);
     }
-    const scroll = this.list.scrollTop;
     // Removing a focused row must not look like focus leaving the popover.
     if (focusedId !== undefined) this.trigger.focus({ preventScroll: true });
     this.list.replaceChildren(fragment);
-    this.list.scrollTop = scroll;
+    if (this.scrolled) this.list.scrollTop = this.scrolled;
     if (focusedId !== undefined) {
       ([...this.list.querySelectorAll<HTMLButtonElement>('button')].find(row => row.dataset.trackId === focusedId)
         ?? this.firstFocus())?.focus({ preventScroll: true });

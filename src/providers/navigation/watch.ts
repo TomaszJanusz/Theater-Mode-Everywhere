@@ -15,7 +15,9 @@ export function subscribePlaylistNavigation(root: Document | ShadowRoot, read: (
   listener: (state: PlaylistNavState) => void): () => void {
   const doc = root instanceof Document ? root : root.ownerDocument;
   const releaseHosts = retainDisneyPlayNextHosts(doc);
-  const stop = observeProviderDom({ root, selector: SURFACES, changed: () => listener(read()), pollWhenEmpty: true,
+  const stop = observeProviderDom({ root, selector: SURFACES, pollWhenEmpty: true,
+    // Host controls are measured with the frame's other readers; the listener paints afterwards.
+    changed: () => { const state = read(); return () => listener(state); },
     structureChanged: () => invalidateDisneyPlayNextHosts(root instanceof Document ? root : root.ownerDocument),
     relevant: record => {
       const element = record.target instanceof Element ? record.target : record.target.parentElement;

@@ -3,6 +3,7 @@ import { it } from 'node:test';
 
 import type { Page } from 'playwright';
 
+import { CAPTION_DOCK_REST_BOTTOM } from '../media-features/caption-dock';
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { bootPlayer, enterTheater } from '../test-utils/player-boot';
 import { testEngines } from '../test-utils/test-engines';
@@ -60,11 +61,20 @@ function cursors(page: Page): Promise<{ picture: string; page: string; bar: bool
   }));
 }
 
+/** The caption overlay's resting place above the screen's bottom edge, in pixels; it glides there in real time. */
+function captionBottom(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const overlay = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-caption-overlay')!;
+    return Number.parseFloat(getComputedStyle(overlay).getPropertyValue('--theater-caption-bottom'));
+  });
+}
+
 const browsers = sharedEngineBrowsers();
 
 for (const engine of testEngines()) {
-  for (const pinned of [false, true]) {
-    it(`${engine}: the ${pinned ? 'pinned' : 'auto-hiding'} bar shows and hides without restyling the page`, { timeout: 60_000 }, async t => {
+  for (const [pinned, captions] of [[false, false], [true, false], [false, true]]) {
+    const name = `${pinned ? 'pinned' : 'auto-hiding'} bar${captions ? ' over overlay captions' : ''}`;
+    it(`${engine}: the ${name} shows and hides without restyling the page`, { timeout: 60_000 }, async t => {
       const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
       await serveFixture(page, FIXTURE, 'http://toolbar-restyle.test/');
       await page.clock.install();
@@ -72,6 +82,16 @@ for (const engine of testEngines()) {
       await page.waitForFunction(() => Boolean(document.querySelector('video')?.readyState && document.querySelector('video')!.readyState >= 2));
       await page.mouse.move(640, 300);
       await enterTheater(page);
+      if (captions) {
+        // The bar lifts the captions; their new bottom must not be written where the whole page inherits it.
+        await page.evaluate(() => {
+          const track = document.querySelector('video')!.addTextTrack('subtitles', 'Captions', 'en');
+          track.addCue(new VTTCue(0, 3600, 'Captions clear the bar'));
+          track.mode = 'hidden';
+        });
+        await page.keyboard.press('c');
+        await page.locator('.theater-caption-overlay.visible').waitFor();
+      }
       await page.clock.runFor(TOOLBAR_AUTO_HIDE_DELAY_MS + 100);
       await instrument(page);
 
@@ -81,12 +101,20 @@ for (const engine of testEngines()) {
         await page.clock.runFor(200);
         assert.deepEqual(await arm(page, false), [], 'showing the bar wrote page-wide state');
         assert.deepEqual(await cursors(page), { picture: 'auto', page: 'auto', bar: true });
+        if (captions) assert.ok(await captionBottom(page) > CAPTION_DOCK_REST_BOTTOM, 'the bar lifts the captions');
 
         await arm(page, true);
         await page.clock.runFor(TOOLBAR_AUTO_HIDE_DELAY_MS);
+        if (captions) {
+          // Captions stay clear of the bar until its fade, which runs in real time, has ended.
+          await page.waitForFunction(() => getComputedStyle(document.getElementById('theater-everywhere-ui')!.shadowRoot!
+            .querySelector('.theater-controls-wrapper')!).opacity === '0');
+          await page.clock.runFor(100);
+        }
         assert.deepEqual(await arm(page, false), [], 'hiding the bar wrote page-wide state');
         // Idle hides the pointer over the picture; the page behind the stage keeps its own.
         assert.deepEqual(await cursors(page), { picture: 'none', page: 'auto', bar: pinned });
+        if (captions) assert.equal(await captionBottom(page), CAPTION_DOCK_REST_BOTTOM, 'the captions return to rest');
       }
 
       await page.keyboard.press('Escape');

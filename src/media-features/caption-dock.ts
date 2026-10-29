@@ -5,6 +5,9 @@ export type DockRect = {
   bottom: number;
 };
 
+/** On <html> while the player's overlay renders captions instead of the host. */
+export const OVERLAY_CAPTIONS_CLASS = 'theater-using-overlay-captions';
+
 export const CAPTION_DOCK_REST_BOTTOM = 48;
 export const CAPTION_DOCK_MIN_BOTTOM = 24;
 export const CAPTION_DOCK_GAP = 12;

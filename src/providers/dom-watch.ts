@@ -1,3 +1,4 @@
+import type { FrameMeasure } from '../core/frame-batch';
 import { createVisibleRefresh } from '../core/visible-refresh';
 
 const FLAGS = ['data-te-youtube-integration-off', 'data-te-netflix-integration-off', 'data-te-disney-integration-off'];
@@ -8,7 +9,8 @@ const EVENTS = ['DOMContentLoaded', 'readystatechange', 'popstate', 'resize', 'l
 export function observeProviderDom(options: {
   root: Document | ShadowRoot;
   selector: string;
-  changed(): void;
+  /** Reads the changed surfaces in the frame's read phase; DOM writes it returns run after all reads. */
+  changed: FrameMeasure;
   enabled?: () => boolean;
   relevant?: (record: MutationRecord) => boolean;
   ignore?: (record: MutationRecord) => boolean;
@@ -90,7 +92,7 @@ export function observeProviderDom(options: {
   const refresh = createVisibleRefresh(doc, () => {
     if (!enabled() && roots.size) dirty = true;
     discover();
-    options.changed();
+    return options.changed();
   }, { active: () => enabled() && (roots.size > 0 || options.pollWhenEmpty === true) && options.needsFallback?.() !== false,
     events: [...EVENTS, ...options.events ?? []] });
   const containsRoot = (node: Node) => node instanceof Element && (node.matches(options.selector)

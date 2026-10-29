@@ -19,8 +19,11 @@ export type ServiceActionCtaOptions = {
    * CTA sits in the picture's corner rather than the screen's. Absent means the viewport.
    */
   pictureInsets?: () => { end: number; bottom: number } | null;
-  /** The picture moved or resized (layout, fit, chat, media size); the CTA re-reads `pictureInsets`. */
-  subscribePicture?: (listener: () => void) => () => void;
+  /**
+   * The picture moved or resized (layout, fit, chat, media size); the CTA re-reads `pictureInsets`.
+   * The listener reads, and the write it returns moves the CTA.
+   */
+  subscribePicture?: (listener: () => () => void) => () => void;
   pollMs?: number;
   /** Caption dock. Called when the host appears, changes buttons, or goes away. */
   onLayout?: () => void;
@@ -80,23 +83,28 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     sync();
   });
 
-  const place = () => {
+  /** Reads where the CTA belongs; the returned write moves it there. */
+  const measurePlace = (): (() => void) => {
     const hidden = options.menuOpen?.() === true;
-    if (host.hidden !== hidden) host.hidden = hidden;
     const visible = toolbarOpen();
-    if (host.classList.contains(TOOLBAR_VISIBLE_CLASS) !== visible) host.classList.toggle(TOOLBAR_VISIBLE_CLASS, visible);
-    if (!visible) return;
     let px = LIFT_FALLBACK_PX;
-    try {
-      const lift = options.controlsLift();
-      if (Number.isFinite(lift) && lift > 0) px = Math.round(lift);
-    } catch {
-      px = LIFT_FALLBACK_PX;
+    if (visible) {
+      try {
+        const lift = options.controlsLift();
+        if (Number.isFinite(lift) && lift > 0) px = Math.round(lift);
+      } catch {
+        px = LIFT_FALLBACK_PX;
+      }
     }
-    if (host.style.getPropertyValue(LIFT_VAR) !== `${px}px`) host.style.setProperty(LIFT_VAR, `${px}px`);
+    return () => {
+      if (host.hidden !== hidden) host.hidden = hidden;
+      if (host.classList.contains(TOOLBAR_VISIBLE_CLASS) !== visible) host.classList.toggle(TOOLBAR_VISIBLE_CLASS, visible);
+      if (visible && host.style.getPropertyValue(LIFT_VAR) !== `${px}px`) host.style.setProperty(LIFT_VAR, `${px}px`);
+    };
   };
+  const place = () => { measurePlace()(); };
 
-  const placePicture = () => {
+  const measurePicture = (): (() => void) => {
     let end = 0;
     let bottom = 0;
     try {
@@ -108,8 +116,10 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     } catch {
       // The viewport corner is a valid fallback.
     }
-    if (host.style.getPropertyValue(PICTURE_END_VAR) !== `${end}px`) host.style.setProperty(PICTURE_END_VAR, `${end}px`);
-    if (host.style.getPropertyValue(PICTURE_BOTTOM_VAR) !== `${bottom}px`) host.style.setProperty(PICTURE_BOTTOM_VAR, `${bottom}px`);
+    return () => {
+      if (host.style.getPropertyValue(PICTURE_END_VAR) !== `${end}px`) host.style.setProperty(PICTURE_END_VAR, `${end}px`);
+      if (host.style.getPropertyValue(PICTURE_BOTTOM_VAR) !== `${bottom}px`) host.style.setProperty(PICTURE_BOTTOM_VAR, `${bottom}px`);
+    };
   };
 
   const toolbarOpen = (): boolean => {
@@ -201,25 +211,37 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
       // Caption placement is independent of the action list.
     }
   };
-  const sync = () => {
+  /** Reads the provider's actions and the CTA's place; the returned write renders both. */
+  const measure = (): (() => void) | void => {
     if (scope.isDisposed) return;
+    let placed: (() => void) | null = null;
+    let actions: ServiceAction[] = [];
     try {
-      place();
-      const actions = readActions(options.source);
-      currentActions = actions;
-      render(actions);
-      notifyLayout(actions);
-      syncAnimation();
+      placed = measurePlace();
+      actions = readActions(options.source);
     } catch {
-      currentActions = [];
-      render([]);
-      notifyLayout([]);
-      syncAnimation();
+      actions = [];
     }
+    return () => {
+      if (scope.isDisposed) return;
+      try {
+        placed?.();
+        currentActions = actions;
+        render(actions);
+        notifyLayout(actions);
+        syncAnimation();
+      } catch {
+        currentActions = [];
+        render([]);
+        notifyLayout([]);
+        syncAnimation();
+      }
+    };
   };
+  const sync = () => { measure()?.(); };
 
   // Subscribed providers own their bounded fallback as well as DOM events.
-  const refresh = createVisibleRefresh(document, sync, {
+  const refresh = createVisibleRefresh(document, measure, {
     active: () => !options.source.subscribe, pollMs: options.pollMs ?? DEFAULT_POLL_MS
   });
   scope.add(() => {
@@ -233,9 +255,9 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     if (occupied) notifyLayout([]);
   });
   options.paint?.(host);
-  placePicture();
+  measurePicture()();
   options.mount(host);
-  if (options.subscribePicture) scope.add(options.subscribePicture(placePicture));
+  if (options.subscribePicture) scope.add(options.subscribePicture(measurePicture));
   scope.add(options.subscribeToolbar(() => {
     options.paint?.(host);
     place();
