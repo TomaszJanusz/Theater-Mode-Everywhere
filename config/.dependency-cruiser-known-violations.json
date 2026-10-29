@@ -127,20 +127,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/providers/patreon/watch-playback.ts",
-    "to": "src/providers/navigation/watch-page.ts",
-    "unresolvedTo": "../navigation/watch-page",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/providers/twitch/watch-playback.ts",
     "to": "src/providers/navigation/watch-page.ts",
     "unresolvedTo": "../navigation/watch-page",

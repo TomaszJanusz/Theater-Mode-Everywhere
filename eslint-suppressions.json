@@ -629,7 +629,7 @@
       "count": 2
     },
     "import/order": {
-      "count": 9
+      "count": 8
     },
     "max-lines": {
       "count": 1
@@ -796,20 +796,6 @@
       "count": 2
     }
   },
-  "src/media-features/parsers/patreon-page.ts": {
-    "local/max-symbol-name-length": {
-      "count": 2
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    },
-    "sonarjs/duplicates-in-character-class": {
-      "count": 3
-    },
-    "sonarjs/super-linear-regex": {
-      "count": 1
-    }
-  },
   "src/media-features/parsers/tencent.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
@@ -889,17 +875,6 @@
       "count": 1
     },
     "sonarjs/no-nested-conditional": {
-      "count": 1
-    }
-  },
-  "src/media-features/patreon-adapter.ts": {
-    "import/order": {
-      "count": 2
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    },
-    "sonarjs/no-dead-store": {
       "count": 1
     }
   },
@@ -1555,6 +1530,14 @@
       "count": 1
     }
   },
+  "src/providers/patreon/adapter.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    }
+  },
   "src/providers/patreon/main.ts": {
     "import/order": {
       "count": 1
@@ -1575,13 +1558,22 @@
       "count": 2
     }
   },
-  "src/providers/patreon/watch-playback.browser.test.ts": {
-    "@typescript-eslint/consistent-type-imports": {
+  "src/providers/patreon/page-assets.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/duplicates-in-character-class": {
+      "count": 3
+    },
+    "sonarjs/super-linear-regex": {
       "count": 1
     }
   },
-  "src/providers/patreon/watch-playback.ts": {
-    "import/order": {
+  "src/providers/patreon/watch-playback.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
       "count": 1
     }
   },
