@@ -41,7 +41,9 @@ async function boot(page: Page, settings: Record<string, unknown> = {}): Promise
   await bootPlayer(page, { settings });
   await recordSeeks(page);
   await enterTheater(page);
+  // Paused: real time between two test steps must not count towards the hold delay.
   await page.clock.install();
+  await page.clock.pauseAt(new Date(Date.now() + 1000));
 }
 
 const playback = (frame: Page | Frame) => frame.evaluate(() => ({
