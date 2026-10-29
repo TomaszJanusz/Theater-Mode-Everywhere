@@ -1590,9 +1590,6 @@
     }
   },
   "src/providers/stage.ts": {
-    "import/order": {
-      "count": 3
-    },
     "local/max-symbol-name-length": {
       "count": 2
     }

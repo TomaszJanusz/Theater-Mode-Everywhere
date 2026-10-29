@@ -1,6 +1,7 @@
+import type { ProviderPlaybackBindOptions, ProviderStage, ProviderStructuralHelpers } from '../core/provider-presentation';
+
 import { disneyTheaterStage } from './disney/stage';
 import { bindNetflixTheaterPlayback } from './netflix/playback';
-import type { ProviderPlaybackBindOptions, ProviderStage, ProviderStructuralHelpers } from '../core/provider-presentation';
 export type { ProviderPlaybackBindOptions, ProviderStage, ProviderStructuralHelpers } from '../core/provider-presentation';
 import {
   mountNetflixTheaterStage,
@@ -8,7 +9,7 @@ import {
   pinNetflixTheaterViewport,
   unmountNetflixTheaterStage
 } from './netflix/stage';
-import { registeredEvents } from './runtime-registration';
+import { providerRegistry, registeredEvents } from './runtime-registration';
 import { tencentTheaterStage } from './tencent/stage';
 import { twitchTheaterStage } from './twitch/stage';
 import { vikiTheaterStage } from './viki/stage';
@@ -31,7 +32,7 @@ const netflixTheaterStage: ProviderStage = {
   }
 };
 
-const providerStages: ProviderStage[] = [
+const legacyStages: ProviderStage[] = [
   disneyTheaterStage,
   twitchTheaterStage,
   netflixTheaterStage,
@@ -39,15 +40,21 @@ const providerStages: ProviderStage[] = [
   vikiTheaterStage
 ];
 
+// Read after registration closes, never cache the empty document-start registry.
+const providerStages = (): ProviderStage[] => [
+  ...legacyStages,
+  ...providerRegistry.all().flatMap(hooks => hooks.stage ? [hooks.stage] : [])
+];
+
 let stopObservingProviderStages: (() => void) | null = null;
 
 function mountAll(hostname: string, element: HTMLElement): void {
-  for (const stage of providerStages) stage.mount(hostname, element);
+  for (const stage of providerStages()) stage.mount(hostname, element);
 }
 
 function restartObservers(hostname: string): void {
   stopObservingProviderStages?.();
-  const stops = providerStages.flatMap((stage) => {
+  const stops = providerStages().flatMap((stage) => {
     const stop = stage.observe?.(hostname);
     return stop ? [stop] : [];
   });
@@ -66,23 +73,23 @@ export function remountProviderStages(hostname: string, element: HTMLElement): v
 }
 
 export function ensureProviderStages(hostname: string, element: HTMLElement): void {
-  for (const stage of providerStages) stage.ensure?.(hostname, element);
+  for (const stage of providerStages()) stage.ensure?.(hostname, element);
 }
 
 export function unmountProviderStages(): void {
   stopObservingProviderStages?.();
   stopObservingProviderStages = null;
-  for (const stage of providerStages) stage.unmount();
+  for (const stage of providerStages()) stage.unmount();
 }
 
 export function pinProviderViewport(
   element: HTMLElement,
   pinGeneric: (element: HTMLElement) => void
 ): void {
-  const claim = providerStages.find((stage) => stage.claimsViewportPin?.());
+  const claim = providerStages().find((stage) => stage.claimsViewportPin?.());
   if (claim?.pinViewport) claim.pinViewport(element);
   else pinGeneric(element);
-  for (const stage of providerStages) {
+  for (const stage of providerStages()) {
     if (stage === claim) continue;
     stage.afterViewportPin?.(element, pinGeneric);
   }
@@ -94,12 +101,12 @@ export function hostNavigationStarts(): string[] {
 }
 
 export function onProviderStructuralMutation(element: HTMLElement, helpers: ProviderStructuralHelpers): void {
-  for (const stage of providerStages) stage.onStructuralMutation?.(element, helpers);
+  for (const stage of providerStages()) stage.onStructuralMutation?.(element, helpers);
 }
 
 export function bindProviderPlayback(options: ProviderPlaybackBindOptions): () => void {
   const stops: Array<() => void> = [];
-  for (const stage of providerStages) {
+  for (const stage of providerStages()) {
     const stop = stage.bindPlayback?.(options);
     if (stop) stops.push(stop);
   }

@@ -19,7 +19,7 @@ const descriptors = discoverDescriptors(root);
 
 it('keeps descriptors, source manifest, catalog, registry and entry inventory consistent', () => {
   assertProviderSources(root, descriptors);
-  assert.deepEqual(PROVIDER_CATALOG, descriptors.map(({ id, hosts }) => ({ id, hosts })));
+  assert.deepEqual(PROVIDER_CATALOG, descriptors.map(({ id, hosts, home }) => ({ id, hosts, ...(home ? { home } : {}) })));
   for (const descriptor of descriptors) {
     assert.equal(PROVIDER_DEFINITIONS.filter(item => item.id === descriptor.id).length, 1);
     for (const host of descriptor.hosts) {
@@ -146,4 +146,18 @@ it('keeps exact descriptor hosts exact while folding case and terminal DNS dots'
   const hosts = [{ domain: 'example.com', includeSubdomains: false }];
   for (const host of ['example.com', 'EXAMPLE.COM', 'example.com.']) assert.equal(descriptorMatchesHost(hosts, host), true);
   for (const host of ['www.example.com', 'sub.example.com', 'example.com.evil.test']) assert.equal(descriptorMatchesHost(hosts, host), false);
+});
+
+it('validates and preserves canonical home declarations without changing injection rules', () => {
+  const original = descriptors[0];
+  const home = `https://${original.hosts[0].domain}/`;
+  const declared = parseDescriptor({ ...original, home });
+  assert.equal(declared.home, home);
+  assert.ok(catalogSource([declared]).includes(JSON.stringify(home)));
+  assert.deepEqual(contentScripts([declared]), contentScripts([original]));
+  assert.equal(parseDescriptor(original).home, undefined);
+  for (const home of [42, '/relative', 'javascript:alert(1)', 'http://sooplive.com/',
+    'https://sooplive.com.evil.test/', 'https://user:pass@sooplive.com/', 'https://sooplive.com:8443/']) {
+    assert.throws(() => parseDescriptor({ ...original, home }));
+  }
 });

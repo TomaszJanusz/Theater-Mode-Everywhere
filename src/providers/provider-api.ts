@@ -1,12 +1,13 @@
 import type { ChatThemeAdapter } from '../chat/adapters/types';
 import type { ChatActivation, ChatSurface } from '../chat/types';
 import type { ParsedChatLocation } from '../chat/url';
+import type { ProviderStage } from '../core/provider-presentation';
 import type { ServiceActionSource } from '../core/service-actions';
 import type { MediaFetchRequest } from '../media-features/fetch-allowlist';
 import type { parseCaptionPayload } from '../media-features/parsers/captions';
 import type { MediaProbeSnapshot } from '../media-features/probe';
 import type { MediaProviderId } from '../media-features/provider-flags';
-import type { MediaFeaturesAdapter, TimelineMarkerSource } from '../media-features/types';
+import type { HostCaptionLayoutSource, MediaFeaturesAdapter, TimelineMarkerSource } from '../media-features/types';
 import type { PlaylistAction, PlaylistDirection } from '../playlist-nav';
 import type { MediaSeekDetail } from '../protocol/media-seek';
 
@@ -64,6 +65,12 @@ export type ProviderHooks = {
    */
   allowsMediaFetch?(request: MediaFetchRequest, base?: string): boolean;
   createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
+  /** Native presentation remains active with the data integration disabled. */
+  stage?: ProviderStage;
+  /** A fresh source per composite adapter; the source owns caption measurements and cleanup. */
+  hostCaptions?: () => HostCaptionLayoutSource;
+  /** The adapter leaves its title to native page metadata rather than providing a service title. */
+  titleFromPage?: boolean;
   launcherPlacement?: LauncherPlacementFactory;
   /** Host events the shared runtime follows on this provider's pages, by what they signal. */
   events?: {
