@@ -69,17 +69,21 @@ export function readBaseline(source: string): Inventory {
   return value as Inventory;
 }
 
-export function assertNoGrowth(current: Record<string, Partial<Record<string, number>>>, previous: Record<string, Partial<Record<string, number>>>): void {
+export function assertNoGrowth(
+  current: Record<string, Partial<Record<string, number>>>,
+  previous: Record<string, Partial<Record<string, number>>>,
+  remedy = 'replace the wait'
+): void {
   for (const [file, counts] of Object.entries(current)) {
     for (const [kind, count] of Object.entries(counts)) {
       const allowed = previous[file]?.[kind] ?? 0;
-      assert.ok((count ?? 0) <= allowed, `${file}: ${kind} grew from ${allowed} to ${count}; replace the wait instead of raising the baseline`);
+      assert.ok((count ?? 0) <= allowed, `${file}: ${kind} grew from ${allowed} to ${count}; ${remedy} instead of raising the baseline`);
     }
   }
 }
 
 /** Where a ratcheted inventory is recorded and how an older revision of it is parsed. */
-export interface BaselineFile { path: string; label: string; read(source: string): Record<string, Partial<Record<string, number>>> }
+export interface BaselineFile { path: string; label: string; remedy?: string; read(source: string): Record<string, Partial<Record<string, number>>> }
 
 export function assertBaselineRatchet(
   current: Record<string, Partial<Record<string, number>>>,
@@ -101,7 +105,7 @@ export function assertBaselineRatchet(
   const files = execFileSync('git', ['ls-tree', '--name-only', base, '--', baseline.path], { cwd: directory, encoding: 'utf8' });
   if (files.trim()) {
     const previous = execFileSync('git', ['show', `${base}:${baseline.path}`], { cwd: directory, encoding: 'utf8' });
-    assertNoGrowth(current, baseline.read(previous));
+    assertNoGrowth(current, baseline.read(previous), baseline.remedy);
   }
 }
 

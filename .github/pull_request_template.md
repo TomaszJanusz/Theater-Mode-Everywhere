@@ -29,3 +29,4 @@
 - [ ] `CHANGELOG.md` `## [Unreleased]` updated, or no user-visible change
 - [ ] `Update Highlights` update (optional)
 - [ ] No generated `dist/` output or packages committed
+- [ ] RTE extraction PRs: debt left in shared code is listed in the [ledger](https://app.notion.com/p/40819f2ad83881cdbf86cd0de4c78203) and ticketed

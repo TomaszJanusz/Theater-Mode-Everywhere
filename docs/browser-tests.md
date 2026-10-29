@@ -157,8 +157,8 @@ there, so a stalled check fails instead of hanging.
 | --- | --- |
 | `changes` | Classifies changed files (`ci-changes.mjs`) and selects affected tests (`test-impact.mjs`). |
 | `image` | Resolves, and if missing builds, the browser image above. |
-| `build`, `static` | One production build; `pnpm lint`, `pnpm typecheck` and `pnpm verify:bundles` against it. |
-| `boundaries`, `css-and-unused` | `pnpm check:boundaries`, `pnpm lint:css`; Knip is reported only (`pnpm check:unused`). |
+| `build`, `static` | One production build; `pnpm lint`, `pnpm typecheck` and `pnpm verify:bundles` against it (which includes the shared bundle size ratchet). |
+| `boundaries`, `css-and-unused` | `pnpm check:boundaries`, `pnpm check:shared-hosts`, `pnpm lint:css`; Knip is reported only (`pnpm check:unused`). |
 | `unit` | `pnpm test --lane=unit` on the selection. |
 | `browser-chromium` | Two shards of `pnpm test --lane=browser` on Chromium; shard 1 also runs `pnpm storybook:test`. |
 | `browser-firefox` | The same on Firefox, only when `ci-changes.mjs` selects it; also runs `pnpm storybook:test` for Firefox. |
