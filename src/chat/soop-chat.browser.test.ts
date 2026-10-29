@@ -10,6 +10,10 @@ import { testEngines } from '../test-utils/test-engines';
 const bundle = bundleModules(["export * from './chat/index';",
   "export { exposeFixtureRuntime } from './test-utils/provider-runtime';"], 'NativeChat');
 const provider = bundleModules(["import './providers/soop/isolated';"]);
+const main = bundleModules(["export { exposeFixtureRuntime } from './test-utils/provider-runtime';",
+  "export { installMainWorldRuntime } from './platform/main-world-runtime';",
+  "export { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './ui/entry-shortcuts';"], 'MainChat');
+const mainProvider = bundleModules(["import './providers/soop/main';"]);
 const browsers = sharedEngineBrowsers();
 
 const LIVE = 'https://play.sooplive.com/battleland/297994793';
@@ -22,7 +26,7 @@ const page = (open: boolean) => `<!doctype html><body>
 <div id="webplayer" class="${open ? 'chat_open ' : ''}list_open"><div id="webplayer_contents">
   <div id="player_area"><div id="player"><video id="livePlayer"></video>
     <ul><li class="btn_chat"><button id="chatToggle" type="button" onclick="document.getElementById('webplayer').classList.toggle('chat_open'); window.nativeClicks = (window.nativeClicks || 0) + 1">Chat window on/off</button></li></ul></div></div>
-  <div class="wrapping side"><section class="chatting_box"><div id="chatting_area"><div id="chatbox" class="chatbox"><div id="chat_area"></div><input id="draft"></div></div></section></div>
+  <div class="wrapping side"><section class="chatting_box"><div id="chatting_area"><div id="chatbox" class="chatbox"><div id="chat_area"></div><input id="draft"><button id="send" type="button">Send</button></div></div></section></div>
 </div></div></body>`;
 
 async function open(t: TestContext, engine: keyof typeof browsers, url: string, body: string): Promise<Page> {
@@ -161,5 +165,30 @@ for (const engine of testEngines()) describe(`${engine} SOOP native chat`, () =>
       return [caught(document.getElementById('draft')), caught(document.getElementById('chat_area')), caught(document.getElementById('livePlayer'))];
     })()`);
     assert.deepEqual(report, [true, true, false]);
+  });
+
+  it('keeps the entry shortcut typed in the SOOP chat out of the MAIN-world capture', async t => {
+    const tab = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
+    await tab.route('https://*.sooplive.com/**', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: page(true) }));
+    await tab.goto(LIVE);
+    await tab.addScriptTag({ content: main });
+    await tab.evaluate("MainChat.exposeFixtureRuntime('main');");
+    await tab.addScriptTag({ content: mainProvider });
+    await tab.evaluate(`(() => {
+      MainChat.installMainWorldRuntime();
+      document.documentElement.setAttribute(MainChat.ENTRY_SHORTCUT_ATTRIBUTE, JSON.stringify({ toggle: 'T' }));
+      // The content world claims every relayed entry key, as it does with a video to enter.
+      window.__relayed = [];
+      window.addEventListener(MainChat.ENTRY_SHORTCUT_EVENT, event => { window.__relayed.push(document.activeElement.id); event.preventDefault(); });
+      window.__page = [];
+      document.addEventListener('keydown', event => window.__page.push(event.target.id));
+    })()`);
+    // The chat input is editable and was never captured; the send button is a chat control that is not.
+    for (const id of ['draft', 'send', 'chatToggle']) {
+      await tab.focus(`#${id}`);
+      await tab.keyboard.press('t');
+    }
+    assert.deepEqual(await tab.evaluate('({ relayed: window.__relayed, page: window.__page })'),
+      { relayed: ['chatToggle'], page: ['draft', 'send'] }, 'only the key outside the chat is captured for theater');
   });
 });
