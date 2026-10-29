@@ -1,3 +1,6 @@
+// First: the registry must see a YouTube document before it loads.
+import './test-utils/youtube-node-host';
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { DISNEY_CLOCK_EVENT } from './media-features/parsers/disney-page';
@@ -15,7 +18,15 @@ import {
   seekToMediaTime,
   timeToRatio
 } from './playback-window';
+import { providerRegistry } from './providers/runtime-registration';
 import { observeProviderClock, readProviderClock } from './providers/timeline';
+import { youtubeTimeline } from './providers/youtube/timeline';
+import { youtubeWatchPlayback } from './providers/youtube/watch-playback';
+import { releaseYouTubeNodeHost } from './test-utils/youtube-node-host';
+
+releaseYouTubeNodeHost();
+// YouTube's live timeline reaches the shared playback window only through its registered hooks.
+assert.equal(providerRegistry.register({ id: 'youtube', contractVersion: 1, watchPlayback: youtubeWatchPlayback, timeline: youtubeTimeline }), true);
 
 function fakeVideo(init: {
   duration: number;

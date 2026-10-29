@@ -27,8 +27,8 @@ import { publishHiddenJson } from '../../platform/hidden-json';
 import { parseYoutubeCaptions } from '../../protocol/page-requests';
 import { isYouTubeHost } from '../hosts';
 import { MINIPLAYER_SURFACE } from '../video-candidates';
-import { youtubePlayerControl } from '../youtube-player-controls';
 import { installYouTubeAudio } from './audio-main';
+import { youtubePlayerControl } from './player-controls';
 import { installYouTubeQueueNavigation } from './queue-main';
 import {
   createTimedtextBodyCache,

@@ -1723,11 +1723,6 @@
       "count": 1
     }
   },
-  "src/providers/timeline/youtube.ts": {
-    "local/max-symbol-name-length": {
-      "count": 3
-    }
-  },
   "src/providers/twitch/discovery.test.ts": {
     "import/order": {
       "count": 1
@@ -1868,6 +1863,11 @@
     },
     "local/max-symbol-name-length": {
       "count": 2
+    }
+  },
+  "src/providers/youtube/timeline.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
     }
   },
   "src/switchable-videos.test.ts": {
