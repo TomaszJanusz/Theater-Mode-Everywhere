@@ -1340,6 +1340,66 @@ describe('native chat controller', () => {
     }
   });
 
+  it('notices a detached or retargeted chat surface from mutations alone, within one structure tick, with no timer', async t => {
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const youtubeHref = 'https://www.youtube.com/watch?v=AbCdEfGhIjK';
+    const cases = [
+      { name: 'iframe detached', html: YOUTUBE, href: youtubeHref, mutate: `document.getElementById('chatframe').remove()`,
+        changed: 's === null || s.iframe !== old.iframe' },
+      { name: 'iframe retargeted', html: YOUTUBE, href: youtubeHref,
+        mutate: `document.getElementById('chatframe').setAttribute('src', 'https://www.youtube.com/live_chat?v=OtherVideo1')`,
+        changed: 's === null' },
+      { name: 'root detached', html: YOUTUBE, href: youtubeHref, mutate: `document.getElementById('chat').remove()`,
+        changed: 's === null || s.root !== old.root' },
+      { name: 'component detached', html: TWITCH, href: 'https://www.twitch.tv/SomeChannel',
+        mutate: `document.querySelector('section.chat-room').remove()`, changed: 's === null || s.contentRoot !== old.contentRoot' },
+      { name: 'root detached by an ancestor', html: TWITCH, href: 'https://www.twitch.tv/SomeChannel',
+        mutate: `document.getElementById('layout').remove()`, changed: 's === null || s.root !== old.root' }
+    ];
+    for (const scenario of cases) {
+      const page = await pageWith(t, scenario.html);
+      try {
+        await page.evaluate(`(() => {
+          let refreshes = 0;
+          const raw = NativeChat.ChatController.prototype.refresh;
+          NativeChat.ChatController.prototype.refresh = function() { refreshes += 1; return raw.call(this); };
+          window.__refreshes = () => refreshes;
+          window.__controller = new NativeChat.ChatController({ document, href: () => ${JSON.stringify(scenario.href)}, onChange() {}, onLayoutChange() {} });
+          window.__old = window.__controller.state.surface;
+          refreshes = 0;
+        })()`);
+        assert.equal(await page.evaluate('Boolean(window.__old)'), true, `${scenario.name}: surface found`);
+        await page.evaluate(scenario.mutate);
+        const read = () => page.evaluate(`(() => { const s = window.__controller.state.surface; const old = window.__old; return ${scenario.changed}; })()`);
+        await page.clock.runFor(79);
+        assert.equal(await read(), false, `${scenario.name}: coalesced for the structure tick`);
+        await page.clock.runFor(1);
+        assert.equal(await read(), true, `${scenario.name}: noticed after the 80 ms structure tick`);
+        assert.equal(await page.evaluate('window.__refreshes()'), 1, `${scenario.name}: one refresh`);
+        await page.clock.runFor(10_000);
+        assert.equal(await page.evaluate('window.__refreshes()'), 1, `${scenario.name}: no timer afterwards`);
+      } finally { await page.close(); }
+    }
+
+    // A hidden document does no work; the next reading happens when it is shown again.
+    const page = await pageWith(t, YOUTUBE);
+    try {
+      await page.evaluate(`(() => {
+        let hidden = false;
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+        window.__setHidden = (value) => { hidden = value; document.dispatchEvent(new Event('visibilitychange')); };
+        window.__controller = new NativeChat.ChatController({ document, href: () => ${JSON.stringify(youtubeHref)}, onChange() {}, onLayoutChange() {} });
+        window.__old = window.__controller.state.surface;
+        window.__setHidden(true);
+        document.getElementById('chatframe').remove();
+      })()`);
+      await page.clock.runFor(10_000);
+      assert.equal(await page.evaluate('window.__controller.state.surface === window.__old'), true, 'unchanged while hidden');
+      await page.evaluate('window.__setHidden(false)');
+      assert.equal(await page.evaluate('window.__controller.state.surface === null || window.__controller.state.surface.iframe !== window.__old.iframe'), true, 'read when shown');
+    } finally { await page.close(); }
+  });
+
   it('keeps the stage size variables following the viewport on pages without chat', async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, '<div id="layout"></div>');
