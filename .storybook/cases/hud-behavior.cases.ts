@@ -244,7 +244,7 @@ const HeldStatusFadesOnRelease: Story = hudStory(() => {}, {
 test('HeldStatusFadesOnRelease', () => runHudCase(HeldStatusFadesOnRelease));
 
 /** A confirmation that replaced the held status (a speed key during the hold) keeps its own timing on release. */
-const HeldStatusYieldsToLaterHud: Story = hudStory(() => {}, {
+const HeldStatusYields: Story = hudStory(() => {}, {
   play: async () => {
     const release = hud().holdStatusIndicator('2x', STATUS_HUD_MUTE_ICON);
     hud().triggerStatusIndicator('1.75x', STATUS_HUD_MUTE_ICON);
@@ -255,7 +255,7 @@ const HeldStatusYieldsToLaterHud: Story = hudStory(() => {}, {
     await expect(overlay()?.classList.contains('fade-out')).toBe(true);
   }
 });
-test('HeldStatusYieldsToLaterHud', () => runHudCase(HeldStatusYieldsToLaterHud));
+test('HeldStatusYields', () => runHudCase(HeldStatusYields));
 
 const RapidPlayPause: Story = hudStory(() => {}, {
   play: async () => {

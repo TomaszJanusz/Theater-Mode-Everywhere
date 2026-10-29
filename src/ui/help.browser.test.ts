@@ -94,7 +94,9 @@ for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium,
         ]);
         assert.equal(row('navigateUp').keys, 'WASD');
         assert.deepEqual(rows.filter(candidate => candidate.overflows).map(candidate => candidate.label), []);
-        assert.match(await page.locator('.theater-help-hint').innerText(), /^W opens the controls bar.*S from its bottom row closes it\. Esc ends navigation\.$/s);
+        assert.match(await page.locator('[data-group="navigation"] .theater-help-hint').innerText(), /^W opens the controls bar.*S from its bottom row closes it\. Esc ends navigation\.$/s);
+        // Holding seek forward is named with the customised key.
+        assert.equal(await page.locator('[data-group="playback"] .theater-help-hint').innerText(), 'Hold Ctrl+Alt+Shift+→ to play at 2x until you let go.');
       });
     });
 
