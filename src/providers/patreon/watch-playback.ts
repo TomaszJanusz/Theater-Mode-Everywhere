@@ -1,6 +1,13 @@
-import { patreonPostId } from '../navigation/watch-page';
 import type { WatchPlayback } from '../watch-playback';
+
 import { PATREON_NAVIGATE_EVENT } from './navigation';
+
+/** Patreon post pages only: `/posts/<slug>-<id>` or `/<creator>/posts/<slug>-<id>`; feeds, creator pages and `/c/…` stay out. */
+function patreonPostId(url: URL): string | null {
+  if (url.hostname !== 'www.patreon.com' && url.hostname !== 'patreon.com') return null;
+  const match = /^(?:\/([^/]+))?\/posts\/(?:[^/]*-)?(\d+)\/?$/.exec(url.pathname);
+  return match && match[1] !== 'c' ? match[2] : null;
+}
 
 /** Open shadow roots only: Mux Player nests its <video> inside mux-video inside its own root. */
 function deepVideos(root: ParentNode, found: HTMLVideoElement[] = []): HTMLVideoElement[] {
