@@ -1,6 +1,8 @@
 import { YouTubeAdapter } from '../../media-features/youtube-adapter';
 import { providerRuntime } from '../provider-api';
 
+import { youtubeChat } from './chat';
+import { youtubeChatTheme } from './chat-theme';
 import { youtubeEvents } from './events';
 import { youtubeLauncherPlacement } from './launcher-placement';
 import { findYouTubeQueueNavigation, readYouTubeControls, YOUTUBE_PLAYER_SELECTOR } from './navigation';
@@ -19,6 +21,7 @@ if (services) api?.register({
   timeline: youtubeTimeline,
   timelineMarkers: youtubeSponsorBlockSource,
   events: youtubeEvents,
+  chat: { ...youtubeChat, theme: youtubeChatTheme },
   navigation: {
     playerSelector: YOUTUBE_PLAYER_SELECTOR, readControls: readYouTubeControls, queue: findYouTubeQueueNavigation,
     surfaces: '.ytp-prev-button, .ytp-next-button, ytd-playlist-panel-renderer'

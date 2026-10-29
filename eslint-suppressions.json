@@ -359,9 +359,6 @@
   },
   "src/chat/activation.ts": {
     "local/max-symbol-name-length": {
-      "count": 2
-    },
-    "sonarjs/cognitive-complexity": {
       "count": 1
     }
   },
@@ -373,22 +370,6 @@
       "count": 3
     },
     "sonarjs/no-nested-conditional": {
-      "count": 1
-    }
-  },
-  "src/chat/adapters/youtube-palette.ts": {
-    "local/max-symbol-name-length": {
-      "count": 3
-    }
-  },
-  "src/chat/adapters/youtube.ts": {
-    "import/order": {
-      "count": 3
-    },
-    "local/max-symbol-name-length": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
       "count": 1
     }
   },
@@ -408,11 +389,6 @@
       "count": 1
     }
   },
-  "src/chat/detect.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "src/chat/geometry.test.ts": {
     "import/order": {
       "count": 1
@@ -428,15 +404,12 @@
   },
   "src/chat/selectors.ts": {
     "local/max-symbol-name-length": {
-      "count": 6
+      "count": 4
     }
   },
   "src/chat/url.ts": {
     "sonarjs/concise-regex": {
       "count": 2
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 1
     }
   },
   "src/core/disposable-scope.test.ts": {
@@ -1773,6 +1746,21 @@
     },
     "local/max-symbol-name-length": {
       "count": 4
+    }
+  },
+  "src/providers/youtube/chat-palette.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/providers/youtube/chat-theme.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/providers/youtube/chat.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
     }
   },
   "src/providers/youtube/navigation.ts": {

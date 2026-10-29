@@ -7,9 +7,6 @@ export const TWITCH_CHAT_SECTION_SELECTOR = '[data-test-selector="chat-room-comp
  */
 export const TWITCH_CHAT_COLUMN_SELECTOR = '[data-a-target="right-column-chat-bar"], .right-column';
 
-/** YouTube watch-page chat shell. Parent CSS hides #chat unless this node is the marked root. */
-export const YOUTUBE_CHAT_ROOT_SELECTOR = '#chat, ytd-live-chat-frame';
-
 /**
  * Nodes parent CSS leaves at opacity 0 or visibility hidden unless marked.
  * #secondary uses data-theater-chat-ancestor; the chat column uses data-theater-chat.
@@ -35,10 +32,4 @@ export const TWITCH_CHAT_EVENT_SELECTOR = [
   '[data-a-target="viewer-card"]',
   '[data-test-selector="emote-picker"]',
   TWITCH_CHAT_PORTAL_SELECTOR
-].join(',');
-
-export const YOUTUBE_CHAT_EVENT_SELECTOR = [
-  '#chat',
-  'ytd-live-chat-frame',
-  'iframe#chatframe'
 ].join(',');

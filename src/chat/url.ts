@@ -1,5 +1,5 @@
 import { normalizeHost } from '../platform/domain-policy';
-import { isTwitchHost, isYouTubeHost } from '../providers/hosts';
+import { isTwitchHost } from '../providers/hosts';
 import { registeredChat } from '../providers/runtime-registration';
 
 import type { ChatKind, ChatProvider } from './types';
@@ -49,12 +49,6 @@ export type ParsedChatLocation =
   | { role: 'watch'; provider: ChatProvider; contentKey: string; kind: ChatKind | null }
   | { role: 'chat-document'; provider: ChatProvider; contentKey: string };
 
-export interface LiveChatSource {
-  kind: ChatKind;
-  /** Present when the frame URL names a video. Absent continuation URLs are not verified. */
-  videoId: string | null;
-}
-
 /**
  * True for provider documents that are only a chat, popout, or replay.
  * Those documents are not watch pages with a side panel.
@@ -66,22 +60,7 @@ export function isChatDocument(href: string): boolean {
 export function parseChatLocation(href: string): ParsedChatLocation | null {
   const url = parseUrl(href);
   if (!url) return null;
-  return parseYouTubeLocation(url) ?? parseTwitchLocation(url) ?? registeredChat()?.parseLocation(url) ?? null;
-}
-
-/** Official live_chat / live_chat_replay frame URL, or null when the path is not one of those. */
-export function readLiveChatSource(src: string): LiveChatSource | null {
-  const url = parseUrl(src.startsWith('//') ? `https:${src}` : src, 'https://www.youtube.com');
-  if (!url || !isYouTubeWatchHost(url.hostname)) return null;
-  const path = stripSlash(url.pathname);
-  const kind: ChatKind | null = path === '/live_chat'
-    ? 'live'
-    : path === '/live_chat_replay'
-      ? 'replay'
-      : null;
-  if (!kind) return null;
-  const videoId = url.searchParams.get('v');
-  return { kind, videoId: videoId || null };
+  return parseTwitchLocation(url) ?? registeredChat()?.parseLocation(url) ?? null;
 }
 
 export function watchIdentity(href: string): string {
@@ -97,32 +76,7 @@ export function watchIdentity(href: string): string {
 export function isNativeChatHost(href: string): boolean {
   const url = parseUrl(href);
   if (!url) return false;
-  return isTwitchWatchHost(url.hostname) || isYouTubeWatchHost(url.hostname) || (registeredChat()?.matchesHost(url.hostname) ?? false);
-}
-
-function parseYouTubeLocation(url: URL): ParsedChatLocation | null {
-  if (!isYouTubeWatchHost(url.hostname)) return null;
-  const path = stripSlash(url.pathname);
-  if (path === '/live_chat' || path === '/live_chat_replay') {
-    return { role: 'chat-document', provider: 'youtube', contentKey: url.searchParams.get('v') ?? '' };
-  }
-  if (path === '/watch') {
-    const contentKey = url.searchParams.get('v') ?? '';
-    if (!isYouTubeVideoId(contentKey)) return null;
-    return { role: 'watch', provider: 'youtube', contentKey, kind: null };
-  }
-  const live = /^\/live\/([^/]+)$/.exec(path);
-  if (live?.[1] && isYouTubeVideoId(live[1])) {
-    return { role: 'watch', provider: 'youtube', contentKey: live[1], kind: null };
-  }
-  if (/^\/(?:@[^/]+|(?:channel|c|user)\/[^/]+)\/live$/.test(path)) {
-    return { role: 'watch', provider: 'youtube', contentKey: path, kind: 'live' };
-  }
-  const embed = /^\/embed\/([^/]+)$/.exec(path);
-  if (embed?.[1] && isYouTubeVideoId(embed[1])) {
-    return { role: 'watch', provider: 'youtube', contentKey: embed[1], kind: null };
-  }
-  return null;
+  return isTwitchWatchHost(url.hostname) || (registeredChat()?.matchesHost(url.hostname) ?? false);
 }
 
 function parseTwitchLocation(url: URL): ParsedChatLocation | null {
@@ -146,11 +100,6 @@ function isTwitchWatchHost(hostname: string): boolean {
   return host === 'twitch.tv' || host === 'm.twitch.tv';
 }
 
-function isYouTubeWatchHost(hostname: string): boolean {
-  if (!isYouTubeHost(hostname)) return false;
-  return normalizeHost(hostname) !== 'youtu.be';
-}
-
 function isTwitchLogin(value: string): boolean {
   return /^[A-Za-z0-9_]{1,25}$/.test(value);
 }
@@ -159,18 +108,14 @@ function isTwitchVideoId(value: string): boolean {
   return /^[0-9]{1,20}$/.test(value);
 }
 
-function isYouTubeVideoId(value: string): boolean {
-  return /^[A-Za-z0-9_-]{6,}$/.test(value);
-}
-
 function stripSlash(pathname: string): string {
   if (pathname.length > 1 && pathname.endsWith('/')) return pathname.slice(0, -1);
   return pathname || '/';
 }
 
-function parseUrl(href: string, base?: string): URL | null {
+function parseUrl(href: string): URL | null {
   try {
-    return new URL(href, base);
+    return new URL(href);
   } catch {
     return null;
   }
