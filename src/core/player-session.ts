@@ -71,6 +71,10 @@ export class PlayerSession {
     return this.kind === 'exiting';
   }
 
+  get isActive(): boolean {
+    return this.kind === 'active';
+  }
+
   get isIdle(): boolean {
     return this.kind === 'idle' || this.kind === 'disposed';
   }

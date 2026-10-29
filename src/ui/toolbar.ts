@@ -222,9 +222,12 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     // The UI keeps the full player viewport; only the media box loses the dock's height.
     const controlsHeight = controlsCache?.classList.contains('pinned') ? controlsCache.offsetHeight : 0;
     const root = document.documentElement;
-    const reservedHeight = `${controlsHeight}px`;
+    // An unpinned bar reserves nothing, which is the property's fallback. Leaving it unset spares
+    // the page a restyle on entry: a change to the root's custom properties restyles every element.
+    const reservedHeight = controlsHeight > 0 ? `${controlsHeight}px` : '';
     if (root.style.getPropertyValue('--theater-controls-reserved-height') !== reservedHeight) {
-      root.style.setProperty('--theater-controls-reserved-height', reservedHeight);
+      if (reservedHeight) root.style.setProperty('--theater-controls-reserved-height', reservedHeight);
+      else root.style.removeProperty('--theater-controls-reserved-height');
       pictureGeometryChanged();
     }
     const mediaRect = element.getBoundingClientRect();

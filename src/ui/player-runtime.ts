@@ -30,7 +30,9 @@ import { nextVolumeLevel } from './volume-level';
 import { probeMediaCors } from '../platform/media-cors-probe';
 import { reloadForWebAudio } from '../platform/web-audio-reload';
 import {
+  applyCaptionStyle,
   CAPTION_STYLE_STORAGE_KEY,
+  clearCaptionStyle,
   resolveCaptionStyle,
   stepCaptionFontScale,
   type CaptionStyle
@@ -828,10 +830,6 @@ function pictureMoveTransition(): string {
     : `object-position ${PICTURE_MOVE_MS}ms cubic-bezier(0.25, 1, 0.5, 1)`;
 }
 
-function currentObjectPosition(): string {
-  return objectPositionForPicture(ui().videoFit, ui().pictureAlign, currentPictureFrame(), picturePositionOptions());
-}
-
 function beginPictureMove(): void {
   const root = document.documentElement;
   root.classList.add('theater-everywhere-picture-moving');
@@ -858,16 +856,19 @@ function getTheaterElementInlineStyles(): Record<string, string> {
     ...THEATER_ELEMENT_INLINE_STYLES,
     transition: pictureMoveTransition(),
     'object-fit': ui().videoFit,
-    'object-position': currentObjectPosition(),
   };
 }
 
+/**
+ * Writes the static theater styles first and measures once afterwards: `object-position` depends on
+ * the styled element's box, and applyTheaterPictureLayout sets it from that measurement.
+ */
 function applyTheaterElementInlineStyles(element: HTMLElement): void {
   const styles = getTheaterElementInlineStyles();
   if (!theaterElementInlineStyleState.has(element)) {
     theaterElementInlineStyleState.set(element, {
       hadStyleAttribute: element.hasAttribute('style'),
-      styles: Object.keys(styles).map(property => ({
+      styles: [...Object.keys(styles), 'object-position'].map(property => ({
         property,
         value: element.style.getPropertyValue(property),
         priority: element.style.getPropertyPriority(property),
@@ -882,12 +883,8 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
     }
     element.style.setProperty(property, value, 'important');
   });
-  const objectPosition = currentObjectPosition();
   if (element.style.getPropertyValue('--theater-object-fit') !== ui().videoFit) {
     element.style.setProperty('--theater-object-fit', ui().videoFit);
-  }
-  if (element.style.getPropertyValue('--theater-object-position') !== objectPosition) {
-    element.style.setProperty('--theater-object-position', objectPosition);
   }
   for (const property of ['top', 'left'] as const) {
     if (!element.style.getPropertyValue(property)) {
@@ -996,6 +993,7 @@ function persistCaptionStyle(style: CaptionStyle): void {
 
 function applyCaptionStyleToTheater(style: CaptionStyle): void {
   uiStore.dispatch({ type: 'SET_CAPTION_STYLE', value: style });
+  if (session.element) applyCaptionStyle(document.documentElement, ui().captionStyle);
   const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
   wrapper?._mediaFeatures?.setCaptionStyle(ui().captionStyle);
 }
@@ -2500,7 +2498,9 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   }
 
   // Sample native chat before provider presentation can hide the page's panels.
+  // Entry and exit lay the player out themselves; restyling in between only forces extra layouts.
   startNativeChatSession(() => {
+    if (!session.isActive) return;
     if (session.element) applyTheaterElementInlineStyles(session.element);
     updateCaptionDock();
     window.dispatchEvent(new CustomEvent('theater-everywhere-chat-layout'));
@@ -2508,6 +2508,12 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   markTheaterVideo(element);
   mountTheaterStage();
   mountProviderStages(window.location.hostname, element);
+  // Page-wide classes and caption style go before the first layout read: each change restyles the
+  // whole host page, and a read between them would pay for that restyle again.
+  refreshTheaterAncestors(element);
+  document.body.classList.add('theater-everywhere-body-active');
+  document.documentElement.classList.add('theater-everywhere-html-active');
+  applyCaptionStyle(document.documentElement, ui().captionStyle);
   applyTheaterElementInlineStyles(element);
 
   // Specific setup for HTML5 <video> elements
@@ -2540,12 +2546,6 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
       video.addEventListener(type, preventDoubleToggle, true);
     });
   }
-
-  bindTheaterAncestors(element);
-
-  // Lock scrollbars on body/html
-  document.body.classList.add('theater-everywhere-body-active');
-  document.documentElement.classList.add('theater-everywhere-html-active');
 
   // If we are in an iframe, notify the parent document to expand the iframe itself
   if (window !== window.top && session.id) {
@@ -2635,6 +2635,7 @@ function exitTheaterMode(
   unmountProviderStages();
   document.documentElement.style.removeProperty('--theater-letterbox');
   document.documentElement.style.removeProperty('--theater-hud-center-y');
+  clearCaptionStyle(document.documentElement);
 
   refreshHostPlayerLayout();
 
@@ -2684,7 +2685,8 @@ function refreshHostPlayerLayout(): void {
       // Ignore.
     }
   };
-  fire();
+  // Hosts measure their player in resize handlers. The first dispatch waits for the frame, which still
+  // precedes the next paint: from the calling task it would make the host lay out the page once more.
   requestAnimationFrame(() => {
     fire();
     window.setTimeout(() => {

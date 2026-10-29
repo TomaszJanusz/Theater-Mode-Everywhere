@@ -22,15 +22,14 @@ export class CaptionRenderer {
     this.text.className = 'theater-caption-overlay-text';
     this.root.appendChild(this.text);
     mountPlayerUi(this.root);
+    // The page-wide copy of the style, for host captions, belongs to the theater session.
     applyCaptionStyle(this.root, this.style);
-    applyCaptionStyle(document.documentElement, this.style);
   }
 
   setStyle(style: CaptionStyle): void {
     this.style = style;
     this.lastLineKey = null;
     applyCaptionStyle(this.root, style);
-    applyCaptionStyle(document.documentElement, style);
   }
 
   /** Returns true when the next update must redraw because the row cap changed. */
@@ -92,13 +91,6 @@ export class CaptionRenderer {
     this.wordNodes = [];
     this.activeCues = [];
     this.root.remove();
-    const root = document.documentElement.style;
-    root.removeProperty('--theater-caption-color');
-    root.removeProperty('--theater-caption-font');
-    root.removeProperty('--theater-caption-scale');
-    root.removeProperty('--theater-caption-bg');
-    root.removeProperty('--theater-caption-bg-alpha');
-    root.removeProperty('--theater-caption-shadow');
   }
 
   private appendCue(cue: CaptionCue, time: number): void {
