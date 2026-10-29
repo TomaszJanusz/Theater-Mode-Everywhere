@@ -103,6 +103,12 @@ export function applyCaptionStyle(target: HTMLElement, style: CaptionStyle): voi
   );
 }
 
+export function clearCaptionStyle(target: HTMLElement): void {
+  for (const property of ['color', 'font', 'scale', 'bg', 'bg-alpha', 'shadow']) {
+    target.style.removeProperty(`--theater-caption-${property}`);
+  }
+}
+
 export function resolveCaptionFontPreset(value: unknown): CaptionFontPreset {
   return CAPTION_FONT_PRESETS.some((preset) => preset.id === value)
     ? value as CaptionFontPreset
