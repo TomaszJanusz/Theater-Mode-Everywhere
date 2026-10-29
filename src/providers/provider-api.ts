@@ -6,6 +6,7 @@ import type { MediaFetchRequest } from '../media-features/fetch-allowlist';
 import type { MediaProviderId } from '../media-features/provider-flags';
 import type { MediaFeaturesAdapter, TimelineMarkerSource } from '../media-features/types';
 import type { PlaylistAction, PlaylistDirection } from '../playlist-nav';
+import type { MediaSeekDetail } from '../protocol/media-seek';
 
 import type { LauncherPlacementFactory } from './launcher-placement';
 import type { NativeServiceActionHooks } from './native-service-actions';
@@ -79,27 +80,62 @@ export type ProviderHooks = {
     queue?(root: ParentNode, video: HTMLVideoElement | null | undefined, helpers: PlaylistHelpers): { actions: PlaylistAction[]; claimed: Set<PlaylistDirection> };
   };
   chat?: ProviderChat;
+  /** MAIN: response harvesting through the core's single fetch, Response and XHR observers. */
+  harvest?: ProviderHarvest;
+  /** MAIN: a loader for page fetches of this provider's URLs (already admitted by the allowlist); null uses the default. */
+  pageFetch?(url: string): Promise<string | null> | null;
+  /** MAIN: perform a requested seek through the host player; false leaves it to the next provider or the element. */
+  seek?(detail: MediaSeekDetail, video: Element | null): boolean;
+  /** MAIN: called once at startup, after registration closed and the harvest observers are installed. */
   install?: () => void;
 };
-export type ProviderRuntimeApi = {
-  contractVersion: 1;
-  register(hooks: ProviderHooks): boolean;
-  start(): void;
-  services?: {
+
+/**
+ * Registered harvest. The core keeps the only wrapper of fetch, Response.json/text and XHR, owns the single fetch
+ * clone and the byte caps, and skips the extension's own requests; a provider only qualifies and consumes.
+ */
+export type ProviderHarvest = {
+  /** Select a target before any body is read; `url` can be empty for host-built Responses. Null leaves the response. */
+  qualify(url: string, pageUrl: string): string | null;
+  json?(target: string, url: string, data: unknown): void;
+  text?(target: string, url: string, text: string): void;
+  /** Targets whose fetch body the provider reads itself: `response` gets the one owned clone (text/JSON only, capped). */
+  cloneTargets?: readonly string[];
+  response?(target: string, url: string, clone: Response): void;
+  /**
+   * False on hosts that replace fetch with their own transport, where a wrapper breaks playback (Twitch's VOD
+   * seeking): Response and XHR observers still harvest. Any registered provider can veto the wrapper this way.
+   */
+  wrapFetch?: boolean;
+};
+
+/** Stateful shared owners each world's runtime lends to providers, so no provider bundles a second instance. */
+export type ProviderServices = {
+  isolated: {
     requestPageFetch(url: string): Promise<string | null>;
     serviceElementToken(element: Element): number;
   };
+  main: {
+    /** Page-owned media download, marked as the extension's own so the harvest observers skip it. */
+    fetchPageMedia(url: string, init: RequestInit): Promise<Response | null>;
+  };
+};
+export type ProviderRuntimeApi<W extends ProviderWorld = ProviderWorld> = {
+  contractVersion: 1;
+  register(hooks: ProviderHooks): boolean;
+  start(): void;
+  services?: ProviderServices[W];
 };
 const apiKey = (world: ProviderWorld) => Symbol.for(`theater-everywhere.provider-runtime.${world}`);
 
-export function exposeProviderRuntime(world: ProviderWorld, api: ProviderRuntimeApi): void {
+export function exposeProviderRuntime<W extends ProviderWorld>(world: W, api: ProviderRuntimeApi<W>): void {
   Object.defineProperty(window, apiKey(world), { value: api });
 }
 
 /** Each world has its own API; nothing is passed through DOM or across the world boundary. */
-export function providerRuntime(world: ProviderWorld): ProviderRuntimeApi | undefined {
+export function providerRuntime<W extends ProviderWorld>(world: W): ProviderRuntimeApi<W> | undefined {
   const api: unknown = (window as unknown as Record<symbol, unknown>)[apiKey(world)];
   if (!api || typeof api !== 'object' || !('contractVersion' in api) || api.contractVersion !== 1) return undefined;
   // Only the runtime entry writes this object, before provider entries in the same js array.
-  return api as ProviderRuntimeApi;
+  return api as ProviderRuntimeApi<W>;
 }

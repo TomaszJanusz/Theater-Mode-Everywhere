@@ -8,6 +8,9 @@ import { bundleMinify, resolveBundleBuildMode } from './build-mode';
 import { assertSelfContainedBundles } from './bundle-integrity';
 import { assertProviderSources, classicEntries, discoverDescriptors, packagedDescriptors } from './provider-descriptors';
 
+/** Stateful runtime owners a provider entry must receive through its runtime's services, never bundle. */
+const RUNTIME_OWNERS = /\/src\/(?:providers\/(?:registry|runtime-registration)|media-features\/probe|platform\/(?:harvest-ownership|page-fetch))\.ts$/;
+
 function copyFolderRecursiveSync(source: string, target: string) {
   let files: string[] = [];
 
@@ -88,7 +91,7 @@ async function buildClassicScript(
           if (!entryName.startsWith('providers/') && migrated.some(directory => normalized.includes(directory))) {
             throw new Error(`${entryName} includes extracted provider code: ${id}`);
           }
-          if (entryName.startsWith('providers/') && /\/src\/(?:providers\/(?:registry|runtime-registration)|media-features\/probe)\.ts$/.test(normalized)) {
+          if (entryName.startsWith('providers/') && RUNTIME_OWNERS.test(normalized)) {
             throw new Error(`${entryName} duplicates runtime state: ${id}`);
           }
         }

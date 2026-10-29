@@ -67,9 +67,11 @@ export function matchingProviders(hostname: string): ProviderId[] {
   return PROVIDER_DEFINITIONS.filter((item) => item.matchesHost(hostname)).map((item) => item.id);
 }
 
+/** Statically defined providers that harvest responses; registered providers declare `harvest` instead. */
 export function shouldPatchMainWorld(hostname: string): boolean {
-  // Bilibili requests scoped metadata directly. Tencent harvests getvinfo. iQIYI, SOOP and Viki read only the page and its own responses.
-  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili' && id !== 'bilibiliIntl' && id !== 'iqiyi' && id !== 'soop' && id !== 'viki');
+  // Bilibili requests scoped metadata directly. Tencent harvests getvinfo. iQIYI and Viki read only the page and its own responses.
+  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili' && id !== 'bilibiliIntl' && id !== 'iqiyi' && id !== 'viki'
+    && !PROVIDER_CATALOG.some(descriptor => descriptor.id === id));
 }
 
 export function shouldAttachProvider(id: MediaProviderId, flags: MediaProviderFlags, hostname?: string): boolean {

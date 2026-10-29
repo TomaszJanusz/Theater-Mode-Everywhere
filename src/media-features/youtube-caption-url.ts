@@ -14,6 +14,18 @@ const AUTH_KEYS = [
   'xovt'
 ] as const;
 
+/**
+ * YouTube's timedtext endpoint on its own hosts, over https. Stateless: the shared fetch allowlist (also used by
+ * the background broker) and YouTube's MAIN code both apply it.
+ */
+export function isYoutubeTimedtextUrl(url: string, base?: string): boolean {
+  let parsed: URL;
+  try { parsed = base ? new URL(url, base) : new URL(url); } catch { return false; }
+  return parsed.protocol === 'https:'
+    && /^(?:(?:www\.)?youtube\.com|youtu\.be|(?:www\.)?youtube-nocookie\.com)$/i.test(parsed.hostname)
+    && /timedtext/i.test(parsed.pathname);
+}
+
 export function timedtextVideoId(url: string): string | null {
   try {
     return new URL(url, 'https://www.youtube.com').searchParams.get('v');

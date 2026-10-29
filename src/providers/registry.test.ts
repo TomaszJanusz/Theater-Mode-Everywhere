@@ -13,7 +13,8 @@ import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, is
 describe('provider registry', () => {
   it('matches provider hosts used for MAIN patches', () => {
     assert.deepEqual(matchingProviders('www.youtube-nocookie.com').filter((id) => id !== 'native'), ['youtube']);
-    assert.equal(shouldPatchMainWorld('www.youtube.com'), true);
+    // Registered providers (YouTube, SOOP) declare `harvest` in their hooks instead of the static gate.
+    assert.equal(shouldPatchMainWorld('www.youtube.com'), false);
     assert.equal(shouldPatchMainWorld('www.disneyplus.com'), true);
     assert.equal(shouldPatchMainWorld('www.netflix.com'), true);
     assert.equal(shouldPatchMainWorld('example.com'), false);

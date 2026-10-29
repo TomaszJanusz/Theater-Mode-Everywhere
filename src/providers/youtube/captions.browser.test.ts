@@ -11,6 +11,7 @@ const chromiumBrowser = sharedTestBrowser(chromium);
 
 const bundle = bundleModules([
   "export { installYoutubeMain, readYoutubeSnapshot, fetchTimedtextWithPot } from './providers/youtube/player-main';",
+  "export { fetchPageMedia } from './platform/page-fetch';",
   "export { requestYoutubePlayerCaptions } from './media-features/probe';"
 ], 'CaptionTest');
 
@@ -49,7 +50,7 @@ async function setup(page: Page, { body = WATCH_PLAYER, url = 'https://www.youtu
       window.__result = 'pending';
       window.CaptionTest.requestYoutubePlayerCaptions({enabled:true,language:'en'}).then(ok => window.__result = ok);
     };
-    window.CaptionTest.installYoutubeMain();
+    window.CaptionTest.installYoutubeMain(window.CaptionTest.fetchPageMedia);
   })()`);
 }
 

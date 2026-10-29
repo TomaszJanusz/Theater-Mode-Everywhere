@@ -1,9 +1,8 @@
 import { readPageResponseBytes } from '../../platform/page-body';
-import { qualifiesYoutubeHeatmap } from '../network-harvest';
-import { fetchPageMedia } from '../../platform/page-fetch';
 import { isChildFrameMessage } from '../../protocol/frame-messages';
 import {
   createTimedtextCacheRecord,
+  isYoutubeTimedtextUrl,
   selectCaptionTrackOption,
   signYoutubeCaptionUrl,
   timedtextHasPot,
@@ -18,7 +17,7 @@ import {
   youtubeWatchJsonVideoId,
   type YoutubeHeatmap
 } from '../../media-features/parsers/youtube-heatmap';
-import { isAllowedMediaFetchUrl, MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
+import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { sanitizeContentTitle } from '../../media-features/content-title';
@@ -26,9 +25,11 @@ import { readYoutubePlayerMetadata, youtubeRecord } from '../../media-features/p
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { parseYoutubeCaptions } from '../../protocol/page-requests';
 import { isYouTubeHost } from '../hosts';
+import type { ProviderServices } from '../provider-api';
 import { MINIPLAYER_SURFACE } from '../video-candidates';
 import { installYouTubeAudio } from './audio-main';
 import { YOUTUBE_HARVEST_EVENT, youtubeEvents } from './events';
+import { youtubeHarvestTarget } from './harvest-target';
 import { youtubePlayerControl } from './player-controls';
 import { installYouTubeQueueNavigation } from './queue-main';
 import {
@@ -40,6 +41,13 @@ import { youtubeWatchPlayback } from './watch-playback';
 
 export function youtubeIntegrationEnabled(): boolean {
   return mediaProviderIntegrationEnabled('youtube');
+}
+
+/** The runtime's page-media fetch, lent at install so its requests stay marked as the extension's own. */
+let fetchPageMedia: ProviderServices['main']['fetchPageMedia'] | null = null;
+
+function qualifiesHeatmapUrl(url: string, pageUrl: string): boolean {
+  return youtubeIntegrationEnabled() && isYouTubeHost() && youtubeHarvestTarget(url, pageUrl) === 'heatmap';
 }
 
 const timedtextCache = createTimedtextBodyCache();
@@ -161,7 +169,7 @@ function heatmapForCurrentPage(playerRaw: unknown, expected: ExpectedVideo): You
 }
 
 export function harvestYoutubeHeatmapJson(url: string, data: unknown): void {
-  if (!qualifiesYoutubeHeatmap(window.location.hostname, youtubeIntegrationEnabled(), url, window.location.href)) return;
+  if (!qualifiesHeatmapUrl(url, window.location.href)) return;
   const expected = expectedYoutubeVideo();
   const pageId = expected.id;
   const found = findYoutubeHeatmap(data, pageId);
@@ -175,7 +183,7 @@ export function harvestYoutubeHeatmapJson(url: string, data: unknown): void {
 }
 
 export function harvestYoutubeHeatmapText(url: string, text: string): void {
-  if (!qualifiesYoutubeHeatmap(window.location.hostname, youtubeIntegrationEnabled(), url, window.location.href)) return;
+  if (!qualifiesHeatmapUrl(url, window.location.href)) return;
   if (!text || text.length > 8_000_000 || !/^\s*[\[{]/.test(text)) return;
   if (
     !text.includes('MARKER_TYPE_HEATMAP')
@@ -499,7 +507,7 @@ function waitForCachedBody(url: string, timeoutMs: number): Promise<string | nul
 }
 
 export function isAllowedTimedtextUrl(url: string): boolean {
-  return isAllowedMediaFetchUrl({ provider: 'youtube', kind: 'caption-track', url }, window.location.href);
+  return isYoutubeTimedtextUrl(url, window.location.href);
 }
 
 async function fetchTimedtextDirect(url: string): Promise<string | null> {
@@ -527,7 +535,7 @@ async function fetchTimedtextDirect(url: string): Promise<string | null> {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 4000);
     try {
-      const response = await fetchPageMedia(candidate, { credentials: 'include', signal: controller.signal });
+      const response = await fetchPageMedia?.(candidate, { credentials: 'include', signal: controller.signal });
       if (!response) continue;
       const buffer = await readPageResponseBytes(response, MAX_CAPTION_BYTES, controller.signal, { isCurrent: current, navigationStart: youtubeEvents.navigationStart });
       if (!buffer) continue;
@@ -782,7 +790,8 @@ export function publishYoutubeProbeSnapshot(snapshot: Record<string, unknown> | 
   publishYoutubeSnapshot(snapshot);
 }
 
-export function installYoutubeMain(): void {
+export function installYoutubeMain(pageMedia: NonNullable<typeof fetchPageMedia>): void {
+  fetchPageMedia = pageMedia;
   installYouTubeQueueNavigation();
   installYouTubeAudio();
   timedtextCache.notePageVideo(expectedYoutubeVideo().id);

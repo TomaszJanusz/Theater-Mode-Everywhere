@@ -1,5 +1,4 @@
-import { isCrunchyrollHost, isDisneyHost, isTencentHost, isTwitchHost, isYouTubeHost } from './hosts';
-import { isYoutubeWatchJsonUrl } from '../media-features/parsers/youtube-heatmap';
+import { isCrunchyrollHost, isDisneyHost, isTencentHost, isTwitchHost } from './hosts';
 import { crunchyrollMetadataRef, classifyCrunchyrollManifest } from '../media-features/parsers/crunchyroll';
 import { crunchyrollCdnFile } from '../media-features/crunchyroll-cdn';
 import { isAllowedMediaFetchUrl } from '../platform/media-url-policy';
@@ -27,19 +26,13 @@ export function shouldHarvestDisneyUrl(url: string): boolean {
   } catch { return false; }
 }
 
-export function qualifiesYoutubeHeatmap(hostname: string, enabled: boolean, url: string, pageUrl: string): boolean {
-  // Some host transports construct a Response without a URL. Only the YouTube
-  // observer can use that fallback; it is never a reason to clone a fetch body.
-  return enabled && isYouTubeHost(hostname) && (!url || isYoutubeWatchJsonUrl(url, pageUrl));
-}
-
-export type NetworkHarvestTarget = 'timedtext' | 'heatmap' | 'disney' | 'disney-bif'
+export type NetworkHarvestTarget = 'disney' | 'disney-bif'
   | 'tencent' | 'twitch' | 'twitch-storyboard' | 'crunchyroll' | 'crunchyroll-bif' | 'crunchyroll-url';
 
 export type NetworkHarvestContext = {
   hostname: string;
   pageUrl: string;
-  flags: Pick<MediaProviderFlags, 'youtube' | 'disney' | 'tencent' | 'twitch' | 'crunchyroll'>;
+  flags: Pick<MediaProviderFlags, 'disney' | 'tencent' | 'twitch' | 'crunchyroll'>;
 };
 
 export function isDisneyBifUrl(value: string): boolean {
@@ -58,10 +51,6 @@ export function isTwitchGqlUrl(value: string): boolean {
 /** Select one provider before touching the body. Endpoint rules stay provider-owned. */
 export function qualifyNetworkHarvest(context: NetworkHarvestContext, url: string): NetworkHarvestTarget | null {
   const { hostname, pageUrl, flags } = context;
-  if (isYouTubeHost(hostname) && flags.youtube) {
-    if (isAllowedMediaFetchUrl({ provider: 'youtube', kind: 'caption-track', url }, pageUrl)) return 'timedtext';
-    if (qualifiesYoutubeHeatmap(hostname, true, url, pageUrl)) return 'heatmap';
-  }
   if (isDisneyHost(hostname) && flags.disney) {
     if (isDisneyBifUrl(url)) return 'disney-bif';
     // URL-less Response observers support host-created metadata Responses.
@@ -81,7 +70,10 @@ export function qualifyNetworkHarvest(context: NetworkHarvestContext, url: strin
   return null;
 }
 
-export function harvestBodyFormat(target: NetworkHarvestTarget | null, type: XMLHttpRequestResponseType): 'text' | 'json' | 'binary' | 'blob-text' | null {
+/** `provider` stands for a registered provider's target: text or JSON metadata, never binary. */
+export type HarvestFormatTarget = NetworkHarvestTarget | 'provider';
+
+export function harvestBodyFormat(target: HarvestFormatTarget | null, type: XMLHttpRequestResponseType): 'text' | 'json' | 'binary' | 'blob-text' | null {
   if (!target || target === 'crunchyroll-url' || target === 'twitch-storyboard') return null;
   if (target === 'disney-bif' || target === 'crunchyroll-bif') {
     return type === 'arraybuffer' || (target === 'disney-bif' && type === 'blob') ? 'binary' : null;
@@ -92,7 +84,7 @@ export function harvestBodyFormat(target: NetworkHarvestTarget | null, type: XML
 }
 
 /** An endpoint can omit Content-Type, but an advertised media body is not JSON/text metadata. */
-export function harvestFetchFormatMatches(target: NetworkHarvestTarget | null, contentType: string): boolean {
+export function harvestFetchFormatMatches(target: HarvestFormatTarget | null, contentType: string): boolean {
   if (!target) return false;
   if (target === 'disney-bif' || target === 'crunchyroll-bif') return true;
   return !/^(?:audio\/|video\/|image\/|font\/|text\/html\b)/i.test(contentType.trim());

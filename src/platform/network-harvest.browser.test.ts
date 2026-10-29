@@ -5,12 +5,13 @@ import { it } from 'node:test';
 import { chromium, firefox, type Page } from 'playwright';
 
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
-import { bundleModules } from '../test-utils/player-boot';
+import { BUNDLED_PROVIDERS, bundleModules } from '../test-utils/player-boot';
 import { selectTestEngines } from '../test-utils/test-engines';
 
 import { MAX_CAPTION_BYTES } from './media-url-policy';
 
 const bundle = bundleModules([
+  ...BUNDLED_PROVIDERS,
   "export { installMainWorldRuntime } from './platform/main-world-runtime';",
   "export { harvestYoutubeHeatmapText, harvestTimedtextJson, readYoutubeSnapshot } from './providers/youtube/player-main';",
   "export { readDisneySnapshot } from './providers/disney/main';",
