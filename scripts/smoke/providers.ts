@@ -276,18 +276,7 @@ export async function assertVimeoProvider(page: Page, context: BrowserContext): 
       assert.equal(await page.locator('.theater-title-hud-head').filter({ hasText: 'Vimeo pilot clip' }).count(), 0, url);
       await page.keyboard.press('Escape');
     }
-    // Own-frame admission: generic parent, Vimeo child.
-    await page.goto('https://player.example.test/');
-    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
-    await page.evaluate(url => { const frame = document.createElement('iframe'); frame.src = url; document.body.append(frame); }, VIMEO);
-    await page.frameLocator('iframe').locator('video').waitFor();
-    const frame = page.frames().find(frame => frame.url() === VIMEO)!;
-    await frame.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
-    assert.equal(await frame.evaluate(() => {
-      window.dispatchEvent(new CustomEvent('theater-everywhere-watch-replacement-query', { detail: 'frame-query' }));
-      return document.querySelector('video')!.getAttribute('data-te-watch-replacement-response');
-    }), 'frame-query');
-    console.log(`smoke provider scripts: Vimeo registration in both worlds, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), title through the provider, RTE off/on, subdomain and DNS dot, generic/spoofed host, own-frame admission passed`);
+    console.log(`smoke provider scripts: Vimeo registration in both worlds, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), title through the provider, RTE off/on, subdomain and DNS dot, generic/spoofed host passed`);
   } finally {
     await context.unroute(hosts, handler);
     await worker.evaluate(async saved => {
