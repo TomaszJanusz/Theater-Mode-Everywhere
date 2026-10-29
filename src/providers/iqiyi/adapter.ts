@@ -108,12 +108,13 @@ export class IqiyiAdapter implements MediaFeaturesAdapter {
   invalidate(): void {
     this.snapshot = null;
     this.loadedFor = null;
+    // A pick belongs to the episode it was made for: the next one starts on iQIYI's own default again.
+    this.picked = false;
+    this.hostCaptionsHidden(false);
   }
 
   dispose(): void {
     this.invalidate();
-    this.picked = false;
-    this.hostCaptionsHidden(false);
   }
 
   private hostCaptionsHidden(hidden: boolean): void {

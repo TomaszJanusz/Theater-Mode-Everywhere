@@ -204,6 +204,36 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
     assert.equal(report.attribute, false);
   });
 
+  it('starts the next episode on the menu\'s Off again: a pick does not outlive its episode', async t => {
+    const page = await (await browsers[engine].newContext(t)).newPage();
+    await page.route('https://www.iq.com/**', route => route.fulfill({ contentType: 'text/html', body: PAGE }));
+    await page.goto(EPISODE_1);
+    await page.addStyleTag({ content: readStylesheet(new URL('./presentation.css', import.meta.url)) });
+    await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
+    const report = await page.evaluate(async () => {
+      const cue = document.createElement('iqpdiv');
+      cue.setAttribute('data-player-hook', 'subtitleelem');
+      cue.textContent = 'Hello';
+      document.querySelector('.iqp-player')!.append(cue);
+      const root = document.documentElement;
+      root.classList.add('theater-everywhere-html-active');
+      const adapter = new window.IqiyiTest.IqiyiAdapter(null, window.IqiyiTest);
+      const shown = () => getComputedStyle(cue).display !== 'none';
+      await adapter.listCaptionTracks();
+      await adapter.activateCaptionTrack('iqiyi:5');
+      const picked = shown();
+      // An episode change or reload invalidates the adapter; iQIYI then paints its default language again.
+      adapter.invalidate();
+      const invalidated = root.hasAttribute('data-te-iqiyi-captions-hidden');
+      await adapter.listCaptionTracks();
+      const next = shown();
+      await adapter.reload();
+      await adapter.listCaptionTracks();
+      return { picked, invalidated, next, afterReload: shown() };
+    });
+    assert.deepEqual(report, { picked: true, invalidated: false, next: false, afterReload: false });
+  });
+
   it('measures only the painted cue lines for the host-caption dock', async t => {
     const page = await (await browsers[engine].newContext(t)).newPage();
     await page.route('https://www.iq.com/**', route => route.fulfill({ contentType: 'text/html', body: PAGE }));
