@@ -21,3 +21,10 @@ it('preserves legacy destinations and generic origin fallback without a declarat
   assert.equal(serviceHomeUrl('https://vimeo.com.evil.test/'), 'https://vimeo.com.evil.test/');
   for (const url of ['about:blank', 'file:///tmp/video', 'not a url']) assert.equal(serviceHomeUrl(url), null);
 });
+
+it('uses the declared Viki home before origin fallback, even without runtime registration', () => {
+  for (const host of ['viki.com', 'www.viki.com', 'embed.viki.com', 'www.viki.com.']) {
+    assert.equal(serviceHomeUrl(`https://${host}/videos/123v`), 'https://www.viki.com/');
+  }
+  assert.equal(serviceHomeUrl('https://viki.com.evil.test/videos/123v'), 'https://viki.com.evil.test/');
+});

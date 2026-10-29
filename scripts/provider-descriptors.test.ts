@@ -89,7 +89,7 @@ it('each descriptor entry actually registers its own hooks in its own world befo
     assert.ok(hooks.watchPlayback);
     // Isolated-only hooks never register in MAIN, and MAIN installation never in the isolated world.
     assert.equal(Boolean(hooks.createAdapter), world === 'isolated');
-    for (const name of ['navigation', 'serviceActions', 'launcherPlacement', 'timeline', 'timelineMarkers'] as const) assert.ok(world === 'isolated' || !hooks[name], name);
+    for (const name of ['navigation', 'serviceActions', 'launcherPlacement', 'timeline', 'timelineMarkers', 'stage', 'hostCaptions', 'titleFromPage'] as const) assert.ok(world === 'isolated' || !hooks[name], name);
     assert.ok(world === 'main' || !hooks.install);
     chatWorlds.set(descriptor.id, (chatWorlds.get(descriptor.id) ?? 0) + Number(Boolean(hooks.chat)));
     if (descriptor.id === 'soop') assert.equal(hooks.allowsMediaFetch?.({ provider: 'soop', kind: 'chapters', url: 'https://stbbs.sooplive.com/api/chapter/Controllers/ChapterListController.php?nTitleNo=1&szFileType=REVIEW' }), true);

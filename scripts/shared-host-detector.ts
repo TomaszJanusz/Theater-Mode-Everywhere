@@ -66,7 +66,9 @@ const DOMAIN_PATTERNS = SERVICES.map(service => ({
   pattern: new RegExp(`(?<![a-z0-9-])(?:${DOMAINS[service].map(domain => domain.replaceAll('.', '\\.')).join('|')})(?![a-z0-9-])`, 'i'),
 }));
 
-const isTestOrGenerated = (path: string) => /\.(?:test|browser\.test|component\.test|stories|d)\.[cm]?tsx?$/.test(path) || path.startsWith('src/test-utils/');
+// The catalog is generated exclusively from validated per-host descriptors; consistency tests reject edits.
+// Count handwritten host knowledge, not copies of those declarations.
+const isTestOrGenerated = (path: string) => path === 'src/providers/catalog.ts' || /\.(?:test|browser\.test|component\.test|stories|d)\.[cm]?tsx?$/.test(path) || path.startsWith('src/test-utils/');
 
 /** Words of an identifier or file name: `isYouTubeHost` -> is, you, tube, host. */
 export function wordsOf(name: string): string[] {

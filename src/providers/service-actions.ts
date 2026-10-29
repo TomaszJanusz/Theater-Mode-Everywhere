@@ -7,10 +7,9 @@ import { createBilibiliIntlServiceActions, type BilibiliIntlServiceActionHooks }
 import { createCrunchyrollServiceActions } from './crunchyroll/service-actions';
 import { createDisneyServiceActions } from './disney/service-actions';
 import { observeProviderDom } from './dom-watch';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isVikiHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost } from './hosts';
 import { createNetflixServiceActions } from './netflix/service-actions';
 import { providerRegistry } from './runtime-registration';
-import { createVikiServiceActions } from './viki/service-actions';
 
 /** Provider composition belongs here; the shared CTA only consumes actions. */
 export function createServiceActions(options: BilibiliIntlServiceActionHooks = {}): ServiceActionSource | null {
@@ -23,7 +22,6 @@ export function createServiceActions(options: BilibiliIntlServiceActionHooks = {
     const source = hooks.serviceActions?.(options);
     if (source) return source;
   }
-  if (isVikiHost()) return observed(createVikiServiceActions(), 'viki', '#vmplayer_id');
   return null;
 
   function observed(source: ServiceActionSource, provider: MediaProviderId, selector: string): ServiceActionSource {

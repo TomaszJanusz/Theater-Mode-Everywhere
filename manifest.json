@@ -27,6 +27,8 @@
         "*://*.patreon.com./*",
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*",
+        "*://*.viki.com/*",
+        "*://*.viki.com./*",
         "*://*.vimeo.com/*",
         "*://*.vimeo.com./*",
         "*://*.youtube.com/*",
@@ -80,6 +82,22 @@
     },
     {
       "matches": [
+        "*://*.viki.com/*",
+        "*://*.viki.com./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/viki/isolated.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
         "*://*.vimeo.com/*",
         "*://*.vimeo.com./*"
       ],
@@ -123,6 +141,8 @@
         "*://*.patreon.com./*",
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*",
+        "*://*.viki.com/*",
+        "*://*.viki.com./*",
         "*://*.vimeo.com/*",
         "*://*.vimeo.com./*",
         "*://*.youtube.com/*",
@@ -162,6 +182,20 @@
       "js": [
         "mainWorld.js",
         "providers/soop/main.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.viki.com/*",
+        "*://*.viki.com./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/viki/main.js",
         "mainWorldStart.js"
       ],
       "run_at": "document_start",

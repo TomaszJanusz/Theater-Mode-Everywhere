@@ -100,7 +100,7 @@ describe('provider capability declarations', () => {
         // These interface compatibility methods intentionally have no feature data.
         const stub = (['vimeo', 'soop'].includes(provider.id) && key === 'subtitles') || (provider.id === 'netflix' && key === 'chapters');
         // A provider that leaves its title to the page's metadata implements no title method.
-        const pageTitle = providerDefinition(provider.id).titleFromPage === true && key === 'title';
+        const pageTitle = (extracted ? /titleFromPage:\s*true/.test(entry) : providerDefinition(provider.id).titleFromPage === true) && key === 'title';
         const actual = (names.every(name => implemented.has(name)) && !stub) || pageTitle;
         assert.equal(actual, provider.capabilities[capability].status !== 'no', `${provider.id}.${key}`);
         if (stub) assert.equal(provider.capabilities[capability].status, 'no');

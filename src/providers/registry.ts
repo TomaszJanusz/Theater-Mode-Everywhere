@@ -1,5 +1,3 @@
-import { parseCaptionPayload } from '../media-features/parsers/captions';
-import { requestPageFetch } from '../media-features/probe';
 import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
 import type { MediaFeaturesAdapter } from '../media-features/types';
 
@@ -8,15 +6,13 @@ import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
 import { PROVIDER_CATALOG } from './catalog';
 import { descriptorMatchesHost } from './descriptor-hosts';
 import { disneyWatchPlayback } from './disney/watch-playback';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isTencentHost, isTwitchHost, isVikiHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isTencentHost, isTwitchHost } from './hosts';
 import { IqiyiAdapter } from './iqiyi/adapter';
 import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
 import type { LauncherPlacementFactory } from './launcher-placement';
 import { netflixWatchPlayback } from './netflix/watch-playback';
 import { providerRegistry } from './runtime-registration';
 import { twitchWatchPlayback } from './twitch/watch-playback';
-import { VikiAdapter } from './viki/adapter';
-import { vikiWatchPlayback } from './viki/watch-playback';
 import type { WatchPlayback } from './watch-playback';
 
 export const MAIN_WORLD_BOOT_KEY = Symbol.for('theater-everywhere.main-world');
@@ -51,8 +47,7 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
     get watchPlayback() { return providerRegistry.get(descriptor.id)?.watchPlayback; },
     get titleFromPage() { return providerRegistry.get(descriptor.id)?.titleFromPage; },
     get launcherPlacement() { return providerRegistry.get(descriptor.id)?.launcherPlacement; }
-  })),
-  { id: 'viki', matchesHost: (hostname) => isVikiHost(hostname), createAdapter: () => new VikiAdapter(requestPageFetch, parseCaptionPayload), titleFromPage: true, watchPlayback: vikiWatchPlayback }
+  }))
 ];
 
 export function providerDefinition(id: ProviderId): ProviderDefinition {
@@ -67,8 +62,8 @@ export function matchingProviders(hostname: string): ProviderId[] {
 
 /** Statically defined providers that harvest responses; registered providers declare `harvest` instead. */
 export function shouldPatchMainWorld(hostname: string): boolean {
-  // Bilibili requests scoped metadata directly. Tencent harvests getvinfo. iQIYI and Viki read only the page and its own responses.
-  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili' && id !== 'bilibiliIntl' && id !== 'iqiyi' && id !== 'viki'
+  // Bilibili requests scoped metadata directly; iQIYI reads the page. Registered providers declare harvesting.
+  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili' && id !== 'bilibiliIntl' && id !== 'iqiyi'
     && !PROVIDER_CATALOG.some(descriptor => descriptor.id === id));
 }
 

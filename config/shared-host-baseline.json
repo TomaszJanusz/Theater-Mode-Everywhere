@@ -1,7 +1,7 @@
 {
   "bilibili": {
     "src/media-features": {
-      "serviceId": 16,
+      "serviceId": 15,
       "domain": 7,
       "identifier": 43,
       "file": 1
@@ -25,7 +25,7 @@
   },
   "bilibiliIntl": {
     "src/media-features": {
-      "serviceId": 11,
+      "serviceId": 10,
       "domain": 4,
       "identifier": 79,
       "file": 1
@@ -49,7 +49,7 @@
   },
   "crunchyroll": {
     "src/media-features": {
-      "serviceId": 8,
+      "serviceId": 7,
       "domain": 4,
       "identifier": 116,
       "file": 2
@@ -70,7 +70,7 @@
   "disney": {
     "src/media-features": {
       "hostCheck": 9,
-      "serviceId": 12,
+      "serviceId": 11,
       "domain": 15,
       "identifier": 179,
       "file": 2
@@ -154,12 +154,10 @@
   },
   "patreon": {
     "src/media-features": {
-      "serviceId": 7,
+      "serviceId": 6,
       "identifier": 4
     },
     "src/providers": {
-      "serviceId": 1,
-      "domain": 1,
       "identifier": 2
     }
   },
@@ -168,13 +166,12 @@
       "serviceId": 1
     },
     "src/media-features": {
-      "serviceId": 2,
+      "serviceId": 1,
       "identifier": 2
     },
     "src/providers": {
       "hostCheck": 1,
-      "serviceId": 2,
-      "domain": 1,
+      "serviceId": 1,
       "identifier": 2
     },
     "src/ui": {
@@ -183,7 +180,7 @@
   },
   "tencent": {
     "src/media-features": {
-      "serviceId": 7,
+      "serviceId": 6,
       "domain": 5,
       "identifier": 38,
       "file": 1
@@ -214,7 +211,7 @@
     },
     "src/media-features": {
       "hostCheck": 8,
-      "serviceId": 14,
+      "serviceId": 13,
       "domain": 25,
       "identifier": 164,
       "file": 3
@@ -244,37 +241,20 @@
   },
   "viki": {
     "src/media-features": {
-      "serviceId": 5,
-      "domain": 2,
-      "identifier": 8,
-      "file": 1
-    },
-    "src/platform": {
-      "hostCheck": 2,
-      "serviceId": 2
+      "serviceId": 2,
+      "identifier": 2
     },
     "src/providers": {
-      "hostCheck": 7,
-      "serviceId": 3,
-      "domain": 2,
-      "identifier": 12
-    },
-    "src/providers/navigation": {
-      "hostCheck": 2,
-      "serviceId": 2,
-      "identifier": 3,
-      "file": 1
+      "identifier": 2
     }
   },
   "vimeo": {
     "src/media-features": {
-      "serviceId": 4,
+      "serviceId": 3,
       "domain": 3,
       "identifier": 4
     },
     "src/providers": {
-      "serviceId": 1,
-      "domain": 1,
       "identifier": 10
     }
   },
@@ -284,7 +264,7 @@
     },
     "src/media-features": {
       "hostCheck": 1,
-      "serviceId": 10,
+      "serviceId": 9,
       "domain": 29,
       "identifier": 215,
       "file": 10
@@ -300,8 +280,7 @@
     },
     "src/providers": {
       "hostCheck": 1,
-      "serviceId": 2,
-      "domain": 3,
+      "serviceId": 1,
       "identifier": 2
     },
     "src/providers/navigation": {

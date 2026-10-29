@@ -23,7 +23,7 @@ import {
   MAX_BIF_BYTES,
   readDisneySnapshot
 } from '../providers/disney/main';
-import { isBilibiliHost, isBilibiliIntlHost, isIqiyiHost, isTwitchHost, isVikiHost } from '../providers/hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isIqiyiHost, isTwitchHost } from '../providers/hosts';
 import { installIqiyiNavigation, readIqiyiSnapshot } from '../providers/iqiyi-main';
 import {
   installNetflixMain,
@@ -278,7 +278,7 @@ export function installMainWorldRuntime(): void {
   }
 
   // iQIYI is DOM- and global-based: it needs the watch queries and history hook but no response harvesting.
-  if (harvestHost || isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname) || isIqiyiHost(window.location.hostname) || providerRegistry.all().some(hooks => hooks.watchPlayback) || isVikiHost(window.location.hostname)) installWatchPlaybackQueries();
+  if (harvestHost || isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname) || isIqiyiHost(window.location.hostname) || providerRegistry.all().some(hooks => hooks.watchPlayback)) installWatchPlaybackQueries();
   installIqiyiNavigation();
   if (isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname)) installBilibiliNavigation();
 
@@ -533,7 +533,6 @@ export function installMainWorldRuntime(): void {
     if (classified.provider === 'tencent') return tencentIntegrationEnabled();
     if (classified.provider === 'crunchyroll') return crunchyrollAllowsCaptionFetch(url);
     if (providerRegistry.get(classified.provider)) return mediaProviderIntegrationEnabled(classified.provider);
-    if (classified.provider === 'viki') return mediaProviderIntegrationEnabled('viki');
     return false;
   }
 

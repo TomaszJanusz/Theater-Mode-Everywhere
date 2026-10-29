@@ -191,3 +191,9 @@ describe('the base branch comparison', () => {
     }
   });
 });
+
+it('excludes the validated generated catalog but still counts handwritten catalog consumers', () => {
+  assert.equal(scopeOf('src/providers/catalog.ts'), null);
+  const found = inventory([{ path: 'src/providers/catalog-reader.ts', source: "const endpoint = 'https://api.viki.io/';" }]);
+  assert.equal(found.viki['src/providers'].domain, 1);
+});
