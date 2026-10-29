@@ -50,6 +50,7 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
     id: descriptor.id, matchesHost: (hostname: string) => descriptorMatchesHost(descriptor.hosts, hostname),
     get createAdapter() { return providerRegistry.get(descriptor.id)?.createAdapter; },
     get watchPlayback() { return providerRegistry.get(descriptor.id)?.watchPlayback; },
+    get titleFromPage() { return providerRegistry.get(descriptor.id)?.titleFromPage; },
     get launcherPlacement() { return providerRegistry.get(descriptor.id)?.launcherPlacement; }
   })),
   { id: 'viki', matchesHost: (hostname) => isVikiHost(hostname), createAdapter: () => new VikiAdapter(), titleFromPage: true, watchPlayback: vikiWatchPlayback }

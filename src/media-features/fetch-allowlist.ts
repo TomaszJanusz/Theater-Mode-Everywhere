@@ -1,5 +1,6 @@
 import { MAX_CAPTION_BYTES } from '../platform/bounded-body';
 import { PROVIDER_CATALOG } from '../providers/catalog';
+import { matchesMediaFetchRules, type MediaFetchRule } from '../providers/media-fetch-rules';
 import { providerRegistry } from '../providers/runtime-registration';
 
 import { isCrunchyrollCaptionFileUrl } from './crunchyroll-cdn';
@@ -116,6 +117,8 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
     return false;
   }
 
+  const descriptor: { id: string; mediaFetch?: readonly MediaFetchRule[] } | undefined = PROVIDER_CATALOG.find(item => item.id === request.provider);
+  if (descriptor?.mediaFetch && matchesMediaFetchRules(descriptor.mediaFetch, request, base)) return true;
   return providerRegistry.get(request.provider)?.allowsMediaFetch?.(request, base) ?? false;
 }
 
