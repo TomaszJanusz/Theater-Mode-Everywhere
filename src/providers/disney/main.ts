@@ -1164,6 +1164,7 @@ export function installDisneyMain(): void {
   if (isDisneyHost(window.location.hostname)) {
     installDisneyClockLifecycle();
     ensureDisneyClock(true);
+    // Owns a document-wide observer, so it must not run on the other harvest hosts (YouTube, Twitch, ...).
+    installDisneyPlayNext();
   }
-  installDisneyPlayNext();
 }

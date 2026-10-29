@@ -110,17 +110,40 @@ function heatmapPayload(found: YoutubeHeatmap): YoutubeHeatmap {
   };
 }
 
+/**
+ * `findYoutubeHeatmap` walks up to tens of thousands of nodes, and every snapshot publish (load
+ * timers, YouTube events, harvests) asked the same page and player objects again. YouTube replaces
+ * those objects when content changes instead of editing them, and a heatmap delivered later arrives
+ * through the harvested response, so a result stays valid for its root object and expected id.
+ */
+const heatmapWalks = new WeakMap<object, Map<string, YoutubeHeatmap | null>>();
+
+function findYoutubeHeatmapOnce(root: unknown, pageId: string | null): YoutubeHeatmap | null {
+  if (!root || typeof root !== 'object') return null;
+  let byPage = heatmapWalks.get(root);
+  if (!byPage) {
+    byPage = new Map();
+    heatmapWalks.set(root, byPage);
+  }
+  const key = pageId ?? '';
+  const known = byPage.get(key);
+  if (known !== undefined) return known;
+  const found = findYoutubeHeatmap(root, pageId);
+  byPage.set(key, found);
+  return found;
+}
+
 function heatmapForCurrentPage(playerRaw: unknown, expected: ExpectedVideo): YoutubeHeatmap | undefined {
   dropStaleYoutubeHeatmapHarvest(expected);
   const pageId = expected.id;
   const win = window as Window & { ytInitialData?: unknown };
-  const fromInitial = findYoutubeHeatmap(win.ytInitialData, pageId);
+  const fromInitial = findYoutubeHeatmapOnce(win.ytInitialData, pageId);
   const initialId = youtubeWatchJsonVideoId(win.ytInitialData);
   if (fromInitial?.segments && youtubeHeatmapHarvestMatchesPage(pageId, initialId) && describesExpected(expected, initialId)) {
     rememberYoutubeHeatmap(fromInitial, pageId || initialId);
     return heatmapPayload(fromInitial);
   }
-  const fromPlayer = findYoutubeHeatmap(playerRaw, pageId);
+  const fromPlayer = findYoutubeHeatmapOnce(playerRaw, pageId);
   const playerId = youtubeWatchJsonVideoId(playerRaw) || youtubeResponseVideoId(playerRaw);
   if (fromPlayer?.segments && youtubeHeatmapHarvestMatchesPage(pageId, playerId) && describesExpected(expected, playerId)) {
     rememberYoutubeHeatmap(fromPlayer, pageId || playerId);

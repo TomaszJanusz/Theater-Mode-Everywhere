@@ -11,12 +11,15 @@ import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, is
 import { createNetflixServiceActions } from './netflix/service-actions';
 import { createSoopServiceActions } from './soop/service-actions';
 import { createVikiServiceActions } from './viki/service-actions';
-import { createYouTubeServiceActions } from './youtube/service-actions';
+import { createYouTubeServiceActions, YOUTUBE_PLAYER_SELECTOR, youtubeAdShowing } from './youtube/service-actions';
 
 /** Provider composition belongs here; the shared CTA only consumes actions. */
 export function createServiceActions(options: BilibiliIntlServiceActionHooks = {}): ServiceActionSource | null {
   if (isNetflixHost()) return createNetflixServiceActions();
-  if (isYouTubeHost()) return observed(createYouTubeServiceActions(options), 'youtube', '#movie_player, .html5-video-player');
+  // The skip button's slot can toggle without any mutation the observer treats as relevant, so
+  // the fallback runs while an ad shows; outside ads the player's class change re-arms it.
+  if (isYouTubeHost()) return observed(createYouTubeServiceActions(options), 'youtube', YOUTUBE_PLAYER_SELECTOR,
+    () => youtubeAdShowing(options.document ?? document, options.element));
   if (isBilibiliHost()) return observed(createBilibiliServiceActions(options), 'bilibili', '.bpx-player-container, .bilibili-player, #bilibiliPlayer');
   if (isBilibiliIntlHost()) return observed(createBilibiliIntlServiceActions(options), 'bilibiliIntl', '.bstar-player');
   if (isDisneyHost()) return createDisneyServiceActions();
@@ -25,11 +28,12 @@ export function createServiceActions(options: BilibiliIntlServiceActionHooks = {
   if (isVikiHost()) return observed(createVikiServiceActions(), 'viki', '#vmplayer_id');
   return null;
 
-  function observed(source: ServiceActionSource, provider: MediaProviderId, selector: string): ServiceActionSource {
+  function observed(source: ServiceActionSource, provider: MediaProviderId, selector: string,
+    needsFallback?: () => boolean): ServiceActionSource {
     const doc = options.document ?? document;
     const root = options.element?.getRootNode();
     return { ...source, subscribe: changed => observeProviderDom({ root: root instanceof ShadowRoot ? root : doc,
-      selector, changed, enabled: () => mediaProviderIntegrationEnabled(provider),
+      selector, changed, needsFallback, enabled: () => mediaProviderIntegrationEnabled(provider),
       relevant: record => {
         const element = record.target instanceof Element ? record.target : record.target.parentElement;
         if (provider === 'youtube') {

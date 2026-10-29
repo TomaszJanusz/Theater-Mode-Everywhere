@@ -1271,9 +1271,24 @@ describe('native chat controller', () => {
           window.__zero();
         })()`);
         await page.clock.runFor(10_000);
-        const lateMount = await page.evaluate('window.__counts()') as { refreshes: number; documentQueries: number };
-        assert.ok(lateMount.refreshes >= 1 && lateMount.refreshes <= 6, `${engine} late refresh ${lateMount.refreshes}`);
-        assert.ok(lateMount.documentQueries > 0 && lateMount.documentQueries < 80, `${engine} late queries ${lateMount.documentQueries}`);
+        // A watch page without chat has nothing pending, so no timer wakes it.
+        assert.deepEqual(await page.evaluate('window.__counts()'), { refreshes: 0, documentQueries: 0, elementQueries: 0, allQueries: 0 }, engine);
+        await page.evaluate(`(() => {
+          window.__controller.dispose();
+          document.body.innerHTML = '<ytd-watch-flexy video-id="AbCdEfGhIjK"><yt-video-metadata-carousel-view-model role="button" aria-label="Czat na żywo"><button>Otwórz panel</button></yt-video-metadata-carousel-view-model></ytd-watch-flexy>';
+          window.__href = 'https://www.youtube.com/watch?v=AbCdEfGhIjK';
+          window.__controller = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() {} });
+          window.__zero();
+        })()`);
+        // A native control waiting to open the chat is the one reason left to re-read on a timer.
+        await page.clock.runFor(6_000);
+        const pending = (await page.evaluate('window.__counts()') as { refreshes: number }).refreshes;
+        assert.ok(pending >= 2 && pending <= 4, `${engine} pending activation refreshed ${pending} times`);
+        await page.evaluate(`document.querySelector('yt-video-metadata-carousel-view-model').remove()`);
+        await page.clock.runFor(2_000);
+        await page.evaluate('window.__zero()');
+        await page.clock.runFor(10_000);
+        assert.equal((await page.evaluate('window.__counts()') as { refreshes: number }).refreshes, 0, `${engine} timer outlived the activation`);
 
         const routes = await page.evaluate(`(() => {
           window.__controller.dispose();
@@ -1308,7 +1323,11 @@ describe('native chat controller', () => {
         assert.deepEqual(routes.mobileState, { available: true, kind: 'replay' }, engine);
         assert.deepEqual(routes.playerState, { available: false, queries: 0 }, engine);
         assert.deepEqual(routes.homeState, { available: false, queries: 0 }, engine);
-        await page.clock.runFor(500);
+        // A route change is noticed through the host's navigation event, not by polling the URL.
+        await page.clock.runFor(5_000);
+        assert.equal(await page.evaluate('window.__controller.state.available'), false, engine);
+        await page.evaluate(`document.dispatchEvent(new Event('yt-navigate-finish'))`);
+        await page.clock.runFor(100);
         const embed = await page.evaluate(`(() => {
           const state = window.__controller.state;
           window.__controller.dispose();
@@ -1318,6 +1337,96 @@ describe('native chat controller', () => {
       } finally {
         await page.close();
       }
+    }
+  });
+
+  it('notices a detached or retargeted chat surface from mutations alone, within one structure tick, with no timer', async t => {
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const youtubeHref = 'https://www.youtube.com/watch?v=AbCdEfGhIjK';
+    const cases = [
+      { name: 'iframe detached', html: YOUTUBE, href: youtubeHref, mutate: `document.getElementById('chatframe').remove()`,
+        changed: 's === null || s.iframe !== old.iframe' },
+      { name: 'iframe retargeted', html: YOUTUBE, href: youtubeHref,
+        mutate: `document.getElementById('chatframe').setAttribute('src', 'https://www.youtube.com/live_chat?v=OtherVideo1')`,
+        changed: 's === null' },
+      { name: 'root detached', html: YOUTUBE, href: youtubeHref, mutate: `document.getElementById('chat').remove()`,
+        changed: 's === null || s.root !== old.root' },
+      { name: 'component detached', html: TWITCH, href: 'https://www.twitch.tv/SomeChannel',
+        mutate: `document.querySelector('section.chat-room').remove()`, changed: 's === null || s.contentRoot !== old.contentRoot' },
+      { name: 'root detached by an ancestor', html: TWITCH, href: 'https://www.twitch.tv/SomeChannel',
+        mutate: `document.getElementById('layout').remove()`, changed: 's === null || s.root !== old.root' }
+    ];
+    for (const scenario of cases) {
+      const page = await pageWith(t, scenario.html);
+      try {
+        await page.evaluate(`(() => {
+          let refreshes = 0;
+          const raw = NativeChat.ChatController.prototype.refresh;
+          NativeChat.ChatController.prototype.refresh = function() { refreshes += 1; return raw.call(this); };
+          window.__refreshes = () => refreshes;
+          window.__controller = new NativeChat.ChatController({ document, href: () => ${JSON.stringify(scenario.href)}, onChange() {}, onLayoutChange() {} });
+          window.__old = window.__controller.state.surface;
+          refreshes = 0;
+        })()`);
+        assert.equal(await page.evaluate('Boolean(window.__old)'), true, `${scenario.name}: surface found`);
+        await page.evaluate(scenario.mutate);
+        const read = () => page.evaluate(`(() => { const s = window.__controller.state.surface; const old = window.__old; return ${scenario.changed}; })()`);
+        await page.clock.runFor(79);
+        assert.equal(await read(), false, `${scenario.name}: coalesced for the structure tick`);
+        await page.clock.runFor(1);
+        assert.equal(await read(), true, `${scenario.name}: noticed after the 80 ms structure tick`);
+        assert.equal(await page.evaluate('window.__refreshes()'), 1, `${scenario.name}: one refresh`);
+        await page.clock.runFor(10_000);
+        assert.equal(await page.evaluate('window.__refreshes()'), 1, `${scenario.name}: no timer afterwards`);
+      } finally { await page.close(); }
+    }
+
+    // A hidden document does no work; the next reading happens when it is shown again.
+    const page = await pageWith(t, YOUTUBE);
+    try {
+      await page.evaluate(`(() => {
+        let hidden = false;
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+        window.__setHidden = (value) => { hidden = value; document.dispatchEvent(new Event('visibilitychange')); };
+        window.__controller = new NativeChat.ChatController({ document, href: () => ${JSON.stringify(youtubeHref)}, onChange() {}, onLayoutChange() {} });
+        window.__old = window.__controller.state.surface;
+        window.__setHidden(true);
+        document.getElementById('chatframe').remove();
+      })()`);
+      await page.clock.runFor(10_000);
+      assert.equal(await page.evaluate('window.__controller.state.surface === window.__old'), true, 'unchanged while hidden');
+      await page.evaluate('window.__setHidden(false)');
+      assert.equal(await page.evaluate('window.__controller.state.surface === null || window.__controller.state.surface.iframe !== window.__old.iframe'), true, 'read when shown');
+    } finally { await page.close(); }
+  });
+
+  it('follows a Twitch or SOOP route change through the host history event, not by polling', async t => {
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const cases = [
+      { name: 'twitch', html: TWITCH, from: 'https://www.twitch.tv/SomeChannel', to: 'https://www.twitch.tv/OtherChannel', event: 'theater-everywhere-twitch-navigate' },
+      { name: 'soop', html: '<div id="webplayer" class="chat_open"><div id="chatting_area"><div class="chatbox"></div></div></div>',
+        from: 'https://play.sooplive.com/crankyducks/298190957', to: 'https://play.sooplive.com/lolglobal/298189961', event: 'theater-everywhere-soop-navigate' }
+    ];
+    for (const scenario of cases) {
+      const page = await pageWith(t, scenario.html);
+      try {
+        await page.evaluate(`(() => {
+          window.__href = ${JSON.stringify(scenario.from)};
+          window.__controller = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() {} });
+          window.__controller.hide(); // A viewer's choice for this content.
+        })()`);
+        const read = () => page.evaluate(`({ key: window.__controller.state.surface && window.__controller.state.surface.contentKey, visible: window.__controller.state.visible })`) as Promise<{ key: string; visible: boolean }>;
+        const first = await read();
+        assert.equal(first.visible, false, `${scenario.name}: hidden by the viewer`);
+        await page.evaluate(`window.__href = ${JSON.stringify(scenario.to)}`);
+        await page.clock.runFor(10_000);
+        assert.deepEqual(await read(), first, `${scenario.name}: nothing polls the URL`);
+        await page.evaluate(`window.dispatchEvent(new Event(${JSON.stringify(scenario.event)}))`);
+        await page.clock.runFor(80);
+        const next = await read();
+        assert.notEqual(next.key, first.key, `${scenario.name}: new content identity`);
+        assert.equal(next.visible, true, `${scenario.name}: visibility is seeded again from the native chat`);
+      } finally { await page.close(); }
     }
   });
 

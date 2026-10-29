@@ -389,6 +389,35 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
     } finally { await page.close(); }
   });
 
+  it('re-reads YouTube skip controls on a timer only while an ad shows', async t => {
+    const page = await fixture(t, 'https://www.youtube.com/watch?v=video1', '<div id="movie_player" class="html5-video-player"><video></video></div>');
+    try {
+      await page.clock.install();
+      await page.evaluate(`(() => {
+        window.__reads = 0;
+        window.__stop = TeActions.createServiceActions({element:document.querySelector('video')}).subscribe(() => { window.__reads++; });
+      })()`);
+      const reads = async () => await page.evaluate('window.__reads') as number;
+      const toggleAd = (on: boolean) => page.evaluate(`document.querySelector('#movie_player').classList.${on ? 'add' : 'remove'}('ad-showing')`);
+      await page.clock.runFor(100);
+      const base = await reads();
+      await page.clock.runFor(5_000);
+      assert.equal(await reads(), base, 'no timer outside ads');
+      await toggleAd(true);
+      await page.clock.runFor(100);
+      const started = await reads();
+      assert.ok(started > base, 'the class change reads once');
+      await page.clock.runFor(3_000);
+      assert.ok(await reads() >= started + 2, 'fallback runs while the ad shows');
+      await toggleAd(false);
+      await page.clock.runFor(100);
+      const ended = await reads();
+      await page.clock.runFor(5_000);
+      assert.equal(await reads(), ended, 'fallback stops after the ad');
+      await page.evaluate('window.__stop()');
+    } finally { await page.close(); }
+  });
+
   it('rejects stale YouTube actions after route, button, root, media and source changes', async t => {
     const page = await fixture(t, 'https://www.youtube.com/watch?v=video1', '<div id="movie_player" class="ad-showing"><video src="a.mp4"></video><button class="ytp-skip-ad-button">Skip</button></div>');
     try {

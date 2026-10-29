@@ -371,5 +371,37 @@ for (const engine of testEngines()) {
       assert.equal(report.settled.intervals, 0);
 
     });
+
+    it('installs the play-next observer only on Disney+ hosts', { timeout: 30_000 }, async t => {
+      const probe = async (origin: string, path: string) => {
+        const page = await (await browsers[engine].newContext(t)).newPage();
+        await page.route(`${origin}/**`, route => route.fulfill({
+          contentType: 'text/html', body: '<!doctype html><title>host</title><body></body>'
+        }));
+        await page.goto(`${origin}${path}`);
+        await page.addScriptTag({ content: 'globalThis.__name = fn => fn;\n' + compiled });
+        return page.evaluate(() => {
+          const api = (window as unknown as { DisneyMain: { installDisneyMain: () => void } }).DisneyMain;
+          let observers = 0;
+          let requestListeners = 0;
+          const NativeObserver = window.MutationObserver;
+          window.MutationObserver = class extends NativeObserver {
+            constructor(callback: MutationCallback) { super(callback); observers += 1; }
+          };
+          const addListener = window.addEventListener.bind(window) as typeof window.addEventListener;
+          window.addEventListener = ((type: string, ...rest: unknown[]) => {
+            if (type === 'theater-everywhere-disney-play-next') requestListeners += 1;
+            return (addListener as (...args: unknown[]) => void)(type, ...rest);
+          }) as typeof window.addEventListener;
+          api.installDisneyMain();
+          return { observers, requestListeners };
+        });
+      };
+      const other = await probe('https://www.youtube.com', `/watch?v=iG9CE55wbtY`);
+      assert.deepEqual(other, { observers: 0, requestListeners: 0 });
+      const disney = await probe('https://www.disneyplus.com', `/play/${PLAY_ID}`);
+      assert.equal(disney.requestListeners, 1);
+      assert.equal(disney.observers > 0, true);
+    });
   });
 }
