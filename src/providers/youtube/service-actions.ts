@@ -1,11 +1,13 @@
 import type { ServiceActionSource } from '../../core/service-actions';
-import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
+import { mediaProviderIntegrationEnabled, providerOffAttribute } from '../../media-features/provider-flags';
 import { observeProviderDom } from '../dom-watch';
 import { isYouTubeHost } from '../hosts';
 import {
   nativeServiceActionId, nativeServiceActionSource, serviceActionRoute, serviceControlLabel, servicePlayer,
   usableServiceControl, type NativeServiceActionHooks
 } from '../native-service-actions';
+
+import { YOUTUBE_PAGE_EVENTS } from './events';
 
 export const YOUTUBE_PLAYER_SELECTOR = '#movie_player, .html5-video-player';
 
@@ -41,6 +43,7 @@ export function createYouTubeServiceActions(hooks: YouTubeActionHooks = {}): Ser
   return { ...source, subscribe: changed => observeProviderDom({
     root: scope instanceof ShadowRoot ? scope : doc, selector: YOUTUBE_PLAYER_SELECTOR, changed,
     enabled: () => mediaProviderIntegrationEnabled('youtube'),
+    events: YOUTUBE_PAGE_EVENTS, flags: [providerOffAttribute('youtube')],
     // The skip button's slot can toggle without any mutation the observer treats as relevant, so
     // the fallback runs while an ad shows; outside ads the player's class change re-arms it.
     needsFallback: () => youtubeAdShowing(doc, hooks.element),

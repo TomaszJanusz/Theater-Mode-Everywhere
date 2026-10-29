@@ -43,6 +43,9 @@ const MEDIA_PROVIDER_OFF_ATTRS: Record<MediaProviderId, string> = {
   viki: 'data-te-viki-integration-off'
 };
 
+/** The root attribute present while a provider's integration is off. */
+export const providerOffAttribute = (id: MediaProviderId): string => MEDIA_PROVIDER_OFF_ATTRS[id];
+
 export function mediaProviderIntegrationEnabled(id: MediaProviderId): boolean {
   return !document.documentElement.hasAttribute(MEDIA_PROVIDER_OFF_ATTRS[id]);
 }

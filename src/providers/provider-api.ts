@@ -36,6 +36,15 @@ export type ProviderHooks = {
   allowsMediaFetch?(request: MediaFetchRequest, base?: string): boolean;
   createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
   launcherPlacement?: LauncherPlacementFactory;
+  /** Host events the shared runtime follows on this provider's pages, by what they signal. */
+  events?: {
+    /** The host starts replacing its page: page reads abort and the theater viewport holds. */
+    navigationStart?: readonly string[];
+    /** The host may have rebuilt DOM that observers watch (playlist controls, actions). */
+    domChange?: readonly string[];
+    /** New media data (title, captions, chapters) may be available; window-level, any target. */
+    media?: readonly string[];
+  };
   /** Host clocks, live bounds and seek dispatch in the isolated world. */
   timeline?: ProviderTimeline;
   timelineMarkers?: (video: HTMLElement) => TimelineMarkerSource | null;
@@ -44,6 +53,8 @@ export type ProviderHooks = {
   navigation?: {
     playerSelector: string;
     readControls(root: ParentNode): CollectedControl[];
+    /** Host surfaces whose changes can alter navigation; any mutation inside them counts. */
+    surfaces?: string;
     /** Host queue actions; each claimed direction (including a confirmed end) hides host controls for it. */
     queue?(root: ParentNode, video: HTMLVideoElement | null | undefined, helpers: PlaylistHelpers): { actions: PlaylistAction[]; claimed: Set<PlaylistDirection> };
   };

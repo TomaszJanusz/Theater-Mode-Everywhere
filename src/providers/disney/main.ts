@@ -366,7 +366,7 @@ export function harvestDisneyBifFromXhr(xhr: XMLHttpRequest): void {
     }
     if (xhr.response instanceof Blob) {
       if (xhr.response.size > MAX_BIF_BYTES) return;
-      readPageResponseBytes({ body: xhr.response.stream() }, MAX_BIF_BYTES, undefined, disneyIntegrationEnabled)
+      readPageResponseBytes({ body: xhr.response.stream() }, MAX_BIF_BYTES, undefined, { isCurrent: disneyIntegrationEnabled })
         .then((buffer) => { if (buffer) rememberDisneyBif(buffer, url); }).catch(() => {});
     }
   } catch {
@@ -490,13 +490,13 @@ export function captureDisneyNetworkResponse(url: string, response: Response): v
   const finalUrl = (response && response.url) || url;
   if (!response || !response.ok) return;
   if (isAllowedDisneyBifUrl(url) || isAllowedDisneyBifUrl(finalUrl)) {
-    readPageResponseBytes(response, MAX_BIF_BYTES, undefined, disneyIntegrationEnabled)
+    readPageResponseBytes(response, MAX_BIF_BYTES, undefined, { isCurrent: disneyIntegrationEnabled })
       .then((buffer) => { if (buffer) rememberDisneyBif(buffer, finalUrl || url); }).catch(() => {});
     return;
   }
   if (/\.(m3u8|mp4|m4s|ts|cmfa|cmfv|m4t|jpe?g|png|webp|vtt|bif)(\?|$)/i.test(finalUrl)) return;
   if (!shouldHarvestDisneyUrl(url) && !shouldHarvestDisneyUrl(finalUrl)) return;
-  readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined, disneyIntegrationEnabled)
+  readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined, { isCurrent: disneyIntegrationEnabled })
     .then((buffer) => { if (buffer) harvestDisneyBody(finalUrl, new TextDecoder().decode(buffer)); }).catch(() => {});
 }
 

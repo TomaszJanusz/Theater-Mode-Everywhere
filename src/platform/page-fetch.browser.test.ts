@@ -190,7 +190,7 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
       assert.deepEqual(await page.evaluate(`(async () => {
         const controller = new AbortController(); let cancelled = 0, deliver;
         const body = new ReadableStream({start(c) {deliver = c;}, cancel() {cancelled++;}});
-        const result = BridgeTest.readPageResponseBytes({body}, 8, controller.signal);
+        const result = BridgeTest.readPageResponseBytes({body}, 8, controller.signal, { navigationStart: ['yt-navigate-start'] });
         ${change};
         return {result:await result, cancelled, locked:body.locked};
       })()`), { result: null, cancelled: 1, locked: false });

@@ -35,7 +35,7 @@ import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/pat
 import { installPatreonNavigation } from '../providers/patreon/navigation';
 import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
-import { providerRegistry } from '../providers/runtime-registration';
+import { providerRegistry, registeredEvents } from '../providers/runtime-registration';
 import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
 import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import {
@@ -558,7 +558,9 @@ export function installMainWorldRuntime(): void {
             if (!response) return null;
             const isBif = isAllowedDisneyBifUrl(url);
             const maxBytes = isBif ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;
-            const buffer = await readPageResponseBytes(response, maxBytes, controller.signal, () => window.location.href === href && pageFetchAllowed(url));
+            const buffer = await readPageResponseBytes(response, maxBytes, controller.signal, {
+              isCurrent: () => window.location.href === href && pageFetchAllowed(url), navigationStart: registeredEvents('navigationStart')
+            });
             if (!buffer) return null;
             if (isBif) return URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }));
             return new TextDecoder().decode(buffer);

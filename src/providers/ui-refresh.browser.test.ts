@@ -55,7 +55,8 @@ for (const engine of testEngines()) describe(`${engine} UI refresh ownership`, (
           };
           const container = document.createElement('div'); document.body.append(container);
           const root = shadow ? container.attachShadow({ mode: 'open' }) : document;
-          const panel = document.createElement('ytd-playlist-panel-renderer');
+          // A host-neutral surface: YouTube's playlist panel is observed only where YouTube registers.
+          const panel = Object.assign(document.createElement('button'), { className: 'vjs-next-video' });
           (shadow ? root : container).appendChild(panel);
           const stop = api.subscribePlaylistNavigation(root, () => {
             reads++; return { previous: false, next: true, previousRestarts: false, previousPreview: null, nextPreview: null };
@@ -88,11 +89,11 @@ for (const engine of testEngines()) describe(`${engine} UI refresh ownership`, (
           await advance(1000); const beforeShadow = reads;
           host.shadowRoot!.querySelector('button')!.disabled = true;
           await flush(); const shadowReads = reads - beforeShadow;
-          const replacement = document.createElement('ytd-playlist-panel-renderer'); panel.replaceWith(replacement);
+          const replacement = Object.assign(document.createElement('button'), { className: 'vjs-next-video' }); panel.replaceWith(replacement);
           await flush(); const beforeReplacement = reads;
           replacement.textContent = 'new video'; await flush(); const replacementReads = reads - beforeReplacement;
           stop(); stop(); const beforeDispose = reads;
-          replacement.textContent = 'after disposal'; window.dispatchEvent(new Event('yt-navigate-finish'));
+          replacement.textContent = 'after disposal'; window.dispatchEvent(new PopStateEvent('popstate'));
           await advance(5000);
           const disposed = { reads: reads - beforeDispose, timers: timers.size, frames: frames.size };
           container.remove();

@@ -8,6 +8,7 @@ import {
   pinNetflixTheaterViewport,
   unmountNetflixTheaterStage
 } from './netflix/stage';
+import { registeredEvents } from './runtime-registration';
 import { tencentTheaterStage } from './tencent/stage';
 import { twitchTheaterStage } from './twitch/stage';
 import { vikiTheaterStage } from './viki/stage';
@@ -85,6 +86,11 @@ export function pinProviderViewport(
     if (stage === claim) continue;
     stage.afterViewportPin?.(element, pinGeneric);
   }
+}
+
+/** Host events that start replacing the page, before which the theater viewport is held. */
+export function hostNavigationStarts(): string[] {
+  return registeredEvents('navigationStart');
 }
 
 export function onProviderStructuralMutation(element: HTMLElement, helpers: ProviderStructuralHelpers): void {

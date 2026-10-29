@@ -38,3 +38,5 @@ export function createProviderRegistry(hostname: string) {
 
 export const providerRegistry = createProviderRegistry(typeof window === 'undefined' ? '' : window.location.hostname);
 export const registeredChat = () => providerRegistry.all().find(hooks => hooks.chat)?.chat;
+export const registeredEvents = (kind: keyof NonNullable<ProviderHooks['events']>): string[] =>
+  providerRegistry.all().flatMap(hooks => hooks.events?.[kind] ?? []);
