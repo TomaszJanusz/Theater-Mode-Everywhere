@@ -460,3 +460,107 @@ export async function assertIqiyiProvider(page: Page, context: BrowserContext): 
     }, saved);
   }
 }
+
+const TWITCH = 'https://www.twitch.tv/videos/123456789';
+const twitchFixture = `<!doctype html><html><head><title>Generic fixture title</title><script>
+// The page's first script: Twitch's MAIN harvest must already observe responses, while fetch stays the host's own.
+window.earlyHarvest = !/\\[native code\\]/.test(Function.prototype.toString.call(Response.prototype.json));
+window.nativeFetch = /\\[native code\\]/.test(Function.prototype.toString.call(window.fetch));
+window.hostKeys = 0;
+window.addEventListener('keydown', event => {
+  if (event.code === 'KeyT') { window.hostKeys++; event.stopImmediatePropagation(); event.preventDefault(); }
+}, true);
+</script></head><body>
+<div class="video-player"><div data-a-target="video-ref"><video muted style="width:640px;height:360px"></video></div></div>
+<h2 data-a-target="video-title" title="Twitch pilot VOD">Twitch pilot VOD</h2>
+<section data-test-selector="chat-room-component-layout"><textarea data-a-target="chat-input"></textarea></section>
+<script>
+fetch('/fixture.webm').then(response => response.blob()).then(blob => { document.querySelector('video').src = URL.createObjectURL(blob); });
+</script></body></html>`;
+
+/** Twitch loads per host: installed-extension evidence on intercepted host URLs, as for YouTube. */
+export async function assertTwitchProvider(page: Page, context: BrowserContext): Promise<void> {
+  const worker = await extensionWorker(context);
+  const saved = await worker.evaluate(() => chrome.storage.sync.get(['autoEnterTheater', 'twitchIntegrationEnabled']));
+  const media = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
+  const handler = async (route: Route) => {
+    if (new URL(route.request().url()).pathname === '/fixture.webm') await route.fulfill({ contentType: 'video/webm', body: media });
+    else await route.fulfill({ contentType: 'text/html; charset=utf-8', body: twitchFixture });
+  };
+  const hosts = /^https:\/\/(?:www\.twitch\.tv|player\.twitch\.tv|www\.twitch\.tv\.evil\.test|player\.example\.test)\//;
+  const ready = () => page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts')
+    && (document.querySelector('video')?.readyState ?? 0) >= 2);
+  const title = () => page.locator('.theater-everywhere-title-hud').filter({ hasText: 'Twitch pilot VOD' }).first();
+  const query = watchBridgeQuery(page);
+  await context.route(hosts, handler);
+  try {
+    await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false, twitchIntegrationEnabled: true }));
+    await page.goto(TWITCH);
+    await ready();
+    assert.equal(await page.evaluate('window.earlyHarvest'), true, 'Twitch harvest must observe responses before the first host script');
+    assert.equal(await page.evaluate('window.nativeFetch && /\\[native code\\]/.test(Function.prototype.toString.call(window.fetch))'), true,
+      'wrapFetch: false leaves the host transport unwrapped');
+    assert.equal(await query(), 'pilot-query', 'MAIN provider must answer the validated watch bridge');
+    const first = await page.evaluate(() => {
+      const begin = performance.now();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 't', code: 'KeyT', bubbles: true, cancelable: true }));
+      return { entered: document.documentElement.classList.contains('theater-everywhere-html-active'), milliseconds: performance.now() - begin };
+    });
+    assert.equal(first.entered, true, 'first t enters synchronously on Twitch');
+    assert.equal(await page.evaluate('window.hostKeys'), 0, 'early key capture beats the host listener');
+    assert.equal(await page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-twitch-stage')), true, 'stage through the provider');
+    await title().waitFor({ state: 'attached' });
+    // A key typed in the chat stays the chat's, in both worlds.
+    await page.locator('[data-a-target="chat-input"]').focus();
+    await page.keyboard.press('t');
+    assert.equal(await page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-html-active')), true, 't in the chat input does not exit');
+    await page.locator('[data-a-target="chat-input"]').blur();
+    await page.keyboard.press('Escape');
+
+    // RTE off keeps the native stage and generic entry; switching it on without a reload brings the title back.
+    await worker.evaluate(() => chrome.storage.sync.set({ twitchIntegrationEnabled: false }));
+    await page.goto(TWITCH);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-twitch-integration-off'));
+    await ready();
+    assert.equal(await query(), 'pilot-query', 'MAIN identity stays available with RTE off');
+    await page.keyboard.press('t');
+    await page.locator('.theater-controls-wrapper').waitFor();
+    assert.equal(await title().count(), 0, 'no service title with RTE off');
+    await worker.evaluate(() => chrome.storage.sync.set({ twitchIntegrationEnabled: true }));
+    await page.waitForFunction(() => !document.documentElement.hasAttribute('data-te-twitch-integration-off'));
+    await title().waitFor({ state: 'attached' });
+    await page.keyboard.press('Escape');
+
+    // A chat-only popout stays the host's: no harvest observers, no theater, the key reaches Twitch.
+    await page.goto('https://www.twitch.tv/popout/somechannel/chat');
+    await page.waitForFunction(() => (document.querySelector('video')?.readyState ?? 0) >= 2);
+    assert.equal(await page.evaluate('window.earlyHarvest'), false, 'the MAIN runtime stays out of a chat document');
+    await page.keyboard.press('t');
+    assert.equal(await page.evaluate('window.hostKeys'), 1, 'the popout keeps its keys');
+    assert.equal(await page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-html-active')), false);
+
+    // A look-alike host stays generic.
+    await page.goto('https://www.twitch.tv.evil.test/videos/123456789');
+    await ready();
+    assert.equal(await page.evaluate('window.earlyHarvest'), false, 'no Twitch script on a look-alike host');
+    assert.equal(await query(), null, 'no Twitch watch bridge on a look-alike host');
+
+    // A third-party page embedding Twitch's player: the player frame gets Twitch, the generic parent does not.
+    await page.goto('https://player.example.test/');
+    await ready();
+    const embed = 'https://player.twitch.tv/?video=v123456789&parent=player.example.test';
+    await page.evaluate(url => { const frame = document.createElement('iframe'); frame.src = url; frame.width = '640'; frame.height = '360'; document.body.append(frame); }, embed);
+    await page.frameLocator('iframe').locator('video').waitFor();
+    const frame = page.frames().find(candidate => candidate.url() === embed)!;
+    await frame.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+    assert.equal(await frame.evaluate('window.earlyHarvest'), true, 'the player frame registers Twitch');
+    assert.equal(await page.evaluate('window.earlyHarvest'), false, 'the generic parent loads no Twitch script');
+    console.log(`smoke Twitch provider scripts: MAIN harvest before the first host script with fetch unwrapped, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), stage and title through the provider, chat keys, RTE off/on, chat-only popout, spoofed host, player embed in a generic page passed (installed fixture)`);
+  } finally {
+    await context.unroute(hosts, handler);
+    await worker.evaluate(async saved => {
+      await chrome.storage.sync.remove(['autoEnterTheater', 'twitchIntegrationEnabled']);
+      await chrome.storage.sync.set(saved);
+    }, saved);
+  }
+}
