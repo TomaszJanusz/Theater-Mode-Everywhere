@@ -1,8 +1,9 @@
 import { DisposableScope } from '../core/disposable-scope';
-import { registeredChat } from '../providers/runtime-registration';
-import { TWITCH_NAVIGATE_EVENT } from '../providers/twitch/navigation';
+import type { MediaProviderId } from '../media-features/provider-flags';
 
-import { detectChatActivation, TWITCH_CHAT_TOGGLE_SELECTOR } from './activation';
+
+
+import { detectChatActivation } from './activation';
 import { detectChatSurface } from './detect';
 import {
   CHAT_GEOMETRY_PROPERTIES,
@@ -12,8 +13,9 @@ import {
   DEFAULT_CHAT_WIDTH_PX
 } from './geometry';
 import { OwnedDom } from './owned-dom';
+import { nativeChat } from './registered';
 import { ChatThemeSession, normalizeChatTheme } from './theme';
-import type { ChatActivation, ChatPreference, ChatProvider, ChatState, ChatSurface, ChatTheme } from './types';
+import type { ChatActivation, ChatPreference, ChatState, ChatSurface, ChatTheme } from './types';
 import { isNativeChatHost, parseChatLocation, watchIdentity } from './url';
 
 /**
@@ -24,15 +26,8 @@ import { isNativeChatHost, parseChatLocation, watchIdentity } from './url';
  */
 const PENDING_ACTIVATION_MS = 2000;
 
-/** Route changes the SPA publishes without `popstate`: Twitch's history hook, and those of registered providers. */
-const PAGE_NAV_EVENTS = [TWITCH_NAVIGATE_EVENT] as const;
-
 /** Coalesce structural mutations. Message appends never reach this timer. */
 const STRUCTURE_REFRESH_MS = 80;
-
-const ACTIVATION_SELECTOR = TWITCH_CHAT_TOGGLE_SELECTOR;
-
-const SHELL_SELECTOR = `[data-test-selector="chat-room-component-layout"], .chat-room, .chat-shell, [data-a-target="right-column-chat-bar"], .right-column`;
 
 export interface ChatControllerOptions {
   document: Document;
@@ -41,8 +36,8 @@ export interface ChatControllerOptions {
   onLayoutChange: () => void;
   /** Move focus to the TME toggle before the hidden chat becomes inert. */
   focusToggle?: () => void;
-  initialPreferences?: Partial<Record<ChatProvider, ChatPreference>>;
-  persistPreference?: (provider: ChatProvider, preference: ChatPreference) => void;
+  initialPreferences?: Partial<Record<MediaProviderId, ChatPreference>>;
+  persistPreference?: (provider: MediaProviderId, preference: ChatPreference) => void;
 }
 
 interface MemoryPreference {
@@ -65,15 +60,16 @@ const EMPTY_STATE: ChatState = {
 };
 
 /**
- * Session controller for the native Twitch or YouTube chat.
+ * Session controller for a registered provider's native chat.
  * Construction starts observation (`start()` is idempotent if called again).
  * Show, hide, resize, and preference retention are provider-independent.
  */
 export class ChatController {
-  private readonly activationSelector = [ACTIVATION_SELECTOR, registeredChat()?.activationSelector].filter(Boolean).join(', ');
-  private readonly shellSelector = [SHELL_SELECTOR, registeredChat()?.shellSelector].filter(Boolean).join(', ');
-  private readonly structure = registeredChat()?.structure;
-  private readonly providerChat = registeredChat();
+  // Read once registration has closed; the shell observer only runs on a registered chat's watch routes.
+  private readonly providerChat = nativeChat();
+  private readonly activationSelector = this.providerChat?.activationSelector ?? '';
+  private readonly shellSelector = this.providerChat?.shellSelector ?? '';
+  private readonly structure = this.providerChat?.structure;
   private readonly options: ChatControllerOptions;
   private readonly scope = new DisposableScope();
   private readonly surfaceOwned = new OwnedDom();
@@ -81,7 +77,7 @@ export class ChatController {
   private readonly themeSession = new ChatThemeSession(() => {
     if (!this.disposed) this.publish(this.current.surface);
   });
-  private readonly memory = new Map<ChatProvider, MemoryPreference>();
+  private readonly memory = new Map<MediaProviderId, MemoryPreference>();
   private current: ChatState = { ...EMPTY_STATE };
   private started = false;
   private disposed = false;
@@ -280,9 +276,9 @@ export class ChatController {
     // Several events can publish one navigation; the structure timer coalesces them.
     const onNavigation = () => { if (isNativeChatHost(this.safeHref())) this.scheduleStructureRefresh(); };
     if (!view) return;
-    for (const name of PAGE_NAV_EVENTS) this.scope.listen(view, name, onNavigation);
-    // Registered events may target the document or the window; capture at the window sees both.
-    for (const name of registeredChat()?.navigationEvents ?? []) this.scope.listen(view, name, onNavigation, true);
+    // Route changes the SPA publishes without `popstate`. They may target the document or the window;
+    // capture at the window sees both.
+    for (const name of this.providerChat?.navigationEvents ?? []) this.scope.listen(view, name, onNavigation, true);
   }
 
   private onVisibility(): void {
@@ -406,7 +402,7 @@ export class ChatController {
   /** Chat transcripts and our controls are not shells. Skip them before any selector scan. */
   private ignoredBeforeScan(node: Element, surface: ChatSurface | null): boolean {
     if (node.id === 'theater-everywhere-ui' || node.closest('#theater-everywhere-ui')) return true;
-    if (node.matches('[data-theater-chat-palette], [data-theater-chat-canvas], .chat-line__message, .chat-line') || this.structure?.transcript(node)) return true;
+    if (node.matches('[data-theater-chat-palette], [data-theater-chat-canvas]') || this.structure?.transcript(node)) return true;
     if (surface?.root.contains(node) && !(node instanceof HTMLIFrameElement) && !node.matches(this.shellSelector)) return true;
     return false;
   }
@@ -572,7 +568,7 @@ export class ChatController {
     return { visible: preference.visible, width: preference.width, theme: preference.theme };
   }
 
-  private ensurePreference(provider: ChatProvider, initiallyVisible: boolean | null): MemoryPreference {
+  private ensurePreference(provider: MediaProviderId, initiallyVisible: boolean | null): MemoryPreference {
     const existing = this.memory.get(provider);
     if (existing) {
       if (initiallyVisible !== null && !existing.seeded && !existing.visibilityLocked) {
@@ -628,13 +624,13 @@ export class ChatController {
     this.scheduleStructureRefresh();
   }
 
-  private persist(provider: ChatProvider): void {
+  private persist(provider: MediaProviderId): void {
     const preference = this.memory.get(provider);
     if (!preference) return;
     this.options.persistPreference?.(provider, { visible: preference.visible, width: preference.width, theme: preference.theme });
   }
 
-  private provider(): ChatProvider | null {
+  private provider(): MediaProviderId | null {
     return this.current.surface?.provider ?? parseChatLocation(this.safeHref())?.provider ?? null;
   }
 

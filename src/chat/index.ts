@@ -3,7 +3,6 @@ export type {
   ChatDock,
   ChatKind,
   ChatPreference,
-  ChatProvider,
   ChatState,
   ChatSurface,
   ChatTheme,

@@ -1,7 +1,4 @@
-import { isTwitchHost } from '../providers/hosts';
-import { registeredChat } from '../providers/runtime-registration';
-
-import { TWITCH_CHAT_EVENT_SELECTOR } from './selectors';
+import { chatRoutes } from './routes';
 import { isChatDocument } from './url';
 
 /**
@@ -29,8 +26,7 @@ function matchesServiceChat(element: Element): boolean {
   } catch {
     // No host: only registered chats that accept an empty host could match.
   }
-  if (isTwitchHost(host) && element.matches(TWITCH_CHAT_EVENT_SELECTOR)) return true;
-  const chat = registeredChat();
+  const chat = chatRoutes();
   if (!chat || !(chat.matchesEventHost ? chat.matchesEventHost(host) : chat.matchesHost(host))) return false;
   return element.matches(chat.eventSelector) || (chat.matchesEvent ? chat.matchesEvent(element) : false);
 }

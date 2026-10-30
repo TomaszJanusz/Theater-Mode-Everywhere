@@ -1,4 +1,4 @@
-import { TWITCH_CHAT_COLUMN_SELECTOR, TWITCH_CHAT_SECTION_SELECTOR } from '../../src/chat/selectors';
+import { CHAT_COLUMN_SELECTOR, CHAT_SECTION_SELECTOR, CHAT_TOGGLE_SELECTOR } from '../../src/providers/twitch/chat-routes';
 import { MINIPLAYER_SURFACE } from '../../src/providers/video-candidates';
 import { YOUTUBE_AUTOPLAY_TOGGLE, YOUTUBE_PLAYER_SELECTOR } from '../../src/providers/youtube/launcher-placement';
 
@@ -32,17 +32,15 @@ export interface FixtureRecipe extends Omit<InspectOptions, 'attributes'>, Omit<
   pageType: string;
 }
 
-const TWITCH_TOGGLE = '[data-a-target="right-column__toggle-collapse-btn"]';
-
 const twitchChat = {
   service: 'twitch',
   viewport: { width: 1600, height: 900 },
-  ready: TWITCH_CHAT_SECTION_SELECTOR,
+  ready: CHAT_SECTION_SELECTOR,
   probes: {
-    column: TWITCH_CHAT_COLUMN_SELECTOR,
+    column: CHAT_COLUMN_SELECTOR,
     shell: '.chat-shell',
-    section: TWITCH_CHAT_SECTION_SELECTOR,
-    toggle: TWITCH_TOGGLE,
+    section: CHAT_SECTION_SELECTOR,
+    toggle: CHAT_TOGGLE_SELECTOR,
     video: 'video'
   },
   keepDepth: 1,
@@ -67,7 +65,7 @@ export const RECIPES: Record<string, FixtureRecipe> = {
     ...twitchChat,
     id: 'twitch-chat-collapsed',
     page: 'public live channel page, logged out, chat collapsed with the native toggle, before theater entry',
-    prepare: { click: TWITCH_TOGGLE, until: '.right-column--collapsed' }
+    prepare: { click: CHAT_TOGGLE_SELECTOR, until: '.right-column--collapsed' }
   },
   // The launcher's native slot (before the autoplay toggle) and the caption track list.
   'youtube-watch-player': {

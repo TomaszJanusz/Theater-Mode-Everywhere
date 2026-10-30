@@ -1,4 +1,4 @@
-export type ChatProvider = 'twitch' | 'youtube' | 'soop';
+import type { MediaProviderId } from '../media-features/provider-flags';
 
 export type ChatKind = 'live' | 'replay';
 
@@ -21,7 +21,7 @@ export interface ChatPreference {
  * `root` stays in the service's light-DOM tree; TME never reparents it.
  */
 export interface ChatSurface {
-  provider: ChatProvider;
+  provider: MediaProviderId;
   contentKey: string;
   kind: ChatKind;
   root: HTMLElement;
@@ -36,7 +36,7 @@ export interface ChatSurface {
 
 /** Service-owned control that opens a chat, including one not mounted yet. */
 export interface ChatActivation {
-  provider: ChatProvider;
+  provider: MediaProviderId;
   contentKey: string;
   control: HTMLElement;
 }

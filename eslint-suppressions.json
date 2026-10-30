@@ -357,22 +357,6 @@
       "count": 1
     }
   },
-  "src/chat/activation.ts": {
-    "local/max-symbol-name-length": {
-      "count": 1
-    }
-  },
-  "src/chat/adapters/twitch.ts": {
-    "import/order": {
-      "count": 4
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 3
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 1
-    }
-  },
   "src/chat/controller.browser.test.ts": {
     "@typescript-eslint/consistent-type-imports": {
       "count": 1
@@ -400,16 +384,6 @@
     },
     "sonarjs/no-inverted-boolean-check": {
       "count": 3
-    }
-  },
-  "src/chat/selectors.ts": {
-    "local/max-symbol-name-length": {
-      "count": 4
-    }
-  },
-  "src/chat/url.ts": {
-    "sonarjs/concise-regex": {
-      "count": 2
     }
   },
   "src/core/disposable-scope.test.ts": {
@@ -1654,6 +1628,14 @@
   },
   "src/providers/timeline/netflix.ts": {
     "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/twitch/chat-theme.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
       "count": 1
     }
   },
