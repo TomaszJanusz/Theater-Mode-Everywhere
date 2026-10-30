@@ -1,6 +1,5 @@
-import { encodeProbeRequest } from '../protocol/page-requests';
+import { encodeProbeRequest, encodeProbeAsyncRequest, parseProbeAsyncReply, PROBE_ASYNC_EVENT, PROBE_ASYNC_REPLY_EVENT } from '../protocol/page-requests';
 import { createWorldMessage, readWorldEnvelope } from '../protocol/world-messages';
-import type { BilibiliSnapshot } from '../providers/bilibili/metadata';
 import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
 import type { CrunchyrollSnapshot } from '../providers/crunchyroll/main';
 import type { TencentSnapshot } from '../providers/tencent/main';
@@ -52,7 +51,6 @@ export type MediaProbeSnapshot = {
   providers?: Record<string, unknown>;
   disney?: DisneyPlayerSnapshot | null;
   netflix?: NetflixProbeSnapshot | null;
-  bilibili?: BilibiliSnapshot | null;
   bilibiliIntl?: BilibiliIntlSnapshot | null;
   tencent?: TencentSnapshot | null;
   crunchyroll?: CrunchyrollSnapshot | null;
@@ -66,7 +64,7 @@ type ProbeResponse = ProbeRequest & MediaProbeSnapshot;
 
 let requestId = 0;
 
-export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bilibiliIntl'): Promise<MediaProbeSnapshot> {
+export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibiliIntl'): Promise<MediaProbeSnapshot> {
   return new Promise((resolve) => {
     const id = ++requestId;
     let settled = false;
@@ -87,20 +85,45 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
         providers: plainRecord(snapshot.providers),
         disney: snapshot.disney ?? null,
         netflix: snapshot.netflix ?? null,
-        bilibili: snapshot.bilibili ?? null,
         bilibiliIntl: snapshot.bilibiliIntl ?? null,
         tencent: snapshot.tencent ?? null,
         crunchyroll: snapshot.crunchyroll ?? null
       });
     };
 
-    const resultEvent = provider === 'bilibili'
-      ? 'theater-everywhere-bilibili-probe-result'
-      : provider === 'bilibiliIntl'
-        ? 'theater-everywhere-bilibili-intl-probe-result'
-        : MEDIA_PROBE_RESULT_EVENT;
+    const resultEvent = provider === 'bilibiliIntl' ? 'theater-everywhere-bilibili-intl-probe-result' : MEDIA_PROBE_RESULT_EVENT;
     window.addEventListener(resultEvent, onResult as EventListener);
     window.dispatchEvent(new CustomEvent(MEDIA_PROBE_EVENT, { detail: encodeProbeRequest(id) }));
+  });
+}
+
+/** Each provider's pending probe, settled with null when a newer request supersedes it. Settling twice is a no-op. */
+const pendingProviderProbes = new Map<string, (value: unknown) => void>();
+let providerProbeId = 0;
+
+/**
+ * A registered provider's asynchronous MAIN-world probe (`probeAsync`), for snapshots that need page requests.
+ * Resolves to the provider's unvalidated value, or null on timeout, a MAIN refusal, or when a newer request for the
+ * same provider supersedes this one: only the latest request's reply is ever delivered.
+ */
+export function requestProviderProbe(provider: string, timeoutMs = 8000, target: EventTarget = window): Promise<unknown> {
+  pendingProviderProbes.get(provider)?.(null);
+  return new Promise((resolve) => {
+    const request = { requestId: ++providerProbeId, provider, timeoutMs };
+    const finish = (value: unknown) => {
+      if (pendingProviderProbes.get(provider) === finish) pendingProviderProbes.delete(provider);
+      clearTimeout(timer);
+      target.removeEventListener(PROBE_ASYNC_REPLY_EVENT, onReply);
+      resolve(value);
+    };
+    const onReply = (event: Event) => {
+      const reply = parseProbeAsyncReply((event as CustomEvent<unknown>).detail, request.requestId);
+      if (reply) finish(reply.value);
+    };
+    const timer = setTimeout(finish, timeoutMs, null);
+    pendingProviderProbes.set(provider, finish);
+    target.addEventListener(PROBE_ASYNC_REPLY_EVENT, onReply);
+    target.dispatchEvent(new CustomEvent(PROBE_ASYNC_EVENT, { detail: encodeProbeAsyncRequest(request) }));
   });
 }
 

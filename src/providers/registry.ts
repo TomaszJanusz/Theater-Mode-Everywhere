@@ -1,12 +1,11 @@
 import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
 import type { MediaFeaturesAdapter } from '../media-features/types';
 
-import { bilibiliWatchPlayback } from './bilibili/watch-playback';
 import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
 import { PROVIDER_CATALOG } from './catalog';
 import { descriptorMatchesHost } from './descriptor-hosts';
 import { disneyWatchPlayback } from './disney/watch-playback';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isTencentHost } from './hosts';
+import { isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isTencentHost } from './hosts';
 import type { LauncherPlacementFactory } from './launcher-placement';
 import { netflixWatchPlayback } from './netflix/watch-playback';
 import { providerRegistry } from './runtime-registration';
@@ -32,7 +31,6 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'native', matchesHost: () => true },
   { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname), watchPlayback: disneyWatchPlayback },
   { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname), watchPlayback: netflixWatchPlayback },
-  { id: 'bilibili', matchesHost: (hostname) => isBilibiliHost(hostname), watchPlayback: bilibiliWatchPlayback },
   { id: 'bilibiliIntl', matchesHost: (hostname) => isBilibiliIntlHost(hostname), watchPlayback: bilibiliIntlWatchPlayback },
   { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },
   { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) },
@@ -57,8 +55,8 @@ export function matchingProviders(hostname: string): ProviderId[] {
 
 /** Statically defined providers that harvest responses; registered providers declare `harvest` instead. */
 export function shouldPatchMainWorld(hostname: string): boolean {
-  // Bilibili requests scoped metadata directly. Registered providers declare harvesting.
-  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili' && id !== 'bilibiliIntl'
+  // Bilibili.tv requests scoped metadata directly. Registered providers declare harvesting.
+  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibiliIntl'
     && !PROVIDER_CATALOG.some(descriptor => descriptor.id === id));
 }
 

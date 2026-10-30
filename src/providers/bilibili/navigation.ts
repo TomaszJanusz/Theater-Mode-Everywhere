@@ -1,9 +1,10 @@
-import { publishHistoryChanges } from '../history-publication';
+import { namedControl, type CollectedControl } from '../playlist-controls';
 
-/** Window event published by the MAIN-world hook below, which isolated-world listeners can observe. */
-export const BILIBILI_NAVIGATE_EVENT = 'theater-everywhere-bilibili-navigate';
+export const BILIBILI_PLAYER_SELECTOR = '.bpx-player-container, .bilibili-player, #bilibiliPlayer';
 
-/** Both Bilibili sites use pushState routing: links that switch videos or parts fire no `popstate`. */
-export function installBilibiliNavigation(): void {
-  publishHistoryChanges(BILIBILI_NAVIGATE_EVENT, 'theater-everywhere.bilibili-history');
+export function readBilibiliControls(root: ParentNode): CollectedControl[] {
+  return [
+    ...namedControl(root, '.bpx-player-ctrl-prev', 'bilibili', 'previous'),
+    ...namedControl(root, '.bpx-player-ctrl-next', 'bilibili', 'next')
+  ];
 }

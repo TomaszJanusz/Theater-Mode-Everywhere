@@ -36,7 +36,7 @@ export function usableServiceControl(element: HTMLElement): boolean {
   if (!element.isConnected || element.matches(':disabled')) return false;
   for (let node: HTMLElement | null = element; node; node = node.parentElement) {
     if (node.hidden || node.hasAttribute('inert') || node.getAttribute('aria-disabled') === 'true' || node.getAttribute('aria-hidden') === 'true'
-      || node.classList.contains('disabled') || node.classList.contains('bpx-state-disabled')
+      || node.classList.contains('disabled')
       || getComputedStyle(node).display === 'none') return false;
   }
   return true;

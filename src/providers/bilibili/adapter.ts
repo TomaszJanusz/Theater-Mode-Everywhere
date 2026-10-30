@@ -1,8 +1,14 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
-import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
 import type { CaptionActivationResult, CaptionTrack, MediaCapabilities, MediaFeaturesAdapter, PreviewSource, TimelineHeatmap } from '../../media-features/types';
+import type { ProviderServices } from '../provider-api';
 
-import { bilibiliPreviewFrame, bilibiliTimelineHeatmap, mergeBilibiliSnapshot, parseBilibiliCaptions, type BilibiliSnapshot } from './metadata';
+import { bilibiliPreviewFrame, bilibiliTimelineHeatmap, mergeBilibiliSnapshot, parseBilibiliCaptions, parseBilibiliSnapshot, type BilibiliSnapshot } from './metadata';
+
+/** The isolated runtime's shared owners, lent so the provider bundles no second copy. */
+export type BilibiliServices = Pick<ProviderServices['isolated'], 'requestPageFetch' | 'requestProviderProbe' | 'parseCaptionPayload'>;
+
+/** MAIN reads metadata from the host's APIs before it answers, so the probe waits longer than a page read. */
+const PROBE_TIMEOUT_MS = 6000;
 
 export class BilibiliAdapter implements MediaFeaturesAdapter {
   private snapshot: BilibiliSnapshot | null = null;
@@ -10,13 +16,15 @@ export class BilibiliAdapter implements MediaFeaturesAdapter {
   private loadGeneration = 0;
   private cueGeneration = 0;
 
+  constructor(private readonly services: BilibiliServices) {}
+
   private load(previous: BilibiliSnapshot | null = null): Promise<void> {
     if (this.snapshot) return Promise.resolve();
     if (this.pending) return this.pending;
     const generation = this.loadGeneration;
-    const pending = requestMediaProbe(6000, 'bilibili').then((snapshot) => {
+    const pending = this.services.requestProviderProbe('bilibili', PROBE_TIMEOUT_MS).then((value) => {
       if (generation !== this.loadGeneration) return;
-      this.snapshot = mergeBilibiliSnapshot(previous, snapshot.bilibili || null);
+      this.snapshot = mergeBilibiliSnapshot(previous, parseBilibiliSnapshot(value));
     }).finally(() => { if (this.pending === pending) this.pending = null; });
     this.pending = pending;
     return pending;
@@ -40,9 +48,9 @@ export class BilibiliAdapter implements MediaFeaturesAdapter {
     const track = this.snapshot?.captionTracks.find((t) => t.id === id);
     const generation = this.cueGeneration;
     const videoId = this.snapshot?.videoId || null;
-    const body = track ? await requestPageFetch(track.url) : null;
+    const body = track ? await this.services.requestPageFetch(track.url) : null;
     const samePart = Boolean(videoId && this.snapshot?.videoId === videoId && this.snapshot.captionTracks.some((item) => item.id === id));
-    const cues = body && (generation === this.cueGeneration || samePart) ? parseBilibiliCaptions(body) : [];
+    const cues = body && (generation === this.cueGeneration || samePart) ? parseBilibiliCaptions(body, this.services.parseCaptionPayload) : [];
     return cues.length ? { status: 'active', delivery: 'overlay', cues } : { status: 'failed', delivery: 'none', cues: [] };
   }
 

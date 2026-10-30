@@ -23,6 +23,8 @@
         "<all_urls>"
       ],
       "exclude_matches": [
+        "*://*.bilibili.com/*",
+        "*://*.bilibili.com./*",
         "*://*.iq.com/*",
         "*://*.iq.com./*",
         "*://*.patreon.com/*",
@@ -44,6 +46,22 @@
       ],
       "js": [
         "content.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
+        "*://*.bilibili.com/*",
+        "*://*.bilibili.com./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/bilibili/isolated.js",
         "contentStart.js"
       ],
       "run_at": "document_start",
@@ -173,6 +191,8 @@
         "<all_urls>"
       ],
       "exclude_matches": [
+        "*://*.bilibili.com/*",
+        "*://*.bilibili.com./*",
         "*://*.iq.com/*",
         "*://*.iq.com./*",
         "*://*.patreon.com/*",
@@ -194,6 +214,20 @@
       ],
       "js": [
         "mainWorld.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.bilibili.com/*",
+        "*://*.bilibili.com./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/bilibili/main.js",
         "mainWorldStart.js"
       ],
       "run_at": "document_start",

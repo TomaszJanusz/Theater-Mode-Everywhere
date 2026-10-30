@@ -1,92 +1,22 @@
-import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { isBilibiliHost } from '../hosts';
+import { providerRuntime } from '../provider-api';
 
-import { normalizeBilibiliSnapshot, type BilibiliSnapshot } from './metadata';
-import { signBilibiliWbi } from './wbi';
+import { allowsBilibiliMediaFetch } from './fetch-policy';
+import { installBilibiliHistory } from './history';
+import { readBilibiliSnapshot, trackBilibiliVisits } from './snapshot';
+import { bilibiliWatchPlayback } from './watch-playback';
 
-export function bilibiliIntegrationEnabled(): boolean {
-  return isBilibiliHost() && mediaProviderIntegrationEnabled('bilibili');
-}
+const api = providerRuntime('main');
+const services = api?.services;
 
-let cached: { key: string; expires: number; pending: Promise<BilibiliSnapshot | null> } | null = null;
-
-async function metadata(path: string, aid: number, cid: number): Promise<unknown> {
-  try {
-    // Only player metadata, requested in the page's existing login context.
-    const response = await fetch(`https://api.bilibili.com/x/player/${path}?aid=${aid}&cid=${cid}&index=1`, {
-      credentials: 'include', signal: AbortSignal.timeout(2500)
-    });
-    if (!response.ok || (response.url && new URL(response.url).origin !== 'https://api.bilibili.com')) return null;
-    const body = await response.text();
-    if (body.length > 2 * 1024 * 1024) return null;
-    const json = JSON.parse(body);
-    return json.code === 0 ? json.data : null;
-  } catch {
-    return null;
+// Bilibili requests its own scoped metadata; it needs no harvesting or fetch wrapper.
+api?.register({
+  id: 'bilibili', contractVersion: 1, watchPlayback: bilibiliWatchPlayback,
+  allowsMediaFetch: allowsBilibiliMediaFetch,
+  // A superseded request stops waiting; the part's shared read stops when its visit ends.
+  probeAsync: signal => readBilibiliSnapshot(signal),
+  install() {
+    installBilibiliHistory();
+    // After the history hook, so the runtime's navigation wrappers stay outermost.
+    if (services) trackBilibiliVisits(services.navigationObserver());
   }
-}
-
-async function readPbp(aid: number, cid: number): Promise<unknown> {
-  try {
-    // The loader endpoint allows any origin and rejects credentialed requests.
-    const response = await fetch(`https://bvc.bilivideo.com/pbp/data?aid=${aid}&cid=${cid}&r=loader`, {
-      credentials: 'omit', signal: AbortSignal.timeout(2500)
-    });
-    if (!response.ok || (response.url && new URL(response.url).hostname !== 'bvc.bilivideo.com')) return null;
-    const body = await response.text();
-    if (body.length > 512 * 1024) return null;
-    return JSON.parse(body);
-  } catch {
-    return null;
-  }
-}
-
-async function readSubtitleView(aid: number, cid: number): Promise<Uint8Array | null> {
-  try {
-    const query = signBilibiliWbi({ oid: cid, pid: aid, type: 1 });
-    const response = await fetch(
-      `https://api.bilibili.com/x/v2/subtitle/web/view?${query}`,
-      { credentials: 'include', signal: AbortSignal.timeout(5000) }
-    );
-    if (!response.ok || (response.url && new URL(response.url).origin !== 'https://api.bilibili.com')) return null;
-    const buffer = await response.arrayBuffer();
-    if (buffer.byteLength === 0 || buffer.byteLength > 256 * 1024) return null;
-    return new Uint8Array(buffer);
-  } catch {
-    return null;
-  }
-}
-
-export async function readBilibiliSnapshot(): Promise<BilibiliSnapshot | null> {
-  if (!bilibiliIntegrationEnabled()) { cached = null; return null; }
-  const win = window as Window & { __INITIAL_STATE__?: Record<string, any> };
-  const state = win.__INITIAL_STATE__ || {};
-  const video = state.videoData || state.epInfo || {};
-  const cid = Number(state.cid || video.cid);
-  const aid = Number(state.aid || video.aid);
-  if (!Number.isSafeInteger(cid) || cid <= 0 || !Number.isSafeInteger(aid) || aid <= 0) return null;
-  const key = `${aid}:${cid}`;
-  if (cached?.key === key && cached.expires > Date.now()) return cached.pending;
-  const page = Array.isArray(video.pages) ? video.pages.find((p: Record<string, unknown>) => Number(p.cid) === cid) : null;
-  const title = video.title || video.long_title || document.querySelector('h1')?.textContent;
-  const duration = Number(page?.duration || video.duration);
-  const pending = Promise.all([
-    metadata('v2', aid, cid), metadata('videoshot', aid, cid), readPbp(aid, cid), readSubtitleView(aid, cid)
-  ]).then(([info, shot, pbp, subtitles]) => {
-    // Ignore a late response after a SPA episode change or RTE has been disabled.
-    const current = win.__INITIAL_STATE__ || {};
-    if (!bilibiliIntegrationEnabled() || Number(current.cid || current.videoData?.cid || current.epInfo?.cid) !== cid) {
-      if (cached?.pending === pending) cached = null;
-      return null;
-    }
-    const snapshot = normalizeBilibiliSnapshot(key, title, duration, info, shot, pbp, subtitles);
-    // An empty subtitle list is often a timed-out view, not proof the film has none.
-    // Keep it briefly so the next probe can retry without hammering every duration event.
-    if (cached?.pending === pending && snapshot.captionTracks.length === 0) {
-      cached = { key, expires: Date.now() + 2000, pending };
-    }
-    return snapshot;
-  });
-  cached = { key, expires: Date.now() + 15000, pending };
-  return pending;
-}
+});

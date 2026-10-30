@@ -1,6 +1,7 @@
-import type { WatchPlayback } from '../watch-playback';
-import { BILIBILI_NAVIGATE_EVENT } from '../bilibili/navigation';
 import { BILIBILI_INTL_PLAYER_SELECTOR } from '../navigation/bilibili-intl';
+import type { WatchPlayback } from '../watch-playback';
+
+import { INTL_NAVIGATE_EVENT } from './history';
 
 /** Locale and tracking changes do not create another visit to the same content. */
 export function bilibiliIntlVideoIdentity(url: URL): string | null {
@@ -48,7 +49,7 @@ export const bilibiliIntlWatchPlayback: WatchPlayback = {
   },
   mainVideo: contentVideo,
   preparingVideo: contentVideo,
-  refreshEvents: [BILIBILI_NAVIGATE_EVENT, 'popstate'],
+  refreshEvents: [INTL_NAVIGATE_EVENT, 'popstate'],
   observe(video, onChange) {
     const root = video.closest('#bilibiliPlayer');
     if (!root) return null;

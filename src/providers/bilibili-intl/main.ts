@@ -16,6 +16,8 @@ import {
 } from './metadata';
 
 export type { BilibiliIntlSnapshot } from './metadata';
+// The MAIN runtime's one import of this provider until the provider registers its own `install`.
+export { installIntlNavigation } from './history';
 
 const EPISODE_ATTR = 'data-te-bilibili-intl-episode';
 const KIND_ATTR = 'data-te-bilibili-intl-kind';

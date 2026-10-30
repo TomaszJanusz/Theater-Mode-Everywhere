@@ -1,25 +1,11 @@
 {
   "bilibili": {
     "src/media-features": {
-      "serviceId": 8,
-      "domain": 2,
-      "identifier": 11
-    },
-    "src/platform": {
-      "hostCheck": 3,
-      "serviceId": 1,
-      "identifier": 9
+      "serviceId": 3,
+      "identifier": 2
     },
     "src/providers": {
-      "hostCheck": 5,
-      "serviceId": 3,
-      "domain": 2,
-      "identifier": 6
-    },
-    "src/providers/navigation": {
-      "serviceId": 2,
-      "identifier": 6,
-      "file": 1
+      "identifier": 2
     }
   },
   "bilibiliIntl": {

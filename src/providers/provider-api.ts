@@ -8,6 +8,7 @@ import type { parseCaptionPayload } from '../media-features/parsers/captions';
 import type { MediaProbeSnapshot } from '../media-features/probe';
 import type { MediaProviderId } from '../media-features/provider-flags';
 import type { HostCaptionLayoutSource, MediaFeaturesAdapter, TimelineMarkerSource } from '../media-features/types';
+import type { NavigationObserver } from '../platform/navigation-visit';
 import type { PlaylistAction, PlaylistDirection } from '../playlist-nav';
 import type { MediaSeekDetail } from '../protocol/media-seek';
 
@@ -122,6 +123,13 @@ type MainOnlyHooks = {
   seek?(detail: MediaSeekDetail, video: Element | null): boolean;
   /** This provider's entry in the snapshot probe result, read on each probe request. */
   probe?(): unknown;
+  /**
+   * A snapshot that needs page requests, such as metadata APIs: answered once per isolated `requestProviderProbe`,
+   * after it settles (a rejection answers null), and only while the provider's integration is enabled. `signal`
+   * aborts when a newer request supersedes this one, at the requester's timeout and on teardown. The provider still
+   * rejects its own stale results, such as after a route change.
+   */
+  probeAsync?(signal: AbortSignal): Promise<unknown>;
   /** Called once at startup, after registration closed and the harvest observers are installed. */
   install?: () => void;
 };
@@ -172,6 +180,13 @@ export type ProviderServices = {
     requestPageFetch(url: string, timeoutMs?: number): Promise<string | null>;
     /** The MAIN-world snapshot probe; registered providers read their own entry of `providers`. */
     requestMediaProbe(timeoutMs?: number): Promise<MediaProbeSnapshot>;
+    /**
+     * The provider's own MAIN `probeAsync` value, unvalidated: page scripts can forge a reply, so the provider must
+     * validate it. Null when MAIN refuses (not registered there, no hook, integration off), on timeout (also when the
+     * MAIN runtime is missing), or when a newer request for the same provider supersedes it: one requester per
+     * provider, normally its adapter.
+     */
+    requestProviderProbe(provider: MediaProviderId, timeoutMs?: number): Promise<unknown>;
     serviceElementToken(element: Element): number;
     // Stateless, but large and used by most providers: lent rather than bundled into each provider script.
     observeProviderDom: typeof observeProviderDom;
@@ -180,6 +195,11 @@ export type ProviderServices = {
   main: {
     /** Page-owned media download, marked as the extension's own so the harvest observers skip it. */
     fetchPageMedia(url: string, init: RequestInit): Promise<Response | null>;
+    /**
+     * The page's committed navigations (`platform/navigation-visit.ts`), from the runtime's single watcher: the first
+     * call installs it, so history is wrapped only on pages whose provider asks.
+     */
+    navigationObserver(): NavigationObserver;
   };
 };
 export type ProviderRuntimeApi<W extends ProviderWorld = ProviderWorld> = {

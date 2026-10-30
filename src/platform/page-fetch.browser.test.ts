@@ -78,38 +78,43 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
     if (!existsSync(engine.executablePath())) { t.skip('Browser not installed'); return; }
     const context = await shared.newContext(t);
     const page = await context.newPage();
-    await page.route('https://example.com/', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Fixture</title>' }));
-    await page.goto('https://example.com');
-    await page.addScriptTag({ content: bundle });
-    const result = await page.evaluate(`(async () => {
-      const urls = [
+    await page.route(/^https:\/\/(?:example\.com|www\.bilibili\.com)\//, route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Fixture</title>' }));
+    const rows = async (href: string, urls: string[]) => {
+      await page.goto(href);
+      await page.addScriptTag({ content: bundle });
+      return page.evaluate(`(async () => {
+        const results = [];
+        for (const url of ${JSON.stringify(urls)}) {
+          let cancelled = 0, read = 0;
+          window.fetch = async () => {
+            const response = new Response(new ReadableStream({pull() {read++;}, cancel() {cancelled++;}}, {highWaterMark:0}));
+            Object.defineProperty(response, 'url', {value:'https://untrusted.example/forged.vtt'}); return response;
+          };
+          const rejected = await BridgeTest.fetchPageMedia(url, {credentials:'omit'});
+          // Valid final URLs must keep working through the same shared path.
+          window.fetch = async () => { const response = new Response('valid'); Object.defineProperty(response, 'url', {value:url}); return response; };
+          const valid = await BridgeTest.fetchPageMedia(url, {credentials:'omit'});
+          results.push({url, rejected:rejected === null, cancelled, read, valid:valid && await valid.text()});
+        }
+        return results;
+      })()`) as Promise<Array<{ url: string; rejected: boolean; cancelled: number; read: number; valid: string }>>;
+    };
+    const result = [
+      ...await rows('https://example.com/', [
         'https://www.youtube.com/api/timedtext?v=abc&lang=en&pot=token',
         'https://image.mux.com/abc/storyboard.vtt',
         'https://stream.mux.com/abc/text/en.vtt',
         'https://captions.twitch.tv/abc.vtt',
         'https://cdn.dssott.com/captions/en.vtt',
         'https://cdn.dssott.com/thumbnails/abc.bif',
-        'https://aisubtitle.hdslb.com/bfs/ai_subtitle/abc.json',
         'https://s.bstarstatic.com/ogv/subtitle/c350955fde09ca9f62098c78ddf0add4.ass',
         'https://subtitle.wetvinfo.com/abc.vtt',
         'https://vod-fy-mod.crunchyrollcdn.com/static/e00177755a00269347jajp/1/clean/subtitle-667360-en-US-1789593448.ass'
-      ];
-      const results = [];
-      for (const url of urls) {
-        let cancelled = 0, read = 0;
-        window.fetch = async () => {
-          const response = new Response(new ReadableStream({pull() {read++;}, cancel() {cancelled++;}}, {highWaterMark:0}));
-          Object.defineProperty(response, 'url', {value:'https://untrusted.example/forged.vtt'}); return response;
-        };
-        const rejected = await BridgeTest.fetchPageMedia(url, {credentials:'omit'});
-        // Valid final URLs must keep working through the same shared path.
-        window.fetch = async () => { const response = new Response('valid'); Object.defineProperty(response, 'url', {value:url}); return response; };
-        const valid = await BridgeTest.fetchPageMedia(url, {credentials:'omit'});
-        results.push({url, rejected:rejected === null, cancelled, read, valid:valid && await valid.text()});
-      }
-      return results;
-    })()`);
-    for (const row of result as Array<{ url: string; rejected: boolean; cancelled: number; read: number; valid: string }>) {
+      ]),
+      // A registered provider admits its own URLs only on its hosts, where its entries load.
+      ...await rows('https://www.bilibili.com/video/BV1xx411c7mu', ['https://aisubtitle.hdslb.com/bfs/ai_subtitle/abc.json'])
+    ];
+    for (const row of result) {
       assert.deepEqual({ ...row, url: undefined }, { url: undefined, rejected: true, cancelled: 1, read: 0, valid: 'valid' }, row.url);
     }
   });

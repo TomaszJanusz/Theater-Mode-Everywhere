@@ -582,9 +582,6 @@
   "src/media-features/fetch-allowlist.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
-    },
-    "sonarjs/duplicates-in-character-class": {
-      "count": 2
     }
   },
   "src/media-features/heatmap-path.ts": {
@@ -791,11 +788,6 @@
     "sonarjs/cognitive-complexity": {
       "count": 1
     },
-    "sonarjs/no-nested-conditional": {
-      "count": 1
-    }
-  },
-  "src/media-features/probe.ts": {
     "sonarjs/no-nested-conditional": {
       "count": 1
     }
@@ -1048,9 +1040,6 @@
     }
   },
   "src/providers/bilibili-intl/watch-playback.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 2
     },
@@ -1072,17 +1061,7 @@
       "count": 1
     }
   },
-  "src/providers/bilibili/navigation.ts": {
-    "local/max-symbol-name-length": {
-      "count": 1
-    }
-  },
   "src/providers/bilibili/service-actions.ts": {
-    "local/max-symbol-name-length": {
-      "count": 1
-    }
-  },
-  "src/providers/bilibili/main.ts": {
     "local/max-symbol-name-length": {
       "count": 1
     }

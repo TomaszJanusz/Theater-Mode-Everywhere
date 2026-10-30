@@ -1,13 +1,17 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { isAllowedMediaFetchUrl, classifyMediaFetchUrl } from '../../media-features/fetch-allowlist';
+import { classifyMediaFetchUrl } from '../../media-features/fetch-allowlist';
+import { parseCaptionPayload } from '../../media-features/parsers/captions';
+import { navigationObserver } from '../../platform/navigation-visit';
 
-import { readBilibiliSnapshot } from './main';
+import { BilibiliAdapter, type BilibiliServices } from './adapter';
+import { allowsBilibiliMediaFetch } from './fetch-policy';
 import {
   bilibiliPreviewFrame, bilibiliTimelineHeatmap, mergeBilibiliSnapshot, normalizeBilibiliSnapshot, parseBilibiliCaptions, parseBilibiliHeatmap,
-  parseBilibiliStoryboard, resolveBilibiliSubtitleUrl
+  parseBilibiliSnapshot, parseBilibiliStoryboard, resolveBilibiliSubtitleUrl
 } from './metadata';
+import { readBilibiliSnapshot, trackBilibiliVisits } from './snapshot';
 
 // Field names and duplicate timestamps from the live videoshot response for BV1xx411c7mu.
 const shot = {
@@ -44,10 +48,10 @@ describe('Bilibili RTE', () => {
       { from: 0, to: 1, content: 'First<br>line' },
       { from: -1, to: 2, content: 'bad' }, { from: 3, to: 3, content: 'bad' },
       { from: 'NaN', to: 8, content: 'bad' }
-    ] })), [{ start: 0, end: 1, text: 'First\nline' }, { start: 2, end: 4, text: '你好 & hello' }]);
-    assert.deepEqual(parseBilibiliCaptions('<html>login</html>'), []);
-    assert.deepEqual(parseBilibiliCaptions('{"body":{}}'), []);
-    assert.deepEqual(parseBilibiliCaptions('1\n00:00:01,000 --> 00:00:02,500\nHello\n'), [
+    ] }), parseCaptionPayload), [{ start: 0, end: 1, text: 'First\nline' }, { start: 2, end: 4, text: '你好 & hello' }]);
+    assert.deepEqual(parseBilibiliCaptions('<html>login</html>', parseCaptionPayload), []);
+    assert.deepEqual(parseBilibiliCaptions('{"body":{}}', parseCaptionPayload), []);
+    assert.deepEqual(parseBilibiliCaptions('1\n00:00:01,000 --> 00:00:02,500\nHello\n', parseCaptionPayload), [
       { start: 1, end: 2.5, text: 'Hello' }
     ]);
   });
@@ -70,16 +74,19 @@ describe('Bilibili RTE', () => {
 
   it('restricts caption fetches to Bilibili subtitle JSON on the HTTPS CDN', () => {
     const url = 'https://aisubtitle.hdslb.com/bfs/ai_subtitle/track.json?auth_key=signed';
-    assert.deepEqual(classifyMediaFetchUrl(url), { provider: 'bilibili', kind: 'caption-track', url });
+    assert.equal(allowsBilibiliMediaFetch({ provider: 'bilibili', kind: 'caption-track', url }), true);
+    // The provider's registration admits them; the shared allowlist holds no Bilibili rule of its own.
+    assert.equal(classifyMediaFetchUrl(url), null);
+    assert.equal(allowsBilibiliMediaFetch({ provider: 'bilibili', kind: 'storyboard-json', url }), false);
     const extensionless = 'https://aisubtitle.hdslb.com/bfs/ai_subtitle/prod/abc123?auth_key=signed';
-    assert.equal(isAllowedMediaFetchUrl({ provider: 'bilibili', kind: 'caption-track', url: extensionless }), true);
+    assert.equal(allowsBilibiliMediaFetch({ provider: 'bilibili', kind: 'caption-track', url: extensionless }), true);
     for (const url of ['http://i0.hdslb.com/bfs/subtitle/a.json', 'https://hdslb.com.evil.test/bfs/subtitle/a.json',
       'https://i0.hdslb.com/bfs/archive/a.json', 'https://user@i0.hdslb.com/bfs/subtitle/a.json',
       'https://aisubtitle.hdslb.com/bfs/ai_subtitle/prod/file.js',
       'https://aisubtitle.hdslb.com/bfs/ai_subtitle/../archive/a.json',
       'https://aisubtitle.hdslb.com/bfs/ai_subtitle/a/../track.json',
       'https://aisubtitle.hdslb.com/bfs/ai_subtitle/a/%2e%2e/track.json']) {
-      assert.equal(isAllowedMediaFetchUrl({ provider: 'bilibili', kind: 'caption-track', url }), false);
+      assert.equal(allowsBilibiliMediaFetch({ provider: 'bilibili', kind: 'caption-track', url }), false);
     }
     assert.equal(resolveBilibiliSubtitleUrl('https://aisubtitle.hdslb.com/bfs/ai_subtitle/a/../track.json'), null);
     assert.equal(resolveBilibiliSubtitleUrl('https://aisubtitle.hdslb.com/bfs/ai_subtitle/a/%2e%2e/track.json'), null);
@@ -108,6 +115,51 @@ describe('Bilibili RTE', () => {
       const fresh = await readBilibiliSnapshot();
       assert.equal(fresh?.videoId, '106:42');
       assert.equal(requests, 4);
+    } finally {
+      globalThis.window = oldWindow; globalThis.document = oldDocument; globalThis.fetch = oldFetch;
+    }
+  });
+
+  it('reads again after A→B→A before metadata settles, and lets one request stop waiting without ending the shared read', async () => {
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    const oldFetch = globalThis.fetch;
+    const state = { aid: 106, cid: 3635863, videoData: { title: 'A before', duration: 318 } };
+    const location = { hostname: 'www.bilibili.com', pathname: '/video/BV1xx411c7mu', search: '', href: '' };
+    const move = (url: string | URL | null | undefined) => {
+      if (!url) return;
+      const next = new URL(String(url), 'https://www.bilibili.com' + location.pathname + location.search);
+      Object.assign(location, { pathname: next.pathname, search: next.search, href: next.href });
+    };
+    move(location.pathname);
+    // The host's own history, as the page sees it; the runtime's observer wraps it as in the browser.
+    const history = { pushState: (_state: unknown, _title: string, url?: string | URL | null) => move(url),
+      replaceState: (_state: unknown, _title: string, url?: string | URL | null) => move(url) } as unknown as History;
+    const win = Object.assign(new EventTarget(), { location, history, __INITIAL_STATE__: state });
+    const pending: Array<{ resolve(value: Response): void; signal?: AbortSignal | null }> = [];
+    try {
+      globalThis.window = win as any;
+      globalThis.document = { documentElement: { hasAttribute: () => false }, querySelector: () => null } as any;
+      globalThis.fetch = ((_url: string, init?: RequestInit) => new Promise<Response>(resolve => { pending.push({ resolve, signal: init?.signal }); })) as typeof fetch;
+      trackBilibiliVisits(navigationObserver(win as unknown as Window));
+      const first = readBilibiliSnapshot();
+      assert.equal(pending.length, 4);
+      win.history.pushState(null, '', '/video/BV1yy411c7mu');
+      assert.ok(pending.every(request => request.signal?.aborted), "leaving A aborts A's metadata requests");
+      win.history.pushState(null, '', '/video/BV1xx411c7mu');
+      state.videoData.title = 'A after';
+      const second = readBilibiliSnapshot();
+      assert.equal(pending.length, 8, 'the return to A reads again instead of reusing the earlier pending read');
+      win.history.replaceState(null, '', '/video/BV1xx411c7mu?vd_source=tracking');
+      assert.equal(pending.slice(4).some(request => request.signal?.aborted), false, 'a tracking parameter is the same visit');
+      const stopped = new AbortController();
+      const waiter = readBilibiliSnapshot(stopped.signal);
+      assert.equal(pending.length, 8, 'the same visit shares one read');
+      stopped.abort();
+      assert.equal(await waiter, null, 'an aborted request stops waiting at once');
+      for (const request of pending) request.resolve(new Response('{"code":0,"data":{}}'));
+      assert.equal(await first, null, 'the earlier visit never answers');
+      assert.equal((await second)?.title, 'A after');
     } finally {
       globalThis.window = oldWindow; globalThis.document = oldDocument; globalThis.fetch = oldFetch;
     }
@@ -197,6 +249,62 @@ describe('Bilibili RTE', () => {
     } finally {
       globalThis.window = oldWindow; globalThis.document = oldDocument; globalThis.fetch = oldFetch;
     }
+  });
+
+  it('accepts a MAIN snapshot that crossed worlds and rejects malformed or foreign fields', () => {
+    const snapshot = normalizeBilibiliSnapshot('106:3635863', 'Title', 318, {
+      subtitle: { subtitles: [{ id_str: '1', lan: 'en', lan_doc: 'English', subtitle_url: '//aisubtitle.hdslb.com/bfs/ai_subtitle/1.json' }] },
+      view_points: [{ from: 10, to: 20, content: 'Part A' }, { from: 30, content: 'Part B' }]
+    }, shot, { data: { step_sec: 10, events: { default: [1, 2] } } });
+    const crossed = JSON.parse(JSON.stringify(snapshot));
+    assert.deepEqual(parseBilibiliSnapshot(crossed), snapshot);
+    const { title: _title, ...untitled } = snapshot;
+    assert.deepEqual(parseBilibiliSnapshot({ ...crossed, storyboard: null, heatmap: null, title: undefined }), { ...untitled, storyboard: null, heatmap: null });
+    const broken = [
+      null, 'text', { ...crossed, videoId: 'BV1xx' },
+      { ...crossed, captionTracks: [{ ...crossed.captionTracks[0], url: 'https://evil.test/1.json' }] },
+      { ...crossed, captionTracks: [{ ...crossed.captionTracks[0], autoGenerated: 'yes' }] },
+      { ...crossed, chapters: [{ ...crossed.chapters[0], start: -1 }] },
+      { ...crossed, chapters: [{ ...crossed.chapters[0], source: 'youtube' }] },
+      { ...crossed, storyboard: { ...crossed.storyboard, images: ['https://evil.test/bfs/videoshot/1.jpg'] } },
+      { ...crossed, storyboard: { ...crossed.storyboard, times: [5, 1] } },
+      { ...crossed, heatmap: { stepSec: 10, values: [2] } }
+    ];
+    for (const value of broken) assert.equal(parseBilibiliSnapshot(value), null, JSON.stringify(value)?.slice(0, 120));
+  });
+
+  it('reads its snapshot through the lent provider probe and drops a reply for an earlier part', async () => {
+    const part = (cid: number) => JSON.parse(JSON.stringify(normalizeBilibiliSnapshot(`106:${cid}`, `Part ${cid}`, 318, {
+      subtitle: { subtitles: [{ id_str: String(cid), lan: 'en', lan_doc: 'English', subtitle_url: `//aisubtitle.hdslb.com/bfs/ai_subtitle/${cid}.json` }] }
+    }, shot)));
+    const asked: Array<[string, number | undefined]> = [];
+    const replies: Array<(value: unknown) => void> = [];
+    const services: BilibiliServices = {
+      requestPageFetch: async () => null,
+      parseCaptionPayload,
+      requestProviderProbe: (provider, timeoutMs) => {
+        asked.push([provider, timeoutMs]);
+        return new Promise(resolve => replies.push(resolve));
+      }
+    };
+    const adapter = new BilibiliAdapter(services);
+    const stale = adapter.listCaptionTracks();
+    // An episode change while MAIN still reads the first part.
+    adapter.invalidate();
+    const current = adapter.listCaptionTracks();
+    replies[1](part(2));
+    replies[0](part(1));
+    assert.deepEqual((await current).map(track => track.label), ['English']);
+    await stale;
+    assert.equal(adapter.mediaId(), '106:2');
+    assert.equal(adapter.getTitle(), 'Part 2');
+    assert.deepEqual(asked, [['bilibili', 6000], ['bilibili', 6000]]);
+
+    adapter.invalidate();
+    const malformed = adapter.listCaptionTracks();
+    replies[2]({ ...part(3), videoId: '<img>' });
+    assert.deepEqual(await malformed, []);
+    assert.equal(adapter.mediaId(), null);
   });
 });
 

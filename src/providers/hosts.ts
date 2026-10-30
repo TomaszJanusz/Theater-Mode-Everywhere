@@ -24,11 +24,6 @@ export function isNetflixHost(hostname = currentHost()): boolean {
   return host === 'netflix.com' || host.endsWith('.netflix.com');
 }
 
-export function isBilibiliHost(hostname = currentHost()): boolean {
-  const host = normalizeHost(hostname);
-  return host === 'bilibili.com' || host.endsWith('.bilibili.com');
-}
-
 /** International Bilibili.tv. This is not bilibili.com and must not share that adapter. */
 export function isBilibiliIntlHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);
