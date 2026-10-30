@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import type { BrowserContext, Page, Route } from './helpers';
 import { extensionWorker, ROOT } from './helpers';
+import { assertAutoTheaterEntry } from './provider-auto-theater';
 
 const EPISODE = 'https://www.viki.com/videos/1263131v';
 const PREVIEW = 'https://manifest-viki.viki.io/v1/streams/1263131v/preview.vtt';
@@ -114,6 +115,7 @@ export async function assertVikiProvider(page: Page, context: BrowserContext): P
     assert.equal(await page.locator('html').evaluate(html => html.classList.contains('theater-everywhere-viki-stage')), false);
     await child.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true })));
     await child.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-viki-stage'));
+    await assertAutoTheaterEntry(page, context, 'viki', { url: EPISODE });
     console.log(`smoke Viki provider: both worlds, native fetch, synchronous first t (${first.milliseconds.toFixed(1)} ms including theater work), page title, chapters, RTE off/on, stage cleanup, generic/spoofed hosts, terminal dot and own-frame admission passed (installed fixture; DRM unverified)`);
   } finally {
     await context.unroute(hosts, handler);

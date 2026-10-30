@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Theater opens and closes with less of a freeze on large pages such as YouTube. Leaving theater no longer holds up the page, and entering it holds it up for a shorter moment while the player is built. Theater looks and behaves as before.
 - Hovering the subtitle button no longer leaves a keyboard focus ring on it. On long language lists, hovering the button put the cursor in the search field, and moving away then focused the button with the ring that W/A/S/D navigation draws, which stayed when the controls reappeared. Hover now only shows the menu, and closing it with the pointer leaves no focus; keyboard users keep their place on the button.
 - On Bilibili.tv, the video's own subtitles no longer stay on screen in theater mode while the subtitle menu says Off. Once the menu lists the episode's languages, theater hides Bilibili.tv's subtitles until you pick one (theater then shows yours, or Bilibili.tv's again if it cannot load it), and they come back when you leave theater, open another episode or switch Bilibili.tv off in Settings. Bilibili.tv's own subtitle choice is left as it was.
+- AutoTheater now enters on Vimeo video pages (vimeo.com/<id>): Vimeo's current page no longer exposes the player details the check relied on, so it never started there.
+- AutoTheater now enters on Bilibili video pages under a language route, such as bilibili.com/zh-Hans/video/BV…, as it does on bilibili.com/video/BV….
 
 ## [2.0.8] - 2026-10-28
 

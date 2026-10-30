@@ -4,9 +4,11 @@ import path from 'node:path';
 
 import type { BrowserContext, Page, Route } from './helpers';
 import { extensionWorker, ROOT } from './helpers';
+import { assertAutoTheaterEntry } from './provider-auto-theater';
 import { watchBridgeQuery } from './providers';
 
 const BILIBILI = 'https://www.bilibili.com/video/BV1xx411c7mu';
+const BILIBILI_ZH = 'https://www.bilibili.com/zh-Hans/video/BV1xx411c7mu/';
 const bilibiliFixture = `<!doctype html><html><head><title>Generic fixture title</title><script>
 window.hostKeys = 0;
 window.__INITIAL_STATE__ = { aid: 106, cid: 3635863, videoData: { title: 'Bilibili smoke video', duration: 600 } };
@@ -19,7 +21,10 @@ window.addEventListener('keydown', event => {
 <script>
 const container = document.querySelector('.bpx-player-container');
 window.player = { hasValidAdv: () => false, mediaElement: () => document.querySelector('video'), getElements: () => ({ container }),
-  getManifest: () => ({ bvid: 'BV1xx411c7mu', p: 1, cid: 3635863, kind: 0 }) };
+  getManifest: () => ({ bvid: window.bvid, p: 1, cid: 3635863, kind: 0 }) };
+// The player follows the host's SPA routes: it reports the video the page was last sent to.
+window.bvid = location.pathname.match(/BV[0-9A-Za-z]{10}/)?.[0] ?? 'BV1xx411c7mu';
+window.spaTo = (path, bvid) => { window.bvid = bvid; history.pushState(null, '', path); const video = document.querySelector('video'); video.currentTime = 0; video.play(); };
 fetch('/fixture.webm').then(response => response.blob()).then(blob => { document.querySelector('video').src = URL.createObjectURL(blob); });
 </script></body></html>`;
 const bilibiliPlayer = { code: 0, data: {
@@ -89,6 +94,9 @@ export async function assertBilibiliProvider(page: Page, context: BrowserContext
       assert.equal(await title().count(), 0, url);
       await page.keyboard.press('Escape');
     }
+    // Bilibili's site also serves language routes (/zh-Hans/video/BV...): both name the same video.
+    await assertAutoTheaterEntry(page, context, 'bilibili', { url: BILIBILI, navigate: page => page.evaluate('window.spaTo("/video/BV1xx411c7mv", "BV1xx411c7mv")') });
+    await assertAutoTheaterEntry(page, context, 'bilibili', { url: BILIBILI_ZH, navigate: page => page.evaluate('window.spaTo("/zh-Hans/video/BV1xx411c7mv/", "BV1xx411c7mv")') });
     console.log(`smoke provider scripts: Bilibili registration in both worlds, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), title and chapters through the async probe, cue through the provider's fetch policy, RTE off/on, generic/spoofed host passed`);
   } finally {
     await context.unroute(hosts, handler);
@@ -167,6 +175,7 @@ export async function assertBilibiliTvProvider(page: Page, context: BrowserConte
       await page.locator('.theater-controls-wrapper').waitFor();
       await page.keyboard.press('Escape');
     }
+    await assertAutoTheaterEntry(page, context, 'bilibiliIntl', { url: BILIBILI_TV });
     console.log(`smoke provider scripts: Bilibili.tv registration in both worlds, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), MAIN snapshot reader on the page, RTE off/on, generic/spoofed host passed`);
   } finally {
     await context.unroute(hosts, handler);

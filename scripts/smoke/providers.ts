@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import type { BrowserContext, Page, Route } from './helpers';
 import { extensionWorker, ROOT } from './helpers';
+import { assertAutoTheaterEntry } from './provider-auto-theater';
 
 /** Asks the MAIN-world watch bridge about the page's player; null means no provider answered. */
 export const watchBridgeQuery = (page: Page) => () => page.evaluate(() => {
@@ -114,6 +115,7 @@ export async function assertProviderScripts(page: Page, context: BrowserContext)
     await frame.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
     assert.equal(await frame.evaluate('window.earlyHistoryPublications'), 1);
     assert.equal(await page.evaluate('window.earlyHistoryPublications'), 0);
+    await assertAutoTheaterEntry(page, context, 'soop', { url: SOOP, navigate: page => page.evaluate(() => history.pushState(null, '', '/player/211006562')) });
     console.log(`smoke provider scripts: SOOP registration in both worlds, early history, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), navigation, RTE off/on, generic/spoofed host, own-frame admission passed (installed fixture)`);
   } finally {
     await context.unroute(hosts, handler);
@@ -201,6 +203,7 @@ export async function assertPatreonProvider(page: Page, context: BrowserContext)
     await frame.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
     assert.equal(await frame.evaluate('window.earlyHistoryPublications'), 1);
     assert.equal(await page.evaluate('window.earlyHistoryPublications'), 0);
+    await assertAutoTheaterEntry(page, context, 'patreon', { url: PATREON, navigate: page => page.evaluate(() => history.pushState(null, '', '/posts/other-post-87654321')) });
     console.log(`smoke provider scripts: Patreon registration in both worlds, early history, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), navigation, RTE off/on, generic/spoofed host, own-frame admission passed (installed fixture)`);
   } finally {
     await context.unroute(hosts, handler);
@@ -212,6 +215,23 @@ export async function assertPatreonProvider(page: Page, context: BrowserContext)
 }
 
 const VIMEO = 'https://vimeo.com/123456';
+const VIMEO_CLIP = 'https://vimeo.com/1160188722';
+const vimeoClipFixture = `<!doctype html><html><head><title>Generic fixture title</title></head><body>
+<div class="player"><video id="video" muted loop style="width:640px;height:360px"></video></div>
+<script>
+window.next = { router: { query: { clipId: location.pathname.slice(1) } } };
+const load = () => fetch('/fixture.webm').then(response => response.blob()).then(blob => { document.querySelector('video').src = URL.createObjectURL(blob); });
+// The host rebuilds its player for each clip.
+window.spaTo = id => {
+  window.next.router.query = { clipId: id };
+  history.pushState(null, '', '/' + id);
+  const video = document.createElement('video');
+  video.id = 'video'; video.muted = true; video.loop = true; video.style.cssText = 'width:640px;height:360px';
+  document.querySelector('.player').replaceChildren(video);
+  load();
+};
+load();
+</script></body></html>`;
 const vimeoFixture = `<!doctype html><html><head><title>Generic fixture title</title><script>
 window.hostKeys = 0;
 window.playerConfig = { video: { id: 123456, title: 'Vimeo pilot clip', duration: 1 } };
@@ -231,7 +251,7 @@ export async function assertVimeoProvider(page: Page, context: BrowserContext): 
   const media = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
   const handler = async (route: Route) => {
     if (new URL(route.request().url()).pathname === '/fixture.webm') await route.fulfill({ contentType: 'video/webm', body: media });
-    else await route.fulfill({ contentType: 'text/html', body: vimeoFixture });
+    else await route.fulfill({ contentType: 'text/html', body: new URL(route.request().url()).pathname === '/1160188722' ? vimeoClipFixture : vimeoFixture });
   };
   const hosts = /^https:\/\/(?:vimeo\.com\.?|player\.vimeo\.com|player\.example\.test|vimeo\.com\.evil\.test)\//;
   await context.route(hosts, handler);
@@ -279,6 +299,8 @@ export async function assertVimeoProvider(page: Page, context: BrowserContext): 
       assert.equal(await page.locator('.theater-title-hud-head').filter({ hasText: 'Vimeo pilot clip' }).count(), 0, url);
       await page.keyboard.press('Escape');
     }
+    // The real vimeo.com clip page is a Next.js app without a playerConfig; its router names the clip.
+    await assertAutoTheaterEntry(page, context, 'vimeo', { url: VIMEO_CLIP, navigate: page => page.evaluate('window.spaTo("654321")') });
     console.log(`smoke provider scripts: Vimeo registration in both worlds, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), title through the provider, RTE off/on, subdomain and DNS dot, generic/spoofed host passed`);
   } finally {
     await context.unroute(hosts, handler);
@@ -451,6 +473,7 @@ export async function assertIqiyiProvider(page: Page, context: BrowserContext): 
       assert.equal(await title().count(), 0, url);
       await page.keyboard.press('Escape');
     }
+    await assertAutoTheaterEntry(page, context, 'iqiyi', { url: IQIYI });
     console.log(`smoke provider scripts: iQIYI registration in both worlds, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), title through the provider, RTE off/on, generic/spoofed/domestic host passed`);
   } finally {
     await context.unroute(hosts, handler);
@@ -555,6 +578,7 @@ export async function assertTwitchProvider(page: Page, context: BrowserContext):
     await frame.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
     assert.equal(await frame.evaluate('window.earlyHarvest'), true, 'the player frame registers Twitch');
     assert.equal(await page.evaluate('window.earlyHarvest'), false, 'the generic parent loads no Twitch script');
+    await assertAutoTheaterEntry(page, context, 'twitch', { url: TWITCH });
     console.log(`smoke Twitch provider scripts: MAIN harvest before the first host script with fetch unwrapped, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), stage and title through the provider, chat keys, RTE off/on, chat-only popout, spoofed host, player embed in a generic page passed (installed fixture)`);
   } finally {
     await context.unroute(hosts, handler);
