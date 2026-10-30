@@ -10,7 +10,7 @@ export interface StepperState {
   index: number;
   /** How many options exist, one segment each. */
   count: number;
-  /** The setting cannot change right now: both arrows are blocked and no segment is highlighted. */
+  /** The setting cannot change right now: both arrows are blocked, the value is dimmed and the segments are not rendered. */
   disabled?: boolean;
 }
 
@@ -81,7 +81,7 @@ export function createStepper(options: StepperOptions): {
   const thumb = document.createElement('span');
   thumb.className = 'theater-stepper-thumb';
   segments.append(thumb);
-  element.append(previous, value, next, segments);
+  element.append(previous, value, next);
 
   let animations: Animation[] = [];
   options.scope.add(() => cancelMotion());
@@ -132,16 +132,21 @@ export function createStepper(options: StepperOptions): {
       element.dataset.disabled = String(disabled);
       value.textContent = text;
       value.title = text;
-      while (segments.childElementCount - 1 > count) segments.children[1].remove();
-      while (segments.childElementCount - 1 < count) {
-        const segment = document.createElement('span');
-        segment.className = 'theater-stepper-segment';
-        segments.append(segment);
+      // An unavailable setting has no position to show: the bar leaves the DOM, and comes back fresh (no slide) when it is available.
+      if (disabled) segments.remove();
+      else {
+        while (segments.childElementCount - 1 > count) segments.children[1].remove();
+        while (segments.childElementCount - 1 < count) {
+          const segment = document.createElement('span');
+          segment.className = 'theater-stepper-segment';
+          segments.append(segment);
+        }
+        [...segments.children].slice(1).forEach((segment, position) => {
+          (segment as HTMLElement).dataset.current = String(position === index);
+          (segment as HTMLElement).dataset.reached = String(position <= index);
+        });
+        if (!segments.isConnected) element.append(segments);
       }
-      [...segments.children].slice(1).forEach((segment, position) => {
-        (segment as HTMLElement).dataset.current = String(position === index);
-        (segment as HTMLElement).dataset.reached = String(position <= index);
-      });
       element.style.setProperty('--theater-stepper-count', String(count));
       element.style.setProperty('--theater-stepper-index', String(index));
       previous.setAttribute('aria-disabled', String(disabled || index <= 0));

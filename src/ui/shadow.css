@@ -3430,7 +3430,7 @@ button.theater-time-end:focus-visible,
   column-gap: 2px !important;
   align-items: center !important;
   position: relative !important;
-  color: var(--appearance-ink, #cbd5e1) !important;
+  color: var(--theater-stepper-ink, var(--appearance-ink, #cbd5e1)) !important;
 }
 .theater-stepper-value {
   grid-area: 1 / 2 !important;
@@ -3533,14 +3533,14 @@ button.theater-time-end:focus-visible,
   inset-inline-start: 0 !important;
   inline-size: calc((100% - 2px * (var(--theater-stepper-count, 1) - 1)) / var(--theater-stepper-count, 1)) !important;
   border-radius: 1px !important;
-  background: var(--theater-stepper-thumb, var(--accent-color, #6366f1)) !important;
+  background: var(--accent-color, #6366f1) !important;
   transform: translateX(calc(var(--theater-stepper-sign, 1) * var(--theater-stepper-index, 0) * (100% + 2px))) !important;
   transition: transform 0.15s var(--theater-stepper-ease) !important;
   pointer-events: none !important;
 }
-/* A setting that cannot change right now (AutoTheater on an unsupported page) highlights no segment. */
-.theater-stepper[data-disabled="true"] { --theater-stepper-thumb: transparent; }
 :host([data-motion="reduced"]) .theater-stepper :is(.theater-stepper-btn, .theater-stepper-thumb, .theater-stepper-btn svg) { transition: none !important; }
 :host([data-motion="reduced"]) .theater-stepper-btn:active { transform: none !important; }
 /* Bass red levels recolour the row through --accent-color; the stepper reads it like the row does. */
-.theater-settings-row[data-active="true"] .theater-stepper-value { color: var(--accent-color, #6366f1) !important; }
+/* A setting that cannot change right now (AutoTheater on an unsupported page) reads as muted, and its segments are not rendered. */
+.theater-stepper[data-disabled="true"] { --theater-stepper-ink: var(--appearance-muted, #94a3b8); }
+.theater-settings-row[data-active="true"] .theater-stepper:not([data-disabled="true"]) .theater-stepper-value { color: var(--accent-color, #6366f1) !important; }

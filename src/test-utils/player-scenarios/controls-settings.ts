@@ -279,6 +279,7 @@ export async function preparePinAndMenus(page: Page) {
     fail('AutoTheater was not unavailable on a generic player.');
   }
   if (await autoTheater.locator('.theater-stepper-value').innerText() !== 'Unavailable') fail('Unavailable AutoTheater did not say why.');
+  if (await autoTheater.locator('.theater-stepper-segments').count()) fail('Unavailable AutoTheater still rendered its segments.');
   const autoBefore = await autoTheater.getAttribute('data-active');
   await page.keyboard.press('Space');
   await page.keyboard.press('Enter');

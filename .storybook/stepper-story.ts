@@ -24,6 +24,8 @@ export const stepperRow = () => stepperRoot().querySelector<HTMLElement>('.theat
 export const arrow = (direction: 1 | -1) =>
   stepperRoot().querySelector<HTMLButtonElement>(`.theater-stepper-btn[data-direction="${direction}"]`)!;
 export const segments = () => [...stepperRoot().querySelectorAll<HTMLElement>('.theater-stepper-segment')];
+/** The whole segment bar, thumb included; absent while the setting is unavailable. */
+export const segmentsBar = () => stepperRoot().querySelector<HTMLElement>('.theater-stepper-segments');
 export const thumb = () => stepperRoot().querySelector<HTMLElement>('.theater-stepper-thumb')!;
 export const arrowDisabled = (direction: 1 | -1) => arrow(direction).getAttribute('aria-disabled') === 'true';
 export const stepperValue = () => stepperRoot().querySelector<HTMLElement>('.theater-stepper-value')!;

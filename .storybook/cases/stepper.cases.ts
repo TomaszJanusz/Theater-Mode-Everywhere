@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 
 import { runStepperCase, type StepperCase } from '../fixture-test';
 import { disposeStage } from '../stage-owner';
-import { arrow, arrowDisabled, run, segments, stepperRoot, stepperRow, stepperValue, thumb } from '../stepper-story';
+import { arrow, arrowDisabled, run, segments, segmentsBar, stepperRoot, stepperRow, stepperValue, thumb } from '../stepper-story';
 
 // The stepper owns no timers: its motion is a CSS transition, so these cases need no clock and no sleeps.
 
@@ -181,14 +181,16 @@ const TwoOptionsHoldAtBothEnds: Story = {
 };
 test('TwoOptionsHoldAtBothEnds', () => runStepperCase(TwoOptionsHoldAtBothEnds));
 
-/** A setting that cannot change: both arrows blocked yet focusable, no segment lit, a press only nudges. */
+/** A setting that cannot change: both arrows blocked yet focusable, value muted, no segment bar at all, a press only nudges. */
 const DisabledStaysInert: Story = {
   args: { count: 2, index: 1, disabled: true },
   play: async () => {
     await expect(arrowDisabled(-1)).toBe(true);
     await expect(arrowDisabled(1)).toBe(true);
-    await expect(getComputedStyle(thumb()).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(segmentsBar()).toBe(null);
+    await expect(segments().length).toBe(0);
     await expect(stepperValue().textContent).toBe('Unavailable');
+    const muted = getComputedStyle(stepperValue()).color;
     arrow(1).focus();
     await userEvent.keyboard('{Enter}');
     arrow(-1).click();
@@ -198,7 +200,16 @@ const DisabledStaysInert: Story = {
     // It comes back to life when the setting does.
     run().update(2, 1, false);
     await expect(arrowDisabled(-1)).toBe(false);
-    await expect(getComputedStyle(thumb()).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    await expect(segments().length).toBe(2);
+    await expect(current()).toBe(1);
+    await expect(getComputedStyle(stepperValue()).color).not.toBe(muted);
+    // The bar returns in place: the thumb sits on its segment at once, with nothing sliding in from elsewhere.
+    await expect(thumb().getAnimations().length).toBe(0);
+    await expect(Math.abs(thumb().getBoundingClientRect().left - segments()[1].getBoundingClientRect().left)).toBeLessThan(1);
+    // And it can go away again, leaving no stale bar behind.
+    run().update(2, 1, true);
+    await expect(segmentsBar()).toBe(null);
+    await expect(getComputedStyle(stepperValue()).color).toBe(muted);
   }
 };
 test('DisabledStaysInert', () => runStepperCase(DisabledStaysInert));
