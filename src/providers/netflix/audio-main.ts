@@ -1,3 +1,4 @@
+import { NETFLIX_HARVEST_EVENT } from '../../media-features/parsers/netflix-page';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import type { AudioTrackList } from '../../media-features/types';
 import { publishHiddenJson } from '../../platform/hidden-json';
@@ -45,7 +46,7 @@ export function readNetflixAudio(player: NetflixAudioPlayer, mediaId: string): A
     const selected = player.getAudioTrack?.();
     if (!Array.isArray(raw) || raw.length > 100) return null;
     const tracks = raw.flatMap(track => netflixAudioTrack(track, selected) ?? []);
-    if (tracks.length !== raw.length || new Set(tracks.map(track => track.id)).size !== tracks.length) return null;
+    if (tracks.length !== raw.length || new Set(tracks.map(track => track.id)).size !== tracks.length || JSON.stringify(tracks).length > 55_000) return null;
     return { mediaId, tracks, blocked: player.getAdManager?.()?.adPresenting !== false };
   } catch { return null; }
 }
@@ -53,45 +54,68 @@ export function readNetflixAudio(player: NetflixAudioPlayer, mediaId: string): A
 /** One private bridge owner per page; no player listeners or timers survive the theater adapter. */
 export function installNetflixAudio(navigation: NavigationObserver): () => void {
   let binding: Binding | null = null;
+  let ownerClient: string | null = null;
   let sequence = 0;
   let stopWatching = () => {};
   let cancelPending = () => {};
   let disposed = false;
   const ping = () => window.dispatchEvent(new CustomEvent(AUDIO_CHANGE));
-  const clear = () => {
+  const invalidate = () => {
     cancelPending();
     cancelPending = () => {};
-    stopWatching();
-    stopWatching = () => {};
     binding = null;
     publishHiddenJson(AUDIO_SNAPSHOT, null);
+  };
+  const clear = () => {
+    invalidate();
+    ownerClient = null;
+    stopWatching();
+    stopWatching = () => {};
   };
   const current = (bound: Binding) => {
     try { return binding === bound && same(bound, context(bound.video)); } catch { return false; }
   };
   const changed = () => {
-    if (binding && !current(binding)) clear();
+    if (binding && !current(binding)) {
+      const connected = binding.video.isConnected && binding.root.isConnected;
+      if (connected && mediaProviderIntegrationEnabled('netflix')) invalidate();
+      else clear();
+    }
     ping();
   };
   const watch = (bound: Binding) => {
     const player = bound.player;
-    const attached: string[] = [];
+    const attached = new Map<string, () => void>();
     for (const type of AUDIO_EVENTS) {
-      try { player.addEventListener?.(type, changed); attached.push(type); } catch { /* Optional on older players. */ }
+      const listener = () => {
+        changed();
+        // The legacy caption probe owns its snapshot; ask it to refresh a rebuilt host list.
+        if (type.startsWith('timedtext')) window.dispatchEvent(new CustomEvent(NETFLIX_HARVEST_EVENT));
+      };
+      try { player.addEventListener?.(type, listener); attached.set(type, listener); } catch { /* Optional on older players. */ }
     }
     // Structure only: never per-timeupdate reads or polling. Queries/events revalidate session identity.
-    const structure = new MutationObserver(() => { if (!bound.video.isConnected || !bound.root.isConnected) changed(); });
+    const structure = new MutationObserver(() => {
+      if (!bound.video.isConnected || !bound.root.isConnected) { clear(); ping(); }
+    });
     structure.observe(document, { childList: true, subtree: true });
-    const flags = new MutationObserver(changed);
+    const flags = new MutationObserver(() => {
+      if (!mediaProviderIntegrationEnabled('netflix')) clear();
+      changed();
+    });
     flags.observe(document.documentElement, { attributes: true, attributeFilter: ['data-te-netflix-integration-off'] });
-    const stopNavigation = navigation.subscribe(() => { clear(); ping(); });
+    const stopNavigation = navigation.subscribe(() => { invalidate(); ping(); });
+    window.addEventListener(NETFLIX_HARVEST_EVENT, changed);
+    document.addEventListener('loadedmetadata', changed, true);
     window.addEventListener('pagehide', clear);
     stopWatching = () => {
-      for (const type of attached) {
-        try { player.removeEventListener?.(type, changed); } catch { /* A closed session may throw. */ }
+      for (const [type, listener] of attached) {
+        try { player.removeEventListener?.(type, listener); } catch { /* A closed session may throw. */ }
       }
       structure.disconnect(); flags.disconnect();
       stopNavigation();
+      window.removeEventListener(NETFLIX_HARVEST_EVENT, changed);
+      document.removeEventListener('loadedmetadata', changed, true);
       window.removeEventListener('pagehide', clear);
     };
   };
@@ -101,9 +125,16 @@ export function installNetflixAudio(navigation: NavigationObserver): () => void 
     if (!request || !(video instanceof HTMLVideoElement)) return;
     let active: Context | null = null;
     try { active = context(video); } catch { /* Session is loading/closed. */ }
-    if (!active || request.pageHref !== active.pageHref || request.mediaId !== active.mediaId) { clear(); return; }
+    if (!active || request.pageHref !== active.pageHref || request.mediaId !== active.mediaId) {
+      invalidate();
+      // During SPA handoff the URL can precede the session manifest. Keep the discovery
+      // events until the next session can bind, but release disconnected/disabled players.
+      if (!video.isConnected || !mediaProviderIntegrationEnabled('netflix')) clear();
+      return;
+    }
     if (!binding || binding.clientId !== request.clientId || !same(binding, active) || binding.observing !== request.observe) {
       clear();
+      ownerClient = request.clientId;
       binding = { ...active, clientId: request.clientId, bindingId: `binding:${++sequence}`, observing: request.observe };
       if (request.observe) watch(binding);
     }
@@ -118,7 +149,7 @@ export function installNetflixAudio(navigation: NavigationObserver): () => void 
       window.dispatchEvent(new CustomEvent(AUDIO_ACK, { detail: JSON.stringify({ ...request, ok }) }));
     });
   };
-  const stop = (event: Event) => { if ((event as CustomEvent<unknown>).detail === binding?.clientId) clear(); };
+  const stop = (event: Event) => { if ((event as CustomEvent<unknown>).detail === ownerClient) clear(); };
   const handlers = [[AUDIO_QUERY, query], [AUDIO_SELECT, select], [AUDIO_STOP, stop]] as const;
   for (const [type, listener] of handlers) window.addEventListener(type, listener);
   return () => {

@@ -43,7 +43,10 @@ export class NetflixAudioClient {
     const { clientId, pageHref, bindingId } = snapshot;
     const request: AudioSelect = { clientId, pageHref, bindingId, mediaId, requestId: nextId(), trackId };
     return new Promise(resolve => {
+      let settled = false;
       const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
         window.clearTimeout(timer);
         window.removeEventListener(AUDIO_ACK, ack);
         this.pending.delete(cancel);

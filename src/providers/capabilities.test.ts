@@ -62,7 +62,7 @@ function registeredFrom(source: string, module: string): boolean {
 }
 
 /** Include companion adapters in a staged extraction, as well as the legacy adapter. */
-function registeredAdapterSource(entryPath: string): string {
+function registeredAdapterMethods(entryPath: string): Set<string> {
   const entry = parse(read(entryPath));
   const modules = new Map<string, string>();
   const constructed = new Set<string>();
@@ -72,10 +72,10 @@ function registeredAdapterSource(entryPath: string): string {
     }
     if (node.type === 'NewExpression' && (node.callee as AstNode).type === 'Identifier') constructed.add((node.callee as AstNode).name as string);
   });
-  return [...constructed].flatMap(name => {
+  return new Set([...constructed].flatMap(name => {
     const module = modules.get(name);
-    return module?.startsWith('.') ? [readFileSync(resolve(__dirname, entryPath, '..', `${module}.ts`), 'utf8')] : [];
-  }).join('\n');
+    return module?.startsWith('.') ? [...methods(readFileSync(resolve(__dirname, entryPath, '..', `${module}.ts`), 'utf8'))] : [];
+  }));
 }
 
 describe('provider capability declarations', () => {
@@ -104,9 +104,8 @@ describe('provider capability declarations', () => {
       const entry = extracted ? read(`./${provider.id}/isolated.ts`) : '';
       assert.equal(extracted ? /launcherPlacement:/.test(entry) : Boolean(providerDefinition(provider.id).launcherPlacement), provider.capabilities.launcher.status !== 'no', `${provider.id}.launcher`);
       assert.equal(extracted ? /watchPlayback:/.test(entry) : Boolean(providerDefinition(provider.id).watchPlayback), provider.capabilities.autoTheater.status !== 'no', `${provider.id}.autoTheater`);
-      const source = read(localAdapters.has(provider.id) ? `./${provider.id}/adapter.ts` : `../media-features/${provider.id}-adapter.ts`)
-        + (extracted ? registeredAdapterSource(`./${provider.id}/isolated.ts`) : '');
-      const implemented = methods(source);
+      const source = read(localAdapters.has(provider.id) ? `./${provider.id}/adapter.ts` : `../media-features/${provider.id}-adapter.ts`);
+      const implemented = new Set([...methods(source), ...(extracted ? registeredAdapterMethods(`./${provider.id}/isolated.ts`) : [])]);
       const adapterMethods = {
         title: ['getTitle'], subtitles: ['listCaptionTracks', 'activateCaptionTrack'], audio: ['listAudioTracks', 'selectAudioTrack'],
         chapters: ['getChapters'], heatmap: ['getHeatmap'], thumbnails: ['getPreviewSource', 'getPreviewFrame']

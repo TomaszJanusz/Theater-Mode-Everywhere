@@ -66,7 +66,9 @@ export function parseDescriptor(value: unknown): ProviderDescriptor {
     assert.equal(item.runAt, 'document_start', 'Provider must be ready before startup');
     return { file: item.file, runAt: 'document_start' as const };
   };
-  return { schemaVersion: 1, id, hosts, ...(home ? { home } : {}), ...(mediaFetch ? { mediaFetch } : {}), ...(legacySharedFiles ? { legacySharedFiles } : {}), entries: { isolated: entry('isolated'), main: entry('main') } };
+  const entries = { isolated: entry('isolated'), main: entry('main') };
+  assert.ok(Object.values(entries).every(item => !legacySharedFiles?.includes(item.file)), 'Provider entries must stay host-only');
+  return { schemaVersion: 1, id, hosts, ...(home ? { home } : {}), ...(mediaFetch ? { mediaFetch } : {}), ...(legacySharedFiles ? { legacySharedFiles } : {}), entries };
 }
 
 export function discoverDescriptors(root = process.cwd()): ProviderDescriptor[] {
@@ -77,6 +79,7 @@ export function discoverDescriptors(root = process.cwd()): ProviderDescriptor[] 
       const descriptor = parseDescriptor(JSON.parse(readFileSync(file, 'utf8')));
       assert.equal(path.basename(path.dirname(file)), descriptor.id, 'Provider directory must match id');
       for (const entry of Object.values(descriptor.entries)) assert.ok(existsSync(path.join(path.dirname(file), entry.file)), `Missing entry ${entry.file}`);
+      for (const legacy of descriptor.legacySharedFiles ?? []) assert.ok(existsSync(path.join(path.dirname(file), legacy)), `Missing legacy file ${legacy}`);
       return descriptor;
     });
   const ids = new Set<string>();

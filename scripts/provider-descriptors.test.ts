@@ -182,7 +182,7 @@ it('keeps staged extraction exemptions exact and entry implementation host-only'
   for (const name of ['audio-main.ts', 'audio-adapter.ts', 'audio-client.ts', 'audio-bridge.ts', 'nested/main.ts']) {
     assert.equal(isHostOnlySource(`${root}/src/providers/netflix/${name}`, descriptor), true, name);
   }
-  for (const files of [[], ['../main.ts'], ['nested/main.ts'], ['main.ts', 'main.ts'], [42]]) {
+  for (const files of [[], [descriptor.entries.isolated.file], [descriptor.entries.main.file], ['../main.ts'], ['nested/main.ts'], ['main.ts', 'main.ts'], [42]]) {
     assert.throws(() => parseDescriptor({ ...descriptor, legacySharedFiles: files }));
   }
 });

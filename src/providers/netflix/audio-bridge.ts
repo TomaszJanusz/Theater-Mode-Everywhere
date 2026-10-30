@@ -1,5 +1,5 @@
 import { normalizeLanguageTag } from '../../media-features/audio-preference';
-import type { AudioTrack, AudioTrackList } from '../../media-features/types';
+import type { AudioTrack, AudioTrackKind, AudioTrackList } from '../../media-features/types';
 
 export const AUDIO_QUERY = 'theater-everywhere-netflix-audio-query';
 export const AUDIO_SELECT = 'theater-everywhere-netflix-audio-select';
@@ -78,9 +78,10 @@ export function netflixAudioTrack(raw: unknown, selected: unknown): AudioTrack |
   if (!raw || typeof raw !== 'object') return null;
   const track = raw as Record<string, unknown>;
   if (!validTrackId(track.trackId) || !bounded(track.displayName, 200)) return null;
-  const type = track.trackType;
-  // ASSISTIVE wins even if a malformed host marks the descriptive recording native.
-  const kind = type === 'ASSISTIVE' ? 'description' : type === 'COMMENTARY' || track.rawTrackType === 'COMMENTARY'
-    ? 'commentary' : type === 'PRIMARY' ? track.isNative === true ? 'original' : 'dub' : 'unknown';
+  let kind: AudioTrackKind = 'unknown';
+  if (track.trackType === 'PRIMARY') kind = track.isNative === true ? 'original' : 'dub';
+  if (track.trackType === 'COMMENTARY' || track.rawTrackType === 'COMMENTARY') kind = 'commentary';
+  // Assistive wins even if a malformed host marks the descriptive recording native.
+  if (track.trackType === 'ASSISTIVE' || track.rawTrackType === 'ASSISTIVE') kind = 'description';
   return { id: track.trackId, label: track.displayName, languageTag: normalizeLanguageTag(track.bcp47) ?? '', kind, selected: raw === selected };
 }

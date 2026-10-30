@@ -1,3 +1,5 @@
+import { observeProviderDom } from '../dom-watch';
+import { MAX_NETFLIX_PREVIEW_BYTES, NETFLIX_PREVIEW_EVENT, NETFLIX_PREVIEW_ID, parseNetflixPreviewRequest } from '../../media-features/parsers/netflix-preview';
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import {
   NETFLIX_ACK_EVENT,
@@ -21,17 +23,14 @@ import {
   stripNetflixSiteTitle,
   type NetflixTextTrack
 } from '../../media-features/parsers/netflix-page';
-import { MAX_NETFLIX_PREVIEW_BYTES, NETFLIX_PREVIEW_EVENT, NETFLIX_PREVIEW_ID, parseNetflixPreviewRequest } from '../../media-features/parsers/netflix-preview';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { publishHiddenJson } from '../../platform/hidden-json';
-import { observeProviderDom } from '../dom-watch';
 import { isNetflixHost } from '../hosts';
-
+import { relayNetflixShadowClick } from './shadow-click';
+import { findNetflixPlayerRoot, netflixSessionTitle, netflixWatchId, playNetflixNextEpisode, readNetflixPlayerAppApi, selectNetflixSession, seekNetflixSession } from './session';
 import { NETFLIX_ACTION_ACK_EVENT, NETFLIX_ACTION_EVENT, NETFLIX_ACTION_SNAPSHOT_ID, validNetflixTimedActionId } from './action-bridge';
 import { NETFLIX_NEXT_ACK_EVENT, NETFLIX_NEXT_EVENT } from './next-episode';
 import { NETFLIX_NEXT_PREVIEW_ID, syncNetflixNextPreview } from './next-preview';
-import { findNetflixPlayerRoot, netflixSessionTitle, netflixWatchId, playNetflixNextEpisode, readNetflixPlayerAppApi, selectNetflixSession, seekNetflixSession } from './session';
-import { relayNetflixShadowClick } from './shadow-click';
 import { activateNetflixTimedAction, syncNetflixTimedAction } from './timed-action';
 
 export function netflixIntegrationEnabled(): boolean {

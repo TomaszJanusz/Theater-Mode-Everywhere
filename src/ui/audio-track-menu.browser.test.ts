@@ -189,8 +189,8 @@ describe('audio track menu and per-service preference', () => {
       await dot.waitFor({ state: 'detached' });
     });
 
-    it(`hides the row with fewer than two tracks in ${engine}`, async t => {
-      const page = await open(t, engine, { audioPreferenceByHost: { [HOST]: 'fr' } }, DUBBED.slice(0, 1));
+    for (const count of [0, 1]) it(`hides the row with ${count} tracks in ${engine}`, async t => {
+      const page = await open(t, engine, { audioPreferenceByHost: { [HOST]: 'fr' } }, DUBBED.slice(0, count));
       await page.locator('.player-settings-btn').click();
       await page.locator('.theater-settings-menu .help-btn').waitFor();
       assert.equal(await row(page).isHidden(), true);

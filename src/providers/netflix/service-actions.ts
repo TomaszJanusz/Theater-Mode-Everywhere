@@ -1,11 +1,10 @@
+import { observeProviderDom } from '../dom-watch';
 import type { ServiceAction, ServiceActionSource } from '../../core/service-actions';
 import { netflixVideoId } from '../../media-features/parsers/netflix-page';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { observeProviderDom } from '../dom-watch';
 import { isNetflixHost } from '../hosts';
-
-import { readNetflixTimedAction, requestNetflixTimedAction } from './action-bridge';
 import { netflixWatchId } from './session';
+import { readNetflixTimedAction, requestNetflixTimedAction } from './action-bridge';
 
 /**
  * Bounded watch-player controls. Stage CSS hides host chrome with visibility,
