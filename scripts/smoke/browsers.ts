@@ -8,12 +8,13 @@ import { chromium, firefox, type BrowserContext, type Page } from 'playwright';
 import { assertAppearanceModes } from './appearance';
 import { assertAudioWorld } from './audio';
 import { assertAutoTheater } from './auto-theater';
+import { assertBilibiliProvider, assertBilibiliTvProvider } from './bilibili-providers';
 import { FirefoxRemote } from './firefox-rdp';
 import { assertEmbeddedKeysAndFullscreen } from './frames';
 import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist } from './helpers';
 import { assertFeatureHighlights } from './highlights';
 import { assertPinStorage } from './pin-storage';
-import { assertBilibiliTvProvider, assertBilibiliProvider, assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, assertTwitchProvider, assertVimeoProvider, assertYoutubeProvider } from './providers';
+import { assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, assertTwitchProvider, assertVimeoProvider, assertYoutubeProvider } from './providers';
 import { assertRteSettings, assertPictureLayout } from './settings';
 import { assertVikiProvider } from './viki-provider';
 
