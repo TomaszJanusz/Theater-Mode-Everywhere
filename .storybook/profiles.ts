@@ -35,6 +35,7 @@ export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args'
   'components-hud--text-only': () => ({ preset: 'onlyVideo' }),
   'components-caption-notice--status': locale => ({ detail: locale === 'ar' ? 'العربية' : 'Portugiesisch (Brasilien, automatisch erstellt)' }),
   'components-language-notice--merged': () => ({}),
+  'components-language-notice--wrapped-value': () => ({}),
   'components-title-hud--overflow': (locale): Profile['args'] => locale === 'ar'
     ? { title: 'الفيلم الوثائقي الطويل عن السينما والضوء وتاريخ جهاز العرض في العالم', subtitle: 'الحلقة ٣' } : {},
   'components-auto-theater-notice--counting': () => ({})

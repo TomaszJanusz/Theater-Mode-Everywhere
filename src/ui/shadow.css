@@ -2769,8 +2769,9 @@ button.theater-time-end:focus-visible,
   grid-auto-flow: row dense;
   column-gap: 14px;
   row-gap: 6px;
-  /* Label and value share one line height, so their first lines align from the top. */
-  align-items: start;
+  /* A value that wraps makes its row taller; the label sits on the row's middle. With one line each
+     (they share a line height) the cells are the same height, so nothing moves. */
+  align-items: center;
   --language-hud-label-min: 5.5em;
 }
 
