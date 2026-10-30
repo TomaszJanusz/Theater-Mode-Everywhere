@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 
 import { requestProviderProbe } from '../media-features/probe';
+import { mediaProviderIntegrationEnabled, type MediaProviderId } from '../media-features/provider-flags';
 import { PROBE_ASYNC_EVENT, PROBE_ASYNC_REPLY_EVENT } from '../protocol/page-requests';
 import type { ProviderHooks } from '../providers/provider-api';
 import { createProviderRegistry } from '../providers/runtime-registration';
@@ -34,6 +35,14 @@ function replies(target: EventTarget): unknown[] {
   return seen;
 }
 
+/** MAIN's answerer over probes by id, with every integration on unless `enabled` says otherwise. */
+function answer(target: EventTarget, probes: (id: string) => Pick<ProviderHooks, 'probeAsync'> | undefined, enabled: (id: string) => boolean = () => true) {
+  return answerProviderProbes(target, id => {
+    const hooks = probes(id);
+    return hooks && { ...hooks, id: id as MediaProviderId };
+  }, enabled);
+}
+
 describe('asynchronous provider probe', () => {
   beforeEach(() => mock.timers.enable({ apis: ['setTimeout'] }));
   afterEach(() => mock.timers.reset());
@@ -41,7 +50,7 @@ describe('asynchronous provider probe', () => {
   it('delivers a late MAIN result to the request that asked for it', async () => {
     const world = new EventTarget();
     const read = deferred();
-    answerProviderProbes(world, id => id === 'bilibili' ? { probeAsync: () => read.promise } : undefined);
+    answer(world, id => id === 'bilibili' ? { probeAsync: () => read.promise } : undefined);
     const probe = requestProviderProbe('bilibili', 60_000, world);
     await flush();
     read.resolve({ videoId: 'BV1', tracks: [{ id: 'en' }] });
@@ -53,7 +62,7 @@ describe('asynchronous provider probe', () => {
     const sent = replies(world);
     const reads = [deferred(), deferred()];
     const signals: AbortSignal[] = [];
-    answerProviderProbes(world, () => ({ probeAsync: (signal) => { signals.push(signal); return reads[signals.length - 1].promise; } }));
+    answer(world, () => ({ probeAsync: (signal) => { signals.push(signal); return reads[signals.length - 1].promise; } }));
     const stale = requestProviderProbe('bilibili', 60_000, world);
     // The page moved on (episode change, rebinding): the adapter asks again before the first answer.
     const current = requestProviderProbe('bilibili', 60_000, world);
@@ -69,7 +78,7 @@ describe('asynchronous provider probe', () => {
   it('keeps providers independent', async () => {
     const world = new EventTarget();
     const reads: Record<string, Deferred> = { bilibili: deferred(), bilibiliIntl: deferred() };
-    answerProviderProbes(world, id => ({ probeAsync: () => reads[id].promise }));
+    answer(world, id => ({ probeAsync: () => reads[id].promise }));
     const cn = requestProviderProbe('bilibili', 60_000, world);
     const intl = requestProviderProbe('bilibiliIntl', 60_000, world);
     reads.bilibiliIntl.resolve('intl');
@@ -85,7 +94,7 @@ describe('asynchronous provider probe', () => {
     world.addEventListener = (type, listener, options) => { if (type === PROBE_ASYNC_REPLY_EVENT) listeners++; add(type, listener, options); };
     world.removeEventListener = (type, listener, options) => { if (type === PROBE_ASYNC_REPLY_EVENT) listeners--; remove(type, listener, options); };
     const never = deferred();
-    answerProviderProbes(world, id => ({ probeAsync: async () => id === 'tencent' ? never.promise : 'value' }));
+    answer(world, id => ({ probeAsync: async () => id === 'tencent' ? never.promise : 'value' }));
     assert.equal(await settled(requestProviderProbe('bilibili', 60_000, world)), 'value');
     const timedOut = requestProviderProbe('tencent', 5, world);
     mock.timers.tick(5);
@@ -103,7 +112,7 @@ describe('asynchronous provider probe', () => {
     const late = { id: 'iqiyi', contractVersion: 1, probeAsync: async () => ({ late: true }),
       watchPlayback: { pageIdentity: () => null, mainVideo: () => null } } satisfies ProviderHooks;
     assert.equal(registry.register(late), false);
-    answerProviderProbes(world, id => registry.get(id));
+    answer(world, registry.get, () => true);
     assert.equal(await settled(requestProviderProbe('iqiyi', 60_000, world)), null);
   });
 
@@ -117,7 +126,7 @@ describe('asynchronous provider probe', () => {
       circular: { probeAsync: async () => circular },
       huge: { probeAsync: async () => 'x'.repeat(2 * 1024 * 1024) }
     };
-    answerProviderProbes(world, id => hooks[id]);
+    answer(world, id => hooks[id]);
     for (const id of Object.keys(hooks)) assert.equal(await settled(requestProviderProbe(id, 60_000, world)), null, id);
   });
 
@@ -125,7 +134,7 @@ describe('asynchronous provider probe', () => {
     const world = new EventTarget();
     const reads = [deferred(), deferred()];
     let call = 0;
-    answerProviderProbes(world, () => ({ probeAsync: () => reads[call++].promise }));
+    answer(world, () => ({ probeAsync: () => reads[call++].promise }));
     const first = requestProviderProbe('bilibili', 5, world);
     mock.timers.tick(5);
     assert.equal(await settled(first), null);
@@ -160,7 +169,7 @@ describe('asynchronous provider probe', () => {
     const world = new EventTarget();
     const sent = replies(world);
     let reads = 0;
-    answerProviderProbes(world, () => ({ probeAsync: async () => { reads++; return 'x'; } }));
+    answer(world, () => ({ probeAsync: async () => { reads++; return 'x'; } }));
     for (const detail of [{ requestId: 1, provider: 'bilibili' }, JSON.stringify({ requestId: 0, provider: 'bilibili' }),
       JSON.stringify({ requestId: 1, provider: 7 }), JSON.stringify({ requestId: 1 })]) {
       world.dispatchEvent(new CustomEvent(PROBE_ASYNC_EVENT, { detail }));
@@ -168,5 +177,90 @@ describe('asynchronous provider probe', () => {
     await flush();
     assert.equal(reads, 0);
     assert.equal(sent.length, 0);
+  });
+
+  it('stops pending reads and drops their replies when MAIN tears down, and cleanup can run twice', async () => {
+    const world = new EventTarget();
+    const sent = replies(world);
+    const read = deferred();
+    let signal: AbortSignal | undefined;
+    const dispose = answer(world, () => ({ probeAsync: (given) => { signal = given; return read.promise; } }));
+    const probe = requestProviderProbe('bilibili', 60_000, world);
+    await flush();
+    dispose();
+    assert.equal(signal?.aborted, true, 'the provider can stop its own requests');
+    read.resolve({ videoId: 'late' });
+    await flush();
+    assert.equal(sent.length, 0, 'no reply after teardown');
+    dispose();
+    let reads = 0;
+    answer(new EventTarget(), () => ({ probeAsync: async () => { reads++; return 'x'; } }));
+    world.dispatchEvent(new CustomEvent(PROBE_ASYNC_EVENT, { detail: JSON.stringify({ requestId: 99, provider: 'bilibili', timeoutMs: 5 }) }));
+    await flush();
+    assert.equal(sent.length, 0, 'a torn-down answerer ignores new requests');
+    assert.equal(reads, 0);
+    mock.timers.tick(60_000);
+    assert.equal(await settled(probe), null);
+  });
+
+  it("stops the read at the requester's deadline, so its late result never answers", async () => {
+    const world = new EventTarget();
+    const sent = replies(world);
+    const read = deferred();
+    let signal: AbortSignal | undefined;
+    answer(world, () => ({ probeAsync: (given) => { signal = given; return read.promise; } }));
+    const probe = requestProviderProbe('bilibili', 5, world);
+    await flush();
+    mock.timers.tick(5);
+    assert.equal(await settled(probe), null);
+    assert.equal(signal?.aborted, true, 'MAIN aborts at the same deadline');
+    read.resolve({ videoId: 'late' });
+    await flush();
+    assert.equal(sent.length, 0);
+  });
+
+  it('forgets a read once it settles', async () => {
+    const world = new EventTarget();
+    let signal: AbortSignal | undefined;
+    const dispose = answer(world, () => ({ probeAsync: async (given) => { signal = given; return 'value'; } }));
+    assert.equal(await settled(requestProviderProbe('bilibili', 60_000, world)), 'value');
+    dispose();
+    mock.timers.tick(60_000);
+    assert.equal(signal?.aborted, false, 'a settled read is neither aborted by teardown nor by its old deadline');
+  });
+
+  it('answers null when the integration is switched off while the read is pending', async () => {
+    const world = new EventTarget();
+    const read = deferred();
+    let enabled = true;
+    const hooks = { probeAsync: () => read.promise };
+    answer(world, () => hooks, () => enabled);
+    const probe = requestProviderProbe('bilibili', 60_000, world);
+    await flush();
+    enabled = false;
+    read.resolve({ videoId: 'BV1' });
+    assert.equal(await settled(probe), null);
+  });
+
+  it("admits only a provider registered in MAIN whose integration is on, read from the page's flag", async () => {
+    const previous = globalThis.document;
+    const off = new Set<string>();
+    globalThis.document = { documentElement: { hasAttribute: (name: string) => off.has(name) } } as unknown as Document;
+    try {
+      const world = new EventTarget();
+      const registry = createProviderRegistry('www.iq.com');
+      answerProviderProbes(world, registry.get, mediaProviderIntegrationEnabled);
+      assert.equal(await settled(requestProviderProbe('iqiyi', 60_000, world)), null, 'nothing registered yet');
+      assert.equal(registry.register({ id: 'iqiyi', contractVersion: 1, probeAsync: async () => 'value',
+        watchPlayback: { pageIdentity: () => null, mainVideo: () => null } } satisfies ProviderHooks), true);
+      assert.equal(await settled(requestProviderProbe('iqiyi', 60_000, world)), 'value');
+      assert.equal(await settled(requestProviderProbe('vimeo', 60_000, world)), null, 'another id');
+      off.add('data-te-iqiyi-integration-off');
+      assert.equal(await settled(requestProviderProbe('iqiyi', 60_000, world)), null, 'integration off');
+      off.clear();
+      assert.equal(await settled(requestProviderProbe('iqiyi', 60_000, world)), 'value', 'read on every request, not cached');
+    } finally {
+      globalThis.document = previous;
+    }
   });
 });

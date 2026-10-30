@@ -478,10 +478,7 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('keyup', swallowTheaterPlaybackKeys, true);
   window.addEventListener('keypress', swallowTheaterPlaybackKeys, true);
 
-  answerProviderProbes(window, (id) => {
-    const hooks = providerRegistry.get(id);
-    return hooks && mediaProviderIntegrationEnabled(hooks.id) ? hooks : undefined;
-  });
+  answerProviderProbes(window, providerRegistry.get, mediaProviderIntegrationEnabled);
 
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
     const requestId = parseProbeRequest((event as CustomEvent<unknown>).detail);

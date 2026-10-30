@@ -115,8 +115,8 @@ type MainOnlyHooks = {
   /**
    * A snapshot that needs page requests, such as metadata APIs: answered once per isolated `requestProviderProbe`,
    * after it settles (a rejection answers null), and only while the provider's integration is enabled. `signal`
-   * aborts when a newer request supersedes this one. The provider still rejects its own stale results, such as after
-   * a route change.
+   * aborts when a newer request supersedes this one, at the requester's timeout and on teardown. The provider still
+   * rejects its own stale results, such as after a route change.
    */
   probeAsync?(signal: AbortSignal): Promise<unknown>;
   /** Called once at startup, after registration closed and the harvest observers are installed. */
@@ -162,9 +162,10 @@ export type ProviderServices = {
     /** The MAIN-world snapshot probe; registered providers read their own entry of `providers`. */
     requestMediaProbe(): Promise<MediaProbeSnapshot>;
     /**
-     * The provider's own MAIN `probeAsync` value, unvalidated. Null when MAIN refuses (not registered there, no hook,
-     * integration off), on timeout (also when the MAIN runtime is missing), or when a newer request for the same
-     * provider supersedes it: one requester per provider, normally its adapter.
+     * The provider's own MAIN `probeAsync` value, unvalidated: page scripts can forge a reply, so the provider must
+     * validate it. Null when MAIN refuses (not registered there, no hook, integration off), on timeout (also when the
+     * MAIN runtime is missing), or when a newer request for the same provider supersedes it: one requester per
+     * provider, normally its adapter.
      */
     requestProviderProbe(provider: MediaProviderId, timeoutMs?: number): Promise<unknown>;
     serviceElementToken(element: Element): number;

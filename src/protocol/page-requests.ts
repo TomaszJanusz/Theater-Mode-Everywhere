@@ -45,14 +45,11 @@ export function parseProbeRequest(raw: unknown): number | null {
 export const PROBE_ASYNC_EVENT = 'theater-everywhere-probe-async';
 export const PROBE_ASYNC_REPLY_EVENT = `${PROBE_ASYNC_EVENT}-reply`;
 
-/** A registered provider's asynchronous probe; `provider` is looked up in MAIN's own registry. */
-export type ProbeAsyncRequest = { requestId: number; provider: string };
-
-/** MAIN -> isolated. `value` is the provider's own snapshot, still unvalidated: the provider parses it. */
-export type ProbeAsyncReply = { requestId: number; value: unknown };
+/** A registered provider's asynchronous probe; `provider` is looked up in MAIN's own registry. MAIN stops the read at `timeoutMs` (at most a minute). */
+export type ProbeAsyncRequest = { requestId: number; provider: string; timeoutMs: number };
 
 /** Snapshots carry metadata (track lists, storyboards), never media; anything larger is dropped. */
-const MAX_PROBE_REPLY_CHARS = 1024 * 1024;
+const MAX_PROBE_REPLY_CHARS = 2 ** 20;
 
 export function encodeProbeAsyncRequest(request: ProbeAsyncRequest): string {
   return JSON.stringify(request);
@@ -60,14 +57,15 @@ export function encodeProbeAsyncRequest(request: ProbeAsyncRequest): string {
 
 /** `provider` is only shaped here: MAIN's registry lookup decides whether it names a registered provider. */
 export function parseProbeAsyncRequest(raw: unknown): ProbeAsyncRequest | null {
-  const record = parseRecord(raw);
-  const requestId = record && requestNumber(record.requestId);
-  const provider = record && requestString(record.provider);
-  return requestId && provider ? { requestId, provider } : null;
+  const record = parseRecord(raw) ?? {};
+  const requestId = requestNumber(record.requestId);
+  const provider = requestString(record.provider);
+  const timeoutMs = requestNumber(record.timeoutMs);
+  return requestId && provider && timeoutMs && timeoutMs <= 60_000 ? { requestId, provider, timeoutMs } : null;
 }
 
-/** A value that does not serialize or is too large is answered as null. */
-export function encodeProbeAsyncReply({ requestId, value }: ProbeAsyncReply): string {
+/** MAIN -> isolated. `value` is the provider's own snapshot, still unvalidated; one that does not serialize or is too large is answered as null. */
+export function encodeProbeAsyncReply(requestId: number, value: unknown): string {
   try {
     const text = JSON.stringify({ requestId, value: value ?? null });
     if (text.length <= MAX_PROBE_REPLY_CHARS) return text;
@@ -79,7 +77,8 @@ export function encodeProbeAsyncReply({ requestId, value }: ProbeAsyncReply): st
 
 /**
  * The reply's value when `raw` answers request `requestId`, else null. Request ids are unique across providers, so a
- * reply to another request never resolves this one.
+ * reply to another request never resolves this one. This is correlation, not authentication: page scripts see these
+ * events and can forge a well-shaped reply.
  */
 export function parseProbeAsyncReply(raw: unknown, requestId: number): { value: unknown } | null {
   const record = parseRecord(raw, MAX_PROBE_REPLY_CHARS);
