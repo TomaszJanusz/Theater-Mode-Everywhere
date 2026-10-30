@@ -86,6 +86,8 @@ for (const engine of testEngines()) {
     await page.evaluate(() => history.pushState(null, '', '/654321'));
     assert.equal(await confirmed(page), false, 'URL moved before the router did');
     await page.evaluate(() => window.spaTo('654321'));
+    // The rebuilt player only counts once it has metadata; loading it is asynchronous and slower on some engines.
+    await page.waitForFunction(() => (document.getElementById('main') as HTMLVideoElement).readyState >= 1);
     assert.equal(await confirmed(page), true, 'router and URL agree on the next clip');
 
     // An embed keeps publishing its own player config and wins over any router.
