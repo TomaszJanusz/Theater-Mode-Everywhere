@@ -1,6 +1,7 @@
-import { appendFileSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -92,8 +93,6 @@ function run(spawn, args, label) {
   return 0;
 }
 
-// `--test-force-exit` ends the runner once every test has reported, so a leaked browser or server
-// turns into an attributed result (and a written report) instead of a hang until the CI step times out.
 function runTsxTests(spawn, plan, root, reportDirectory) {
   // Static-preview tests need a fresh production Storybook, including in selected CI lanes.
   // Build once before starting test workers so parallel files cannot race over the output.
@@ -103,7 +102,7 @@ function runTsxTests(spawn, plan, root, reportDirectory) {
     if (result.error) throw result.error;
     if (result.status !== 0) return result.status ?? 1;
   }
-  return run(spawn, [tsxEntry(), '--test', '--test-concurrency=2', '--test-force-exit', ...reporterFlags('tsx', reportDirectory), ...plan.flags, ...plan.files], 'tsx');
+  return runNodeTests(spawn, [tsxEntry(), '--test', '--test-concurrency=2'], plan, { label: 'tsx', reportDirectory });
 }
 
 function runVitestTests(spawn, plan, reportDirectory) {
@@ -114,13 +113,71 @@ function runVitestTests(spawn, plan, reportDirectory) {
   return run(spawn, [vitestEntry(), 'run', '--config', 'vitest.config.ts', '--project', 'components', ...reporters, ...plan.flags, ...plan.files], 'Vitest');
 }
 
-function reporterFlags(label, directory) {
-  if (!directory) return [];
-  mkdirSync(directory, { recursive: true });
-  return [
-    '--test-reporter=spec', '--test-reporter-destination=stdout',
-    '--test-reporter=junit', `--test-reporter-destination=${join(directory, label + '.xml')}`,
-  ];
+// Never `--test-force-exit`: it ends the runner while the reporters still hold results from the file
+// processes, so a run reported a random subset of its tests with exit code 0. The guard preloaded into each file
+// process ends one that a leaked handle keeps alive, and counts the tests that ran; the tally reporter counts the
+// ones that reached the reporters. See scripts/test-process-guard.mjs.
+const GUARD = new URL('./test-process-guard.mjs', import.meta.url);
+const TALLY_REPORTER = new URL('./test-tally-reporter.mjs', import.meta.url).href;
+const TALLY_REPORTED = 'reported.json';
+
+function reporterFlags(name, directory, tally) {
+  const flags = ['--test-reporter=spec', '--test-reporter-destination=stdout'];
+  if (directory) {
+    mkdirSync(directory, { recursive: true });
+    flags.push('--test-reporter=junit', `--test-reporter-destination=${join(directory, name + '.xml')}`);
+  }
+  return [...flags, `--test-reporter=${TALLY_REPORTER}`, `--test-reporter-destination=${join(tally, TALLY_REPORTED)}`];
+}
+
+// Runs one node:test group; `lead` holds the arguments that precede its flags.
+function runNodeTests(spawn, lead, plan, { label, reportDirectory }) {
+  const tally = mkdtempSync(join(tmpdir(), 'tme-test-tally-'));
+  try {
+    const guard = new URL(GUARD);
+    guard.searchParams.set('tally', tally);
+    const status = run(spawn, [...lead, `--import=${guard.href}`, ...reporterFlags(label.toLowerCase(), reportDirectory, tally), ...plan.flags, ...plan.files], label);
+    return verifyTally(tally, status) ?? status;
+  } finally {
+    rmSync(tally, { recursive: true, force: true });
+  }
+}
+
+// `ran` maps each test file to the number of test bodies its process ran, `reported` to the number the reporters
+// received (null when the reporters never finished). Returns what is missing, empty when the run is complete.
+export function tallyProblems(ran, reported, status) {
+  const total = [...ran.values()].reduce((sum, count) => sum + count, 0);
+  if (reported === null) return total > 0 ? [`the reporters wrote no tally, but ${total} tests ran`] : [];
+  const problems = [];
+  for (const [file, count] of ran) {
+    const received = reported[file] ?? 0;
+    // After a failure the reporters may add entries for files that crashed; a green run has to match exactly.
+    if (received < count || (status === 0 && received > count)) problems.push(`${file}: ${count} tests ran, ${received} reached the reporters`);
+  }
+  if (status === 0) {
+    for (const file of Object.keys(reported)) if (!ran.has(file)) problems.push(`${file}: reported, but its process left no record`);
+  }
+  return problems;
+}
+
+function verifyTally(directory, status) {
+  const records = readdirSync(directory).filter(name => name.startsWith('file-'))
+    .map(name => JSON.parse(readFileSync(join(directory, name), 'utf8')));
+  const reportedPath = join(directory, TALLY_REPORTED);
+  const reportedText = existsSync(reportedPath) ? readFileSync(reportedPath, 'utf8') : '';
+  const problems = tallyProblems(
+    new Map(records.map(record => [record.file, record.tests])),
+    reportedText === '' ? null : JSON.parse(reportedText),
+    status,
+  );
+  for (const { file, leaks } of records) {
+    if (leaks.length === 0) continue;
+    const handles = leaks.join(', ');
+    console.warn(`${relative(process.cwd(), file)} left handles alive after its tests finished (${handles}); the runner ended it. Close or unref them where the test creates them.`);
+  }
+  if (problems.length === 0) return undefined;
+  console.error(['Test results were lost between the test files and the reporters:', ...problems.map(problem => '  ' + problem)].join('\n'));
+  return status || 1;
 }
 
 export function main(args, root = fileURLToPath(new URL('..', import.meta.url)), spawn = spawnSync) {
@@ -152,7 +209,7 @@ export function main(args, root = fileURLToPath(new URL('..', import.meta.url)),
   }
   // Groups run in order and stop at the first failure.
   const groups = [
-    [plan.node, () => run(spawn, ['--test', ...reporterFlags('node', reportDirectory), ...plan.node.flags, ...plan.node.files], 'Node')],
+    [plan.node, () => runNodeTests(spawn, ['--test'], plan.node, { label: 'Node', reportDirectory })],
     [plan.tsx, () => runTsxTests(spawn, plan.tsx, root, reportDirectory)],
     [plan.vitest, () => runVitestTests(spawn, plan.vitest, reportDirectory)],
   ];
