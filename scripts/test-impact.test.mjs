@@ -105,18 +105,19 @@ test('runner uses exact file lists, accepts deliberate empty lanes and fails ope
   const { root, put } = fixture(t);
   put('a.test.mjs', ''); put('ab.test.mjs', '');
   const calls = [];
-  const spawn = (_, args) => { calls.push(args); return { status: 0 }; };
+  // Only the selected files matter here, not the flags the runner adds.
+  const spawn = (_, args) => { calls.push(args.filter(arg => !arg.startsWith('-'))); return { status: 0 }; };
   put('selection.json', JSON.stringify({ total: 2, files: ['a.test.mjs'] }));
   assert.equal(main(['--files-from=selection.json'], root, spawn), 0);
-  assert.deepEqual(calls.pop(), ['--test', 'a.test.mjs']);
+  assert.deepEqual(calls.pop(), ['a.test.mjs']);
   put('selection.json', JSON.stringify({ total: 2, files: [] }));
   assert.equal(main(['--files-from=selection.json'], root, spawn), 0);
   assert.equal(calls.length, 0);
   put('selection.json', '{');
   main(['--files-from=selection.json'], root, spawn);
-  assert.deepEqual(calls.pop(), ['--test', 'a.test.mjs', 'ab.test.mjs']);
+  assert.deepEqual(calls.pop(), ['a.test.mjs', 'ab.test.mjs']);
   main([], root, spawn);
-  assert.deepEqual(calls.pop(), ['--test', 'a.test.mjs', 'ab.test.mjs']);
+  assert.deepEqual(calls.pop(), ['a.test.mjs', 'ab.test.mjs']);
 });
 
 test('test-only shared infrastructure keeps full tests but skips installed smoke', () => {

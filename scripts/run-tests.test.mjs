@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { discoverTests, isBrowserTest, main, planRun } from './run-tests.mjs';
+import { discoverTests, isBrowserTest, main, planRun, tallyProblems } from './run-tests.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
@@ -86,7 +86,10 @@ test('forwards arguments verbatim to the child process without a shell', () => {
     assert.equal(calls.length, 1);
     assert.equal(calls[0].command, process.execPath);
     assert.equal(calls[0].options.shell, undefined);
-    assert.deepEqual(calls[0].args.slice(1), ['--test', '--test-concurrency=2', '--test-force-exit', '--test-name-pattern=it "x" & y | $HOME', 'a b.test.ts']);
+    const { args } = calls[0];
+    assert.deepEqual(args.slice(1, 3), ['--test', '--test-concurrency=2']);
+    assert.ok(!args.includes('--test-force-exit'), 'a forced exit cuts off results the reporters still hold');
+    assert.deepEqual(args.slice(-2), ['--test-name-pattern=it "x" & y | $HOME', 'a b.test.ts']);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -98,15 +101,84 @@ test('JUnit reporting is opt-in and does not pass its option to Node', () => {
     writeFileSync(join(root, 'sample.test.mjs'), '');
     const calls = [];
     const reportDirectory = join(root, 'reports');
-    assert.equal(main([`--report-dir=${reportDirectory}`], root, (_command, args) => {
-      calls.push(args);
-      return { status: 0 };
-    }), 0);
-    assert.deepEqual(calls[0], [
-      '--test', '--test-reporter=spec', '--test-reporter-destination=stdout',
+    const spawn = (_command, args) => { calls.push(args); return { status: 0 }; };
+    assert.equal(main([`--report-dir=${reportDirectory}`], root, spawn), 0);
+    const [guard, ...reporters] = calls[0].slice(1, -1);
+    assert.equal(calls[0][0], '--test');
+    assert.match(guard, /^--import=file:\/\/.*\/test-process-guard\.mjs\?tally=/);
+    assert.deepEqual(reporters.slice(0, 4), [
+      '--test-reporter=spec', '--test-reporter-destination=stdout',
       '--test-reporter=junit', `--test-reporter-destination=${join(reportDirectory, 'node.xml')}`,
-      'sample.test.mjs',
     ]);
+    assert.match(reporters[4], /^--test-reporter=file:\/\/.*\/test-tally-reporter\.mjs$/);
+    assert.equal(calls[0].at(-1), 'sample.test.mjs');
+    calls.length = 0;
+    assert.equal(main([], root, spawn), 0);
+    assert.ok(!calls[0].some(arg => arg.includes('junit')));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a run is incomplete when fewer tests reached the reporters than ran', () => {
+  const ran = new Map([['a.test.ts', 100], ['b.test.ts', 100]]);
+  assert.deepEqual(tallyProblems(ran, { 'a.test.ts': 100, 'b.test.ts': 100 }, 0), []);
+  assert.deepEqual(tallyProblems(ran, { 'a.test.ts': 100, 'b.test.ts': 87 }, 0), ['b.test.ts: 100 tests ran, 87 reached the reporters']);
+  assert.deepEqual(tallyProblems(ran, { 'a.test.ts': 100 }, 1), ['b.test.ts: 100 tests ran, 0 reached the reporters']);
+  assert.deepEqual(tallyProblems(ran, null, 0), ['the reporters wrote no tally, but 200 tests ran']);
+  assert.deepEqual(tallyProblems(new Map(), null, 0), [], 'a run that executed nothing has nothing to lose');
+});
+
+test('a green run must match exactly, a failed run may report extra entries for crashed files', () => {
+  const ran = new Map([['a.test.ts', 2]]);
+  assert.equal(tallyProblems(ran, { 'a.test.ts': 3 }, 0).length, 1);
+  assert.equal(tallyProblems(ran, { 'a.test.ts': 2, 'crashed.test.ts': 1 }, 0).length, 1);
+  assert.deepEqual(tallyProblems(ran, { 'a.test.ts': 2, 'crashed.test.ts': 1 }, 1), []);
+});
+
+// A fixture suite shaped like the failure: 500 trivial tests across five files, the first leaking a handle
+// that keeps its process alive, and a last failing test. With `--test-force-exit` the runner exited before its
+// reporters had drained, so the count in the JUnit report changed from run to run while the exit code stayed 0.
+function writeLeakyFixture(root) {
+  for (let file = 0; file < 5; file += 1) {
+    const cases = Array.from({ length: 100 }, (_, index) => `test('case ${index}', () => {});`);
+    if (file === 0) cases.push('setInterval(() => {}, 60_000);');
+    writeFileSync(join(root, `suite-${file}.test.ts`), `import test from 'node:test';\n${cases.join('\n')}\n`);
+  }
+  writeFileSync(join(root, 'zz-last.test.ts'), `import test from 'node:test';\ntest('last', () => { throw new Error('expected failure'); });\n`);
+}
+
+// Runs the real runner on a fixture directory: a shorter leak grace keeps it quick, output stays out of the log.
+function runFixture(root, reportDirectory) {
+  const warnings = [];
+  const originalWarn = console.warn;
+  const originalError = console.error;
+  console.warn = message => warnings.push(message);
+  console.error = message => warnings.push(message);
+  try {
+    // This process is itself a test file process; the nested runner must not inherit that role.
+    const env = { ...process.env };
+    delete env.NODE_TEST_CONTEXT;
+    const spawn = (command, args, options) => spawnSync(command, args.map(arg => arg.replace(/^(--import=.*)$/, '$1&graceMs=1000')), { ...options, cwd: root, env, stdio: 'ignore' });
+    const status = main([`--report-dir=${reportDirectory}`], root, spawn);
+    const xml = readdirSync(reportDirectory).map(name => readFileSync(join(reportDirectory, name), 'utf8')).join('');
+    return { status, warnings, testcases: xml.match(/<testcase /g)?.length ?? 0, closed: xml.includes('</testsuites>') };
+  } finally {
+    console.warn = originalWarn;
+    console.error = originalError;
+  }
+}
+
+test('every test of a suite with a leaked handle reaches the report, the handle is named and a failure still fails', () => {
+  const root = mkdtempSync(join(tmpdir(), 'run-tests-leak-'));
+  try {
+    writeLeakyFixture(root);
+    const result = runFixture(root, join(root, 'reports'));
+    assert.equal(result.status, 1, 'the failing last test fails the run');
+    assert.equal(result.testcases, 501);
+    assert.ok(result.closed);
+    assert.ok(!result.warnings.some(message => /lost between/.test(message)), 'no results are lost');
+    assert.ok(result.warnings.some(message => /suite-0\.test\.ts left handles alive after its tests finished \(Timeout x1\)/.test(message)));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

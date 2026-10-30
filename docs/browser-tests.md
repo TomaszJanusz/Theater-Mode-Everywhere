@@ -67,6 +67,15 @@ test-owned hook closes it even when the body is still waiting. The regression
 in `test-browser.test.ts` deliberately times out a child runner and checks its
 failure, disconnection and exit rather than weakening the timeout assertion.
 
+The runner does not pass `--test-force-exit`: forcing the exit cut off results the
+reporters still held, so identical runs reported different test counts (and
+incomplete JUnit files) with exit code 0. Instead each test-file process loads
+`scripts/test-process-guard.mjs`. A process that a leaked handle keeps alive one
+second after its tests finished is ended, and the runner prints which handles it
+found; fix the leak where the test creates it. The guard also counts the test
+bodies that ran, and the runner fails the run (`Test results were lost between the
+test files and the reporters`) if `scripts/test-tally-reporter.mjs` received fewer.
+
 Audio is tested in three tiers; put a new case in the cheapest one that can fail
 for the right reason:
 
