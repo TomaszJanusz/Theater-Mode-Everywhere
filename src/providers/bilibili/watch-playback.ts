@@ -2,10 +2,13 @@ import type { WatchPlayback } from '../watch-playback';
 
 import { BILIBILI_NAVIGATE_EVENT } from './history';
 
-/** Parts are separate visits; tracking parameters and timestamps are not. */
+/**
+ * Parts are separate visits; tracking parameters and timestamps are not. The site may prefix a
+ * language route (`/zh-Hans/video/BV...`), which names the same video.
+ */
 export function bilibiliVideoIdentity(url: URL): string | null {
   if (url.protocol !== 'https:' || url.hostname !== 'www.bilibili.com') return null;
-  const match = /^\/video\/(BV[0-9A-Za-z]{10})\/?$/.exec(url.pathname);
+  const match = /^(?:\/[a-z]{2,3}(?:-[A-Za-z]{2,4})?)?\/video\/(BV[0-9A-Za-z]{10})\/?$/.exec(url.pathname);
   const part = url.searchParams.get('p') ?? '1';
   if (!match || !/^[1-9]\d*$/.test(part) || !Number.isSafeInteger(Number(part))) return null;
   return `${match[1]}:${Number(part)}`;
