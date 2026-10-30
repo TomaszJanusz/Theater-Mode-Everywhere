@@ -1,7 +1,8 @@
 import type { ParsedChatLocation } from '../../chat/url';
 import { normalizeHost } from '../../platform/domain-policy';
-import { isTwitchHost } from '../hosts';
 import type { ProviderChat } from '../provider-api';
+
+import { isTwitchHost } from './hosts';
 
 const RESERVED = new Set([
   'activate',

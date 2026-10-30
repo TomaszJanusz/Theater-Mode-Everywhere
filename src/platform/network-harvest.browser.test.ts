@@ -16,7 +16,7 @@ const bundle = bundleModules([
   "export { harvestYoutubeHeatmapText, harvestTimedtextJson, readYoutubeSnapshot } from './providers/youtube/player-main';",
   "export { readDisneySnapshot } from './providers/disney/main';",
   "export { readTencentSnapshot } from './providers/tencent/main';",
-  "export { readTwitchSnapshot } from './providers/twitch/main';",
+  "export { readTwitchSnapshot } from './providers/twitch/harvest';",
   "export { readCrunchyrollSnapshot } from './providers/crunchyroll/main';",
   "export { fetchWithoutHarvest } from './platform/harvest-ownership';",
   "export { createWorldMessage } from './protocol/world-messages';"

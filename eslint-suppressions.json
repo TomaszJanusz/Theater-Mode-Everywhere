@@ -836,7 +836,7 @@
   },
   "src/media-features/resolve-adapter.ts": {
     "local/max-symbol-name-length": {
-      "count": 5
+      "count": 4
     }
   },
   "src/media-features/sanitize.ts": {
@@ -1194,9 +1194,6 @@
     }
   },
   "src/providers/discovery.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 2
     }
@@ -1608,7 +1605,7 @@
       "count": 1
     }
   },
-  "src/providers/twitch/main.ts": {
+  "src/providers/twitch/harvest.ts": {
     "local/max-symbol-name-length": {
       "count": 11
     },

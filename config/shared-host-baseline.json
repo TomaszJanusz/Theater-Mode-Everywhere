@@ -182,26 +182,13 @@
     }
   },
   "twitch": {
-    "src/chat": {
-      "serviceId": 1,
-      "identifier": 6
-    },
     "src/media-features": {
-      "serviceId": 9,
+      "serviceId": 7,
       "domain": 8,
-      "identifier": 13
-    },
-    "src/platform": {
-      "hostCheck": 5,
-      "serviceId": 3,
-      "domain": 1,
-      "identifier": 22
+      "identifier": 4
     },
     "src/providers": {
-      "hostCheck": 5,
-      "serviceId": 6,
-      "domain": 2,
-      "identifier": 11
+      "identifier": 2
     }
   },
   "viki": {

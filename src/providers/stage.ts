@@ -11,7 +11,6 @@ import {
 } from './netflix/stage';
 import { providerRegistry, registeredEvents } from './runtime-registration';
 import { tencentTheaterStage } from './tencent/stage';
-import { twitchTheaterStage } from './twitch/stage';
 
 const netflixTheaterStage: ProviderStage = {
   mount(hostname: string) {
@@ -33,7 +32,6 @@ const netflixTheaterStage: ProviderStage = {
 
 const legacyStages: ProviderStage[] = [
   disneyTheaterStage,
-  twitchTheaterStage,
   netflixTheaterStage,
   tencentTheaterStage
 ];

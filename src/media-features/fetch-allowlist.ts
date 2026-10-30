@@ -121,7 +121,7 @@ export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest)
   return isAllowedMediaFetchUrl({ ...request, url: finalUrl });
 }
 
-const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'twitch', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', ...PROVIDER_CATALOG.map(item => item.id)];
+const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', ...PROVIDER_CATALOG.map(item => item.id)];
 // Netflix stays off this list. Public playback renders subtitles in the host
 // player and did not expose a caption or storyboard URL safe to fetch.
 const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json', 'chapters'];

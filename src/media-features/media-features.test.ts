@@ -37,7 +37,7 @@ import {
   resolveMediaProviderFlags,
   richTheaterExperienceEnabled
 } from './provider-flags';
-import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachTwitchAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
+import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { YouTubeAdapter } from './youtube-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls } from './youtube-snapshot';
@@ -1524,10 +1524,10 @@ describe('provider integration flags', () => {
     assert.equal(shouldAttachProvider('patreon', allOn, 'www.patreon.com'), true);
     assert.equal(shouldAttachProvider('patreon', { ...allOn, patreon: false }, 'www.patreon.com'), false);
     assert.equal(shouldAttachProvider('patreon', allOn, 'example.com'), false);
-    assert.equal(shouldAttachTwitchAdapter(allOn, 'www.twitch.tv'), true);
-    assert.equal(shouldAttachTwitchAdapter(allOn, 'player.twitch.tv'), true);
-    assert.equal(shouldAttachTwitchAdapter({ ...allOn, twitch: false }, 'www.twitch.tv'), false);
-    assert.equal(shouldAttachTwitchAdapter(allOn, 'example.com'), false);
+    assert.equal(shouldAttachProvider('twitch', allOn, 'www.twitch.tv'), true);
+    assert.equal(shouldAttachProvider('twitch', allOn, 'player.twitch.tv'), true);
+    assert.equal(shouldAttachProvider('twitch', { ...allOn, twitch: false }, 'www.twitch.tv'), false);
+    assert.equal(shouldAttachProvider('twitch', allOn, 'example.com'), false);
     assert.equal(shouldAttachDisneyAdapter(allOn, 'www.disneyplus.com'), true);
     assert.equal(shouldAttachDisneyAdapter({ ...allOn, disney: false }, 'www.disneyplus.com'), false);
     assert.equal(shouldAttachDisneyAdapter(allOn, 'example.com'), false);

@@ -1,4 +1,5 @@
-import { nativeChat } from './registered';
+import { registeredChat } from '../providers/runtime-registration';
+
 import type { ChatActivation, ChatSurface } from './types';
 import { parseChatLocation } from './url';
 
@@ -6,5 +7,5 @@ import { parseChatLocation } from './url';
 export function detectChatActivation(document: Document, href: string, surface: ChatSurface | null): ChatActivation | null {
   const page = parseChatLocation(href);
   if (!page || page.role !== 'watch') return null;
-  return nativeChat()?.activation(document, href, surface) ?? null;
+  return registeredChat()?.activation(document, href, surface) ?? null;
 }

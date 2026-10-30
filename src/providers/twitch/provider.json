@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "twitch",
+  "hosts": [
+    {
+      "domain": "twitch.tv",
+      "includeSubdomains": true
+    }
+  ],
+  "home": "https://www.twitch.tv/",
+  "entries": {
+    "isolated": {
+      "file": "isolated.ts",
+      "runAt": "document_start"
+    },
+    "main": {
+      "file": "main.ts",
+      "runAt": "document_start"
+    }
+  }
+}

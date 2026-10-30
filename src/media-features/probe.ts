@@ -3,7 +3,6 @@ import { createWorldMessage, readWorldEnvelope } from '../protocol/world-message
 import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
 import type { CrunchyrollSnapshot } from '../providers/crunchyroll/main';
 import type { TencentSnapshot } from '../providers/tencent/main';
-import type { TwitchPlayerSnapshot } from '../providers/twitch/snapshot';
 
 import type { BilibiliSnapshot } from './parsers/bilibili';
 
@@ -52,7 +51,6 @@ export type NetflixProbeSnapshot = {
 export type MediaProbeSnapshot = {
   /** Registered providers' snapshots by provider id, unvalidated: each provider normalizes its own. */
   providers?: Record<string, unknown>;
-  twitch?: TwitchPlayerSnapshot | null;
   disney?: DisneyPlayerSnapshot | null;
   netflix?: NetflixProbeSnapshot | null;
   bilibili?: BilibiliSnapshot | null;
@@ -88,7 +86,6 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
       window.removeEventListener(resultEvent, onResult as EventListener);
       resolve({
         providers: plainRecord(snapshot.providers),
-        twitch: snapshot.twitch ?? null,
         disney: snapshot.disney ?? null,
         netflix: snapshot.netflix ?? null,
         bilibili: snapshot.bilibili ?? null,

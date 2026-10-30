@@ -1,4 +1,4 @@
-import { isTwitchHost } from '../hosts';
+import { isTwitchHost } from './hosts';
 
 export const TWITCH_THEATER_STAGE_CLASS = 'theater-everywhere-twitch-stage';
 

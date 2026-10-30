@@ -1,4 +1,4 @@
-import { isTwitchHost } from '../hosts';
+import { isTwitchHost } from './hosts';
 
 /**
  * Reloading the player (error recovery, "Click Here to Reload Player") can mount a new `<video>` and

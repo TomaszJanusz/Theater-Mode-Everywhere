@@ -29,6 +29,16 @@ export const PROVIDER_CATALOG = [
     ]
   },
   {
+    "id": "twitch",
+    "hosts": [
+      {
+        "domain": "twitch.tv",
+        "includeSubdomains": true
+      }
+    ],
+    "home": "https://www.twitch.tv/"
+  },
+  {
     "id": "viki",
     "hosts": [
       {
