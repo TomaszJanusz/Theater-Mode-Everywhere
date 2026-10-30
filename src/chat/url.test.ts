@@ -16,19 +16,13 @@ releaseYouTubeNodeHost();
 assert.equal(providerRegistry.register({ id: 'youtube', contractVersion: 1, watchPlayback: youtubeWatchPlayback, chat: youtubeChat }), true);
 
 describe('chat document urls', () => {
-  it('recognizes Twitch and YouTube chat, popout, and replay documents', () => {
-    assert.equal(isChatDocument('https://www.twitch.tv/popout/SomeChannel/chat?popout='), true);
-    assert.equal(isChatDocument('https://www.twitch.tv/embed/SomeChannel/chat?parent=example.com'), true);
+  it('recognizes the registered provider\'s chat, popout, and replay documents', () => {
     assert.equal(isChatDocument('https://www.youtube.com/live_chat?v=AbCdEfGhIjK&is_popout=1'), true);
     assert.equal(isChatDocument('https://www.youtube.com/live_chat_replay?continuation=abc'), true);
     assert.equal(isChatDocument('https://www.youtube.com/live_chat/'), true);
   });
 
   it('does not treat watch pages or other hosts as chat documents', () => {
-    assert.equal(isChatDocument('https://www.twitch.tv/SomeChannel'), false);
-    assert.equal(isChatDocument('https://www.twitch.tv/popout/SomeChannel'), false);
-    assert.equal(isChatDocument('https://www.twitch.tv/videos/12345'), false);
-    assert.equal(isChatDocument('https://player.twitch.tv/?channel=SomeChannel'), false);
     assert.equal(isChatDocument('https://www.youtube.com/watch?v=AbCdEfGhIjK'), false);
     assert.equal(isChatDocument('https://www.youtube.com/live/AbCdEfGhIjK'), false);
     assert.equal(isChatDocument('https://evil.example/live_chat?v=AbCdEfGhIjK'), false);
@@ -37,21 +31,6 @@ describe('chat document urls', () => {
 });
 
 describe('watch page selection', () => {
-  it('separates a Twitch channel from a native video replay', () => {
-    assert.deepEqual(parseChatLocation('https://www.twitch.tv/SomeChannel/'), {
-      role: 'watch', provider: 'twitch', contentKey: 'somechannel', kind: 'live'
-    });
-    assert.deepEqual(parseChatLocation('https://m.twitch.tv/videos/12345?t=1h2m'), {
-      role: 'watch', provider: 'twitch', contentKey: '12345', kind: 'replay'
-    });
-    assert.equal(parseChatLocation('https://www.twitch.tv/directory/all'), null);
-    assert.equal(parseChatLocation('https://www.twitch.tv/videos'), null);
-    assert.equal(parseChatLocation('https://www.twitch.tv/SomeChannel/about'), null);
-    assert.equal(parseChatLocation('https://www.twitch.tv/moderator/SomeChannel'), null);
-    assert.equal(watchIdentity('https://www.twitch.tv/SomeChannel'), 'twitch:somechannel');
-    assert.equal(watchIdentity('https://www.twitch.tv/popout/SomeChannel/chat'), '');
-  });
-
   it('accepts YouTube watch, live, and embed routes and ignores chat-only or unrelated routes', () => {
     assert.deepEqual(parseChatLocation('https://www.youtube.com/watch?v=AbCdEfGhIjK&t=12'), {
       role: 'watch', provider: 'youtube', contentKey: 'AbCdEfGhIjK', kind: null
@@ -67,16 +46,14 @@ describe('watch page selection', () => {
     assert.equal(parseChatLocation('https://www.youtube.com/watch?v=short'), null);
     assert.equal(parseChatLocation('https://www.youtube.com/live_chat?v=AbCdEfGhIjK')?.role, 'chat-document');
     assert.equal(parseChatLocation('https://music.youtube.com/playlist?list=1'), null);
+    assert.equal(watchIdentity('https://www.youtube.com/watch?v=AbCdEfGhIjK'), 'youtube:AbCdEfGhIjK');
+    assert.equal(watchIdentity('https://www.youtube.com/live_chat?v=AbCdEfGhIjK'), '');
   });
 
   it('treats watch and embed hosts as chat hosts and leaves other subdomains alone', () => {
-    assert.equal(isNativeChatHost('https://www.twitch.tv/directory/all'), true);
-    assert.equal(isNativeChatHost('https://m.twitch.tv/videos/55'), true);
     assert.equal(isNativeChatHost('https://www.youtube.com/'), true);
     assert.equal(isNativeChatHost('https://www.youtube-nocookie.com/embed/AbCdEfGhIjK'), true);
     assert.equal(isNativeChatHost('https://m.youtube.com/watch?v=AbCdEfGhIjK'), true);
-    assert.equal(isNativeChatHost('https://player.twitch.tv/?channel=SomeChannel'), false);
-    assert.equal(isNativeChatHost('https://clips.twitch.tv/SomeClip'), false);
     assert.equal(isNativeChatHost('https://youtu.be/AbCdEfGhIjK'), false);
     assert.equal(isNativeChatHost('https://example.com/watch?v=AbCdEfGhIjK'), false);
     assert.equal(isNativeChatHost('not a url'), false);

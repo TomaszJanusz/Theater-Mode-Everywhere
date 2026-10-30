@@ -5,12 +5,12 @@ import {
   MAX_CHAT_WIDTH_PX,
   MIN_CHAT_WIDTH_PX,
   type ChatPreference,
-  type ChatProvider,
   type ChatState,
   type ChatTheme,
   normalizeChatTheme
 } from '../chat';
 import type { DisposableScope } from '../core/disposable-scope';
+import { MEDIA_PROVIDER_IDS, type MediaProviderId } from '../media-features/provider-flags';
 
 import { createChatSeparator } from './chat-separator';
 import { queryPlayerUi } from './root';
@@ -19,7 +19,7 @@ import { shortcutAriaKeyshortcuts, shortcutMarkup } from './shortcut-display';
 import { shortcutDisplayEnv } from './shortcuts';
 
 export const CHAT_PREFERENCES_STORAGE_KEY = 'nativeChatPreferences';
-type ChatPreferences = Partial<Record<ChatProvider, ChatPreference>>;
+type ChatPreferences = Partial<Record<MediaProviderId, ChatPreference>>;
 
 let preferences: ChatPreferences = {};
 let controller: ChatController | null = null;
@@ -48,7 +48,7 @@ function schedulePersist(): void {
   persistTimer = setTimeout(flushPersist, 350);
 }
 
-function storedTheme(provider: ChatProvider): ChatTheme {
+function storedTheme(provider: MediaProviderId): ChatTheme {
   return normalizeChatTheme(preferences[provider]?.theme);
 }
 
@@ -62,7 +62,7 @@ export function hydrateChatPreferences(value: unknown): void {
   if (!value || typeof value !== 'object') return;
   const candidate = value as Record<string, unknown>;
   const next: ChatPreferences = {};
-  for (const provider of ['twitch', 'youtube', 'soop'] as const) {
+  for (const provider of MEDIA_PROVIDER_IDS) {
     const entry = candidate[provider];
     if (!entry || typeof entry !== 'object') continue;
     const pref = entry as Partial<ChatPreference>;

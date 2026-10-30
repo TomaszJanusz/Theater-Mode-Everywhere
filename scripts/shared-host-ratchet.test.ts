@@ -90,7 +90,7 @@ describe('what does not count', () => {
 describe('scope', () => {
   it('covers shared directories and the shared parts of providers', () => {
     assert.equal(scopeOf('src/ui/chat.ts'), 'src/ui');
-    assert.equal(scopeOf('src/chat/adapters/twitch.ts'), 'src/chat');
+    assert.equal(scopeOf('src/chat/controller.ts'), 'src/chat');
     assert.equal(scopeOf('src/providers/registry.ts'), 'src/providers');
     assert.equal(scopeOf('src/providers/navigation/netflix.ts'), 'src/providers/navigation');
     assert.equal(scopeOf('src/providers/native/page-title.ts'), 'src/providers/native');

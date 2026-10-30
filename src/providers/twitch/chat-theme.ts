@@ -1,10 +1,11 @@
-import { readNativeChatVisibility } from './visibility';
-import { OwnedDom } from '../owned-dom';
-import { TWITCH_CHAT_PORTAL_SELECTOR } from '../selectors';
-import type { ChatSurface } from '../types';
-import { THEATER_STAGE_BACKGROUND } from './stage';
-import type { ChatThemeAdapter, ForcedTheme } from './types';
-import { TWITCH_THEME_BRIDGE, TWITCH_THEME_TOKENS } from './twitch-palette';
+import { THEATER_STAGE_BACKGROUND } from '../../chat/adapters/stage';
+import type { ChatThemeAdapter, ForcedTheme } from '../../chat/adapters/types';
+import { OwnedDom } from '../../chat/owned-dom';
+import type { ChatSurface } from '../../chat/types';
+import type { ProviderChat } from '../provider-api';
+
+import { TWITCH_THEME_BRIDGE, TWITCH_THEME_TOKENS } from './chat-palette';
+import { CHAT_PORTAL_SELECTOR } from './chat-routes';
 
 const paletteCache = new WeakMap<Document, { sheets: CSSStyleSheet[]; counts: number[]; classes: Partial<Record<ForcedTheme, string>> }>();
 
@@ -36,7 +37,7 @@ export class TwitchChatThemeAdapter implements ChatThemeAdapter {
       paletteClass = `theater-chat-theme-${theme}`;
     }
     const otherPalette = twitchPaletteClass(doc, theme === 'dark' ? 'light' : 'dark');
-    const portalRoots = [...doc.querySelectorAll<HTMLElement>(TWITCH_CHAT_PORTAL_SELECTOR)];
+    const portalRoots = [...doc.querySelectorAll<HTMLElement>(CHAT_PORTAL_SELECTOR)];
     const themedRoots = new Set<HTMLElement>([surface.root, ...portalRoots]);
     for (const root of [...themedRoots]) {
       for (const nested of root.querySelectorAll<HTMLElement>('.tw-root--theme-light, .tw-root--theme-dark')) themedRoots.add(nested);
@@ -155,12 +156,9 @@ function supportsTokenBridge(doc: Document): boolean {
   return false;
 }
 
-export function readTwitchChatVisibility(root: HTMLElement): boolean | null {
-  const shell = root.matches('.chat-shell') ? root : root.querySelector('.chat-shell');
-  if (shell?.classList.contains('chat-shell__collapsed')) return false;
-  const native = readNativeChatVisibility(root);
-  if (native !== null) return native;
-  // An expanded column can be a zero-width wrapper around a translated shell, so the shell itself
-  // is the evidence of an open chat. A collapsed one measures zero and stays unknown.
-  return shell && shell.getBoundingClientRect().width > 0 ? true : null;
-}
+/** Twitch discovers its complete native palette class in the page document, which also holds its portals. */
+export const twitchChatTheme: NonNullable<ProviderChat['theme']> = {
+  document: surface => surface.root.ownerDocument,
+  adapter: (_document, surface) => new TwitchChatThemeAdapter(surface),
+  portals: CHAT_PORTAL_SELECTOR
+};

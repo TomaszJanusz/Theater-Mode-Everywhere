@@ -1,6 +1,6 @@
-import { readNativeChatVisibility } from '../../chat/adapters/visibility';
 import type { ChatActivation, ChatKind, ChatSurface } from '../../chat/types';
 import type { ParsedChatLocation } from '../../chat/url';
+import { readNativeChatVisibility } from '../../chat/visibility';
 import { normalizeHost } from '../../platform/domain-policy';
 import { isYouTubeHost } from '../hosts';
 import type { ProviderChat } from '../provider-api';
