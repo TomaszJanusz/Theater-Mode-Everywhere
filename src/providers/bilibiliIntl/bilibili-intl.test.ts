@@ -3,12 +3,12 @@ import { describe, it } from 'node:test';
 
 import { classifyMediaFetchUrl, assertSafeRedirect } from '../../media-features/fetch-allowlist';
 import { requestPageFetch, requestProviderProbe } from '../../media-features/probe';
+import { navigationObserver } from '../../platform/navigation-visit';
 import { encodeProbeAsyncReply, parseProbeAsyncRequest, PROBE_ASYNC_EVENT, PROBE_ASYNC_REPLY_EVENT } from '../../protocol/page-requests';
 import { createWorldMessage, type WorldEnvelope } from '../../protocol/world-messages';
 
 import { BilibiliIntlAdapter } from './adapter';
 import { allowsIntlMediaFetch, bilibiliIntlShotImageUrl, bilibiliIntlSubtitleUrl } from './fetch-policy';
-import { INTL_NAVIGATE_EVENT } from './history';
 import {
   bilibiliIntlCaptionTracks,
   bilibiliIntlPreviewFrame,
@@ -332,9 +332,15 @@ describe('Bilibili.tv RTE', () => {
     const oldDocument = globalThis.document;
     const oldFetch = globalThis.fetch;
     const page = { ...state, ogv: { ...state.ogv, epId: '11371243' } };
-    const win = Object.assign(new EventTarget(), {
-      location: { hostname: 'www.bilibili.tv', pathname: '/en/play/1053337/11371243', search: '' }, __initialState: page
-    });
+    // An intercepted navigation.navigate(): the Navigation API commits the entry and no history method runs.
+    const navigation = new EventTarget();
+    const location = { hostname: 'www.bilibili.tv', pathname: '/en/play/1053337/11371243', search: '', href: '' };
+    const history = { pushState() {}, replaceState() {} } as unknown as History;
+    const win = Object.assign(new EventTarget(), { location, history, navigation, __initialState: page });
+    const navigate = (pathname: string) => {
+      Object.assign(location, { pathname, href: `https://www.bilibili.tv${pathname}` });
+      navigation.dispatchEvent(Object.assign(new Event('currententrychange'), { navigationType: 'push' }));
+    };
     const attrs = new Map<string, string>();
     const pending: Array<{ resolve(value: Response): void; signal?: AbortSignal | null }> = [];
     try {
@@ -350,14 +356,13 @@ describe('Bilibili.tv RTE', () => {
         }
       } as any;
       globalThis.fetch = ((_url: string, init?: RequestInit) => new Promise<Response>(resolve => { pending.push({ resolve, signal: init?.signal }); })) as typeof fetch;
-      trackIntlVisits();
+      trackIntlVisits(navigationObserver(win as unknown as Window));
       const first = readBilibiliIntlSnapshot();
       const reads = pending.length;
       assert.equal(reads, 3);
-      const go = (pathname: string) => { win.location.pathname = pathname; win.dispatchEvent(new Event(INTL_NAVIGATE_EVENT)); };
-      go('/en/play/1053337/11371316');
+      navigate('/en/play/1053337/11371316');
       assert.ok(pending.every(request => request.signal?.aborted), "leaving A aborts A's metadata requests");
-      go('/en/play/1053337/11371243');
+      navigate('/en/play/1053337/11371243');
       const second = readBilibiliIntlSnapshot();
       assert.equal(pending.length, 2 * reads, 'the return to A reads again instead of reusing the earlier pending read');
       const stopped = new AbortController();

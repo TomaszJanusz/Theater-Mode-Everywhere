@@ -1,8 +1,8 @@
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
+import type { NavigationObserver } from '../../platform/navigation-visit';
 import { createPageVisits, untilAborted } from '../page-visits';
 
 import { bilibiliIntlShotBinUrl } from './fetch-policy';
-import { INTL_NAVIGATE_EVENT } from './history';
 import { isBilibiliIntlHost } from './hosts';
 import {
   bilibiliIntlEpisodeId,
@@ -182,10 +182,9 @@ let cached: { key: string; visit: object; expires: number; pending: Promise<Bili
 /** A visit is one route path: query parameters such as tracking do not start another. */
 const visits = createPageVisits(locationPath);
 
-/** Installed with the history hook: route changes to another video, episode or season start a new visit. */
-export function trackIntlVisits(): void {
-  for (const event of [INTL_NAVIGATE_EVENT, 'popstate', 'hashchange']) window.addEventListener(event, visits.note);
-  window.addEventListener('pagehide', visits.end);
+/** Installed with the history hook: committed navigations to another video, episode or season start a new visit. */
+export function trackIntlVisits(navigation: NavigationObserver): void {
+  visits.follow(navigation);
 }
 
 /**
