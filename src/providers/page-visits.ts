@@ -1,22 +1,35 @@
+import type { NavigationObserver } from '../platform/navigation-visit';
+
 /**
- * The page visits a provider's MAIN reads belong to. A route change to other content (a new `key`) starts the next
- * visit and aborts the requests of the last, so a pending read never answers a later visit, including a return to the
- * same content (A→B→A). The provider calls `note` on its route events and `end` when the page hides.
+ * The page visits a provider's MAIN reads belong to. A committed navigation to other content (a new `key`) starts the
+ * next visit and aborts the requests of the last, so a pending read never answers a later visit, including a return
+ * to the same content (A→B→A). Navigations that keep the content, such as a tracking parameter or a hash, keep the
+ * visit; page hide and navigations the observer may have missed (replaced history methods) always end it.
  */
 export function createPageVisits(key: () => string) {
   let current: { key: string; controller: AbortController } | null = null;
-  const visit = () => current ??= { key: key(), controller: new AbortController() };
+  let observer: NavigationObserver | null = null;
+  const start = () => current = { key: key(), controller: new AbortController() };
   const next = (force: boolean) => {
     if (!force && current?.key === key()) return;
     current?.controller.abort();
-    current = null;
-    visit();
+    start();
+  };
+  const visit = () => {
+    observer?.check();
+    // The key is resampled too, in case a navigation went unobserved.
+    if (current?.key !== key()) next(true);
+    return current ?? start();
   };
   return {
     /** An opaque token of the current visit: compare it to tell whether a read still belongs to it. */
     current: (): object => visit(),
-    note: () => next(false),
-    end: () => next(true),
+    /** Follows the page's committed navigations; the provider's MAIN entry calls it once, at install. */
+    follow(navigation: NavigationObserver): void {
+      if (observer) return;
+      observer = navigation;
+      observer.subscribe(commit => next(commit === 'hide' || commit === 'unseen'));
+    },
     /** Aborts after `ms` or when the current visit ends. */
     signal(ms: number): AbortSignal {
       const visitSignal = visit().controller.signal;

@@ -3,10 +3,10 @@ import { describe, it } from 'node:test';
 
 import { classifyMediaFetchUrl } from '../../media-features/fetch-allowlist';
 import { parseCaptionPayload } from '../../media-features/parsers/captions';
+import { navigationObserver } from '../../platform/navigation-visit';
 
 import { BilibiliAdapter, type BilibiliServices } from './adapter';
 import { allowsBilibiliMediaFetch } from './fetch-policy';
-import { BILIBILI_NAVIGATE_EVENT } from './history';
 import {
   bilibiliPreviewFrame, bilibiliTimelineHeatmap, mergeBilibiliSnapshot, normalizeBilibiliSnapshot, parseBilibiliCaptions, parseBilibiliHeatmap,
   parseBilibiliSnapshot, parseBilibiliStoryboard, resolveBilibiliSubtitleUrl
@@ -125,26 +125,32 @@ describe('Bilibili RTE', () => {
     const oldDocument = globalThis.document;
     const oldFetch = globalThis.fetch;
     const state = { aid: 106, cid: 3635863, videoData: { title: 'A before', duration: 318 } };
-    const win = Object.assign(new EventTarget(), {
-      location: { hostname: 'www.bilibili.com', pathname: '/video/BV1xx411c7mu', search: '' }, __INITIAL_STATE__: state
-    });
+    const location = { hostname: 'www.bilibili.com', pathname: '/video/BV1xx411c7mu', search: '', href: '' };
+    const move = (url: string | URL | null | undefined) => {
+      if (!url) return;
+      const next = new URL(String(url), 'https://www.bilibili.com' + location.pathname + location.search);
+      Object.assign(location, { pathname: next.pathname, search: next.search, href: next.href });
+    };
+    move(location.pathname);
+    // The host's own history, as the page sees it; the runtime's observer wraps it as in the browser.
+    const history = { pushState: (_state: unknown, _title: string, url?: string | URL | null) => move(url),
+      replaceState: (_state: unknown, _title: string, url?: string | URL | null) => move(url) } as unknown as History;
+    const win = Object.assign(new EventTarget(), { location, history, __INITIAL_STATE__: state });
     const pending: Array<{ resolve(value: Response): void; signal?: AbortSignal | null }> = [];
     try {
       globalThis.window = win as any;
       globalThis.document = { documentElement: { hasAttribute: () => false }, querySelector: () => null } as any;
       globalThis.fetch = ((_url: string, init?: RequestInit) => new Promise<Response>(resolve => { pending.push({ resolve, signal: init?.signal }); })) as typeof fetch;
-      trackBilibiliVisits();
+      trackBilibiliVisits(navigationObserver(win as unknown as Window));
       const first = readBilibiliSnapshot();
       assert.equal(pending.length, 4);
-      const go = (pathname: string) => { win.location.pathname = pathname; win.dispatchEvent(new Event(BILIBILI_NAVIGATE_EVENT)); };
-      go('/video/BV1yy411c7mu');
+      win.history.pushState(null, '', '/video/BV1yy411c7mu');
       assert.ok(pending.every(request => request.signal?.aborted), "leaving A aborts A's metadata requests");
-      go('/video/BV1xx411c7mu');
+      win.history.pushState(null, '', '/video/BV1xx411c7mu');
       state.videoData.title = 'A after';
       const second = readBilibiliSnapshot();
       assert.equal(pending.length, 8, 'the return to A reads again instead of reusing the earlier pending read');
-      win.location.search = '?vd_source=tracking';
-      win.dispatchEvent(new Event(BILIBILI_NAVIGATE_EVENT));
+      win.history.replaceState(null, '', '/video/BV1xx411c7mu?vd_source=tracking');
       assert.equal(pending.slice(4).some(request => request.signal?.aborted), false, 'a tracking parameter is the same visit');
       const stopped = new AbortController();
       const waiter = readBilibiliSnapshot(stopped.signal);

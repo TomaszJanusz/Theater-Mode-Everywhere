@@ -1,7 +1,7 @@
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
+import type { NavigationObserver } from '../../platform/navigation-visit';
 import { createPageVisits, untilAborted } from '../page-visits';
 
-import { BILIBILI_NAVIGATE_EVENT } from './history';
 import { isBilibiliHost } from './hosts';
 import { normalizeBilibiliSnapshot, type BilibiliSnapshot } from './metadata';
 import { signBilibiliWbi } from './wbi';
@@ -15,10 +15,9 @@ let cached: { key: string; visit: object; expires: number; pending: Promise<Bili
 /** A visit is one video part: tracking parameters and timestamps do not start another. */
 const visits = createPageVisits(() => `${window.location.pathname}?p=${new URLSearchParams(window.location.search).get('p') ?? ''}`);
 
-/** Installed with the history hook: route changes to another video or part start a new visit. */
-export function trackBilibiliVisits(): void {
-  for (const event of [BILIBILI_NAVIGATE_EVENT, 'popstate', 'hashchange']) window.addEventListener(event, visits.note);
-  window.addEventListener('pagehide', visits.end);
+/** Installed with the history hook: committed navigations to another video or part start a new visit. */
+export function trackBilibiliVisits(navigation: NavigationObserver): void {
+  visits.follow(navigation);
 }
 
 async function metadata(path: string, aid: number, cid: number): Promise<unknown> {

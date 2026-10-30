@@ -8,6 +8,7 @@ import type { parseCaptionPayload } from '../media-features/parsers/captions';
 import type { MediaProbeSnapshot } from '../media-features/probe';
 import type { MediaProviderId } from '../media-features/provider-flags';
 import type { HostCaptionLayoutSource, MediaFeaturesAdapter, TimelineMarkerSource } from '../media-features/types';
+import type { NavigationObserver } from '../platform/navigation-visit';
 import type { PlaylistAction, PlaylistDirection } from '../playlist-nav';
 import type { MediaSeekDetail } from '../protocol/media-seek';
 
@@ -194,6 +195,11 @@ export type ProviderServices = {
   main: {
     /** Page-owned media download, marked as the extension's own so the harvest observers skip it. */
     fetchPageMedia(url: string, init: RequestInit): Promise<Response | null>;
+    /**
+     * The page's committed navigations (`platform/navigation-visit.ts`), from the runtime's single watcher: the first
+     * call installs it, so history is wrapped only on pages whose provider asks.
+     */
+    navigationObserver(): NavigationObserver;
   };
 };
 export type ProviderRuntimeApi<W extends ProviderWorld = ProviderWorld> = {
