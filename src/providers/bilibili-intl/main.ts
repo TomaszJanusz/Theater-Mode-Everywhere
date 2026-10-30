@@ -1,8 +1,9 @@
-import { isBilibiliIntlHost } from '../hosts';
+import { bilibiliIntlShotBinUrl } from '../../media-features/parsers/bilibili-intl';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
+import { isBilibiliIntlHost } from '../hosts';
+
 import {
   bilibiliIntlEpisodeId,
-  bilibiliIntlShotBinUrl,
   bilibiliIntlTitle,
   normalizeBilibiliIntlSnapshot,
   parseBilibiliIntlShotIndex,
@@ -12,9 +13,9 @@ import {
   type BilibiliIntlKind,
   type BilibiliIntlSnapshot,
   type BilibiliIntlStoryboard
-} from '../../media-features/parsers/bilibili-intl';
+} from './metadata';
 
-export type { BilibiliIntlSnapshot } from '../../media-features/parsers/bilibili-intl';
+export type { BilibiliIntlSnapshot } from './metadata';
 
 const EPISODE_ATTR = 'data-te-bilibili-intl-episode';
 const KIND_ATTR = 'data-te-bilibili-intl-kind';

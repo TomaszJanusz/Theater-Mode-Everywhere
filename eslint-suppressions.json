@@ -638,17 +638,8 @@
       "count": 1
     }
   },
-  "src/media-features/parsers/bilibili-intl.ts": {
-    "local/max-symbol-name-length": {
-      "count": 8
-    },
-    "max-params": {
-      "count": 2
-    },
+  "src/media-features/parsers/ass.ts": {
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    },
-    "sonarjs/super-linear-regex": {
       "count": 1
     }
   },
@@ -667,9 +658,6 @@
     }
   },
   "src/media-features/parsers/crunchyroll.ts": {
-    "import/order": {
-      "count": 3
-    },
     "local/max-symbol-name-length": {
       "count": 19
     },
@@ -1025,25 +1013,25 @@
       "count": 1
     }
   },
-  "src/providers/bilibili-intl/adapter.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/providers/bilibili-intl/bilibili-intl.test.ts": {
-    "import/order": {
-      "count": 4
-    },
     "max-lines": {
       "count": 1
     }
   },
   "src/providers/bilibili-intl/main.ts": {
-    "import/order": {
-      "count": 2
-    },
     "local/max-symbol-name-length": {
       "count": 3
+    }
+  },
+  "src/providers/bilibili-intl/metadata.ts": {
+    "local/max-symbol-name-length": {
+      "count": 8
+    },
+    "max-params": {
+      "count": 2
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
     }
   },
   "src/providers/bilibili-intl/runtime.browser.test.ts": {
@@ -1052,9 +1040,6 @@
     }
   },
   "src/providers/bilibili-intl/service-actions.ts": {
-    "import/order": {
-      "count": 5
-    },
     "local/max-symbol-name-length": {
       "count": 3
     },

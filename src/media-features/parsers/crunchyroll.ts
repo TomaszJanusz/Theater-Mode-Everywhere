@@ -1,9 +1,10 @@
 import { sanitizeContentTitle } from '../content-title';
 import { crunchyrollCdnFile, isCrunchyrollBifFileUrl } from '../crunchyroll-cdn';
-import { parseBilibiliIntlCaptions } from './bilibili-intl';
+import type { CaptionCue, Chapter } from '../types';
+
+import { parseAssCaptions } from './ass';
 import { parseCaptionPayload } from './captions';
 import { parseRokuBif } from './disney-page';
-import type { CaptionCue, Chapter } from '../types';
 
 /**
  * Playback metadata: https://www.crunchyroll.com/playback/v3/{mediaId}/web/chrome/play
@@ -622,7 +623,7 @@ export function parseCrunchyrollCaptionBody(body: string, format: string): Capti
   if (!body || body.length > MAX_CAPTION_CHARS) return [];
   const kind = format.toLowerCase();
   if (kind === 'ass' || kind === 'ssa' || body.includes('Dialogue:')) {
-    const cues = parseBilibiliIntlCaptions(body);
+    const cues = parseAssCaptions(body.trim());
     if (cues.length) return cues;
   }
   return parseCaptionPayload(body);

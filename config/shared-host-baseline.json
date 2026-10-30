@@ -1,7 +1,7 @@
 {
   "bilibili": {
     "src/media-features": {
-      "serviceId": 11,
+      "serviceId": 8,
       "domain": 2,
       "identifier": 11
     },
@@ -26,7 +26,7 @@
     "src/media-features": {
       "serviceId": 10,
       "domain": 4,
-      "identifier": 79,
+      "identifier": 19,
       "file": 1
     },
     "src/platform": {

@@ -1,3 +1,5 @@
+import type { CaptionCue } from './types';
+
 const TAG_RE = /<[^>]+>/g;
 const ENTITY_RE = /&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g;
 
@@ -37,6 +39,13 @@ export function sanitizeCaptionCueText(value: string): string {
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+/** A cue with sanitized text (at most 4000 characters), or null when its timing or text is unusable. */
+export function sanitizedCaptionCue(start: number, end: number, text: string): CaptionCue | null {
+  const cleaned = sanitizeCaptionCueText(text).slice(0, 4000);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || !cleaned) return null;
+  return { start, end, text: cleaned };
 }
 
 export function sanitizeCaptionText(value: string): string {

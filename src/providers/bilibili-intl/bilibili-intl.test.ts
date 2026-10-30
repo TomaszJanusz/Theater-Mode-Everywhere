@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
 import { classifyMediaFetchUrl, isAllowedMediaFetchUrl, assertSafeRedirect } from '../../media-features/fetch-allowlist';
+import { bilibiliIntlShotImageUrl, bilibiliIntlSubtitleUrl } from '../../media-features/parsers/bilibili-intl';
+import { parseProbeRequest } from '../../protocol/page-requests';
+import { createWorldMessage, type WorldEnvelope } from '../../protocol/world-messages';
+
+import { BilibiliIntlAdapter } from './adapter';
+import { bilibiliIntlPageId, readBilibiliIntlSnapshot } from './main';
 import {
   bilibiliIntlCaptionTracks,
   bilibiliIntlPreviewFrame,
-  bilibiliIntlShotImageUrl,
-  bilibiliIntlSubtitleUrl,
   bilibiliIntlTitle,
   mergeBilibiliIntlSnapshot,
   normalizeBilibiliIntlSnapshot,
@@ -13,11 +18,7 @@ import {
   parseBilibiliIntlShotIndex,
   parseBilibiliIntlSkipChapters,
   parseBilibiliIntlStoryboard
-} from '../../media-features/parsers/bilibili-intl';
-import { parseProbeRequest } from '../../protocol/page-requests';
-import { BilibiliIntlAdapter } from './adapter';
-import { bilibiliIntlPageId, readBilibiliIntlSnapshot } from './main';
-import { createWorldMessage, type WorldEnvelope } from '../../protocol/world-messages';
+} from './metadata';
 
 // English ASS lines and the thumbnail index prefix from
 // https://www.bilibili.tv/en/play/1053337 episode 11371243. Drawing line is synthetic.
