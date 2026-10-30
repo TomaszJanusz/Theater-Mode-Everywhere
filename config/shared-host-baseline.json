@@ -1,10 +1,9 @@
 {
   "bilibili": {
     "src/media-features": {
-      "serviceId": 15,
-      "domain": 7,
-      "identifier": 43,
-      "file": 1
+      "serviceId": 11,
+      "domain": 2,
+      "identifier": 11
     },
     "src/platform": {
       "hostCheck": 3,

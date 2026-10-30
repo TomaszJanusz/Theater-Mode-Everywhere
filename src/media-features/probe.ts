@@ -1,10 +1,9 @@
 import { encodeProbeRequest } from '../protocol/page-requests';
 import { createWorldMessage, readWorldEnvelope } from '../protocol/world-messages';
+import type { BilibiliSnapshot } from '../providers/bilibili/metadata';
 import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
 import type { CrunchyrollSnapshot } from '../providers/crunchyroll/main';
 import type { TencentSnapshot } from '../providers/tencent/main';
-
-import type { BilibiliSnapshot } from './parsers/bilibili';
 
 export const MEDIA_PROBE_EVENT = 'theater-everywhere-media-probe';
 export const MEDIA_PROBE_RESULT_EVENT = 'theater-everywhere-media-probe-result';

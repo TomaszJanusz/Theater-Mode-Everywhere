@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { bilibiliPreviewFrame, bilibiliTimelineHeatmap, mergeBilibiliSnapshot, normalizeBilibiliSnapshot, parseBilibiliCaptions, parseBilibiliHeatmap, parseBilibiliStoryboard, resolveBilibiliSubtitleUrl } from '../../media-features/parsers/bilibili';
+
 import { isAllowedMediaFetchUrl, classifyMediaFetchUrl } from '../../media-features/fetch-allowlist';
+
 import { readBilibiliSnapshot } from './main';
+import {
+  bilibiliPreviewFrame, bilibiliTimelineHeatmap, mergeBilibiliSnapshot, normalizeBilibiliSnapshot, parseBilibiliCaptions, parseBilibiliHeatmap,
+  parseBilibiliStoryboard, resolveBilibiliSubtitleUrl
+} from './metadata';
 
 // Field names and duplicate timestamps from the live videoshot response for BV1xx411c7mu.
 const shot = {

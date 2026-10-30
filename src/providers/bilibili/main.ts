@@ -1,6 +1,7 @@
-import { isBilibiliHost } from '../hosts';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { normalizeBilibiliSnapshot, type BilibiliSnapshot } from '../../media-features/parsers/bilibili';
+import { isBilibiliHost } from '../hosts';
+
+import { normalizeBilibiliSnapshot, type BilibiliSnapshot } from './metadata';
 import { signBilibiliWbi } from './wbi';
 
 export function bilibiliIntegrationEnabled(): boolean {
