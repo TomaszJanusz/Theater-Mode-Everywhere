@@ -662,11 +662,7 @@ describe('bilibili.tv extension runtime', () => {
       await waitFor(`title after T; hits ${JSON.stringify(hits)}; notes ${notes.join(' | ')}`, async () => (
         (await readUi(page)).title === E1_TITLE
       ));
-      const opened = await hostLayers(page);
-      assert.equal(opened.episode, E1);
-      assert.equal(opened.hiddenAttr, false);
-      assert.notEqual(opened.ass, 'none');
-      assert.notEqual(opened.json, 'none');
+      assert.equal((await hostLayers(page)).episode, E1);
       await waitFor(`E1 metadata; hits ${JSON.stringify(hits)}`, () => (
         hits.some((hit) => hit.status === 200 && hit.url.includes('/subtitle') && officialQuery(hit.url, E1, 'subtitle'))
         && hits.some((hit) => hit.status === 200 && hit.url.includes('/video/shot') && officialQuery(hit.url, E1, 'shot'))
@@ -702,6 +698,12 @@ describe('bilibili.tv extension runtime', () => {
         const items = (await readUi(page)).items;
         return items.some((item) => item.includes('English')) && items.some((item) => item.includes('عربي'));
       });
+      // TME-215: the menu still says Off, so Bilibili.tv's own subtitles must not show either.
+      assert.match((await readUi(page)).items[0] || '', /✓/);
+      const listedOff = await hostLayers(page);
+      assert.equal(listedOff.hiddenAttr, true);
+      assert.equal(listedOff.ass, 'none');
+      assert.equal(listedOff.json, 'none');
 
       await chooseCaption(page, 'English');
       await waitFor(`ASS cue; hits ${JSON.stringify(hits)}`, async () => (await readUi(page)).cue === ASS_CUE);
@@ -763,6 +765,7 @@ describe('bilibili.tv extension runtime', () => {
         const items = (await readUi(page)).items;
         return items.some((item) => item.includes('Tiếng Việt')) && items.every((item) => !item.includes('عربي'));
       });
+      assert.equal((await hostLayers(page)).hiddenAttr, true, 'the next episode hides its host subtitles under Off too');
       await chooseCaption(page, 'Tiếng Việt');
       await waitFor(`E2 cue; hits ${JSON.stringify(hits)}`, async () => (await readUi(page)).cue === E2_CUE);
       const duringE2 = await hostLayers(page);

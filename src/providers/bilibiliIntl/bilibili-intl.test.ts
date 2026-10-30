@@ -562,6 +562,76 @@ describe('Bilibili.tv RTE', () => {
     }
   });
 
+  it('hides the host subtitles once the menu lists tracks under Off, keeping a failed pick on the host layer for that media only', async () => {
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    const attrs = new Map<string, string>();
+    const hidden = 'data-te-bilibili-intl-captions-hidden';
+    const win = Object.assign(new EventTarget(), {
+      location: { hostname: 'www.bilibili.tv', origin: 'https://www.bilibili.tv', pathname: '/en/play/1053337/11371243', search: '' },
+      setTimeout, clearTimeout
+    });
+    globalThis.window = win as any;
+    globalThis.document = {
+      documentElement: {
+        hasAttribute: (name: string) => attrs.has(name),
+        getAttribute: (name: string) => attrs.get(name) ?? null,
+        setAttribute: (name: string, value: string) => { attrs.set(name, value); },
+        removeAttribute: (name: string) => { attrs.delete(name); },
+        toggleAttribute: (name: string, on?: boolean) => {
+          const next = on ?? !attrs.has(name);
+          if (next) attrs.set(name, '');
+          else attrs.delete(name);
+          return next;
+        }
+      }
+    } as any;
+    attrs.set('data-te-bilibili-intl-episode', '11371243');
+    win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
+      const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
+      win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
+        detail: encodeProbeAsyncReply(requestId, normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+          subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
+        }, null)) }));
+    });
+    let body = '<html>login</html>';
+    (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
+      ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin));
+    };
+    const adapter = new BilibiliIntlAdapter(SERVICES);
+    try {
+      const tracks = await adapter.listCaptionTracks();
+      assert.equal(attrs.has(hidden), true, 'Off with listed tracks hides the host layer without any activation');
+
+      assert.equal((await adapter.activateCaptionTrack(tracks[0].id)).status, 'failed');
+      await adapter.activateCaptionTrack(null);
+      await adapter.listCaptionTracks();
+      assert.equal(attrs.has(hidden), false, 'a failed pick leaves the host subtitles standing in, also after the menu is listed again');
+      await adapter.activateCaptionTrack(null);
+      assert.equal(attrs.has(hidden), true, 'an explicit Off hides them again');
+
+      assert.equal((await adapter.activateCaptionTrack(tracks[0].id)).status, 'failed');
+      await adapter.activateCaptionTrack(null);
+      adapter.invalidate();
+      assert.equal(attrs.has(hidden), false, 'invalidate restores the host layer');
+      await adapter.listCaptionTracks();
+      assert.equal(attrs.has(hidden), true, 'the fallback does not outlive the media: the next listing hides again');
+
+      body = ASS;
+      assert.equal((await adapter.activateCaptionTrack(tracks[0].id)).status, 'active');
+      assert.equal(attrs.has(hidden), true);
+
+      adapter.invalidate();
+      attrs.set('data-te-bilibili-intl-integration-off', '');
+      await adapter.listCaptionTracks();
+      assert.equal(attrs.has(hidden), false, 'RTE off never hides the host layer');
+    } finally {
+      adapter.dispose();
+      globalThis.window = oldWindow;
+      globalThis.document = oldDocument;
+    }
+  });
+
   it('drops a late subtitle body when the episode changes, captions are turned off, or the adapter is disposed', async () => {
     const oldWindow = globalThis.window;
     const oldDocument = globalThis.document;
@@ -602,6 +672,9 @@ describe('Bilibili.tv RTE', () => {
     const adapter = new BilibiliIntlAdapter(SERVICES);
     try {
       const tracks = await adapter.listCaptionTracks();
+      // Listing hid the host layer under Off; start from it shown, so only the selection below can change it.
+      assert.equal(attrs.has('data-te-bilibili-intl-captions-hidden'), true);
+      attrs.delete('data-te-bilibili-intl-captions-hidden');
       const changedEpisode = adapter.activateCaptionTrack(tracks[0].id);
       await Promise.resolve();
       assert.equal(deliveries.length, 1);
@@ -676,6 +749,9 @@ describe('Bilibili.tv RTE', () => {
     const adapter = new BilibiliIntlAdapter(SERVICES);
     try {
       const tracks = await adapter.listCaptionTracks();
+      // Listing hid the host layer under Off; start from it shown, so only the selection below can change it.
+      assert.equal(attrs.has('data-te-bilibili-intl-captions-hidden'), true);
+      attrs.delete('data-te-bilibili-intl-captions-hidden');
       const movedSeason = adapter.activateCaptionTrack(tracks[0].id);
       await Promise.resolve();
       assert.equal(deliveries.length, 1);
@@ -1134,6 +1210,9 @@ describe('Bilibili.tv RTE', () => {
     const adapter = new BilibiliIntlAdapter(SERVICES);
     try {
       const tracks = await adapter.listCaptionTracks();
+      // Listing hid the host layer under Off; start from it shown, so only the selection below can change it.
+      assert.equal(attrs.has('data-te-bilibili-intl-captions-hidden'), true);
+      attrs.delete('data-te-bilibili-intl-captions-hidden');
       const english = tracks.find((track) => track.language === 'en');
       const arabicTrack = tracks.find((track) => track.language === 'ar');
       assert.ok(english && arabicTrack);

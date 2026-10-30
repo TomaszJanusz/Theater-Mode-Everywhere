@@ -1,5 +1,5 @@
-html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .player-mobile-ass-subtitle,
-html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .player-mobile-subtitle {
+html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden]:not([data-te-bilibili-intl-integration-off]) .player-mobile-ass-subtitle,
+html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden]:not([data-te-bilibili-intl-integration-off]) .player-mobile-subtitle {
   display: none !important;
   visibility: hidden !important;
 }
