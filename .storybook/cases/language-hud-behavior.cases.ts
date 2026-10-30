@@ -275,3 +275,42 @@ test('A stale session shows nothing of the old lines', () => runHudCase(hudStory
     await expect(lines()).toEqual([['audio', 'AudioDeutsch']]);
   }
 }) as HudCase));
+
+// A wrapped value grows its row; the label sits on that row's middle, and a one-line row is as before.
+const WRAPPED_VALUE = 'Português (Brasil), automatic captions generated from the original English audio track';
+const middle = (rect: DOMRect) => rect.top + rect.height / 2;
+for (const [name, locale] of [['LTR', 'en'], ['RTL', 'ar']] as const) {
+  test(`${name}: a label is centred on its row when the value wraps, and a one-line row is unchanged`, () => runHudCase({
+    ...hudStory(h => h.updateLanguageHud({
+      subtitles: { kind: 'status', title: 'Subtitles', detail: WRAPPED_VALUE },
+      audio: { kind: 'status', title: 'Audio description track', detail: 'English' }
+    }), {
+      play: async () => {
+        const plate = notice()!;
+        await finishMorph(plate);
+        for (const animation of plate.getAnimations({ subtree: true })) {
+          if (Number.isFinite(animation.effect?.getComputedTiming().endTime)) animation.finish();
+        }
+        const cells = (source: LanguageSource) => ({
+          label: line(source)!.querySelector('.language-hud-label')!.getBoundingClientRect(),
+          value: line(source)!.querySelector('.language-hud-value')!.getBoundingClientRect()
+        });
+        const lineHeight = parseFloat(getComputedStyle(line('audio')!.querySelector('.language-hud-label')!).lineHeight);
+        const wrapped = cells('subtitles');
+        const single = cells('audio');
+        // The value really is two lines, and the label is not stretched or moved off the row's middle.
+        await expect(wrapped.value.height).toBeGreaterThan(lineHeight * 1.5);
+        await expect(Math.abs(middle(wrapped.label) - middle(wrapped.value))).toBeLessThanOrEqual(1);
+        await expect(wrapped.label.height).toBeCloseTo(lineHeight, 0);
+        // The one-line row keeps its height and both cells share their top.
+        await expect(single.value.height).toBeCloseTo(lineHeight, 0);
+        await expect(single.label.top).toBeCloseTo(single.value.top, 0);
+        await expect(Math.abs(middle(single.label) - middle(single.value))).toBeLessThanOrEqual(1);
+        // Nothing overlaps: the label column stays clear of the value, the rows stack in order.
+        await expect(locale === 'ar' ? wrapped.value.left >= wrapped.label.right : wrapped.value.right <= wrapped.label.left).toBe(true);
+        await expect(single.label.top).toBeGreaterThanOrEqual(wrapped.value.bottom);
+      }
+    }),
+    globals: { locale }
+  }));
+}

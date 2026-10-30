@@ -68,6 +68,18 @@ export const LongValues = language(() => [subtitles('Português (Brasil), automa
   () => [['subtitles', t('subtitlesMenuTitle'), 'Português (Brasil), automatic'], AUDIO_ROW('Français (France), audio description')],
   LANGUAGE_MIN_VISIBLE_MS);
 
+/** Track names long enough to wrap at the value's width limit; fixture data, as on a YouTube watch page. */
+const LONG_TRACK = 'Português (Brasil), automatic captions generated from the original English audio track';
+const LONG_AUDIO = 'Français (France), audio description with commentary by the director and the cast';
+
+/** A value that wraps to two lines: its row grows and the label sits on the middle of that row, beside a one-line row. */
+export const WrappedValue = language(() => [subtitles(LONG_TRACK), audio('English')],
+  () => [['subtitles', t('subtitlesMenuTitle'), LONG_TRACK], AUDIO_ROW('English')], LANGUAGE_MIN_VISIBLE_MS);
+
+/** A label wider than the shipped ones widens the column and stays on one line, centred on a wrapped row. */
+export const LongLabel = language(() => [{ audio: { kind: 'status', title: 'Audio description', detail: LONG_AUDIO } }],
+  () => [['audio', 'Audio description', LONG_AUDIO]], LANGUAGE_MIN_VISIBLE_MS);
+
 /** The track a pick or the saved language switched to, or that was already playing. */
 export const AudioOnly = language(() => [audio()], () => [AUDIO_ROW()], LANGUAGE_MIN_VISIBLE_MS);
 
