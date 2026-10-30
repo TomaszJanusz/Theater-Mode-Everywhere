@@ -52,9 +52,11 @@ import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
 import { matchesShortcut } from '../ui/shortcuts';
 
 import { findActiveVideo } from './active-video';
+import { readCurrentBlobText } from './blob-text';
 import { isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
 import { installMediaAudioRuntime } from './media-audio-runtime';
 import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
+import { installVisitSignal } from './navigation-visit';
 import { readPageResponseBytes } from './page-body';
 import { fetchPageMedia } from './page-fetch';
 import { noteWrapperFailure } from './wrapper-failures';
@@ -146,17 +148,19 @@ export function installMainWorldRuntime(): void {
     }
   }
 
-  /** Opted-in Blob bodies only, read as text once; a read that outlives the page URL it was requested on is stale. */
+  // Before any host script: a provider reading Blob bodies needs every later navigation to end the visit.
+  const visit = harvests.some(harvest => harvest.blobTextTargets?.length) ? installVisitSignal() : null;
+
+  /** Opted-in Blob bodies only, read as bounded text once; a read that outlives its deadline or a navigation is stale. */
   function harvestBlobText(target: ProviderTarget, url: string, body: unknown): void {
-    if (!target.harvest.blobTextTargets?.includes(target.id) || !(body instanceof Blob) || body.size > MAX_CAPTION_BYTES) return;
-    const href = window.location.href;
-    body.text().then((text) => {
+    if (!visit || !target.harvest.blobTextTargets?.includes(target.id) || !(body instanceof Blob)) return;
+    void readCurrentBlobText(body, MAX_CAPTION_BYTES, visit()).then((text) => {
       try {
-        if (text && window.location.href === href) harvestText(target, url, text);
+        if (text) harvestText(target, url, text);
       } catch (error) {
         noteWrapperFailure('xhr', error);
       }
-    }).catch(() => {});
+    });
   }
 
   /** Each selected consumer owns this single clone. Its text/json read bypasses the host Response observers to avoid a second harvest. */

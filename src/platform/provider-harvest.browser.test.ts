@@ -76,7 +76,7 @@ for (const engine of testEngines()) describe(`${engine} registered MAIN harvest`
     assert.equal(await wrapped(false), false, 'wrapFetch: false keeps the host transport untouched');
   });
 
-  it('reads opted-in XHR Blob bodies as text and drops a read that outlives the page URL', async t => {
+  it('reads opted-in XHR Blob bodies as text and drops a read that a navigation outlived, including A→B→A', async t => {
     const page = await open(t, engine);
     await page.addScriptTag({ content: fixture });
     await page.evaluate(`(async () => {
@@ -96,19 +96,32 @@ for (const engine of testEngines()) describe(`${engine} registered MAIN harvest`
       });
       await load('/meta/current');
       await load('/other/ignored');
-      // The page navigates while the body is still being read: that read belongs to the previous URL.
-      const read = Blob.prototype.text;
-      let finish;
-      let pending;
-      Blob.prototype.text = function() { pending = read.call(this); return new Promise(resolve => { finish = () => resolve(pending); }); };
-      await load('/meta/stale', () => history.pushState(null, '', '/watch?v=another1234'));
-      Blob.prototype.text = read;
-      finish();
-      await pending;
-      // The next request's network round trip runs the stale read's continuation first.
+      // Hold each body until the page has navigated, then let it complete: those reads began on another visit.
+      const stream = Blob.prototype.stream;
+      const held = [];
+      Blob.prototype.stream = function() {
+        const real = stream.call(this);
+        let release;
+        const gate = new Promise(resolve => { release = resolve; });
+        const done = new Promise(resolve => held.push(() => { release(); resolve(); }));
+        return new ReadableStream({ async start(control) {
+          await gate;
+          const reader = real.getReader();
+          try { for (let next = await reader.read(); !next.done; next = await reader.read()) control.enqueue(next.value); control.close(); }
+          catch { /* the harvest cancelled its reader */ }
+        } });
+      };
+      await load('/meta/forward', () => history.pushState(null, '', '/watch?v=another1234'));
+      const a = location.href;
+      await load('/meta/return', () => { history.pushState(null, '', '/feed/subscriptions'); history.pushState(null, '', a); });
+      Blob.prototype.stream = stream;
+      for (const release of held) release();
+      // The next request's network round trip runs the stale reads' continuations first.
       await load('/meta/after');
+      window.__urlBack = location.href === a;
     })()`);
     await page.waitForFunction('window.__seen.length >= 2');
+    assert.equal(await page.evaluate('window.__urlBack'), true, 'the return visit has the URL the read began on');
     assert.deepEqual(await page.evaluate('window.__seen'), [`meta /meta/current ${WATCH}`, `meta /meta/after ${WATCH}`]);
   });
 });
