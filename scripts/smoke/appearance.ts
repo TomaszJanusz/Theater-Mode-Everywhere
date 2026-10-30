@@ -1,12 +1,15 @@
-import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+
 import type { BrowserContext } from 'playwright';
+
+import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
+
 import { extensionWorker, waitForPlayer, timeScenario } from './helpers';
 
 /** One real Settings write fans out to an extension page and the isolated shadow owner. */
 export async function assertAppearanceModes(context: BrowserContext, origin: string): Promise<void> {
-  await timeScenario('assertAppearanceModes', async () => {
+  await timeScenario('assertAppearanceModes', { syncWrites: 5 }, async () => {
     const worker = await extensionWorker(context);
     const keys = ['highContrast', 'reduceTransparency', 'keepControlsVisible'];
     const original = await worker.evaluate(keys => chrome.storage.sync.get(keys), keys);

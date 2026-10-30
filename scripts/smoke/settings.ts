@@ -1,12 +1,14 @@
-import { defaultMediaProviderFlags, mediaProviderFlagStorageKeys, mediaProviderFlagStorageUpdate } from '../../src/media-features/provider-flags';
-import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+
 import { type BrowserContext, type Page } from 'playwright';
+
+import { defaultMediaProviderFlags, mediaProviderFlagStorageKeys, mediaProviderFlagStorageUpdate } from '../../src/media-features/provider-flags';
+import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
 
 import { fail, extensionWorker, timeScenario } from './helpers';
 export async function assertRteSettings(context: BrowserContext): Promise<void> {
-  return timeScenario('assertRteSettings', async () => {
+  return timeScenario('assertRteSettings', { syncWrites: 4 }, async () => {
     const worker = await extensionWorker(context);
     const page = await context.newPage();
     const keys = [...mediaProviderFlagStorageKeys(), 'language'];
@@ -53,7 +55,7 @@ export async function assertRteSettings(context: BrowserContext): Promise<void> 
 }
 
 export async function assertPictureLayout(page: Page, context: BrowserContext): Promise<void> {
-  return timeScenario('assertPictureLayout', async () => {
+  return timeScenario('assertPictureLayout', { syncWrites: 9 }, async () => {
     const video = page.locator('video#player');
     const gear = page.locator('.player-settings-btn');
     const row = page.locator('.picture-layout-btn');

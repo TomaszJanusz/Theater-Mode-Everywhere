@@ -1,12 +1,14 @@
-import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
-import { featureHighlightsAcknowledgement, resolveFeatureHighlights, SEEN_ITEMS_STORAGE_KEY } from '../../src/feature-highlights';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+
 import { type BrowserContext, type Page } from 'playwright';
+
+import { featureHighlightsAcknowledgement, resolveFeatureHighlights, SEEN_ITEMS_STORAGE_KEY } from '../../src/feature-highlights';
+import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
 
 import { extensionWorker, waitForPlayer, timeScenario } from './helpers';
 export async function assertBadgeWorld(page: Page, context: BrowserContext): Promise<void> {
-  return timeScenario('assertBadgeWorld', async () => {
+  return timeScenario('assertBadgeWorld', { syncWrites: 0 }, async () => {
     const client = await context.newCDPSession(page);
     const worlds: number[] = [];
     client.on('Runtime.executionContextCreated', ({ context }) => {
@@ -57,7 +59,7 @@ export async function assertBadgeWorld(page: Page, context: BrowserContext): Pro
 }
 
 export async function assertFeatureHighlights(page: Page, origin: string, context: BrowserContext): Promise<void> {
-  return timeScenario('assertFeatureHighlights', async () => {
+  return timeScenario('assertFeatureHighlights', { syncWrites: 3 }, async () => {
     const worker = await extensionWorker(context);
     const localKeys = [WHATS_NEW_ACK_STORAGE_KEY, 'newFeaturesSeenThrough', SEEN_ITEMS_STORAGE_KEY];
     const originalLocal = await worker.evaluate(keys => chrome.storage.local.get(keys), localKeys);

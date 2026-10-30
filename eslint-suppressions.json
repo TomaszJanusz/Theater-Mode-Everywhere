@@ -178,9 +178,6 @@
     }
   },
   "scripts/smoke.ts": {
-    "import/order": {
-      "count": 4
-    },
     "local/max-symbol-name-length": {
       "count": 1
     },
@@ -192,25 +189,16 @@
     }
   },
   "scripts/smoke/appearance.ts": {
-    "import/order": {
-      "count": 4
-    },
     "no-restricted-imports": {
       "count": 1
     }
   },
   "scripts/smoke/audio.ts": {
-    "import/order": {
-      "count": 1
-    },
     "no-restricted-imports": {
       "count": 1
     }
   },
   "scripts/smoke/auto-theater.ts": {
-    "import/order": {
-      "count": 4
-    },
     "no-restricted-imports": {
       "count": 1
     }
@@ -246,9 +234,6 @@
     }
   },
   "scripts/smoke/highlights.ts": {
-    "import/order": {
-      "count": 4
-    },
     "no-restricted-imports": {
       "count": 1
     }
@@ -259,9 +244,6 @@
     }
   },
   "scripts/smoke/settings.ts": {
-    "import/order": {
-      "count": 4
-    },
     "no-restricted-imports": {
       "count": 1
     }

@@ -38,6 +38,24 @@ and `mainWorld.js` into a page with no extension installed. It checks bundled pl
 behavior only, never Firefox installation, permissions, storage or the background,
 and CI does not use it. A failed install fails the smoke; there is no fallback.
 
+## Chromium smoke stays inside the `chrome.storage.sync` quota
+
+Chrome drops `chrome.storage.sync` writes beyond 120 per minute with `This request exceeds the
+MAX_WRITE_OPERATIONS_PER_MINUTE quota`, and a CI-speed Chromium smoke makes more changes than that. A dropped write
+shows up as an unrelated UI timeout in whichever scenario writes next. Every `timeScenario(name, { syncWrites }, ...)`
+therefore declares the most sync changes it makes ([`sync-quota.ts`](../scripts/smoke/sync-quota.ts)):
+
+- **Gate.** A recorder in the extension worker timestamps every `sync` change (options pages, popup and content
+  scripts included). Before a scenario starts, the runner waits, on a clock `smoke.ts` injects, until a rolling minute
+  has room for its budget under a ceiling of 110.
+- **Guard.** A scenario that measures more than it declared fails naming the scenario and both counts, so the
+  budget cannot drift silently. A quota error that a page or the worker logs fails the scenario by name instead of
+  surfacing as a timeout.
+- **Maintaining.** Adding a scenario or a write to one: run `THEATER_SMOKE_TIMING=1 pnpm smoke:chromium`, read the
+  `SYNCWRITES <scenario> <measured>/<declared>` rows and set the budget to the measured count. Scenarios that wrap
+  others (`assertFeatureHighlights`) declare the total; a nested one is covered by its parent.
+- **Firefox** has no per-minute sync quota, so its smoke is neither gated nor counted.
+
 ## Deterministic waits
 
 Wait for observable DOM/media state; use fake timers or `page.clock` for deadlines.

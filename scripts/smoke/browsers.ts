@@ -11,11 +11,13 @@ import { assertAutoTheater } from './auto-theater';
 import { assertBilibiliProvider, assertBilibiliTvProvider } from './bilibili-providers';
 import { FirefoxRemote } from './firefox-rdp';
 import { assertEmbeddedKeysAndFullscreen } from './frames';
-import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist } from './helpers';
+import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist, useSyncQuota } from './helpers';
 import { assertFeatureHighlights } from './highlights';
 import { assertPinStorage } from './pin-storage';
 import { assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, assertTwitchProvider, assertVimeoProvider, assertYoutubeProvider } from './providers';
 import { assertRteSettings, assertPictureLayout } from './settings';
+import type { QuotaClock } from './sync-quota';
+import { installSyncQuota } from './sync-quota-guard';
 import { assertVikiProvider } from './viki-provider';
 
 interface EntryScenarios {
@@ -25,7 +27,26 @@ interface EntryScenarios {
   assertParentBlacklist(page: Page, origin: string, context: BrowserContext): Promise<void>;
   assertLanguageMenu(page: Page, origin: string, context: BrowserContext): Promise<void>;
 }
-async function smokeChromium(origin: string, unpackedDir: string, scenarios: EntryScenarios): Promise<void> {
+/** Their bodies predate `timeScenario`; wrapping them here gives each a timing row and a sync-write budget. */
+const PROVIDER_SCENARIOS: ReadonlyArray<{ name: string; syncWrites: number; run: (page: Page, context: BrowserContext) => Promise<void> }> = [
+  { name: 'assertProviderScripts', syncWrites: 7, run: assertProviderScripts },
+  { name: 'assertPatreonProvider', syncWrites: 7, run: assertPatreonProvider },
+  { name: 'assertVimeoProvider', syncWrites: 7, run: assertVimeoProvider },
+  { name: 'assertIqiyiProvider', syncWrites: 7, run: assertIqiyiProvider },
+  { name: 'assertBilibiliProvider', syncWrites: 11, run: assertBilibiliProvider },
+  { name: 'assertBilibiliTvProvider', syncWrites: 7, run: assertBilibiliTvProvider },
+  { name: 'assertYoutubeProvider', syncWrites: 4, run: assertYoutubeProvider },
+  { name: 'assertTwitchProvider', syncWrites: 7, run: assertTwitchProvider },
+  { name: 'assertVikiProvider', syncWrites: 7, run: assertVikiProvider }
+];
+
+async function runProviderScenarios(page: Page, context: BrowserContext): Promise<void> {
+  for (const { name, syncWrites, run } of PROVIDER_SCENARIOS) {
+    await timeScenario(name, { syncWrites }, () => run(page, context));
+  }
+}
+
+async function smokeChromium(origin: string, unpackedDir: string, scenarios: EntryScenarios, clock: QuotaClock): Promise<void> {
   if (!playwrightExecutable('chromium')) {
     skipLocally('Skipping smoke:chromium. Run: pnpm exec playwright install chromium firefox');
   }
@@ -47,20 +68,13 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     });
 
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
+    useSyncQuota(await installSyncQuota(context, clock));
     // Escape is always an exit alias, including with a remapped exit shortcut.
     await worker.evaluate(() => chrome.storage.sync.set({ shortcuts: { exit: 'X' } }));
 
     const page = context.pages()[0] || await context.newPage();
     if (process.env.THEATER_SMOKE_PROVIDERS_ONLY === '1') {
-      await assertProviderScripts(page, context);
-      await assertPatreonProvider(page, context);
-      await assertVimeoProvider(page, context);
-      await assertIqiyiProvider(page, context);
-      await assertBilibiliProvider(page, context);
-      await assertBilibiliTvProvider(page, context);
-      await assertYoutubeProvider(page, context);
-      await assertTwitchProvider(page, context);
-      await assertVikiProvider(page, context);
+      await runProviderScenarios(page, context);
       return;
     }
     if (process.env.THEATER_SMOKE_HIGHLIGHTS_ONLY === '1') {
@@ -112,15 +126,7 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     console.log('smoke:chromium host-claimed keys and embedded fullscreen ownership passed');
 
     await assertAutoTheater(page, context);
-    await assertProviderScripts(page, context);
-    await assertPatreonProvider(page, context);
-    await assertVimeoProvider(page, context);
-    await assertIqiyiProvider(page, context);
-    await assertBilibiliProvider(page, context);
-    await assertBilibiliTvProvider(page, context);
-    await assertYoutubeProvider(page, context);
-    await assertTwitchProvider(page, context);
-    await assertVikiProvider(page, context);
+    await runProviderScenarios(page, context);
     await scenarios.assertParentBlacklist(page, origin, context);
     await setBlacklist(context, []);
     console.log('smoke:chromium parent-domain blacklist passed');
@@ -128,6 +134,7 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     await assertFeatureHighlights(page, origin, context);
     await assertAppearanceModes(context, origin);
   } finally {
+    useSyncQuota(null);
     await context?.close();
     rmSync(userDataDir, { recursive: true, force: true });
   }
@@ -222,15 +229,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
     const { context } = installed;
     const page = context.pages()[0] || await context.newPage();
     if (process.env.THEATER_SMOKE_PROVIDERS_ONLY === '1') {
-      await assertProviderScripts(page, context);
-      await assertPatreonProvider(page, context);
-      await assertVimeoProvider(page, context);
-      await assertIqiyiProvider(page, context);
-      await assertBilibiliProvider(page, context);
-      await assertBilibiliTvProvider(page, context);
-      await assertYoutubeProvider(page, context);
-      await assertTwitchProvider(page, context);
-      await assertVikiProvider(page, context);
+      await runProviderScenarios(page, context);
       return;
     }
     page.on('pageerror', (error) => console.warn('Firefox page error:', error.message));
@@ -254,15 +253,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
     console.log('smoke:firefox same-origin iframe handshake passed');
     await assertEmbeddedKeysAndFullscreen(page, origin);
     console.log('smoke:firefox host-claimed keys and embedded fullscreen ownership passed');
-    await assertProviderScripts(page, context);
-    await assertPatreonProvider(page, context);
-    await assertVimeoProvider(page, context);
-    await assertIqiyiProvider(page, context);
-    await assertBilibiliProvider(page, context);
-    await assertBilibiliTvProvider(page, context);
-    await assertYoutubeProvider(page, context);
-    await assertTwitchProvider(page, context);
-    await assertVikiProvider(page, context);
+    await runProviderScenarios(page, context);
     await scenarios.assertParentBlacklist(page, origin, context);
     await setBlacklist(context, []);
     console.log('smoke:firefox parent-domain blacklist passed');
@@ -273,7 +264,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
   }
 }
 
-export async function runBrowsers(scenarios: EntryScenarios): Promise<void> {
+export async function runBrowsers(scenarios: EntryScenarios, clock: QuotaClock): Promise<void> {
   if (!existsSync(PLAYER_FIXTURE) || !existsSync(IFRAME_FIXTURE) || !existsSync(YOUTUBE_EMBED_FIXTURE) || !existsSync(VOD_FIXTURE)) {
     fail('Missing smoke fixtures under test/fixtures.');
   }
@@ -284,7 +275,7 @@ export async function runBrowsers(scenarios: EntryScenarios): Promise<void> {
   try {
     for (const kind of targets) {
       const unpackedDir = requireBuiltExtension(kind);
-      if (kind === 'chromium') await smokeChromium(fixture.origin, unpackedDir, scenarios);
+      if (kind === 'chromium') await smokeChromium(fixture.origin, unpackedDir, scenarios, clock);
       else await smokeFirefox(fixture.origin, unpackedDir, scenarios);
     }
   } finally {
@@ -294,7 +285,7 @@ export async function runBrowsers(scenarios: EntryScenarios): Promise<void> {
 }
 
 async function assertInstalledStartup(page: Page): Promise<void> {
-  await timeScenario('assertInstalledStartup', async () => {
+  await timeScenario('assertInstalledStartup', { syncWrites: 0 }, async () => {
     await page.locator('video#player').click();
     await page.keyboard.press('t');
     await page.locator('.theater-controls-wrapper').waitFor();
@@ -309,7 +300,7 @@ async function assertInstalledStartup(page: Page): Promise<void> {
  * the entry shortcuts that the MAIN-world script reads before the page can claim the key.
  */
 async function assertStorageWorlds(page: Page, context: BrowserContext): Promise<void> {
-  await timeScenario('assertStorageWorlds', async () => {
+  await timeScenario('assertStorageWorlds', { syncWrites: 2 }, async () => {
     const background = await extensionWorker(context);
     const published = (key: string) => page.waitForFunction(expected => document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts')?.includes(expected), key);
     try {
