@@ -267,6 +267,43 @@ describe('audio track auto-apply', () => {
       assert.deepEqual(manual.results.map(ids), [[null, null]], 'a pick during an ad is refused and said so');
     });
 
+    it('reports and saves only the newest of overlapping picks, whatever the host answers to the earlier ones', async () => {
+      const { host, controller, results, savedPicks } = setup(null);
+      host.offer(...dubbed);
+      host.autoSettle = false;
+      const first = controller.select('de');
+      const second = controller.select('fr');
+      // A host that coalesces picks refuses the one it replaced, then applies the newer.
+      host.tracks = host.tracks.filter(track => track.id !== 'de');
+      host.settle();
+      assert.equal(await first, false);
+      assert.equal(await second, true);
+      assert.deepEqual(results.map(ids), [['fr']], 'no refusal for the replaced pick');
+      assert.deepEqual(savedPicks, ['fr']);
+
+      results.length = 0;
+      savedPicks.length = 0;
+      host.offer(...dubbed);
+      const earlier = controller.select('de');
+      const later = controller.select('en');
+      host.settle();
+      await Promise.all([earlier, later]);
+      assert.deepEqual(results.map(ids), [['en']], 'an earlier pick the host accepted is not announced either');
+      assert.deepEqual(savedPicks, ['original']);
+    });
+
+    it('drops the saved preference\'s answer once the viewer picks during it', async () => {
+      const { host, controller, results } = setup('fr');
+      host.autoSettle = false;
+      host.offer(...dubbed);
+      assert.deepEqual(host.selections.map(selection => selection.id), ['fr']);
+      const manual = controller.select('de');
+      host.settle();
+      assert.equal(await manual, true);
+      await flush();
+      assert.deepEqual(results.map(ids), [['de']]);
+    });
+
     it('says nothing when the answer is for an earlier item, a reset list or a disposed controller', async () => {
       const { host, controller, results } = setup('fr');
       host.autoSettle = false;

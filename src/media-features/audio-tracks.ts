@@ -38,6 +38,8 @@ export class AudioTrackController {
   /** The item the decision below belongs to; an id the host reports survives element resets. */
   private itemKey: string | null = null;
   private evaluated = false;
+  /** Bumps with every pick, so only the newest one is reported when picks overlap. */
+  private pick = 0;
   private stopObserving = () => {};
   private disposed = false;
 
@@ -100,8 +102,10 @@ export class AudioTrackController {
       return false;
     }
     this.evaluated = true;
+    const pick = ++this.pick;
     const outcome = await this.apply(id);
-    if (outcome === 'stale') return false;
+    // A later pick replaced this one before the host answered; its own result says what is playing.
+    if (outcome === 'stale' || pick !== this.pick) return false;
     if (outcome === 'refused') {
       this.report(this.playingId(), { track, index });
       return false;
@@ -128,7 +132,9 @@ export class AudioTrackController {
       return;
     }
     const requested = { track: target, index: list.tracks.indexOf(target) };
+    const pick = ++this.pick;
     void this.apply(target.id).then(outcome => {
+      if (pick !== this.pick) return;
       if (outcome === 'accepted') this.report(target.id);
       else if (outcome === 'refused') this.report(this.playingId(), requested);
     });

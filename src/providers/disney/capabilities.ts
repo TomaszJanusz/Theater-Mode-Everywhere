@@ -8,7 +8,7 @@ export const disneyCapabilities = {
   capabilities: {
     title: { status: 'yes' },
     subtitles: { status: 'conditional', noteKey: 'rteNoteDisney' },
-    audio: { status: 'no' },
+    audio: { status: 'yes' },
     chapters: { status: 'no' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteDisney' },

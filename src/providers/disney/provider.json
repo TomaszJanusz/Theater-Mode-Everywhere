@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "disney",
+  "hosts": [{ "domain": "disneyplus.com", "includeSubdomains": true }],
+  "legacySharedFiles": [
+    "adapter.ts", "capabilities.ts", "clock-policy.ts", "host-captions.ts", "main.ts",
+    "play-next.ts", "service-actions.ts", "stage.ts", "watch-playback.ts"
+  ],
+  "entries": {
+    "isolated": { "file": "isolated.ts", "runAt": "document_start" },
+    "main": { "file": "audio-main-entry.ts", "runAt": "document_start" }
+  }
+}
