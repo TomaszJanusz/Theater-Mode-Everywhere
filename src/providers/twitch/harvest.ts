@@ -207,6 +207,32 @@ function syncTwitchHostCaptionTrack(): boolean {
   return false;
 }
 
+let captionButtonPresent = false;
+let captionButtonObserver: MutationObserver | null = null;
+let captionButtonRoot: Element | null = null;
+
+/**
+ * Twitch decides a VOD has captions seconds after the video starts and tells only its own controls, after the one
+ * moment we sampled. The button's arrival or removal is the signal to sample again; the observer is scoped to the
+ * player and only compares one boolean until that flips.
+ */
+function watchTwitchCaptionButton(video: Element): void {
+  const root = video.closest('.persistent-player, .video-player');
+  if (!root || root === captionButtonRoot) return;
+  captionButtonObserver?.disconnect();
+  captionButtonRoot = root;
+  const check = () => {
+    if (!twitchIntegrationEnabled()) return;
+    const present = Boolean(root.querySelector('button[aria-label^="Captions"]'));
+    if (present === captionButtonPresent) return;
+    captionButtonPresent = present;
+    if (syncTwitchHostCaptionTrack()) notifyTwitchHarvest();
+  };
+  captionButtonObserver = new MutationObserver(check);
+  captionButtonObserver.observe(root, { childList: true, subtree: true });
+  check();
+}
+
 function setTwitchClosedCaptionsEnabled(enabled: boolean): boolean {
   const state = readTwitchPlayerCaptionState();
   if (state.setter) {
@@ -421,6 +447,12 @@ export function installTwitchMain(): void {
       applyTwitchHarvestSnapshot(data.snapshot);
     }
   });
+  // Media events do not bubble; the capture listener finds the player's video however Twitch mounts it.
+  document.addEventListener('loadedmetadata', (event) => {
+    if (event.target instanceof HTMLVideoElement) watchTwitchCaptionButton(event.target);
+  }, true);
+  const video = document.querySelector('video');
+  if (video) watchTwitchCaptionButton(video);
   window.setTimeout(() => {
     if (syncTwitchHostCaptionTrack()) {
       publishTwitchHarvest();

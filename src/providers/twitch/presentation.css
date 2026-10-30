@@ -33,3 +33,24 @@ html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"]:not
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* Twitch's aspect-ratio spacer stays in flow while theater stretches the player box, which pushes its overlay,
+ * and the closed captions drawn in it, below the viewport; the pinned video hides nothing, so only the captions
+ * are lost. They are lifted to the viewport like Viki's cues, over the pinned video and above the dock the
+ * control bar publishes. Dropping the stage class restores Twitch's own placement. */
+html.theater-everywhere-twitch-stage .player-captions-container {
+  position: fixed !important;
+  top: auto !important;
+  left: calc(var(--theater-video-width, 100vw) / 2) !important;
+  width: calc(var(--theater-video-width, 100vw) / 2) !important;
+  bottom: var(--theater-caption-bottom, 48px) !important;
+  transform: translateX(-50%) !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+}
+
+/* While the menu offers the VOD's captions it owns them: Twitch remembers "on" across videos, and its cues
+ * would show under Off. Twitch's own setting is untouched. */
+html.theater-everywhere-html-active[data-te-twitch-captions-hidden] .player-captions-container {
+  display: none !important;
+}

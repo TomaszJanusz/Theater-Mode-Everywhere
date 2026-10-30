@@ -31,6 +31,7 @@ import {
 } from './storyboard';
 
 const cueCache = new Map<string, CaptionCue[]>();
+const CAPTIONS_HIDDEN_ATTR = 'data-te-twitch-captions-hidden';
 const TWITCH_CAPTION_ACK_TIMEOUT_MS = 750;
 
 type TwitchCaptionEventTarget = Pick<Window, 'addEventListener' | 'removeEventListener' | 'dispatchEvent' | 'setTimeout' | 'clearTimeout'>;
@@ -231,6 +232,8 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
   private storyboard: TwitchStoryboardSet | null = null;
   private tracks: TwitchPageCaption[] = [];
   private moments: TwitchPageMoment[] = [];
+  /** The video whose Twitch captions the menu turned on, as opposed to the host remembering "on" from an earlier video. */
+  private hostCaptionsFor: string | null = null;
 
   async load(): Promise<void> {
     const pageVideoId = twitchPageVideoId(window.location.href);
@@ -303,6 +306,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
 
   async listCaptionTracks(): Promise<CaptionTrack[]> {
     if (!this.snapshot) await this.load();
+    this.syncHostCaptionsHidden();
     return this.tracks.map((track) => ({
       id: track.id,
       language: track.language,
@@ -316,6 +320,8 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
 
   async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     if (id === null) {
+      this.hostCaptionsFor = null;
+      this.syncHostCaptionsHidden();
       await requestTwitchHostCaptions(false);
       return { status: 'off', delivery: 'none', cues: [] };
     }
@@ -324,6 +330,8 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     if (!track) return { status: 'failed', delivery: 'none', cues: [] };
     if (track.delivery === 'host' || track.id === TWITCH_HOST_CAPTION_ID) {
       const applied = await requestTwitchHostCaptions(true);
+      this.hostCaptionsFor = applied ? this.mediaId() : null;
+      this.syncHostCaptionsHidden();
       return applied
         ? { status: 'active', delivery: 'host', cues: [] }
         : { status: 'failed', delivery: 'none', cues: [] };
@@ -337,6 +345,13 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     return cues.length > 0
       ? { status: 'active', delivery: 'overlay', cues }
       : { status: 'failed', delivery: 'none', cues: [] };
+  }
+
+  /** CSS only, like the other providers' Off: the host's own caption setting stays as the viewer left it. */
+  private syncHostCaptionsHidden(): void {
+    const offered = this.tracks.some((track) => track.delivery === 'host');
+    const on = this.hostCaptionsFor !== null && this.hostCaptionsFor === this.mediaId();
+    document.documentElement?.toggleAttribute(CAPTIONS_HIDDEN_ATTR, offered && !on);
   }
 
   async getChapters(): Promise<Chapter[]> {
@@ -385,6 +400,8 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     this.tracks = [];
     this.moments = [];
     cueCache.clear();
+    this.hostCaptionsFor = null;
+    document.documentElement?.removeAttribute(CAPTIONS_HIDDEN_ATTR);
   }
 
   dispose(): void {
@@ -392,5 +409,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     this.storyboard = null;
     this.tracks = [];
     this.moments = [];
+    this.hostCaptionsFor = null;
+    document.documentElement?.removeAttribute(CAPTIONS_HIDDEN_ATTR);
   }
 }
