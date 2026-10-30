@@ -1,7 +1,7 @@
-import { bilibiliIntlShotBinUrl } from '../../media-features/parsers/bilibili-intl';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { isBilibiliIntlHost } from '../hosts';
 
+import { bilibiliIntlShotBinUrl } from './fetch-policy';
+import { isBilibiliIntlHost } from './hosts';
 import {
   bilibiliIntlEpisodeId,
   bilibiliIntlTitle,
@@ -15,9 +15,6 @@ import {
   type BilibiliIntlStoryboard
 } from './metadata';
 
-export type { BilibiliIntlSnapshot } from './metadata';
-// The MAIN runtime's one import of this provider until the provider registers its own `install`.
-export { installIntlNavigation } from './history';
 
 const EPISODE_ATTR = 'data-te-bilibili-intl-episode';
 const KIND_ATTR = 'data-te-bilibili-intl-kind';

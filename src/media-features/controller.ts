@@ -88,7 +88,8 @@ export class MediaFeaturesController {
   private t: MediaFeaturesBindings['t'];
   private tracks: CaptionTrack[] = [];
   private chapters: Chapter[] = [];
-  private bilibiliIntlChapters: Chapter[] = [];
+  /** Null leaves episode actions with the timeline's chapters. */
+  private actionChapters: Chapter[] | null = null;
   private activeTrackId: string | null = null;
   private captionState: 'off' | 'loading' | 'active' = 'off';
   private usingOverlayCaptions = false;
@@ -289,7 +290,7 @@ export class MediaFeaturesController {
     void this.adapter.activateCaptionTrack(null);
     this.tracks = [];
     this.chapters = [];
-    this.bilibiliIntlChapters = [];
+    this.actionChapters = null;
     this.heatmap = null;
     this.activeTrackId = null;
     this.captionState = 'off';
@@ -390,11 +391,7 @@ export class MediaFeaturesController {
         if (!this.isCurrent(epoch, adapter)) return;
         this.chapters = adapter.getChapters ? await adapter.getChapters() : [];
         if (!this.isCurrent(epoch, adapter)) return;
-        this.bilibiliIntlChapters = this.mediaId?.startsWith('ogv:')
-          ? (adapter.getChaptersForSource
-            ? await adapter.getChaptersForSource('bilibiliIntl')
-            : this.chapters.filter(chapter => chapter.source === 'bilibiliIntl'))
-          : [];
+        this.actionChapters = adapter.getActionChapters ? await adapter.getActionChapters() : null;
         if (!this.isCurrent(epoch, adapter)) return;
         try {
           this.heatmap = adapter.getHeatmap ? adapter.getHeatmap() : null;
@@ -406,7 +403,7 @@ export class MediaFeaturesController {
         console.error('[Theater Everywhere] Media features probe failed:', err);
         this.tracks = [];
         this.chapters = [];
-        this.bilibiliIntlChapters = [];
+        this.actionChapters = null;
         this.heatmap = null;
         errors.push(providerError('network-failed', { capability: 'captions', cause: err, epoch }));
       }
@@ -945,7 +942,7 @@ export class MediaFeaturesController {
   /** Episode actions use provider windows even when native chapters own the timeline. */
   chapterContext(): { mediaId: string; chapters: readonly Chapter[] } | null {
     if (this.disposed || this.refreshInFlight || !this.mediaId || this.adapter.mediaId?.() !== this.mediaId) return null;
-    return { mediaId: this.mediaId, chapters: this.mediaId.startsWith('ogv:') ? this.bilibiliIntlChapters : this.chapters };
+    return { mediaId: this.mediaId, chapters: this.actionChapters ?? this.chapters };
   }
 
   tooltipExtras(time: number): TooltipMediaExtras {

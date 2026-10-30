@@ -1,5 +1,5 @@
 import { bilibiliCapabilities } from './bilibili/capabilities';
-import { bilibiliIntlCapabilities } from './bilibili-intl/capabilities';
+import { bilibiliIntlCapabilities } from './bilibiliIntl/capabilities';
 import type { ProviderCapabilities } from './capability-types';
 import { crunchyrollCapabilities } from './crunchyroll/capabilities';
 import { disneyCapabilities } from './disney/capabilities';

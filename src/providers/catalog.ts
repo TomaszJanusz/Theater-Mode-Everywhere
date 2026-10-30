@@ -11,6 +11,16 @@ export const PROVIDER_CATALOG = [
     "home": "https://www.bilibili.com/"
   },
   {
+    "id": "bilibiliIntl",
+    "hosts": [
+      {
+        "domain": "bilibili.tv",
+        "includeSubdomains": true
+      }
+    ],
+    "home": "https://www.bilibili.tv/"
+  },
+  {
     "id": "iqiyi",
     "hosts": [
       {

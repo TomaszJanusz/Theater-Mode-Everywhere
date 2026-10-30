@@ -1,7 +1,7 @@
-import { BILIBILI_INTL_PLAYER_SELECTOR } from '../navigation/bilibili-intl';
 import type { WatchPlayback } from '../watch-playback';
 
 import { INTL_NAVIGATE_EVENT } from './history';
+import { BILIBILI_INTL_PLAYER_SELECTOR } from './navigation';
 
 /** Locale and tracking changes do not create another visit to the same content. */
 export function bilibiliIntlVideoIdentity(url: URL): string | null {

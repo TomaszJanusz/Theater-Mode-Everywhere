@@ -1,32 +1,28 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
-import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
 import type { CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter, PreviewSource } from '../../media-features/types';
+import type { ProviderServices } from '../provider-api';
 
-import { bilibiliIntlIntegrationEnabled, bilibiliIntlLoadScope, bilibiliIntlPageId, type BilibiliIntlLoadScope } from './main';
 import {
   bilibiliIntlPreviewFrame,
   mergeBilibiliIntlSnapshot,
   parseBilibiliIntlCaptions,
+  parseIntlSnapshot,
   type BilibiliIntlKind,
   type BilibiliIntlSnapshot
 } from './metadata';
+import { bilibiliIntlIntegrationEnabled, bilibiliIntlLoadScope, bilibiliIntlPageId } from './snapshot';
+
+/** The isolated runtime's shared owners, lent so the provider bundles no second copy. */
+export type BilibiliIntlServices = Pick<ProviderServices['isolated'], 'requestPageFetch' | 'requestProviderProbe'>;
+
+/** MAIN reads three metadata APIs and the shot index before it answers. */
+const PROBE_TIMEOUT_MS = 8000;
 
 const HOST_CAPTIONS_ATTR = 'data-te-bilibili-intl-captions-hidden';
 
-/** Uploads must name `ugc`. An omitted kind is an older episode publication. */
-function publishedKindAccepted(scopeKind: BilibiliIntlKind | null, snapshotKind: unknown): boolean {
-  if (scopeKind === 'ugc') return snapshotKind === 'ugc';
-  if (scopeKind === 'ogv') return snapshotKind === 'ogv' || snapshotKind == null;
-  return false;
-}
-
-function storedSnapshot(scope: BilibiliIntlLoadScope, next: BilibiliIntlSnapshot): BilibiliIntlSnapshot | null {
-  if (!publishedKindAccepted(scope.kind, next.kind)) return null;
-  // Older episode publications omit kind and the later chapters field.
-  const kind = next.kind === 'ugc' ? 'ugc' : 'ogv';
-  const chapters = next.chapters ?? [];
-  if (next.kind === kind && next.chapters === chapters) return next;
-  return { ...next, kind, chapters };
+/** A snapshot serves only the route kind it was read for: an upload never inherits an episode's, nor the reverse. */
+function publishedKindAccepted(scopeKind: BilibiliIntlKind | null, snapshotKind: BilibiliIntlKind): boolean {
+  return scopeKind !== null && scopeKind === snapshotKind;
 }
 
 export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
@@ -38,6 +34,8 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
   private cueGeneration = 0;
   /** The next activate(null) is the controller cleanup after a failed attempt, so the host layer stays up. */
   private preserveHostFallback = false;
+
+  constructor(private readonly services: BilibiliIntlServices) {}
 
   private matchingSnapshot(): BilibiliIntlSnapshot | null {
     const scope = bilibiliIntlLoadScope();
@@ -70,15 +68,15 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
     this.snapshotPath = null;
     if (this.pending) this.loadGeneration++;
     const generation = this.loadGeneration;
-    const pending = requestMediaProbe(8000, 'bilibiliIntl').then((result) => {
+    const pending = this.services.requestProviderProbe('bilibiliIntl', PROBE_TIMEOUT_MS).then((value) => {
       if (generation !== this.loadGeneration) return;
       const now = bilibiliIntlLoadScope();
-      const next = result.bilibiliIntl ?? null;
+      const next = parseIntlSnapshot(value);
       const currentId = now.supported ? bilibiliIntlPageId() : null;
       const samePage = now.supported && now.path === scope.path && now.routeEpisodeId === scope.routeEpisodeId;
       const identityMatches = Boolean(currentId && next && next.videoId === currentId);
       const routeMatches = !scope.routeEpisodeId || next?.videoId === scope.routeEpisodeId;
-      const accepted = next && identityMatches ? storedSnapshot(now, next) : null;
+      const accepted = next && identityMatches && publishedKindAccepted(now.kind, next.kind) ? next : null;
       if (!samePage || !accepted || !routeMatches) {
         this.snapshot = null;
         this.snapshotPath = null;
@@ -103,7 +101,7 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
     const snapshot = this.matchingSnapshot();
     return {
       captions: Boolean(snapshot?.captionTracks.length),
-      chapters: Boolean(snapshot?.chapters?.length),
+      chapters: Boolean(snapshot?.chapters.length),
       previews: Boolean(snapshot?.storyboard)
     };
   }
@@ -141,7 +139,7 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
       this.keepHostFallback();
       return failed();
     }
-    const body = await requestPageFetch(track.url);
+    const body = await this.services.requestPageFetch(track.url);
     if (!this.operationCurrent(generation, videoId, id)) return failed();
     const cues = body ? parseBilibiliIntlCaptions(body) : [];
     if (!cues.length) {
@@ -166,7 +164,7 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
   mediaId() {
     const snapshot = this.matchingSnapshot();
     if (!snapshot) return null;
-    return `${snapshot.kind === 'ugc' ? 'ugc' : 'ogv'}:${snapshot.videoId}`;
+    return `${snapshot.kind}:${snapshot.videoId}`;
   }
   getTitle() { return sanitizeContentTitle(this.matchingSnapshot()?.title); }
 
@@ -180,6 +178,9 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
       confidence: 'high'
     }));
   }
+
+  /** Episode actions use the host's own intro/outro windows, whichever source owns the timeline. */
+  getActionChapters(): Promise<Chapter[]> { return this.getChapters(); }
 
   private usableTracksOnPage(): boolean {
     return Boolean(bilibiliIntlIntegrationEnabled() && this.matchingSnapshot()?.captionTracks.length);

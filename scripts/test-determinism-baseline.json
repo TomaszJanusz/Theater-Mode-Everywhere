@@ -13,7 +13,7 @@
   "src/media-features/twitch-adapter.test.ts": {
     "timer": 2
   },
-  "src/providers/bilibili-intl/runtime.browser.test.ts": {
+  "src/providers/bilibiliIntl/runtime.browser.test.ts": {
     "timer": 1,
     "sleep": 2
   },

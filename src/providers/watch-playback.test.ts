@@ -4,7 +4,7 @@ import { describe, it, type TestContext } from 'node:test';
 import { defaultMediaProviderFlags, MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
 
 import { bilibiliVideoIdentity, bilibiliWatchPlayback } from './bilibili/watch-playback';
-import { bilibiliIntlVideoIdentity } from './bilibili-intl/watch-playback';
+import { bilibiliIntlVideoIdentity, bilibiliIntlWatchPlayback } from './bilibiliIntl/watch-playback';
 import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
 import { patreonWatchPlayback } from './patreon/watch-playback';
 import { providerDefinition, shouldAttachProvider } from './registry';
@@ -35,16 +35,17 @@ describe('positive provider watch declarations', () => {
   });
 
   it('keeps extracted providers unavailable until their host script registers', () => {
-    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['vimeo', 'https://vimeo.com/123456'], ['iqiyi', 'https://www.iq.com/play/spring-of-the-blade-episode-2-1w9dte7osf8'], ['bilibili', 'https://www.bilibili.com/video/BV1xx411c7mu'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk'], ['twitch', 'https://www.twitch.tv/videos/2345678901']] as const) {
+    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['vimeo', 'https://vimeo.com/123456'], ['iqiyi', 'https://www.iq.com/play/spring-of-the-blade-episode-2-1w9dte7osf8'], ['bilibili', 'https://www.bilibili.com/video/BV1xx411c7mu'], ['bilibiliIntl', 'https://www.bilibili.tv/en/video/4801285774384128'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk'], ['twitch', 'https://www.twitch.tv/videos/2345678901']] as const) {
       assert.equal(providerDefinition(id).watchPlayback, undefined);
       assert.equal(read(href), null);
     }
   });
 
   it('limits the countdown-only preparing confirmation to providers that declare it', () => {
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['bilibiliIntl']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), []);
     assert.ok(twitchWatchPlayback.preparingVideo);
     assert.ok(bilibiliWatchPlayback.preparingVideo);
+    assert.ok(bilibiliIntlWatchPlayback.preparingVideo);
     assert.ok(iqiyiWatchPlayback.preparingVideo);
     assert.ok(youtubeWatchPlayback.preparingVideo);
     assert.ok(patreonWatchPlayback.preparingVideo);
@@ -91,7 +92,7 @@ describe('positive provider watch declarations', () => {
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://twitch.tv.evil.test/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['disney', 'netflix', 'bilibiliIntl']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['disney', 'netflix']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
@@ -134,9 +135,6 @@ describe('positive provider watch declarations', () => {
 describe('AutoTheater availability', () => {
   const flags = defaultMediaProviderFlags();
   it('is available only on hosts whose provider declares watch playback and has its integration on', t => {
-    assert.equal(autoTheaterAvailability('www.bilibili.tv', flags, true), 'available');
-    assert.equal(autoTheaterAvailability('www.bilibili.tv', { ...flags, bilibiliIntl: false }, true), 'integrationOff');
-    assert.equal(autoTheaterAvailability('www.bilibili.tv', flags, false), 'unsupported');
     assert.equal(autoTheaterAvailability('example.com', flags, true), 'unsupported');
     assert.equal(autoTheaterAvailability('www.twitch.tv', flags, true), 'unsupported', 'unavailable until its host script registers');
     registerTwitch(t);
@@ -150,6 +148,7 @@ describe('AutoTheater availability', () => {
     assert.equal(autoTheaterAvailability('www.youtube.com', flags, true), 'unsupported');
     assert.equal(autoTheaterAvailability('www.patreon.com', flags, true), 'unsupported');
     assert.equal(autoTheaterAvailability('www.bilibili.com', flags, true), 'unsupported');
+    assert.equal(autoTheaterAvailability('www.bilibili.tv', flags, true), 'unsupported');
     assert.equal(autoTheaterAvailability('vimeo.com', flags, true), 'unsupported');
   });
 });
@@ -170,10 +169,11 @@ describe('navigation off a watch page', () => {
     assert.equal(leftProviderWatchPage(true, 'https://www.netflix.com/browse'), true);
     assert.equal(leftProviderWatchPage(true, 'https://www.netflix.com/watch/12345'), false);
     // Manual season playback remains eligible without relaxing automatic content identity.
-    assert.equal(readProviderWatchPage(new URL('https://www.bilibili.tv/en/play/1053337')), null);
-    assert.equal(leftProviderWatchPage(true, 'https://www.bilibili.tv/en/play/1053337'), false);
-    assert.equal(leftProviderWatchPage(true, 'https://www.bilibili.tv/en/play/1053337/11371243'), false);
-    assert.equal(leftProviderWatchPage(true, 'https://www.bilibili.tv/en'), true);
+    const season = new URL('https://www.bilibili.tv/en/play/1053337');
+    assert.equal(bilibiliIntlWatchPlayback.pageIdentity(season), null);
+    assert.equal(bilibiliIntlWatchPlayback.playbackPage?.(season), true);
+    assert.equal(bilibiliIntlWatchPlayback.playbackPage?.(new URL('https://www.bilibili.tv/en/play/1053337/11371243')), true);
+    assert.equal(bilibiliIntlWatchPlayback.playbackPage?.(new URL('https://www.bilibili.tv/en')), false);
   });
 });
 

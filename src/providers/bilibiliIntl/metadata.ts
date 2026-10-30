@@ -1,8 +1,9 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import { parseAssCaptions } from '../../media-features/parsers/ass';
-import { bilibiliIntlShotImageUrl, bilibiliIntlSubtitleUrl } from '../../media-features/parsers/bilibili-intl';
 import { sanitizedCaptionCue } from '../../media-features/sanitize';
 import type { CaptionCue, PreviewFrame } from '../../media-features/types';
+
+import { bilibiliIntlShotImageUrl, bilibiliIntlSubtitleUrl } from './fetch-policy';
 
 export type BilibiliIntlKind = 'ogv' | 'ugc';
 
@@ -356,5 +357,53 @@ export function normalizeBilibiliIntlSnapshot(
     captionTracks: bilibiliIntlCaptionTracks(videoId, subtitles, kind),
     storyboard,
     chapters
+  };
+}
+
+const text = (value: unknown, max: number): value is string => typeof value === 'string' && value.length <= max;
+const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+
+function snapshotCaption(value: unknown): BilibiliIntlCaption | null {
+  const row = record(value);
+  return text(row.id, 180) && row.id && text(row.language, 40) && text(row.label, 400) && row.label
+    && typeof row.url === 'string' && bilibiliIntlSubtitleUrl(row.url) === row.url
+    ? { id: row.id, language: row.language, label: row.label, url: row.url } : null;
+}
+
+function snapshotStoryboard(value: unknown): BilibiliIntlStoryboard | null {
+  const row = record(value);
+  const { columns, rows, width, height, images, times } = row;
+  if (![columns, rows, width, height].every((n) => Number.isInteger(n) && (n as number) > 0 && (n as number) <= 2048)) return null;
+  if (!Array.isArray(images) || !images.length || images.length > 50 || images.some((url) => bilibiliIntlShotImageUrl(url) !== url)) return null;
+  if (!Array.isArray(times) || !finiteMonotonicTimes(times)) return null;
+  return { images: images as string[], times: times as number[], columns: columns as number, rows: rows as number, width: width as number, height: height as number };
+}
+
+function snapshotChapter(value: unknown): BilibiliIntlChapter | null {
+  const row = record(value);
+  return finite(row.start) && row.start >= 0 && finite(row.end) && row.end > row.start && (row.title === 'Intro' || row.title === 'Outro')
+    ? { start: row.start, end: row.end, title: row.title } : null;
+}
+
+/**
+ * The snapshot as it crossed from MAIN, rebuilt from validated fields: anything malformed fails closed. A list
+ * entry that does not validate drops the whole snapshot rather than leaving a partial one.
+ */
+export function parseIntlSnapshot(value: unknown): BilibiliIntlSnapshot | null {
+  const raw = record(value);
+  if (!bilibiliIntlEpisodeId(raw.videoId) || typeof raw.videoId !== 'string') return null;
+  if (raw.kind !== 'ogv' && raw.kind !== 'ugc') return null;
+  if (raw.title !== undefined && !text(raw.title, 400)) return null;
+  if (raw.duration !== undefined && (!finite(raw.duration) || raw.duration <= 0)) return null;
+  if (!Array.isArray(raw.captionTracks) || raw.captionTracks.length > 80 || !Array.isArray(raw.chapters) || raw.chapters.length > 2) return null;
+  const captionTracks = raw.captionTracks.map(snapshotCaption);
+  const chapters = raw.chapters.map(snapshotChapter);
+  const storyboard = raw.storyboard == null ? null : snapshotStoryboard(raw.storyboard);
+  if (captionTracks.includes(null) || chapters.includes(null) || (raw.storyboard != null && !storyboard)) return null;
+  return {
+    videoId: raw.videoId, kind: raw.kind,
+    ...(raw.title !== undefined ? { title: raw.title } : {}),
+    ...(raw.duration !== undefined ? { duration: raw.duration } : {}),
+    captionTracks: captionTracks as BilibiliIntlCaption[], storyboard, chapters: chapters as BilibiliIntlChapter[]
   };
 }

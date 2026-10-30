@@ -4,7 +4,6 @@ import { matchesMediaFetchRules, type MediaFetchRule } from '../providers/media-
 import { providerRegistry } from '../providers/runtime-registration';
 
 import { isCrunchyrollCaptionFileUrl } from './crunchyroll-cdn';
-import { bilibiliIntlSubtitleUrl } from './parsers/bilibili-intl';
 import { isMuxCaptionUrl, isMuxStoryboardUrl } from './parsers/mux-storyboard';
 import type { MediaProviderId } from './provider-flags';
 import { isYoutubeTimedtextUrl } from './youtube-caption-url';
@@ -45,10 +44,6 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
     && ['cffaws.wetvinfo.com', 'subtitle.wetvinfo.com', 'subtitle.tc.qq.com', 'subtitlebk.apdcdn.tc.qq.com'].includes(parsed.hostname)
     && /\.(vtt|srt)$/i.test(parsed.pathname);
 }
-
-  if (request.provider === 'bilibiliIntl' && request.kind === 'caption-track') {
-    return bilibiliIntlSubtitleUrl(request.url) !== null;
-  }
 
   if (request.provider === 'youtube' && request.kind === 'caption-track') return isYoutubeTimedtextUrl(request.url, base);
 
@@ -99,7 +94,7 @@ export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest)
   return isAllowedMediaFetchUrl({ ...request, url: finalUrl });
 }
 
-const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'disney', 'bilibiliIntl', 'tencent', 'crunchyroll', ...PROVIDER_CATALOG.map(item => item.id)];
+const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'disney', 'tencent', 'crunchyroll', ...PROVIDER_CATALOG.map(item => item.id)];
 // Netflix stays off this list. Public playback renders subtitles in the host
 // player and did not expose a caption or storyboard URL safe to fetch.
 const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json', 'chapters'];

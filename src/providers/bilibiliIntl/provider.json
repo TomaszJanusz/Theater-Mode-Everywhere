@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "bilibiliIntl",
+  "hosts": [
+    {
+      "domain": "bilibili.tv",
+      "includeSubdomains": true
+    }
+  ],
+  "home": "https://www.bilibili.tv/",
+  "entries": {
+    "isolated": {
+      "file": "isolated.ts",
+      "runAt": "document_start"
+    },
+    "main": {
+      "file": "main.ts",
+      "runAt": "document_start"
+    }
+  }
+}

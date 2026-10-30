@@ -13,7 +13,7 @@ import { assertEmbeddedKeysAndFullscreen } from './frames';
 import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist } from './helpers';
 import { assertFeatureHighlights } from './highlights';
 import { assertPinStorage } from './pin-storage';
-import { assertBilibiliProvider, assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, assertTwitchProvider, assertVimeoProvider, assertYoutubeProvider } from './providers';
+import { assertBilibiliTvProvider, assertBilibiliProvider, assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, assertTwitchProvider, assertVimeoProvider, assertYoutubeProvider } from './providers';
 import { assertRteSettings, assertPictureLayout } from './settings';
 import { assertVikiProvider } from './viki-provider';
 
@@ -56,6 +56,7 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
       await assertVimeoProvider(page, context);
       await assertIqiyiProvider(page, context);
       await assertBilibiliProvider(page, context);
+      await assertBilibiliTvProvider(page, context);
       await assertYoutubeProvider(page, context);
       await assertTwitchProvider(page, context);
       await assertVikiProvider(page, context);
@@ -115,6 +116,7 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     await assertVimeoProvider(page, context);
     await assertIqiyiProvider(page, context);
     await assertBilibiliProvider(page, context);
+    await assertBilibiliTvProvider(page, context);
     await assertYoutubeProvider(page, context);
     await assertTwitchProvider(page, context);
     await assertVikiProvider(page, context);
@@ -224,6 +226,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
       await assertVimeoProvider(page, context);
       await assertIqiyiProvider(page, context);
       await assertBilibiliProvider(page, context);
+      await assertBilibiliTvProvider(page, context);
       await assertYoutubeProvider(page, context);
       await assertTwitchProvider(page, context);
       await assertVikiProvider(page, context);
@@ -255,6 +258,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
     await assertVimeoProvider(page, context);
     await assertIqiyiProvider(page, context);
     await assertBilibiliProvider(page, context);
+    await assertBilibiliTvProvider(page, context);
     await assertYoutubeProvider(page, context);
     await assertTwitchProvider(page, context);
     await assertVikiProvider(page, context);

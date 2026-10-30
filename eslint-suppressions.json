@@ -560,7 +560,7 @@
       "count": 3
     },
     "sonarjs/no-nested-conditional": {
-      "count": 6
+      "count": 5
     }
   },
   "src/media-features/crunchyroll-cdn.ts": {
@@ -1005,48 +1005,6 @@
       "count": 1
     }
   },
-  "src/providers/bilibili-intl/bilibili-intl.test.ts": {
-    "max-lines": {
-      "count": 1
-    }
-  },
-  "src/providers/bilibili-intl/main.ts": {
-    "local/max-symbol-name-length": {
-      "count": 3
-    }
-  },
-  "src/providers/bilibili-intl/metadata.ts": {
-    "local/max-symbol-name-length": {
-      "count": 8
-    },
-    "max-params": {
-      "count": 2
-    },
-    "sonarjs/super-linear-regex": {
-      "count": 1
-    }
-  },
-  "src/providers/bilibili-intl/runtime.browser.test.ts": {
-    "max-lines": {
-      "count": 1
-    }
-  },
-  "src/providers/bilibili-intl/service-actions.ts": {
-    "local/max-symbol-name-length": {
-      "count": 3
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/providers/bilibili-intl/watch-playback.ts": {
-    "local/max-symbol-name-length": {
-      "count": 2
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 1
-    }
-  },
   "src/providers/bilibili/metadata.ts": {
     "local/max-symbol-name-length": {
       "count": 3
@@ -1063,6 +1021,53 @@
   },
   "src/providers/bilibili/service-actions.ts": {
     "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibiliIntl/bilibili-intl.test.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibiliIntl/metadata.ts": {
+    "local/max-symbol-name-length": {
+      "count": 8
+    },
+    "max-params": {
+      "count": 2
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibiliIntl/navigation.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibiliIntl/runtime.browser.test.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibiliIntl/service-actions.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibiliIntl/snapshot.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/providers/bilibiliIntl/watch-playback.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
       "count": 1
     }
   },
@@ -1225,7 +1230,7 @@
   },
   "src/providers/media-events.ts": {
     "import/order": {
-      "count": 3
+      "count": 1
     },
     "local/max-symbol-name-length": {
       "count": 2
@@ -1246,11 +1251,6 @@
   },
   "src/providers/native/page-title.ts": {
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/providers/navigation/bilibili-intl.ts": {
-    "local/max-symbol-name-length": {
       "count": 1
     }
   },

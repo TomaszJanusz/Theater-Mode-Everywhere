@@ -1,7 +1,6 @@
-import { isBilibiliIntlHost } from './hosts';
 import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
 import { CRUNCHYROLL_HARVEST_EVENT } from './crunchyroll/main';
-import { registeredEvents } from './runtime-registration';
+import { providerRegistry, registeredEvents } from './runtime-registration';
 
 /** Provider publication events consumed uniformly by the media controller. */
 const PROVIDER_MEDIA_EVENTS = [
@@ -22,7 +21,5 @@ export function observeProviderMediaChanges(onChange: () => void): () => void {
 }
 
 export function refreshProviderAfterElementReset(): boolean {
-  // Bilibili.tv detaches the playing element before emptied; the replacement
-  // need not emit durationchange, so reload metadata from the current route.
-  return isBilibiliIntlHost() && mediaProviderIntegrationEnabled('bilibiliIntl');
+  return providerRegistry.all().some(hooks => hooks.refreshOnElementReset && mediaProviderIntegrationEnabled(hooks.id));
 }
