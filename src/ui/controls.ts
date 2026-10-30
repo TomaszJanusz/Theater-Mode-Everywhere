@@ -35,7 +35,7 @@ import {
 import { selectSwitchableVideos } from '../switchable-videos';
 import { observePicture, viewportPictureInsets } from './picture-insets';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
-import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
+import { AUDIO_SETTING_ICONS, createLoadingPlate, ensureLoadingRing, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS, shortcutDisplayEnv } from './shortcuts';
 import type { AudioSettings } from '../audio-settings';
 import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
@@ -115,8 +115,7 @@ export function createControls(
     paintOverlay(wrapper);
 
     // Create loading indicator
-    const loadingIndicator = document.createElement('div');
-    loadingIndicator.className = `theater-loading-indicator ${HUD_PLATE_CLASS}`;
+    const loadingIndicator = createLoadingPlate();
     paintOverlay(loadingIndicator);
   
     let stopLoadingExit: (() => void) | null = null;
@@ -124,12 +123,7 @@ export function createControls(
       stopLoadingExit?.();
       stopLoadingExit = null;
       loadingIndicator.classList.remove('exiting');
-      if (!loadingIndicator.firstElementChild) {
-        const spinner = document.createElement('div');
-        spinner.className = 'theater-loading-spinner';
-        spinner.setAttribute('aria-hidden', 'true');
-        loadingIndicator.appendChild(spinner);
-      }
+      ensureLoadingRing(loadingIndicator);
       loadingIndicator.classList.add('visible');
     };
     controlsScope.add(() => { stopLoadingExit?.(); });

@@ -983,14 +983,15 @@ button.theater-time-end:hover {
   100% { opacity: 1; }
 }
 
-/* Center loading spinner: a round plate in the HUD family, centred on the picture like the volume HUD.
-   The plate and its ring zoom out as one (spinner-exit.ts), then the plate leaves at once. */
-.theater-loading-indicator {
+/* The round plate: the buffering ring and the play/pause pictogram share this one circle, centred on the picture like the
+   volume HUD (the surface is theater-hud-plate). A playback plate also carries the volume overlay's class so one centred
+   HUD owns the slot; the second class outranks that rule's rounded rectangle.
+   The loading plate and its ring zoom out as one (spinner-exit.ts), then the plate leaves at once. */
+.theater-loading-indicator,
+.theater-everywhere-volume-overlay.playback-hud {
   position: fixed !important;
   top: var(--theater-hud-center-y, 50vh) !important;
   left: 50% !important;
-  /* The translate property, not transform: the exit's scale then pivots on the plate's own centre. */
-  translate: -50% -50% !important;
   box-sizing: border-box !important;
   width: 76px !important;
   height: 76px !important;
@@ -1005,6 +1006,11 @@ button.theater-time-end:hover {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
   z-index: 2147483647 !important;
   pointer-events: none !important;
+}
+
+.theater-loading-indicator {
+  /* The translate property, not transform: the exit's scale then pivots on the plate's own centre. */
+  translate: -50% -50% !important;
   /* Not !important: the exit animation has to animate it. */
   opacity: 0;
 }

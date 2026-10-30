@@ -15,7 +15,7 @@ import type { PlayerChromeContext } from './runtime-context';
 const CSS = playerStylesheets().ui;
 const BUNDLE = bundleModules(["export * from './ui/hud'; export { CONTROLS_VISIBILITY_ICON } from './ui/controls-visibility';"], 'Hud');
 
-const cases = ['less', 'original', 'more', 'moar', 'moaaarr', 'volume', 'quiet', 'muted', 'play', 'pause', 'voice', 'leveling', 'boost', 'layout', 'fit', 'switch', 'pin'] as const;
+const cases = ['less', 'original', 'more', 'moar', 'moaaarr', 'volume', 'quiet', 'muted', 'voice', 'leveling', 'boost', 'layout', 'fit', 'switch', 'pin'] as const;
 
 describe('confirmation HUD optical spacing', () => {
   const browsers = sharedEngineBrowsers();
@@ -47,7 +47,7 @@ describe('confirmation HUD optical spacing', () => {
               queryPlayerUi: (selector: string) => root.querySelector(selector),
               mountPlayerUi: (element: HTMLElement) => root.appendChild(element),
               paintOverlay: (element: HTMLElement) => element.style.setProperty('--accent-color', '#ff9900'),
-              t: (key: string) => key === 'play' ? 'Play' : key === 'pause' ? 'Pause' : key
+              t: (key: string) => key
             } as unknown as PlayerChromeContext;
             const hud = api.createHud(ctx, () => {});
             const levels = { less: 'Less', original: 'Original', more: 'More', moar: 'MOAAR', moaaarr: 'MOAAARR!' };
@@ -56,8 +56,6 @@ describe('confirmation HUD optical spacing', () => {
               hud.triggerStatusIndicator(`Bass: ${levels[level]}`, api.audioHudIcon('bass', { bass: level, voice: 'off', leveling: 'off' }), level);
             } else if (kind === 'volume' || kind === 'quiet' || kind === 'muted') {
               hud.triggerVolumeIndicator(kind === 'quiet' ? 0.25 : 0.75, kind === 'muted', 'up');
-            } else if (kind === 'play' || kind === 'pause') {
-              hud.triggerPlaybackIndicator(kind);
             } else {
               const icons = { voice: api.AUDIO_SETTING_ICONS.voice.hud, leveling: api.AUDIO_SETTING_ICONS.leveling.hud,
                 boost: api.VOLUME_BOOST_ICONS.hud, layout: api.STATUS_HUD_LAYOUT_ICON,

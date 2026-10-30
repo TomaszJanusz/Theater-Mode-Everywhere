@@ -130,7 +130,7 @@ for (const engine of testEngines()) {
         await page.clock.runFor(201);
         assert.equal(await plate.evaluate(e => e === (window as unknown as { originalHud: Element }).originalHud), true, 'retrigger keeps the same plate past stale hide/removal deadlines');
         assert.equal(await plate.evaluate(e => e.classList.contains('fade-out')), false);
-        assert.equal(await plate.locator('.volume-hud-content').count(), 1);
+        assert.equal(await plate.locator('.volume-hud-content, svg.playback-hud-icon').count(), 1);
       }
       await page.clock.runFor(2599);
       assert.equal(await plate.evaluate(e => e.classList.contains('fade-out')), true);

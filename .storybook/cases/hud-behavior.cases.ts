@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
 import { applyAccentColorPreset } from '../../src/accentTheme';
 import { BASS_LEVELS } from '../../src/audio-settings';
@@ -6,11 +6,11 @@ import {
   audioHudIcon, CENTERED_HUD_VISIBLE_MS, HUD_FADE_OUT_MS, SEEK_HUD_MS, STATUS_HUD_MUTE_ICON
 } from '../../src/ui/hud';
 import { t } from '../../src/ui/messages';
-import { queryPlayerUi } from '../../src/ui/root';
+import { getPlayerUiRoot, queryPlayerUi } from '../../src/ui/root';
 import { hudCase as hudStory, runHudCase, type HudCase } from '../fixture-test';
 import { activeAnimationCount, uiNodeCount } from '../hud-stage';
 import {
-  bassHud, hud, hudText, measure, overlay, overlayCount, SEEK, SEEK_PHASE_PROGRESS, stage
+  bassHud, hud, hudText, measure, overlay, overlayCount, SEEK, SEEK_PHASE_PROGRESS, showLoadingPlate, stage
 } from '../hud-story';
 
 // Behavior of the HUD lifecycle on a clock the story advances. These end with the UI removed or
@@ -40,11 +40,11 @@ function rapid(name: string, action: (index: number) => void): { one: ReturnType
 const PlaybackEchoKeepsTheIcon: Story = hudStory(hud => hud.triggerPlaybackIndicator('play'), {
   play: async () => {
     const first = overlay()!;
-    const icon = first.querySelector('.volume-hud-icon');
+    const icon = first.querySelector('svg');
     stage().advance(2000);
     hud().triggerPlaybackIndicator('play');
     await expect(overlay()).toBe(first);
-    await expect(first.querySelector('.volume-hud-icon')).toBe(icon);
+    await expect(first.querySelector('svg')).toBe(icon);
     // The echo restarted the timer: the original would have faded 800 ms from now.
     stage().advance(CENTERED_HUD_VISIBLE_MS - 1);
     await expect(first.classList.contains('fade-out')).toBe(false);
@@ -53,6 +53,108 @@ const PlaybackEchoKeepsTheIcon: Story = hudStory(hud => hud.triggerPlaybackIndic
   }
 });
 test('PlaybackEchoKeepsTheIcon', () => runHudCase(PlaybackEchoKeepsTheIcon));
+
+/** One plate for both actions: a later action swaps the pictogram in place and restarts the single timer. */
+const PlaybackSwapsInPlace: Story = hudStory(hud => hud.triggerPlaybackIndicator('pause'), {
+  play: async () => {
+    const shown = overlay()!;
+    const pause = shown.querySelector('svg');
+    stage().advance(CENTERED_HUD_VISIBLE_MS - 1);
+    await expect(shown.classList.contains('fade-out')).toBe(false);
+    hud().triggerPlaybackIndicator('play');
+    await expect(overlay()).toBe(shown);
+    await expect(shown.dataset.playbackAction).toBe('play');
+    await expect(shown.querySelector('svg')).not.toBe(pause);
+    await expect(shown.querySelectorAll('svg').length).toBe(1);
+    await expect(stage().clock.pending).toBe(1);
+    stage().advance(CENTERED_HUD_VISIBLE_MS - 1);
+    await expect(shown.classList.contains('fade-out')).toBe(false);
+    stage().advance(1);
+    await expect(shown.classList.contains('fade-out')).toBe(true);
+    stage().advance(HUD_FADE_OUT_MS);
+    await expect(shown.isConnected).toBe(false);
+    await expect(stage().clock.pending).toBe(0);
+  }
+});
+test('PlaybackSwapsInPlace', () => runHudCase(PlaybackSwapsInPlace));
+
+/** Theater exit while the plate shows: no node, timer or animation survives, and a second exit is harmless. */
+const PlaybackPlateCleanup: Story = hudStory(hud => hud.triggerPlaybackIndicator('pause'), {
+  play: async () => {
+    hud().removeCenteredHud();
+    hud().removeCenteredHud();
+    stage().advance(CENTERED_HUD_VISIBLE_MS);
+    await expect(uiNodeCount()).toBe(0);
+    await expect(stage().clock.pending).toBe(0);
+    await expect(activeAnimationCount()).toBe(0);
+  }
+});
+test('PlaybackPlateCleanup', () => runHudCase(PlaybackPlateCleanup));
+
+// Buffering and the playback plate share one centre. The ring is the viewer's feedback for play (the video is
+// starting); for pause it would read as a pause that did not register, so the pause plate takes the centre
+// for its usual time and the ring comes back after it while the media is still waiting.
+const ringOpacity = (ring: HTMLElement) => { stage().settle(); return getComputedStyle(ring).opacity; };
+const announced = () => getPlayerUiRoot().getElementById('theater-announcements')!.textContent;
+
+const PauseOverBuffering: Story = hudStory(() => {}, {
+  play: async () => {
+    const ring = showLoadingPlate();
+    await expect(ringOpacity(ring)).toBe('1');
+    hud().triggerPlaybackIndicator('pause');
+    await expect(overlay()?.dataset.playbackAction).toBe('pause');
+    await expect(ringOpacity(ring)).toBe('0');
+    await vi.waitFor(() => expect(announced()).toBe(t('pause')));
+    stage().advance(CENTERED_HUD_VISIBLE_MS + HUD_FADE_OUT_MS);
+    await expect(overlay()).toBeNull();
+    await expect(ringOpacity(ring)).toBe('1');
+    await expect(stage().clock.pending).toBe(0);
+  }
+});
+test('PauseOverBuffering', () => runHudCase(PauseOverBuffering));
+
+const PlayOverBuffering: Story = hudStory(() => {}, {
+  play: async () => {
+    const ring = showLoadingPlate();
+    hud().triggerPlaybackIndicator('play');
+    await expect(overlay()).toBeNull();
+    await expect(ringOpacity(ring)).toBe('1');
+    await expect(stage().clock.pending).toBe(0);
+    await vi.waitFor(() => expect(announced()).toBe(t('play')));
+    // The click's echo is skipped the same way, and the cancelled click has nothing to withdraw.
+    hud().triggerPlaybackIndicator('play');
+    hud().dismissPlaybackIndicator();
+    await expect(ringOpacity(ring)).toBe('1');
+    // The plate and its ring: no playback plate joined them.
+    await expect(uiNodeCount()).toBe(2);
+  }
+});
+test('PlayOverBuffering', () => runHudCase(PlayOverBuffering));
+
+/** Pausing, then pressing play once the ring is waiting again: the stale pause plate must not stay up beside it. */
+const PlayRetiresPausePlate: Story = hudStory(() => {}, {
+  play: async () => {
+    const ring = showLoadingPlate();
+    hud().triggerPlaybackIndicator('pause');
+    await expect(ringOpacity(ring)).toBe('0');
+    hud().triggerPlaybackIndicator('play');
+    await expect(overlay()).toBeNull();
+    await expect(ringOpacity(ring)).toBe('1');
+    await expect(stage().clock.pending).toBe(0);
+  }
+});
+test('PlayRetiresPausePlate', () => runHudCase(PlayRetiresPausePlate));
+
+/** Without buffering, play shows its plate as before; a ring that already ended does not suppress it. */
+const PlayAfterBufferingEnded: Story = hudStory(() => {}, {
+  play: async () => {
+    const ring = showLoadingPlate();
+    ring.classList.remove('visible');
+    hud().triggerPlaybackIndicator('play');
+    await expect(overlay()?.dataset.playbackAction).toBe('play');
+  }
+});
+test('PlayAfterBufferingEnded', () => runHudCase(PlayAfterBufferingEnded));
 
 const CancelledClickWithdraws: Story = hudStory(hud => hud.triggerPlaybackIndicator('pause'), {
   play: async () => {

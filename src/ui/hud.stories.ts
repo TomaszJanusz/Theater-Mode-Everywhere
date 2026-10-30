@@ -1,7 +1,7 @@
 import type { Meta } from '@storybook/html-vite';
 import { expect } from 'storybook/test';
 
-import { bassHud, hudStory, hudText, overlay, SEEK, SEEK_FRAMES, SEEK_PHASE_PROGRESS, type HudArgs } from '../../.storybook/hud-story';
+import { bassHud, hudStory, hudText, overlay, SEEK, SEEK_FRAMES, SEEK_PHASE_PROGRESS, showLoadingPlate, type HudArgs } from '../../.storybook/hud-story';
 import { BASS_LEVELS, type AudioSettings } from '../audio-settings';
 
 import { videoFitLabel } from './appearance';
@@ -24,15 +24,22 @@ const meta: Meta<HudArgs> = {
 };
 export default meta;
 
+/** Play and pause are a pictogram alone in the buffering plate's circle; the word goes to the live region. */
 function playback(action: 'play' | 'pause') {
   return hudStory<HudArgs & { action: 'play' | 'pause' }>((h, _s, args) => h.triggerPlaybackIndicator(args.action), {
     args: { action }, argTypes: { action: { control: 'select', options: ['play', 'pause'] } },
     play: async ({ args }) => {
-      await expect(hudText()).toBe(t(args.action));
       await expect(overlay()?.dataset.playbackAction).toBe(args.action);
+      await expect(overlay()?.querySelector('svg.playback-hud-icon')).not.toBeNull();
+      await expect(overlay()?.textContent).toBe('');
     }
   });
 }
+
+/** The buffering plate the playback plate takes its circle from, for comparison. */
+const loadingPlate = hudStory(() => { showLoadingPlate(); }, {
+  play: async () => { await expect(queryPlayerUi('.theater-loading-indicator.visible .theater-loading-spinner')).not.toBeNull(); }
+});
 
 interface VolumeArgs extends HudArgs { amount: number; muted: boolean; direction: 'up' | 'down'; graph: boolean }
 function volume(amount: number, direction: 'up' | 'down' = 'up', graph = false, muted = false) {
@@ -107,6 +114,8 @@ function bass(level: AudioSettings['bass']) {
 }
 
 export const Playback = playback('play');
+export const Pause = playback('pause');
+export const LoadingPlate = loadingPlate;
 export const Volume = volume(0.65);
 export const BoostedVolume = volume(1.25, 'up', true);
 export const VolumeWithoutGraph = volume(1.25);

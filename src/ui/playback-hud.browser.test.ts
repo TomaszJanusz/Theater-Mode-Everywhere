@@ -27,9 +27,27 @@ async function boot(page: Page, settings: Record<string, unknown> = {}): Promise
 }
 
 /**
- * Waits until exactly one playback HUD is showing the expected label.
+ * Waits until exactly one playback plate is showing the expected action, as a pictogram alone.
  * @param page Theater page under test.
- * @param text Expected play or pause label.
+ * @param action Expected play or pause action.
+ * @returns When the plate is present, not fading out, wordless, and the live region has said the action.
+ */
+async function waitForPlayback(page: Page, action: 'play' | 'pause'): Promise<void> {
+  await page.waitForFunction((expected) => {
+    const root = document.querySelector('#theater-everywhere-ui')?.shadowRoot;
+    const nodes = root?.querySelectorAll('.theater-everywhere-volume-overlay') ?? [];
+    if (nodes.length !== 1) return false;
+    const plate = nodes[0];
+    return plate instanceof HTMLElement && plate.dataset.playbackAction === expected && !plate.classList.contains('fade-out')
+      && plate.textContent === '' && Boolean(plate.querySelector('svg.playback-hud-icon'))
+      && root?.getElementById('theater-announcements')?.textContent === (expected === 'play' ? 'Play' : 'Pause');
+  }, action);
+}
+
+/**
+ * Waits until exactly one centred HUD is showing the expected label.
+ * @param page Theater page under test.
+ * @param text Expected label.
  * @returns When the overlay is present and not fading out.
  */
 async function waitForHud(page: Page, text: string): Promise<void> {
@@ -164,16 +182,16 @@ describe('playback HUD browser regressions', () => {
     await boot(page);
 
     await page.locator('.play-pause-btn').click();
-    await waitForHud(page, 'Pause');
+    await waitForPlayback(page, 'pause');
     assert.equal(await page.locator('video').evaluate(node => (node as HTMLVideoElement).paused), true);
 
     await page.locator('video').click({ position: { x: 80, y: 80 } });
     // The HUD previews the click's action before the double-click window ends.
-    await waitForHud(page, 'Play');
+    await waitForPlayback(page, 'play');
     await page.waitForFunction(() => !(document.querySelector('video') as HTMLVideoElement).paused);
 
     await page.keyboard.press('k');
-    await waitForHud(page, 'Pause');
+    await waitForPlayback(page, 'pause');
     assert.equal(await page.locator('video').evaluate(node => (node as HTMLVideoElement).paused), true);
     assert.deepEqual(errors, []);
   });
@@ -247,7 +265,7 @@ describe('playback HUD browser regressions', () => {
 
       // The HUD names the intended action as soon as the click lands.
       await page.locator('video').click({ position: { x: 120, y: 80 } });
-      await waitForHud(page, 'Play');
+      await waitForPlayback(page, 'play');
       await page.waitForFunction(() => !(document.querySelector('video') as HTMLVideoElement).paused);
 
       // A fast double-click is fullscreen only: no play/pause events, no leftover HUD.

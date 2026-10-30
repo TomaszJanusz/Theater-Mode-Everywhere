@@ -68,6 +68,27 @@ for (const engine of testEngines()) {
     assert.equal(await plateOpacity(page), '1', 'still buffering: the spinner returns');
   });
 
+  it(`${engine}: play keeps the buffering ring; pause takes the plate and the ring returns`, { timeout: 40_000 }, async t => {
+    const page = await (await shared.newContext(t)).newPage();
+    await setup(page, 'normal');
+    await page.evaluate("hud.triggerPlaybackIndicator('play')");
+    assert.equal(await page.locator('.theater-everywhere-volume-overlay').count(), 0, 'the ring already answers play');
+    assert.equal(await plateOpacity(page), '1');
+
+    await page.evaluate("hud.triggerPlaybackIndicator('pause')");
+    assert.equal(await plateOpacity(page), '0', 'a ring that kept turning would read as an ignored pause');
+    const sizes = await page.evaluate(() => {
+      const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+      const pause = root.querySelector('.theater-everywhere-volume-overlay')!.getBoundingClientRect();
+      const ring = root.querySelector('.theater-loading-indicator')!.getBoundingClientRect();
+      return { pause: [pause.x, pause.y, pause.width, pause.height], ring: [ring.x, ring.y, ring.width, ring.height] };
+    });
+    assert.deepEqual(sizes.pause, sizes.ring, 'one circle, one place');
+    await page.clock.runFor(3000);
+    assert.equal(await page.locator('.theater-everywhere-volume-overlay').count(), 0);
+    assert.equal(await plateOpacity(page), '1', 'still buffering: the ring returns');
+  });
+
   it(`${engine}: a spinner that stopped during the HUD stays gone, and an early dismissal brings it back`, { timeout: 40_000 }, async t => {
     const page = await (await shared.newContext(t)).newPage();
     await setup(page, 'normal');
@@ -77,7 +98,7 @@ for (const engine of testEngines()) {
     assert.equal(await plateOpacity(page), '0', 'buffering ended: no spinner after the HUD');
 
     await page.evaluate("document.getElementById('theater-everywhere-ui').shadowRoot.querySelector('.theater-loading-indicator').classList.add('visible')");
-    await page.evaluate("hud.triggerPlaybackIndicator('play'); hud.dismissPlaybackIndicator()");
+    await page.evaluate("hud.triggerPlaybackIndicator('pause'); hud.dismissPlaybackIndicator()");
     assert.equal(await plateOpacity(page), '1', 'a withdrawn HUD releases the spinner');
     await page.clock.runFor(5000);
     assert.equal(await plateOpacity(page), '1');
