@@ -27,20 +27,22 @@ describe('page request details', () => {
   });
 
   it('round-trips a provider probe request and its reply', () => {
-    assert.deepEqual(parseProbeAsyncRequest(encodeProbeAsyncRequest({ requestId: 2, provider: 'bilibiliIntl' })), { requestId: 2, provider: 'bilibiliIntl' });
-    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply({ requestId: 2, value: { videoId: 'BV1' } }), 2), { value: { videoId: 'BV1' } });
-    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply({ requestId: 2, value: undefined }), 2), { value: null });
-    assert.equal(parseProbeAsyncReply(encodeProbeAsyncReply({ requestId: 3, value: 1 }), 2), null);
+    const request = { requestId: 2, provider: 'bilibiliIntl', timeoutMs: 8000 };
+    assert.deepEqual(parseProbeAsyncRequest(encodeProbeAsyncRequest(request)), request);
+    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply(2, { videoId: 'BV1' }), 2), { value: { videoId: 'BV1' } });
+    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply(2, undefined), 2), { value: null });
+    assert.equal(parseProbeAsyncReply(encodeProbeAsyncReply(3, 1), 2), null);
   });
 
   it('rejects provider probe messages without a correlatable id or provider', () => {
-    for (const raw of [...HOSTILE, '{"requestId":1}', `{"requestId":1,"provider":"${'x'.repeat(201)}"}`, '{"requestId":0,"provider":"x"}', '{"requestId":1.5,"provider":"x"}']) {
+    for (const raw of [...HOSTILE, '{"requestId":1}', `{"requestId":1,"provider":"${'x'.repeat(201)}","timeoutMs":5}`, '{"requestId":0,"provider":"x","timeoutMs":5}',
+      '{"requestId":1.5,"provider":"x","timeoutMs":5}', '{"requestId":1,"provider":"x"}', '{"requestId":1,"provider":"x","timeoutMs":0}', '{"requestId":1,"provider":"x","timeoutMs":60001}']) {
       assert.equal(parseProbeAsyncRequest(raw), null, String(raw));
       assert.equal(parseProbeAsyncReply(raw, 1), null, String(raw));
     }
     assert.equal(parseProbeAsyncReply('{"requestId":1}', 1), null, 'a reply names its value, even null');
-    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply({ requestId: 1, value: 10n }), 1), { value: null });
-    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply({ requestId: 1, value: 'x'.repeat(1024 * 1024) }), 1), { value: null });
+    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply(1, 10n), 1), { value: null });
+    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply(1, 'x'.repeat(1024 * 1024)), 1), { value: null });
   });
 
   it('round-trips YouTube caption requests', () => {

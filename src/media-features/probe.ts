@@ -104,7 +104,7 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
   });
 }
 
-/** Each provider's latest pending probe, settled with null when a newer request supersedes it. Settling twice is a no-op. */
+/** Each provider's pending probe, settled with null when a newer request supersedes it. Settling twice is a no-op. */
 const pendingProviderProbes = new Map<string, (value: unknown) => void>();
 let providerProbeId = 0;
 
@@ -116,8 +116,9 @@ let providerProbeId = 0;
 export function requestProviderProbe(provider: string, timeoutMs = 8000, target: EventTarget = window): Promise<unknown> {
   pendingProviderProbes.get(provider)?.(null);
   return new Promise((resolve) => {
-    const request = { requestId: ++providerProbeId, provider };
+    const request = { requestId: ++providerProbeId, provider, timeoutMs };
     const finish = (value: unknown) => {
+      if (pendingProviderProbes.get(provider) === finish) pendingProviderProbes.delete(provider);
       clearTimeout(timer);
       target.removeEventListener(PROBE_ASYNC_REPLY_EVENT, onReply);
       resolve(value);
