@@ -6,7 +6,7 @@ import { build } from 'vite';
 
 import { bundleMinify, resolveBundleBuildMode } from './build-mode';
 import { assertSelfContainedBundles } from './bundle-integrity';
-import { assertProviderSources, classicEntries, discoverDescriptors } from './provider-descriptors';
+import { assertProviderSources, classicEntries, discoverDescriptors, isHostOnlySource, type ProviderDescriptor } from './provider-descriptors';
 
 /** Stateful runtime owners a provider entry must receive through its runtime's services, never bundle. */
 // Chat code that only the isolated world needs. The MAIN script must reach chat through
@@ -74,9 +74,9 @@ function zipDirectory(sourceDir: string, outPath: string): Promise<void> {
   });
 }
 
-function assertBundleBoundary(entryName: string, normalized: string, id: string, migrated: string[]): void {
+function assertBundleBoundary(entryName: string, normalized: string, id: string, descriptors: ProviderDescriptor[]): void {
   const isProviderBundle = entryName.startsWith('providers/');
-  if (!isProviderBundle && migrated.some(directory => normalized.includes(directory))) {
+  if (!isProviderBundle && descriptors.some(descriptor => isHostOnlySource(normalized, descriptor))) {
     throw new Error(`${entryName} includes extracted provider code: ${id}`);
   }
   if (entryName === 'mainWorld' && ISOLATED_ONLY_CHAT.test(normalized)) {
@@ -98,13 +98,13 @@ async function buildClassicScript(
     root,
     publicDir: false,
     plugins: [{ name: 'provider-boundaries', generateBundle(_options, bundle) {
-      const migrated = discoverDescriptors(root).map(item => `/src/providers/${item.id}/`);
+      const descriptors = discoverDescriptors(root);
       const chunks = Object.values(bundle).filter(chunk => chunk.type === 'chunk');
       for (const chunk of chunks) {
         for (const [id, module] of Object.entries(chunk.modules)) {
           if (!module.renderedLength) continue;
           const normalized = id.replaceAll('\\', '/');
-          assertBundleBoundary(entryName, normalized, id, migrated);
+          assertBundleBoundary(entryName, normalized, id, descriptors);
         }
       }
     } }],

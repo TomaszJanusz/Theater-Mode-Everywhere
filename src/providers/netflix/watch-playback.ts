@@ -1,5 +1,6 @@
 import { isSwitchableTheaterVideo } from '../../switchable-videos';
 import type { WatchPlayback } from '../watch-playback';
+
 import { findNetflixPlayerRoot, netflixWatchId, readNetflixPlayerAppApi, selectNetflixSession } from './session';
 
 export const netflixWatchPlayback: WatchPlayback = {
