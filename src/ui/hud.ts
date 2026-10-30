@@ -1,6 +1,6 @@
 import { measureNextFrame } from '../core/frame-batch';
 
-import { HUD_FADE_OUT_MS, HUD_PLATE_CLASS } from './hud-plate';
+import { createLoadingPlate, ensureLoadingRing, HUD_FADE_OUT_MS, HUD_PLATE_CLASS, LOADING_PLATE_CLASS } from './hud-plate';
 import { createLanguageHud } from './language-hud';
 import { createSvgIcon } from './svg-icon';
 import { isMotionReduced } from '../appearance-runtime';
@@ -22,7 +22,7 @@ export const CENTERED_HUD_VISIBLE_MS = 800 + 2000;
 export const SEEK_HUD_MS = 650;
 /** Set on the player-UI host while a centred confirmation is on screen; shadow.css hides the loading spinner for it. */
 export const CENTERED_HUD_ATTRIBUTE = 'data-centered-hud';
-export { HUD_FADE_OUT_MS, HUD_PLATE_CLASS };
+export { createLoadingPlate, ensureLoadingRing, HUD_FADE_OUT_MS, HUD_PLATE_CLASS };
 
 export const STATUS_HUD_SWITCH_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -110,6 +110,12 @@ export const STATUS_HUD_UNMUTE_ICON = `
     <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
   </svg>
 `;
+
+/** Drawn in the loading ring's 48px content box, filled in the plate's ink; the play triangle sits a little right of centre to look centred. */
+const PLAYBACK_HUD_ICONS = {
+  play: '<svg xmlns="http://www.w3.org/2000/svg" class="playback-hud-icon" viewBox="0 0 48 48" width="48" height="48" fill="currentColor" stroke="currentColor" stroke-width="6" stroke-linejoin="round"><path d="M15.5 10 36 24 15.5 38Z"/></svg>',
+  pause: '<svg xmlns="http://www.w3.org/2000/svg" class="playback-hud-icon" viewBox="0 0 48 48" width="48" height="48" fill="currentColor"><rect x="8.75" y="5" width="11.5" height="38" rx="5.75"/><rect x="27.75" y="5" width="11.5" height="38" rx="5.75"/></svg>'
+} as const;
 
 function renderConfirmation(overlay: HTMLElement, icon: string, text: string, textClass = ''): void {
   const content = document.createElement('div');
@@ -328,43 +334,38 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     return restartCenteredHud(overlay, visibleMs);
   }
 
+  /**
+   * Play and pause are a pictogram alone in the round plate the buffering ring uses; the live region says the word.
+   * A buffering ring already answers "play" (the video is starting), so the plate stays out of its way. Pause
+   * takes the centre for the usual time instead, because a ring that keeps turning would read as a pause that
+   * did not register; it comes back afterwards when the media is still waiting (shadow.css).
+   */
   function triggerPlaybackIndicator(action: 'play' | 'pause'): void {
     if (!ctx.session.element) return;
 
     const existing = ctx.queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
     // A click previews its action before the command runs; the command then
-    // reports the same action and must not flash a second icon.
+    // reports the same action and must not flash or announce it a second time.
     if (existing?.dataset.playbackAction === action) {
       restartCenteredHud(existing);
+      return;
+    }
+    if (action === 'play' && ctx.queryPlayerUi(`.${LOADING_PLATE_CLASS}.visible`)) {
+      if (existing?.dataset.playbackAction) removeCenteredHud();
+      announcePlayerStatus(ctx.t(action));
       return;
     }
 
     const overlay = existing ?? document.createElement('div');
     delete overlay.dataset.level;
-    overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS}`;
+    overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS} playback-hud`;
     overlay.dataset.playbackAction = action;
     ctx.paintOverlay(overlay);
     overlay.setAttribute('aria-hidden', 'true');
+    overlay.replaceChildren(createSvgIcon(PLAYBACK_HUD_ICONS[action]));
 
-    let icon = '';
-    if (action === 'play') {
-      icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <polygon points="5 3 19 12 5 21 5 3"></polygon>
-    </svg>`;
-    } else {
-      icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="6" y="4" width="4" height="16"></rect>
-      <rect x="14" y="4" width="4" height="16"></rect>
-    </svg>`;
-    }
-
-    const text = action === 'play' ? ctx.t('play') : ctx.t('pause');
-    announcePlayerStatus(text);
-
-    renderConfirmation(overlay, icon, text);
-
-    mountConfirmation(overlay);
-
+    if (!overlay.isConnected) ctx.mountPlayerUi(overlay);
+    announcePlayerStatus(ctx.t(action));
     restartCenteredHud(overlay);
   }
 

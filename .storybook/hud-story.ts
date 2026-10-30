@@ -2,9 +2,9 @@ import type { StoryObj } from '@storybook/html-vite';
 
 import type { AudioSettings } from '../src/audio-settings';
 import { audioLevelLabelKey, AUDIO_HUD_KEYS } from '../src/audio-settings';
-import { audioHudIcon, CENTERED_HUD_VISIBLE_MS, createHud } from '../src/ui/hud';
+import { audioHudIcon, CENTERED_HUD_VISIBLE_MS, createHud, createLoadingPlate, ensureLoadingRing } from '../src/ui/hud';
 import { t } from '../src/ui/messages';
-import { getPlayerUiRoot, queryPlayerUi } from '../src/ui/root';
+import { getPlayerUiRoot, mountPlayerUi, queryPlayerUi } from '../src/ui/root';
 
 import { activeAnimationCount, mountHudStage, uiNodeCount, type HudStage } from './hud-stage';
 
@@ -81,6 +81,15 @@ export function hudStory<T extends HudArgs = HudArgs>(
 
 export const overlay = (): HTMLElement | null => queryPlayerUi<HTMLElement>(OVERLAY);
 export const overlayCount = (): number => getPlayerUiRoot().querySelectorAll(OVERLAY).length;
+/** The buffering plate as the player shows it while the media waits for data. */
+export function showLoadingPlate(): HTMLElement {
+  const plate = createLoadingPlate();
+  ensureLoadingRing(plate);
+  plate.classList.add('visible');
+  mountPlayerUi(plate);
+  return plate;
+}
+
 export const hudText = (): string | null | undefined => overlay()?.querySelector('.volume-hud-text')?.textContent;
 
 /** What the HUDs leave behind: player UI elements, live animations and timers still pending. */

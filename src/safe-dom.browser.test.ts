@@ -46,7 +46,7 @@ for (const engine of testEngines()) {
       try { createSvgIcon('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'); } catch { rejectsScript = true; }
       const hud = createHud({ session: { element: document.body }, queryPlayerUi: selector => document.querySelector(selector),
         mountPlayerUi: node => document.body.append(node), paintOverlay() {}, t: () => malicious }, () => {});
-      hud.triggerPlaybackIndicator('play');
+      hud.triggerStatusIndicator(malicious, '');
       const literalHud = document.querySelector('.volume-hud-text').textContent === malicious
         && !document.querySelector('.volume-hud-content a');
       hud.removeCenteredHud();

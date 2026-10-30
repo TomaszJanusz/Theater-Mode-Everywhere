@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
 import type { AudioSettings } from '../../src/audio-settings';
 import { videoFitLabel } from '../../src/ui/appearance';
@@ -11,26 +11,64 @@ import { t } from '../../src/ui/messages';
 import { getPlayerUiRoot, queryPlayerUi } from '../../src/ui/root';
 import { hudCase as hudStory, runHudCase, type HudCase } from '../fixture-test';
 import {
-  bassHud, hudText, overlay, SEEK, SEEK_FRAMES, SEEK_PHASE_PROGRESS
+  bassHud, hudText, overlay, SEEK, SEEK_FRAMES, SEEK_PHASE_PROGRESS, showLoadingPlate
 } from '../hud-story';
 
 
 type Story = HudCase;
 
-const Play: Story = hudStory(hud => hud.triggerPlaybackIndicator('play'), {
-  play: async () => {
-    await expect(hudText()).toBe(t('play'));
-    await expect(overlay()?.dataset.playbackAction).toBe('play');
-  }
-});
-test('Play', () => runHudCase(Play));
+/** The plate holds the pictogram alone; the word reaches assistive technology through the live region. */
+for (const action of ['play', 'pause'] as const) {
+  const Playback: Story = hudStory(hud => hud.triggerPlaybackIndicator(action), {
+    play: async () => {
+      const plate = overlay()!;
+      await expect(plate.dataset.playbackAction).toBe(action);
+      await expect(plate.textContent).toBe('');
+      await expect(plate.querySelectorAll('svg.playback-hud-icon').length).toBe(1);
+      await expect(plate.querySelector('.volume-hud-text, .volume-hud-icon')).toBeNull();
+      await expect(plate.getAttribute('aria-hidden')).toBe('true');
+      await expect(plate.querySelector('button, a, input, [tabindex]')).toBeNull();
+      await expect(getComputedStyle(plate).pointerEvents).toBe('none');
+      await vi.waitFor(() => expect(getPlayerUiRoot().getElementById('theater-announcements')!.textContent).toBe(t(action)));
+    }
+  });
+  test(action === 'play' ? 'Play' : 'Pause', () => runHudCase(Playback));
+}
 
-const Pause: Story = hudStory(hud => hud.triggerPlaybackIndicator('pause'), {
+/** Play and pause draw in the buffering plate's own circle: same size, same centre, same surface classes. */
+const PlateMatchesLoading: Story = hudStory(hud => hud.triggerPlaybackIndicator('pause'), {
   play: async () => {
-    await expect(hudText()).toBe(t('pause'));
+    const plate = overlay()!;
+    const loading = showLoadingPlate();
+    const [a, b] = [plate, loading].map(node => node.getBoundingClientRect());
+    await expect([a.width, a.height]).toEqual([76, 76]);
+    await expect([a.width, a.height]).toEqual([b.width, b.height]);
+    await expect([a.left + a.width / 2, a.top + a.height / 2]).toEqual([b.left + b.width / 2, b.top + b.height / 2]);
+    await expect(getComputedStyle(plate).borderRadius).toBe(getComputedStyle(loading).borderRadius);
+    await expect(getComputedStyle(plate).backgroundColor).toBe(getComputedStyle(loading).backgroundColor);
+    await expect(getComputedStyle(plate).boxShadow).toBe(getComputedStyle(loading).boxShadow);
+    await expect(plate.classList.contains('theater-hud-plate')).toBe(true);
   }
 });
-test('Pause', () => runHudCase(Pause));
+test('PlateMatchesLoading', () => runHudCase(PlateMatchesLoading));
+
+/** The pictogram is optically centred in the plate: the play triangle sits a little right of its box centre on purpose. */
+for (const [action, slack] of [['pause', 0.5], ['play', 3]] as const) {
+  const Centred: Story = hudStory(hud => hud.triggerPlaybackIndicator(action), {
+    play: async () => {
+      const plate = overlay()!.getBoundingClientRect();
+      const ink = [...overlay()!.querySelectorAll<SVGGraphicsElement>('svg path, svg rect')].map(shape => shape.getBoundingClientRect());
+      const left = Math.min(...ink.map(box => box.left));
+      const right = Math.max(...ink.map(box => box.right));
+      const top = Math.min(...ink.map(box => box.top));
+      const bottom = Math.max(...ink.map(box => box.bottom));
+      await expect(Math.abs((left + right) / 2 - (plate.left + plate.width / 2))).toBeLessThanOrEqual(slack);
+      await expect(Math.abs((top + bottom) / 2 - (plate.top + plate.height / 2))).toBeLessThanOrEqual(0.5);
+      await expect(bottom - top).toBeGreaterThan(plate.height * 0.3);
+    }
+  });
+  test(`PlaybackPictogramCentred-${action}`, () => runHudCase(Centred));
+}
 
 const VolumeUp: Story = hudStory(hud => hud.triggerVolumeIndicator(0.65, false, 'up'), {
   play: async () => {

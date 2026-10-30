@@ -33,6 +33,8 @@ export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args'
   // Arabic previously exercised backward seek, German forward seek.
   'components-hud--seek': locale => ({ direction: locale === 'ar' ? 'left' : 'right' }),
   'components-hud--text-only': () => ({ preset: 'onlyVideo' }),
+  // The pictogram has no words, so right-to-left only proves the play triangle keeps pointing forward.
+  'components-hud--playback': () => ({}),
   'components-caption-notice--status': locale => ({ detail: locale === 'ar' ? 'العربية' : 'Portugiesisch (Brasilien, automatisch erstellt)' }),
   'components-language-notice--merged': () => ({}),
   'components-title-hud--overflow': (locale): Profile['args'] => locale === 'ar'
@@ -111,13 +113,13 @@ export function profilesFor(id: string, engine: 'chromium' | 'firefox' = 'chromi
       profile.frames = engine === 'firefox' ? [0, 0.5] : [1];
     } else if (id === 'components-title-hud--overflow' || id === 'components-caption-notice--loading') {
       profile.frames = [0, 0.5];
-    } else if (id === 'components-auto-theater-notice--no-ring') profile.frames = [1];
+    } else if (id === 'components-auto-theater-notice--no-ring' || id === 'components-hud--loading-plate') profile.frames = [1];
     else if (LANGUAGE_MORPH.has(id)) profile.frames = MORPH_FRAMES;
     else {
       const moments = momentsFor(id);
       // Playback and text without an icon have no distinct entry animation. Keep the held
       // image and the real fade; long status profiles with an icon retain their entry frame.
-      profile.moments = id === 'components-hud--playback' || (id === 'components-hud--text-only' && !profile.args.preset)
+      profile.moments = id === 'components-hud--playback' || id === 'components-hud--pause' || (id === 'components-hud--text-only' && !profile.args.preset)
         ? moments?.filter(moment => moment.timeline !== 'enter') : moments;
     }
   }
