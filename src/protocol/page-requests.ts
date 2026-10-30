@@ -49,7 +49,7 @@ export const PROBE_ASYNC_REPLY_EVENT = `${PROBE_ASYNC_EVENT}-reply`;
 export type ProbeAsyncRequest = { requestId: number; provider: string };
 
 /** MAIN -> isolated. `value` is the provider's own snapshot, still unvalidated: the provider parses it. */
-export type ProbeAsyncReply = ProbeAsyncRequest & { value: unknown };
+export type ProbeAsyncReply = { requestId: number; value: unknown };
 
 /** Snapshots carry metadata (track lists, storyboards), never media; anything larger is dropped. */
 const MAX_PROBE_REPLY_CHARS = 1024 * 1024;
@@ -67,21 +67,23 @@ export function parseProbeAsyncRequest(raw: unknown): ProbeAsyncRequest | null {
 }
 
 /** A value that does not serialize or is too large is answered as null. */
-export function encodeProbeAsyncReply(reply: ProbeAsyncReply): string {
-  const { requestId, provider } = reply;
+export function encodeProbeAsyncReply({ requestId, value }: ProbeAsyncReply): string {
   try {
-    const text = JSON.stringify({ requestId, provider, value: reply.value ?? null });
+    const text = JSON.stringify({ requestId, value: value ?? null });
     if (text.length <= MAX_PROBE_REPLY_CHARS) return text;
   } catch {
     // Circular or BigInt values: answered as null below.
   }
-  return JSON.stringify({ requestId, provider, value: null });
+  return JSON.stringify({ requestId, value: null });
 }
 
-/** The reply's value when `raw` answers exactly `request`, else null: a reply to another request or provider never resolves this one. */
-export function parseProbeAsyncReply(raw: unknown, request: ProbeAsyncRequest): { value: unknown } | null {
+/**
+ * The reply's value when `raw` answers request `requestId`, else null. Request ids are unique across providers, so a
+ * reply to another request never resolves this one.
+ */
+export function parseProbeAsyncReply(raw: unknown, requestId: number): { value: unknown } | null {
   const record = parseRecord(raw, MAX_PROBE_REPLY_CHARS);
-  return record?.requestId === request.requestId && record.provider === request.provider && 'value' in record ? { value: record.value } : null;
+  return record?.requestId === requestId && 'value' in record ? { value: record.value } : null;
 }
 
 export type TwitchCaptionsRequest = { enabled: boolean; requestId: string };

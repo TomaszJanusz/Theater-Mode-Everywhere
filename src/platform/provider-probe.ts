@@ -19,7 +19,7 @@ export function answerProviderProbes(target: EventTarget, hooksFor: (id: string)
     const reply = (value: unknown) => {
       if (latest.get(provider) !== controller) return;
       latest.delete(provider);
-      target.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, { detail: encodeProbeAsyncReply({ ...request, value }) }));
+      target.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, { detail: encodeProbeAsyncReply({ requestId: request.requestId, value }) }));
     };
     // A refusal answers null too, one microtask later; a throwing hook rejects like a failing read.
     Promise.resolve().then(() => hooksFor(provider)?.probeAsync?.(controller.signal)).then(reply, () => reply(null));
