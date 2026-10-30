@@ -1,6 +1,12 @@
-import { twitchVodId } from '../navigation/watch-page';
 import type { WatchPlayback } from '../watch-playback';
+
 import { TWITCH_NAVIGATE_EVENT } from './navigation';
+
+/** Twitch VOD pages only: `/videos/<id>`. Live channels, clips and `?video=` embeds stay manual. */
+export function twitchVodId(url: URL): string | null {
+  if (url.hostname !== 'www.twitch.tv' && url.hostname !== 'twitch.tv') return null;
+  return /^\/videos\/(\d+)\/?$/.exec(url.pathname)?.[1] ?? null;
+}
 
 /**
  * The VOD page's only player video. Hover previews, the mini player and any second video fail

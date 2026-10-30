@@ -187,11 +187,9 @@
       "identifier": 6
     },
     "src/media-features": {
-      "hostCheck": 8,
-      "serviceId": 13,
-      "domain": 25,
-      "identifier": 164,
-      "file": 3
+      "serviceId": 9,
+      "domain": 8,
+      "identifier": 13
     },
     "src/platform": {
       "hostCheck": 5,
@@ -199,18 +197,11 @@
       "domain": 1,
       "identifier": 22
     },
-    "src/protocol": {
-      "identifier": 5
-    },
     "src/providers": {
       "hostCheck": 5,
       "serviceId": 6,
-      "domain": 3,
-      "identifier": 11
-    },
-    "src/providers/navigation": {
       "domain": 2,
-      "identifier": 1
+      "identifier": 11
     }
   },
   "viki": {

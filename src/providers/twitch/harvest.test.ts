@@ -65,7 +65,7 @@ it('preserves Twitch transport replacements and decorated promises while harvest
 });
 
 it('parses native JSON metadata and caption URLs without serializing or reparsing the body', async () => {
-  const { parseTwitchGraphqlData } = await import('../../media-features/parsers/twitch-page');
+  const { parseTwitchGraphqlData } = await import('./page');
   const data = { data: { video: {
     id: '123', lengthSeconds: 1200, title: 'Fixture title',
     moments: [{ positionMilliseconds: 1000, title: 'Chapter' }],

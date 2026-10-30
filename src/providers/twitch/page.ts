@@ -1,8 +1,7 @@
-import { sanitizeContentTitle } from '../content-title';
-import { isSafeTwitchStoryboardJsonUrl } from './twitch-storyboard';
-import { isTwitchHost } from '../../providers/hosts';
+import { sanitizeContentTitle } from '../../media-features/content-title';
+import { isTwitchHost } from '../hosts';
 
-export { isTwitchHost };
+import { isSafeTwitchStoryboardJsonUrl } from './storyboard';
 
 export type TwitchPageMoment = {
   start: number;
@@ -19,9 +18,13 @@ export type TwitchPageCaption = {
   delivery?: 'overlay' | 'host';
 };
 
+/** Twitch's own GraphQL endpoint, the only source of VOD metadata the harvest reads. */
+export function isTwitchGqlUrl(value: string): boolean {
+  try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'gql.twitch.tv'; }
+  catch { return false; }
+}
+
 export const TWITCH_HOST_CAPTION_ID = 'twitch:host-cc';
-export const TWITCH_CAPTIONS_EVENT = 'theater-everywhere-twitch-captions';
-export const TWITCH_CAPTIONS_ACK_EVENT = 'theater-everywhere-twitch-captions-ack';
 
 export type TwitchPageAssets = {
   videoId: string | null;

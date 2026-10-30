@@ -1,4 +1,4 @@
-import type { PreviewFrame } from '../types';
+import type { PreviewFrame } from '../../media-features/types';
 
 export type TwitchStoryboardSet = {
   duration: number;
