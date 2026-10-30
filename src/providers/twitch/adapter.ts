@@ -1,1 +1,390 @@
-export { TwitchAdapter } from '../../media-features/twitch-adapter';
+import { sanitizeContentTitle } from '../../media-features/content-title';
+import { isAllowedMediaFetchUrl, type MediaFetchRequest } from '../../media-features/fetch-allowlist';
+import { parseCaptionPayload } from '../../media-features/parsers/captions';
+import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
+import type {
+  CaptionActivationResult,
+  CaptionCue,
+  CaptionTrack,
+  Chapter,
+  MediaCapabilities,
+  MediaFeaturesAdapter,
+  PreviewFrame,
+  PreviewSource
+} from '../../media-features/types';
+
+import { encodeTwitchCaptions, TWITCH_CC_ACK_EVENT, TWITCH_CC_EVENT } from './captions';
+import {
+  collectTwitchStoryboardUrls,
+  isSafeTwitchCaptionUrl,
+  parseTwitchPageAssets,
+  twitchPageVideoId,
+  TWITCH_HOST_CAPTION_ID,
+  type TwitchPageCaption,
+  type TwitchPageMoment
+} from './page';
+import type { TwitchPlayerSnapshot } from './snapshot';
+import {
+  getTwitchPreviewFrame,
+  parseTwitchSeekPreviews,
+  type TwitchStoryboardSet
+} from './storyboard';
+
+const cueCache = new Map<string, CaptionCue[]>();
+const TWITCH_CAPTION_ACK_TIMEOUT_MS = 750;
+
+type TwitchCaptionEventTarget = Pick<Window, 'addEventListener' | 'removeEventListener' | 'dispatchEvent' | 'setTimeout' | 'clearTimeout'>;
+
+export function requestTwitchHostCaptions(
+  enabled: boolean,
+  target: TwitchCaptionEventTarget = window,
+  timeoutMs = TWITCH_CAPTION_ACK_TIMEOUT_MS
+): Promise<boolean> {
+  const requestId = `te-cc-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result: boolean) => {
+      if (settled) return;
+      settled = true;
+      target.removeEventListener(TWITCH_CC_ACK_EVENT, onAck);
+      target.clearTimeout(timer);
+      resolve(result);
+    };
+    const onAck = (event: Event) => {
+      const detail = (event as CustomEvent<{ requestId?: string; enabled?: boolean; applied?: boolean }>).detail;
+      if (detail?.requestId !== requestId || detail.enabled !== enabled) return;
+      finish(detail.applied === true);
+    };
+    const timer = target.setTimeout(() => finish(false), timeoutMs);
+    target.addEventListener(TWITCH_CC_ACK_EVENT, onAck);
+    target.dispatchEvent(new CustomEvent(TWITCH_CC_EVENT, { detail: encodeTwitchCaptions({ enabled, requestId }) }));
+  });
+}
+
+function looksLikeStoryboardBody(body: string): boolean {
+  const trimmed = body.trim();
+  return trimmed.startsWith('[') && /"images"\s*:/.test(body.slice(0, 400));
+}
+
+function looksLikeCaptionBody(body: string): boolean {
+  const start = body.trim().slice(0, 80).toLowerCase();
+  if (start.startsWith('<!doctype') || start.startsWith('<html')) return false;
+  return /^WEBVTT/i.test(body.trim()) || parseCaptionPayload(body).length > 0;
+}
+
+async function fetchTwitchMedia(url: string, kind: MediaFetchRequest['kind']): Promise<string | null> {
+  let absolute = url;
+  try {
+    absolute = new URL(url, window.location.href).toString();
+  } catch {
+    return null;
+  }
+  const request: MediaFetchRequest = { provider: 'twitch', kind, url: absolute };
+  if (!isAllowedMediaFetchUrl(request)) return null;
+  const matches = (body: string) => (
+    kind === 'caption-track' ? looksLikeCaptionBody(body) : looksLikeStoryboardBody(body)
+  );
+
+  try {
+    const result = await chrome.runtime.sendMessage({
+      action: 'theater-fetch-media',
+      ...request
+    });
+    const body = typeof result?.body === 'string' ? result.body : null;
+    if (result?.ok && body && matches(body)) return body;
+  } catch {
+    // Fall through to page fetches when the broker is unavailable.
+  }
+
+  try {
+    const response = await fetch(absolute, { credentials: 'omit' });
+    if (response.ok) {
+      const text = await response.text();
+      if (matches(text)) return text;
+    }
+  } catch {
+    // CloudFront storyboards are often blocked by page CORS/CSP.
+  }
+
+  const fromPage = await requestPageFetch(absolute, 2500);
+  if (fromPage && matches(fromPage)) return fromPage;
+  return null;
+}
+
+function pageAssetsFromDocument() {
+  const html = typeof document === 'undefined' ? '' : document.documentElement?.innerHTML || '';
+  const href = typeof window === 'undefined' ? '' : window.location.href;
+  return parseTwitchPageAssets(html, href);
+}
+
+function twitchAssetHtml(): string {
+  if (typeof document === 'undefined') return '';
+  const bits: string[] = [];
+  for (const el of document.querySelectorAll('[src*="cf_vods"], [href*="cf_vods"]')) {
+    bits.push(el.getAttribute('src') || el.getAttribute('href') || '');
+  }
+  if (bits.length > 0) return bits.join('\n');
+  return document.documentElement?.innerHTML || '';
+}
+
+function mergeMoments(
+  fromProbe: TwitchPlayerSnapshot['moments'] | undefined,
+  fromPage: TwitchPageMoment[]
+): TwitchPageMoment[] {
+  const merged: TwitchPageMoment[] = [];
+  const seen = new Set<string>();
+  const add = (start: number, title: string, end?: number) => {
+    const label = title.trim();
+    if (!Number.isFinite(start) || start < 0 || !label) return;
+    const key = `${start}:${label}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push({ start, end, title: label.slice(0, 120) });
+  };
+  for (const moment of fromProbe || []) {
+    add(Number(moment.startTime), String(moment.title || ''), Number.isFinite(Number(moment.endTime)) ? Number(moment.endTime) : undefined);
+  }
+  for (const moment of fromPage) {
+    add(moment.start, moment.title, moment.end);
+  }
+  merged.sort((left, right) => left.start - right.start);
+  return merged.slice(0, 80);
+}
+
+function mergeCaptions(
+  fromProbe: TwitchPlayerSnapshot['captionTracks'] | undefined,
+  fromPage: TwitchPageCaption[]
+): TwitchPageCaption[] {
+  const merged: TwitchPageCaption[] = [];
+  const seen = new Set<string>();
+  for (const track of [...(fromProbe || []), ...fromPage]) {
+    const hostManaged = track.delivery === 'host' || track.id === TWITCH_HOST_CAPTION_ID;
+    if (hostManaged) {
+      if (seen.has(TWITCH_HOST_CAPTION_ID)) continue;
+      seen.add(TWITCH_HOST_CAPTION_ID);
+      merged.push({
+        id: TWITCH_HOST_CAPTION_ID,
+        url: '',
+        language: String(track.language || '').slice(0, 16),
+        label: String(track.label || 'Closed Captions').slice(0, 80),
+        autoGenerated: Boolean(track.autoGenerated),
+        delivery: 'host'
+      });
+      continue;
+    }
+    const url = typeof track.url === 'string' ? track.url : '';
+    if (!isSafeTwitchCaptionUrl(url) || seen.has(url)) continue;
+    seen.add(url);
+    merged.push({
+      id: String(track.id || `twitch:${merged.length}`).slice(0, 160),
+      url,
+      language: String(track.language || '').slice(0, 16),
+      label: String(track.label || track.language || 'Captions').slice(0, 80),
+      autoGenerated: Boolean(track.autoGenerated)
+    });
+  }
+  return merged.slice(0, 20);
+}
+
+function readTwitchHarvestFromDom(): TwitchPlayerSnapshot | null {
+  const node = document.getElementById('theater-everywhere-twitch-harvest');
+  const raw = node?.textContent?.trim();
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw) as {
+      videoId?: string;
+      title?: string;
+      duration?: number | string;
+      seekPreviewsURL?: string;
+      moments?: TwitchPlayerSnapshot['moments'];
+      captions?: TwitchPlayerSnapshot['captionTracks'];
+      captionTracks?: TwitchPlayerSnapshot['captionTracks'];
+    };
+    const duration = Number(data.duration);
+    const moments = Array.isArray(data.moments) ? data.moments : [];
+    const captionTracks = Array.isArray(data.captionTracks)
+      ? data.captionTracks
+      : Array.isArray(data.captions) ? data.captions : [];
+    const title = sanitizeContentTitle(data.title) || undefined;
+    if (!data.videoId && moments.length === 0 && !data.seekPreviewsURL && captionTracks.length === 0 && !title) return null;
+    return {
+      videoId: data.videoId || undefined,
+      ...(title ? { title } : {}),
+      duration: Number.isFinite(duration) && duration > 0 ? duration : undefined,
+      seekPreviewsURL: data.seekPreviewsURL || undefined,
+      moments,
+      captionTracks
+    };
+  } catch {
+    return null;
+  }
+}
+
+export class TwitchAdapter implements MediaFeaturesAdapter {
+  private snapshot: TwitchPlayerSnapshot | null = null;
+  private storyboard: TwitchStoryboardSet | null = null;
+  private tracks: TwitchPageCaption[] = [];
+  private moments: TwitchPageMoment[] = [];
+
+  async load(): Promise<void> {
+    const pageVideoId = twitchPageVideoId(window.location.href);
+    if (!pageVideoId) {
+      const probed = await requestMediaProbe(800);
+      const harvested = readTwitchHarvestFromDom();
+      const title = sanitizeContentTitle(probed.twitch?.title) || sanitizeContentTitle(harvested?.title) || undefined;
+      this.snapshot = { videoId: undefined, ...(title ? { title } : {}) };
+      this.storyboard = null;
+      this.tracks = [];
+      this.moments = [];
+      return;
+    }
+
+    const probed = await requestMediaProbe(1500);
+    const harvested = readTwitchHarvestFromDom();
+    const page = pageAssetsFromDocument();
+    const seekCandidates = collectTwitchStoryboardUrls(
+      twitchAssetHtml(),
+      pageVideoId,
+      [probed.twitch?.seekPreviewsURL, harvested?.seekPreviewsURL, page.seekPreviewsURL]
+        .filter((url): url is string => Boolean(url))
+    );
+    const duration = probed.twitch?.duration || harvested?.duration || page.duration;
+    const title = sanitizeContentTitle(probed.twitch?.title)
+      || sanitizeContentTitle(harvested?.title)
+      || sanitizeContentTitle(page.title)
+      || undefined;
+    this.moments = mergeMoments(
+      [...(probed.twitch?.moments || []), ...(harvested?.moments || [])],
+      page.moments
+    );
+    this.tracks = mergeCaptions(
+      [...(probed.twitch?.captionTracks || []), ...(harvested?.captionTracks || [])],
+      page.captions
+    );
+    this.snapshot = {
+      videoId: probed.twitch?.videoId || page.videoId || pageVideoId,
+      ...(title ? { title } : {}),
+      duration,
+      seekPreviewsURL: seekCandidates[0],
+      moments: this.moments.map((moment) => ({
+        startTime: moment.start,
+        endTime: moment.end,
+        title: moment.title
+      })),
+      captionTracks: this.tracks
+    };
+    this.storyboard = null;
+    for (const url of seekCandidates) {
+      const body = await fetchTwitchMedia(url, 'storyboard-json');
+      this.storyboard = body
+        ? parseTwitchSeekPreviews(body, duration || 0, url)
+        : null;
+      if (this.storyboard) {
+        this.snapshot.seekPreviewsURL = url;
+        break;
+      }
+    }
+  }
+
+  async probe(): Promise<MediaCapabilities> {
+    if (!this.snapshot) await this.load();
+    return {
+      captions: this.tracks.length > 0,
+      chapters: this.moments.length > 0,
+      previews: Boolean(this.storyboard)
+    };
+  }
+
+  async listCaptionTracks(): Promise<CaptionTrack[]> {
+    if (!this.snapshot) await this.load();
+    return this.tracks.map((track) => ({
+      id: track.id,
+      language: track.language,
+      label: track.label || track.language || 'Captions',
+      kind: 'captions' as const,
+      source: 'twitch' as const,
+      autoGenerated: Boolean(track.autoGenerated),
+      delivery: track.delivery
+    }));
+  }
+
+  async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
+    if (id === null) {
+      await requestTwitchHostCaptions(false);
+      return { status: 'off', delivery: 'none', cues: [] };
+    }
+    if (!this.snapshot) await this.load();
+    const track = this.tracks.find((item) => item.id === id);
+    if (!track) return { status: 'failed', delivery: 'none', cues: [] };
+    if (track.delivery === 'host' || track.id === TWITCH_HOST_CAPTION_ID) {
+      const applied = await requestTwitchHostCaptions(true);
+      return applied
+        ? { status: 'active', delivery: 'host', cues: [] }
+        : { status: 'failed', delivery: 'none', cues: [] };
+    }
+    const cached = cueCache.get(track.url);
+    if (cached && cached.length > 0) return { status: 'active', delivery: 'overlay', cues: cached };
+    const body = await fetchTwitchMedia(track.url, 'caption-track');
+    if (!body) return { status: 'failed', delivery: 'none', cues: [] };
+    const cues = parseCaptionPayload(body);
+    if (cues.length > 0) cueCache.set(track.url, cues);
+    return cues.length > 0
+      ? { status: 'active', delivery: 'overlay', cues }
+      : { status: 'failed', delivery: 'none', cues: [] };
+  }
+
+  async getChapters(): Promise<Chapter[]> {
+    if (!this.snapshot) await this.load();
+    const duration = this.snapshot?.duration;
+    return this.moments.map((moment, index, all) => ({
+      start: moment.start,
+      end: moment.end ?? all[index + 1]?.start ?? duration,
+      title: moment.title,
+      source: 'twitch',
+      confidence: 'high' as const
+    }));
+  }
+
+  async getPreviewSource(): Promise<PreviewSource> {
+    if (!this.snapshot) await this.load();
+    return this.storyboard
+      ? { kind: 'sprite', provider: 'twitch' }
+      : { kind: 'none', reason: 'no-storyboard' };
+  }
+
+  getPreviewFrame(time: number, duration: number): PreviewFrame | null {
+    if (!this.storyboard) return null;
+    return getTwitchPreviewFrame(this.storyboard, time, duration || this.storyboard.duration);
+  }
+
+  mediaId(): string | null {
+    return this.snapshot?.videoId || twitchPageVideoId(window.location.href);
+  }
+
+  getTitle(): string | null {
+    return sanitizeContentTitle(this.snapshot?.title);
+  }
+
+  async reload(): Promise<void> {
+    this.snapshot = null;
+    this.storyboard = null;
+    this.tracks = [];
+    this.moments = [];
+    await this.load();
+  }
+
+  invalidate(): void {
+    this.snapshot = null;
+    this.storyboard = null;
+    this.tracks = [];
+    this.moments = [];
+    cueCache.clear();
+  }
+
+  dispose(): void {
+    this.snapshot = null;
+    this.storyboard = null;
+    this.tracks = [];
+    this.moments = [];
+  }
+}

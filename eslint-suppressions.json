@@ -603,7 +603,7 @@
       "count": 2
     },
     "import/order": {
-      "count": 8
+      "count": 6
     },
     "max-lines": {
       "count": 1
@@ -772,31 +772,6 @@
       "count": 1
     }
   },
-  "src/media-features/parsers/twitch-page.ts": {
-    "import/order": {
-      "count": 3
-    },
-    "local/max-symbol-name-length": {
-      "count": 7
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    },
-    "sonarjs/duplicates-in-character-class": {
-      "count": 7
-    },
-    "sonarjs/super-linear-regex": {
-      "count": 3
-    }
-  },
-  "src/media-features/parsers/twitch-storyboard.ts": {
-    "local/max-symbol-name-length": {
-      "count": 2
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "src/media-features/parsers/youtube-chapters.ts": {
     "local/max-symbol-name-length": {
       "count": 3
@@ -871,28 +846,6 @@
   },
   "src/media-features/timeline-ticks.test.ts": {
     "import/order": {
-      "count": 1
-    }
-  },
-  "src/media-features/twitch-adapter.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
-  "src/media-features/twitch-adapter.ts": {
-    "import/order": {
-      "count": 3
-    },
-    "local/max-symbol-name-length": {
-      "count": 2
-    },
-    "sonarjs/no-dead-store": {
-      "count": 1
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 1
-    },
-    "sonarjs/pseudo-random": {
       "count": 1
     }
   },
@@ -1481,9 +1434,6 @@
     }
   },
   "src/providers/network-harvest.ts": {
-    "import/order": {
-      "count": 4
-    },
     "local/max-symbol-name-length": {
       "count": 1
     },
@@ -1631,6 +1581,20 @@
       "count": 1
     }
   },
+  "src/providers/twitch/adapter.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/pseudo-random": {
+      "count": 1
+    }
+  },
   "src/providers/twitch/chat-theme.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 3
@@ -1645,9 +1609,6 @@
     }
   },
   "src/providers/twitch/main.ts": {
-    "import/order": {
-      "count": 5
-    },
     "local/max-symbol-name-length": {
       "count": 11
     },
@@ -1661,17 +1622,34 @@
       "count": 3
     }
   },
+  "src/providers/twitch/page.ts": {
+    "local/max-symbol-name-length": {
+      "count": 6
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/duplicates-in-character-class": {
+      "count": 7
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 3
+    }
+  },
   "src/providers/twitch/stage.ts": {
     "local/max-symbol-name-length": {
       "count": 3
     }
   },
-  "src/providers/twitch/watch-playback.test.ts": {
-    "import/order": {
+  "src/providers/twitch/storyboard.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
       "count": 1
     }
   },
-  "src/providers/twitch/watch-playback.ts": {
+  "src/providers/twitch/watch-playback.test.ts": {
     "import/order": {
       "count": 1
     }

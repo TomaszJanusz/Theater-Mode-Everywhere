@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { shouldAttachProvider } from '../providers/registry';
+import { collectTwitchStoryboardUrls, extractTwitchPayloadFromJson, parseTwitchGraphqlBody, parseTwitchPageAssets, twitchPageVideoId } from '../providers/twitch/page';
+import { getTwitchPreviewFrame, parseTwitchSeekPreviews } from '../providers/twitch/storyboard';
 
 import {
   computeCaptionDockBottom,
@@ -98,8 +100,6 @@ import {
   youtubeHeatmapHarvestMatchesPage
 } from './parsers/youtube-heatmap';
 import { getStoryboardFrame, parseStoryboardSpec } from './parsers/youtube-storyboard';
-import { getTwitchPreviewFrame, parseTwitchSeekPreviews } from './parsers/twitch-storyboard';
-import { collectTwitchStoryboardUrls, extractTwitchPayloadFromJson, parseTwitchGraphqlBody, parseTwitchPageAssets, twitchPageVideoId } from './parsers/twitch-page';
 import {
   disneyPlayId,
   isDisneyHost,

@@ -1,19 +1,12 @@
-import { isChildFrameMessage } from '../../protocol/frame-messages';
-import { isTwitchGqlUrl } from '../network-harvest';
 import { sanitizeContentTitle } from '../../media-features/content-title';
+import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { discoverParentOrigin } from '../../platform/parent-origin';
-import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import {
-  parseTwitchGraphqlBody,
-  parseTwitchGraphqlData,
-  type TwitchPageAssets,
-  TWITCH_CAPTIONS_ACK_EVENT,
-  TWITCH_CAPTIONS_EVENT,
-  TWITCH_HOST_CAPTION_ID
-} from '../../media-features/parsers/twitch-page';
-import { parseTwitchCaptions } from '../../protocol/page-requests';
+import { isChildFrameMessage } from '../../protocol/frame-messages';
 import { isTwitchHost } from '../hosts';
+
+import { parseTwitchCaptions, TWITCH_CC_ACK_EVENT, TWITCH_CC_EVENT } from './captions';
+import { isTwitchGqlUrl, parseTwitchGraphqlBody, parseTwitchGraphqlData, type TwitchPageAssets, TWITCH_HOST_CAPTION_ID } from './page';
 
 export function twitchIntegrationEnabled(): boolean {
   return mediaProviderIntegrationEnabled('twitch');
@@ -412,11 +405,11 @@ function applyTwitchHarvestSnapshot(snapshot: {
 }
 
 export function installTwitchMain(): void {
-  window.addEventListener(TWITCH_CAPTIONS_EVENT, ((event: Event) => {
+  window.addEventListener(TWITCH_CC_EVENT, ((event: Event) => {
     const request = parseTwitchCaptions((event as CustomEvent<unknown>).detail);
     if (!request) return;
     const applied = setTwitchClosedCaptionsEnabled(request.enabled);
-    window.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_ACK_EVENT, {
+    window.dispatchEvent(new CustomEvent(TWITCH_CC_ACK_EVENT, {
       detail: { requestId: request.requestId, enabled: request.enabled, applied }
     }));
   }) as EventListener);

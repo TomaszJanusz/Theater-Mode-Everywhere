@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parseTwitchCaptions } from '../protocol/page-requests';
-import { TWITCH_CAPTIONS_ACK_EVENT, TWITCH_CAPTIONS_EVENT } from './parsers/twitch-page';
-import { requestTwitchHostCaptions } from './twitch-adapter';
+import { requestTwitchHostCaptions } from '../providers/twitch/adapter';
+import { parseTwitchCaptions, TWITCH_CC_ACK_EVENT, TWITCH_CC_EVENT } from '../providers/twitch/captions';
 
 class TestCustomEvent<T> extends Event {
   detail: T;
@@ -30,9 +29,9 @@ describe('Twitch host caption acknowledgement', () => {
   it('accepts only a matching successful acknowledgement', async () => {
     globalThis.CustomEvent = TestCustomEvent as unknown as typeof CustomEvent;
     const target = new TestWindow();
-    target.addEventListener(TWITCH_CAPTIONS_EVENT, ((event: Event) => {
+    target.addEventListener(TWITCH_CC_EVENT, ((event: Event) => {
       const request = parseTwitchCaptions((event as CustomEvent<unknown>).detail);
-      target.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_ACK_EVENT, {
+      target.dispatchEvent(new CustomEvent(TWITCH_CC_ACK_EVENT, {
         detail: { ...request, applied: true }
       }));
     }) as EventListener);
@@ -47,7 +46,7 @@ describe('Twitch host caption acknowledgement', () => {
     globalThis.CustomEvent = TestCustomEvent as unknown as typeof CustomEvent;
     const target = new TestWindow();
     let detail: unknown;
-    target.addEventListener(TWITCH_CAPTIONS_EVENT, ((event: Event) => {
+    target.addEventListener(TWITCH_CC_EVENT, ((event: Event) => {
       detail = (event as CustomEvent<unknown>).detail;
     }) as EventListener);
     try {
@@ -62,9 +61,9 @@ describe('Twitch host caption acknowledgement', () => {
   it('fails when MAIN reports that no setter or button was available', async () => {
     globalThis.CustomEvent = TestCustomEvent as unknown as typeof CustomEvent;
     const target = new TestWindow();
-    target.addEventListener(TWITCH_CAPTIONS_EVENT, ((event: Event) => {
+    target.addEventListener(TWITCH_CC_EVENT, ((event: Event) => {
       const request = parseTwitchCaptions((event as CustomEvent<unknown>).detail);
-      target.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_ACK_EVENT, {
+      target.dispatchEvent(new CustomEvent(TWITCH_CC_ACK_EVENT, {
         detail: { ...request, applied: false }
       }));
     }) as EventListener);
@@ -79,12 +78,12 @@ describe('Twitch host caption acknowledgement', () => {
     globalThis.CustomEvent = TestCustomEvent as unknown as typeof CustomEvent;
     const target = new TestWindow();
     let requestId = '';
-    target.addEventListener(TWITCH_CAPTIONS_EVENT, ((event: Event) => {
+    target.addEventListener(TWITCH_CC_EVENT, ((event: Event) => {
       requestId = parseTwitchCaptions((event as CustomEvent<unknown>).detail)?.requestId ?? '';
     }) as EventListener);
     try {
       assert.equal(await requestTwitchHostCaptions(true, target as unknown as Window, 5), false);
-      target.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_ACK_EVENT, {
+      target.dispatchEvent(new CustomEvent(TWITCH_CC_ACK_EVENT, {
         detail: { requestId, enabled: true, applied: true }
       }));
     } finally {

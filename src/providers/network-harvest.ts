@@ -1,8 +1,10 @@
-import { isCrunchyrollHost, isDisneyHost, isTencentHost, isTwitchHost } from './hosts';
-import { crunchyrollMetadataRef, classifyCrunchyrollManifest } from '../media-features/parsers/crunchyroll';
 import { crunchyrollCdnFile } from '../media-features/crunchyroll-cdn';
-import { isAllowedMediaFetchUrl } from '../platform/media-url-policy';
+import { crunchyrollMetadataRef, classifyCrunchyrollManifest } from '../media-features/parsers/crunchyroll';
 import type { MediaProviderFlags } from '../media-features/provider-flags';
+import { isAllowedMediaFetchUrl } from '../platform/media-url-policy';
+
+import { isCrunchyrollHost, isDisneyHost, isTencentHost, isTwitchHost } from './hosts';
+import { isTwitchGqlUrl } from './twitch/page';
 
 export function isTencentMetadataUrl(value: string): boolean {
   try {
@@ -41,11 +43,6 @@ export function isDisneyBifUrl(value: string): boolean {
     return url.protocol === 'https:' && (url.hostname === 'dssott.com' || url.hostname.endsWith('.dssott.com'))
       && !/DUB_CARD/i.test(value) && /\.bif$/i.test(url.pathname) && /thumbnails?\//i.test(value);
   } catch { return false; }
-}
-
-export function isTwitchGqlUrl(value: string): boolean {
-  try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'gql.twitch.tv'; }
-  catch { return false; }
 }
 
 /** Select one provider before touching the body. Endpoint rules stay provider-owned. */
