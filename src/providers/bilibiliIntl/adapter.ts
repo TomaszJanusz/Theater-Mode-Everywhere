@@ -34,6 +34,8 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
   private cueGeneration = 0;
   /** The next activate(null) is the controller cleanup after a failed attempt, so the host layer stays up. */
   private preserveHostFallback = false;
+  /** The media whose failed pick left the host's own subtitles standing in, until a new pick, an explicit Off or other media. */
+  private hostFallbackFor: string | null = null;
 
   constructor(private readonly services: BilibiliIntlServices) {}
 
@@ -108,6 +110,9 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
 
   async listCaptionTracks(): Promise<CaptionTrack[]> {
     await this.load();
+    // The menu starts at Off without activating anything: once it offers this media's tracks, Off also hides the
+    // host's own subtitles, as an explicit Off does. CSS only; the host player keeps its own selection.
+    if (this.usableTracksOnPage() && this.hostFallbackFor !== this.mediaId()) this.hideHostCaptions(true);
     return (this.matchingSnapshot()?.captionTracks || []).map(({ id, language, label }) => ({
       id, language, label, kind: 'subtitles', source: 'bilibiliIntl', delivery: 'overlay'
     }));
@@ -121,6 +126,7 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
         this.hideHostCaptions(false);
         return { status: 'off', delivery: 'none', cues: [] };
       }
+      this.hostFallbackFor = null;
       this.hideHostCaptions(this.usableTracksOnPage());
       return { status: 'off', delivery: 'none', cues: [] };
     }
@@ -147,6 +153,7 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
       return failed();
     }
     this.preserveHostFallback = false;
+    this.hostFallbackFor = null;
     this.hideHostCaptions(true);
     return { status: 'active', delivery: 'overlay', cues };
   }
@@ -197,6 +204,7 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
 
   private keepHostFallback(): void {
     this.preserveHostFallback = true;
+    this.hostFallbackFor = this.mediaId();
     this.hideHostCaptions(false);
   }
 
@@ -208,6 +216,7 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
     this.loadGeneration++;
     this.cueGeneration++;
     this.preserveHostFallback = false;
+    this.hostFallbackFor = null;
     this.snapshot = null;
     this.snapshotPath = null;
     this.pending = null;
