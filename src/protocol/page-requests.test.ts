@@ -36,13 +36,14 @@ describe('page request details', () => {
   });
 
   it('rejects provider probe messages without a correlatable id or provider', () => {
-    for (const raw of [...HOSTILE, '{"requestId":1}', '{"requestId":1,"provider":"a.b"}', '{"requestId":0,"provider":"x"}', '{"requestId":1.5,"provider":"x"}']) {
+    for (const raw of [...HOSTILE, '{"requestId":1}', `{"requestId":1,"provider":"${'x'.repeat(201)}"}`, '{"requestId":0,"provider":"x"}', '{"requestId":1.5,"provider":"x"}']) {
       assert.equal(parseProbeAsyncRequest(raw), null, String(raw));
       assert.equal(parseProbeAsyncReply(raw, { requestId: 1, provider: 'x' }), null, String(raw));
     }
     assert.equal(parseProbeAsyncReply('{"requestId":1,"provider":"x"}', { requestId: 1, provider: 'x' }), null, 'a reply names its value, even null');
-    assert.equal(encodeProbeAsyncReply({ requestId: 1, provider: 'x', value: 10n }), null);
-    assert.equal(encodeProbeAsyncReply({ requestId: 1, provider: 'x', value: 'x'.repeat(1024 * 1024) }), null);
+    const request = { requestId: 1, provider: 'x' };
+    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply({ ...request, value: 10n }), request), { value: null });
+    assert.deepEqual(parseProbeAsyncReply(encodeProbeAsyncReply({ ...request, value: 'x'.repeat(1024 * 1024) }), request), { value: null });
   });
 
   it('round-trips YouTube caption requests', () => {
