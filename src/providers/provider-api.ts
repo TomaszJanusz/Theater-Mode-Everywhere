@@ -171,7 +171,7 @@ export type ProviderServices = {
   isolated: {
     requestPageFetch(url: string, timeoutMs?: number): Promise<string | null>;
     /** The MAIN-world snapshot probe; registered providers read their own entry of `providers`. */
-    requestMediaProbe(): Promise<MediaProbeSnapshot>;
+    requestMediaProbe(timeoutMs?: number): Promise<MediaProbeSnapshot>;
     serviceElementToken(element: Element): number;
     // Stateless, but large and used by most providers: lent rather than bundled into each provider script.
     observeProviderDom: typeof observeProviderDom;

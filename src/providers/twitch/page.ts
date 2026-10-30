@@ -1,6 +1,6 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
-import { isTwitchHost } from '../hosts';
 
+import { isTwitchHost } from './hosts';
 import { isSafeTwitchStoryboardJsonUrl } from './storyboard';
 
 export type TwitchPageMoment = {

@@ -1,4 +1,5 @@
-import { chatRoutes } from './routes';
+import { registeredChat } from '../providers/runtime-registration';
+
 import { isChatDocument } from './url';
 
 /**
@@ -26,7 +27,7 @@ function matchesServiceChat(element: Element): boolean {
   } catch {
     // No host: only registered chats that accept an empty host could match.
   }
-  const chat = chatRoutes();
+  const chat = registeredChat();
   if (!chat || !(chat.matchesEventHost ? chat.matchesEventHost(host) : chat.matchesHost(host))) return false;
   return element.matches(chat.eventSelector) || (chat.matchesEvent ? chat.matchesEvent(element) : false);
 }

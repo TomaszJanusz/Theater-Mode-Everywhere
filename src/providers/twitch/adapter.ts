@@ -1,7 +1,5 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
-import { isAllowedMediaFetchUrl, type MediaFetchRequest } from '../../media-features/fetch-allowlist';
-import { parseCaptionPayload } from '../../media-features/parsers/captions';
-import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
+import type { MediaFetchRequest } from '../../media-features/fetch-allowlist';
 import type {
   CaptionActivationResult,
   CaptionCue,
@@ -12,6 +10,7 @@ import type {
   PreviewFrame,
   PreviewSource
 } from '../../media-features/types';
+import type { ProviderServices } from '../provider-api';
 
 import { encodeTwitchCaptions, TWITCH_CC_ACK_EVENT, TWITCH_CC_EVENT } from './captions';
 import {
@@ -23,9 +22,10 @@ import {
   type TwitchPageCaption,
   type TwitchPageMoment
 } from './page';
-import type { TwitchPlayerSnapshot } from './snapshot';
+import { parseTwitchSnapshot, type TwitchPlayerSnapshot } from './snapshot';
 import {
   getTwitchPreviewFrame,
+  isSafeTwitchStoryboardJsonUrl,
   parseTwitchSeekPreviews,
   type TwitchStoryboardSet
 } from './storyboard';
@@ -66,13 +66,16 @@ function looksLikeStoryboardBody(body: string): boolean {
   return trimmed.startsWith('[') && /"images"\s*:/.test(body.slice(0, 400));
 }
 
-function looksLikeCaptionBody(body: string): boolean {
+function looksLikeCaptionBody(body: string, parseCaptionPayload: TwitchServices['parseCaptionPayload']): boolean {
   const start = body.trim().slice(0, 80).toLowerCase();
   if (start.startsWith('<!doctype') || start.startsWith('<html')) return false;
   return /^WEBVTT/i.test(body.trim()) || parseCaptionPayload(body).length > 0;
 }
 
-async function fetchTwitchMedia(url: string, kind: MediaFetchRequest['kind']): Promise<string | null> {
+/** The shared owners the runtime lends; the probe and page fetch must not be bundled twice. */
+export type TwitchServices = Pick<ProviderServices['isolated'], 'requestMediaProbe' | 'requestPageFetch' | 'parseCaptionPayload'>;
+
+async function fetchTwitchMedia(url: string, kind: MediaFetchRequest['kind'], services: TwitchServices): Promise<string | null> {
   let absolute = url;
   try {
     absolute = new URL(url, window.location.href).toString();
@@ -80,9 +83,10 @@ async function fetchTwitchMedia(url: string, kind: MediaFetchRequest['kind']): P
     return null;
   }
   const request: MediaFetchRequest = { provider: 'twitch', kind, url: absolute };
-  if (!isAllowedMediaFetchUrl(request)) return null;
+  // The same rules the background broker applies to Twitch requests (`isAllowedMediaFetchUrl`).
+  if (!(kind === 'caption-track' ? isSafeTwitchCaptionUrl(absolute) : isSafeTwitchStoryboardJsonUrl(absolute))) return null;
   const matches = (body: string) => (
-    kind === 'caption-track' ? looksLikeCaptionBody(body) : looksLikeStoryboardBody(body)
+    kind === 'caption-track' ? looksLikeCaptionBody(body, services.parseCaptionPayload) : looksLikeStoryboardBody(body)
   );
 
   try {
@@ -106,7 +110,7 @@ async function fetchTwitchMedia(url: string, kind: MediaFetchRequest['kind']): P
     // CloudFront storyboards are often blocked by page CORS/CSP.
   }
 
-  const fromPage = await requestPageFetch(absolute, 2500);
+  const fromPage = await services.requestPageFetch(absolute, 2500);
   if (fromPage && matches(fromPage)) return fromPage;
   return null;
 }
@@ -221,6 +225,8 @@ function readTwitchHarvestFromDom(): TwitchPlayerSnapshot | null {
 }
 
 export class TwitchAdapter implements MediaFeaturesAdapter {
+  constructor(private readonly services: TwitchServices) {}
+
   private snapshot: TwitchPlayerSnapshot | null = null;
   private storyboard: TwitchStoryboardSet | null = null;
   private tracks: TwitchPageCaption[] = [];
@@ -229,9 +235,9 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
   async load(): Promise<void> {
     const pageVideoId = twitchPageVideoId(window.location.href);
     if (!pageVideoId) {
-      const probed = await requestMediaProbe(800);
+      const probed = parseTwitchSnapshot((await this.services.requestMediaProbe(800)).providers?.twitch);
       const harvested = readTwitchHarvestFromDom();
-      const title = sanitizeContentTitle(probed.twitch?.title) || sanitizeContentTitle(harvested?.title) || undefined;
+      const title = sanitizeContentTitle(probed?.title) || sanitizeContentTitle(harvested?.title) || undefined;
       this.snapshot = { videoId: undefined, ...(title ? { title } : {}) };
       this.storyboard = null;
       this.tracks = [];
@@ -239,30 +245,30 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
       return;
     }
 
-    const probed = await requestMediaProbe(1500);
+    const probed = parseTwitchSnapshot((await this.services.requestMediaProbe(1500)).providers?.twitch);
     const harvested = readTwitchHarvestFromDom();
     const page = pageAssetsFromDocument();
     const seekCandidates = collectTwitchStoryboardUrls(
       twitchAssetHtml(),
       pageVideoId,
-      [probed.twitch?.seekPreviewsURL, harvested?.seekPreviewsURL, page.seekPreviewsURL]
+      [probed?.seekPreviewsURL, harvested?.seekPreviewsURL, page.seekPreviewsURL]
         .filter((url): url is string => Boolean(url))
     );
-    const duration = probed.twitch?.duration || harvested?.duration || page.duration;
-    const title = sanitizeContentTitle(probed.twitch?.title)
+    const duration = probed?.duration || harvested?.duration || page.duration;
+    const title = sanitizeContentTitle(probed?.title)
       || sanitizeContentTitle(harvested?.title)
       || sanitizeContentTitle(page.title)
       || undefined;
     this.moments = mergeMoments(
-      [...(probed.twitch?.moments || []), ...(harvested?.moments || [])],
+      [...(probed?.moments || []), ...(harvested?.moments || [])],
       page.moments
     );
     this.tracks = mergeCaptions(
-      [...(probed.twitch?.captionTracks || []), ...(harvested?.captionTracks || [])],
+      [...(probed?.captionTracks || []), ...(harvested?.captionTracks || [])],
       page.captions
     );
     this.snapshot = {
-      videoId: probed.twitch?.videoId || page.videoId || pageVideoId,
+      videoId: probed?.videoId || page.videoId || pageVideoId,
       ...(title ? { title } : {}),
       duration,
       seekPreviewsURL: seekCandidates[0],
@@ -275,7 +281,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     };
     this.storyboard = null;
     for (const url of seekCandidates) {
-      const body = await fetchTwitchMedia(url, 'storyboard-json');
+      const body = await fetchTwitchMedia(url, 'storyboard-json', this.services);
       this.storyboard = body
         ? parseTwitchSeekPreviews(body, duration || 0, url)
         : null;
@@ -324,9 +330,9 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     }
     const cached = cueCache.get(track.url);
     if (cached && cached.length > 0) return { status: 'active', delivery: 'overlay', cues: cached };
-    const body = await fetchTwitchMedia(track.url, 'caption-track');
+    const body = await fetchTwitchMedia(track.url, 'caption-track', this.services);
     if (!body) return { status: 'failed', delivery: 'none', cues: [] };
-    const cues = parseCaptionPayload(body);
+    const cues = this.services.parseCaptionPayload(body);
     if (cues.length > 0) cueCache.set(track.url, cues);
     return cues.length > 0
       ? { status: 'active', delivery: 'overlay', cues }

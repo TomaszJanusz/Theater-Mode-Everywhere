@@ -1,8 +1,8 @@
-import { twitchChatTheme } from '../providers/twitch/chat-theme';
+
+import { registeredChat } from '../providers/runtime-registration';
 
 import type { ChatThemeAdapter } from './adapters/types';
 import { OwnedDom } from './owned-dom';
-import { nativeChat } from './registered';
 import type { ChatSurface, ChatTheme, ChatThemeStatus } from './types';
 
 export const CHAT_THEME_ATTRIBUTE = 'data-theater-chat-theme';
@@ -127,7 +127,7 @@ export class ChatThemeSession {
     this.observer = null;
     this.observedDoc = null;
     if (!doc?.documentElement || this.surface?.root.ownerDocument.hidden) return;
-    const portals = this.surface ? chatTheme(this.surface)?.portals ?? '' : '';
+    const portals = registeredChat()?.theme?.portals ?? '';
     const observer = new MutationObserver((records) => {
       if (this.surface?.root.ownerDocument.hidden) return;
       if (!records.some(record => themeDomChanged(record, portals))) return;
@@ -190,17 +190,14 @@ export class ChatThemeSession {
   }
 }
 
-// Twitch's theme until it loads per host (TME-201): its MAIN entry must not bundle the palette.
-const chatTheme = (surface: ChatSurface) => nativeChat()?.theme ?? (surface.provider === 'twitch' ? twitchChatTheme : undefined);
-
 /** The registered provider's palette adapter; null keeps the service's own appearance. */
 function paletteAdapter(surface: ChatSurface): ((doc: Document) => ChatThemeAdapter) | null {
-  const theme = chatTheme(surface);
+  const theme = registeredChat()?.theme;
   return theme ? doc => theme.adapter(doc, surface) : null;
 }
 
 function themeDocument(surface: ChatSurface): Document | null {
-  const theme = chatTheme(surface);
+  const theme = registeredChat()?.theme;
   try { return theme ? theme.document(surface) : surface.root.ownerDocument; }
   catch { return null; }
 }
@@ -212,7 +209,7 @@ function themeDomChanged(record: MutationRecord, portals: string): boolean {
   for (const node of [...record.addedNodes, ...record.removedNodes]) {
     if (!(node instanceof Element)) continue;
     if (node.matches(themeNodes)) return true;
-    if (nativeChat()?.structure?.transcript(node)) continue;
+    if (registeredChat()?.structure?.transcript(node)) continue;
     if (node.id === 'theater-everywhere-ui' || node.closest('#theater-everywhere-ui')) continue;
     const parent = node.parentElement;
     if (parent !== node.ownerDocument.head && parent !== node.ownerDocument.body) continue;

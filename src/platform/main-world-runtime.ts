@@ -23,7 +23,7 @@ import {
   MAX_BIF_BYTES,
   readDisneySnapshot
 } from '../providers/disney/main';
-import { isBilibiliHost, isBilibiliIntlHost, isTwitchHost } from '../providers/hosts';
+import { isBilibiliHost, isBilibiliIntlHost } from '../providers/hosts';
 import {
   installNetflixMain,
   handleNetflixMediaSeek,
@@ -37,15 +37,6 @@ import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { providerRegistry, registeredEvents } from '../providers/runtime-registration';
 import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
 import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
-import {
-  harvestTwitchResponseJson,
-  harvestTwitchResponseText,
-  harvestTwitchXhr,
-  installTwitchMain,
-  readTwitchSnapshot,
-  twitchIntegrationEnabled
-} from '../providers/twitch/main';
-import { installTwitchNavigation } from '../providers/twitch/navigation';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
@@ -80,7 +71,7 @@ function probeProviders(): Record<string, unknown> {
 }
 
 function wrapsFetch(harvests: readonly ProviderHarvest[]): boolean {
-  return !isTwitchHost(window.location.hostname) && harvests.every(harvest => harvest.wrapFetch !== false);
+  return harvests.every(harvest => harvest.wrapFetch !== false);
 }
 
 export function installMainWorldRuntime(): void {
@@ -111,10 +102,8 @@ export function installMainWorldRuntime(): void {
     if (isCrunchyrollOwnedRequest(url)) return null;
     const legacy = qualifyNetworkHarvest({
       hostname: window.location.hostname,
-      pageUrl: window.location.href,
       flags: {
-        disney: disneyIntegrationEnabled(), twitch: twitchIntegrationEnabled(),
-        tencent: tencentIntegrationEnabled(), crunchyroll: crunchyrollIntegrationEnabled()
+        disney: disneyIntegrationEnabled(), tencent: tencentIntegrationEnabled(), crunchyroll: crunchyrollIntegrationEnabled()
       }
     }, url);
     if (legacy) return legacy;
@@ -134,7 +123,6 @@ export function installMainWorldRuntime(): void {
       case 'disney': harvestDisneyData(url, data); break;
       case 'tencent': harvestTencentData(url, data); break;
       case 'crunchyroll': harvestCrunchyrollData(url, data); break;
-      case 'twitch': harvestTwitchResponseJson(url, data); break;
     }
   }
 
@@ -144,7 +132,6 @@ export function installMainWorldRuntime(): void {
       case 'disney': harvestDisneyBody(url, text); break;
       case 'tencent': harvestTencentBody(url, text); break;
       case 'crunchyroll': harvestCrunchyrollBody(url, text); break;
-      case 'twitch': harvestTwitchResponseText(url, text); break;
     }
   }
 
@@ -235,10 +222,8 @@ export function installMainWorldRuntime(): void {
       return result;
     };
 
-    // Twitch replaces fetch with its own transport. Wrapping that replacement
-    // freezes native VOD replay after seeking, even outside theater mode.
-    // Response JSON/text observers and XHR still harvest Twitch metadata.
-    // A registered provider declares the same with `wrapFetch: false`.
+    // A registered provider whose host replaces fetch with its own transport vetoes the wrapper
+    // (`wrapFetch: false`); Response JSON/text observers and XHR still harvest.
     if (wrapsFetch(harvests)) {
       let currentFetch = wrapFetch(window.fetch.bind(window));
       try {
@@ -270,15 +255,12 @@ export function installMainWorldRuntime(): void {
         return;
       }
       if (target === 'crunchyroll-url') { harvestCrunchyrollBody(url, ''); return; }
-      if (target === 'twitch-storyboard') { harvestTwitchXhr(url, null, xhr); return; }
       const format = harvestBodyFormat(formatTarget(target), xhr.responseType);
       if (format === 'binary') {
         if (target === 'disney-bif') harvestDisneyBifFromXhr(xhr);
         else if (xhr.response instanceof ArrayBuffer) rememberCrunchyrollBif(xhr.response, url);
       } else if (format === 'json') {
         harvestJson(target, url, xhr.response);
-      } else if (format === 'blob-text') {
-        harvestTwitchXhr(url, null, xhr);
       } else if (format === 'text') {
         // Only qualified textual endpoints decode an ArrayBuffer. BIF and
         // responseType=json never pass through this materialization boundary.
@@ -295,8 +277,6 @@ export function installMainWorldRuntime(): void {
 
   installProviders();
   if (harvestHost) {
-    installTwitchMain();
-    if (isTwitchHost(window.location.hostname)) installTwitchNavigation();
     installDisneyMain();
     installNetflixMain();
     installTencentMain();
@@ -494,14 +474,8 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
     const requestId = parseProbeRequest((event as CustomEvent<unknown>).detail);
     if (requestId === null) return;
-    let twitch: Record<string, unknown> | null = null;
     let disney: Record<string, unknown> | null = null;
     let netflix: Record<string, unknown> | null = null;
-    try {
-      twitch = twitchIntegrationEnabled() ? readTwitchSnapshot() : null;
-    } catch {
-      twitch = null;
-    }
     try {
       disney = disneyIntegrationEnabled() ? readDisneySnapshot() : null;
     } catch {
@@ -513,7 +487,7 @@ export function installMainWorldRuntime(): void {
       netflix = null;
     }
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, providers: probeProviders(), twitch, disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot() }
+      detail: { requestId, providers: probeProviders(), disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot() }
     }));
     // Bilibili needs asynchronous metadata. Keep the original fast probe for
     // other adapters and deliver Bilibili's result through its own event.
@@ -537,7 +511,6 @@ export function installMainWorldRuntime(): void {
     if (!isAllowlistedPageFetchUrl(url, window.location.href)) return false;
     const classified = classifyMediaFetchUrl(url, window.location.href);
     if (!classified) return false;
-    if (classified.provider === 'twitch') return twitchIntegrationEnabled();
     if (classified.provider === 'disney') return disneyIntegrationEnabled();
     if (classified.provider === 'bilibili') return bilibiliIntegrationEnabled();
     if (classified.provider === 'bilibiliIntl') return bilibiliIntlIntegrationEnabled();

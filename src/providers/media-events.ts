@@ -5,7 +5,6 @@ import { registeredEvents } from './runtime-registration';
 
 /** Provider publication events consumed uniformly by the media controller. */
 const PROVIDER_MEDIA_EVENTS = [
-  'theater-everywhere-twitch-harvest',
   'theater-everywhere-disney-harvest',
   'theater-everywhere-netflix-harvest',
   CRUNCHYROLL_HARVEST_EVENT

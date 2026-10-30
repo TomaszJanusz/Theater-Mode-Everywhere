@@ -1,10 +1,8 @@
 import { crunchyrollCdnFile } from '../media-features/crunchyroll-cdn';
 import { crunchyrollMetadataRef, classifyCrunchyrollManifest } from '../media-features/parsers/crunchyroll';
 import type { MediaProviderFlags } from '../media-features/provider-flags';
-import { isAllowedMediaFetchUrl } from '../platform/media-url-policy';
 
-import { isCrunchyrollHost, isDisneyHost, isTencentHost, isTwitchHost } from './hosts';
-import { isTwitchGqlUrl } from './twitch/page';
+import { isCrunchyrollHost, isDisneyHost, isTencentHost } from './hosts';
 
 export function isTencentMetadataUrl(value: string): boolean {
   try {
@@ -29,12 +27,11 @@ export function shouldHarvestDisneyUrl(url: string): boolean {
 }
 
 export type NetworkHarvestTarget = 'disney' | 'disney-bif'
-  | 'tencent' | 'twitch' | 'twitch-storyboard' | 'crunchyroll' | 'crunchyroll-bif' | 'crunchyroll-url';
+  | 'tencent' | 'crunchyroll' | 'crunchyroll-bif' | 'crunchyroll-url';
 
 export type NetworkHarvestContext = {
   hostname: string;
-  pageUrl: string;
-  flags: Pick<MediaProviderFlags, 'disney' | 'tencent' | 'twitch' | 'crunchyroll'>;
+  flags: Pick<MediaProviderFlags, 'disney' | 'tencent' | 'crunchyroll'>;
 };
 
 export function isDisneyBifUrl(value: string): boolean {
@@ -47,17 +44,13 @@ export function isDisneyBifUrl(value: string): boolean {
 
 /** Select one provider before touching the body. Endpoint rules stay provider-owned. */
 export function qualifyNetworkHarvest(context: NetworkHarvestContext, url: string): NetworkHarvestTarget | null {
-  const { hostname, pageUrl, flags } = context;
+  const { hostname, flags } = context;
   if (isDisneyHost(hostname) && flags.disney) {
     if (isDisneyBifUrl(url)) return 'disney-bif';
     // URL-less Response observers support host-created metadata Responses.
     if (!url || shouldHarvestDisneyUrl(url)) return 'disney';
   }
   if (isTencentHost(hostname) && flags.tencent && isTencentMetadataUrl(url)) return 'tencent';
-  if (isTwitchHost(hostname) && flags.twitch) {
-    if (!url || isTwitchGqlUrl(url)) return 'twitch';
-    if (isAllowedMediaFetchUrl({ provider: 'twitch', kind: 'storyboard-json', url }, pageUrl)) return 'twitch-storyboard';
-  }
   if (isCrunchyrollHost(hostname) && flags.crunchyroll) {
     const file = crunchyrollCdnFile(url);
     if (file?.kind === 'bif' && file.query === 't') return 'crunchyroll-bif';
@@ -70,13 +63,13 @@ export function qualifyNetworkHarvest(context: NetworkHarvestContext, url: strin
 /** `provider` stands for a registered provider's target: text or JSON metadata, never binary. */
 export type HarvestFormatTarget = NetworkHarvestTarget | 'provider';
 
-export function harvestBodyFormat(target: HarvestFormatTarget | null, type: XMLHttpRequestResponseType): 'text' | 'json' | 'binary' | 'blob-text' | null {
-  if (!target || target === 'crunchyroll-url' || target === 'twitch-storyboard') return null;
+export function harvestBodyFormat(target: HarvestFormatTarget | null, type: XMLHttpRequestResponseType): 'text' | 'json' | 'binary' | null {
+  if (!target || target === 'crunchyroll-url') return null;
   if (target === 'disney-bif' || target === 'crunchyroll-bif') {
     return type === 'arraybuffer' || (target === 'disney-bif' && type === 'blob') ? 'binary' : null;
   }
   if (type === 'json') return 'json';
-  if (type === 'blob') return target === 'twitch' ? 'blob-text' : null;
+  if (type === 'blob') return null;
   return type === '' || type === 'text' || type === 'arraybuffer' ? 'text' : null;
 }
 

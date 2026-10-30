@@ -1,6 +1,6 @@
 import type { MediaProviderId } from '../media-features/provider-flags';
+import { registeredChat } from '../providers/runtime-registration';
 
-import { chatRoutes } from './routes';
 import type { ChatKind } from './types';
 
 export type ParsedChatLocation =
@@ -18,7 +18,7 @@ export function isChatDocument(href: string): boolean {
 export function parseChatLocation(href: string): ParsedChatLocation | null {
   const url = parseUrl(href);
   if (!url) return null;
-  return chatRoutes()?.parseLocation(url) ?? null;
+  return registeredChat()?.parseLocation(url) ?? null;
 }
 
 export function watchIdentity(href: string): string {
@@ -34,7 +34,7 @@ export function watchIdentity(href: string): string {
 export function isNativeChatHost(href: string): boolean {
   const url = parseUrl(href);
   if (!url) return false;
-  return chatRoutes()?.matchesHost(url.hostname) ?? false;
+  return registeredChat()?.matchesHost(url.hostname) ?? false;
 }
 
 function parseUrl(href: string): URL | null {

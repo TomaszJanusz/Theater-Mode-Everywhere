@@ -1,7 +1,6 @@
 import { DisposableScope } from '../core/disposable-scope';
 import type { MediaProviderId } from '../media-features/provider-flags';
-
-
+import { registeredChat } from '../providers/runtime-registration';
 
 import { detectChatActivation } from './activation';
 import { detectChatSurface } from './detect';
@@ -13,7 +12,6 @@ import {
   DEFAULT_CHAT_WIDTH_PX
 } from './geometry';
 import { OwnedDom } from './owned-dom';
-import { nativeChat } from './registered';
 import { ChatThemeSession, normalizeChatTheme } from './theme';
 import type { ChatActivation, ChatPreference, ChatState, ChatSurface, ChatTheme } from './types';
 import { isNativeChatHost, parseChatLocation, watchIdentity } from './url';
@@ -66,7 +64,7 @@ const EMPTY_STATE: ChatState = {
  */
 export class ChatController {
   // Read once registration has closed; the shell observer only runs on a registered chat's watch routes.
-  private readonly providerChat = nativeChat();
+  private readonly providerChat = registeredChat();
   private readonly activationSelector = this.providerChat?.activationSelector ?? '';
   private readonly shellSelector = this.providerChat?.shellSelector ?? '';
   private readonly structure = this.providerChat?.structure;

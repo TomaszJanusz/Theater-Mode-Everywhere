@@ -8,7 +8,6 @@ import { NativeTextTrackAdapter } from '../providers/native/adapter';
 import { NetflixAdapter } from '../providers/netflix/adapter';
 import { PROVIDER_DEFINITIONS, shouldAttachProvider } from '../providers/registry';
 import { TencentAdapter } from '../providers/tencent/adapter';
-import { TwitchAdapter } from '../providers/twitch/adapter';
 
 import { CompositeMediaAdapter } from './composite-adapter';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from './provider-flags';
@@ -17,10 +16,6 @@ import type { MediaFeaturesAdapter } from './types';
 
 export function shouldAttachYouTubeAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
   return shouldAttachProvider('youtube', flags, hostname);
-}
-
-export function shouldAttachTwitchAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
-  return shouldAttachProvider('twitch', flags, hostname);
 }
 
 export function shouldAttachDisneyAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
@@ -47,7 +42,6 @@ export function createMediaFeaturesAdapter(
 ): MediaFeaturesAdapter {
   const surface = coercePlaybackSurface(media);
   const adapters: MediaFeaturesAdapter[] = [];
-  if (shouldAttachTwitchAdapter(flags)) adapters.push(new TwitchAdapter());
   if (shouldAttachDisneyAdapter(flags)) adapters.push(new DisneyAdapter());
   if (shouldAttachNetflixAdapter(flags)) adapters.push(new NetflixAdapter());
   if (shouldAttachProvider('bilibili', flags)) adapters.push(new BilibiliAdapter());

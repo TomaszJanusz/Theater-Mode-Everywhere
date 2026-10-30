@@ -1,4 +1,5 @@
-import { nativeChat } from './registered';
+import { registeredChat } from '../providers/runtime-registration';
+
 import type { ChatSurface } from './types';
 import { parseChatLocation } from './url';
 
@@ -10,5 +11,5 @@ import { parseChatLocation } from './url';
 export function detectChatSurface(document: Document, href: string): ChatSurface | null {
   const page = parseChatLocation(href);
   if (!page || page.role !== 'watch') return null;
-  return nativeChat()?.detect(document, href) ?? null;
+  return registeredChat()?.detect(document, href) ?? null;
 }

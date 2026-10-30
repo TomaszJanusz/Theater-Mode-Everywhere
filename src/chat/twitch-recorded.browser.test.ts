@@ -23,7 +23,9 @@ const CASES = [
   // Unmeasurable, so the saved (hidden) preference decides.
   { fixture: parseHostFixture(collapsedJson), expected: { initiallyVisible: null, visible: false } }
 ];
-const bundle = bundleModules(["export { detectChatSurface } from './chat/detect';", "export { ChatController } from './chat/controller';"], 'NativeChat');
+// Twitch's chat hook registers only on its own host, as its isolated entry does in the manifest.
+const bundle = bundleModules(["import './test-utils/fixture-runtimes';", "import './providers/twitch/isolated';",
+  "export { detectChatSurface } from './chat/detect';", "export { ChatController } from './chat/controller';"], 'NativeChat');
 
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
   const shared = sharedTestBrowser(engine);
@@ -32,7 +34,8 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
       if (!existsSync(engine.executablePath())) { t.skip('Browser not installed'); return; }
       const context = await shared.newContext(t, { viewport: fixture.viewport });
       const page = await context.newPage();
-      await page.setContent(fixtureDocument(fixture));
+      await page.route('https://www.twitch.tv/**', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: fixtureDocument(fixture) }));
+      await page.goto('https://www.twitch.tv/somechannel');
       // The rendered fragment must reproduce what was recorded, or the assertions below prove nothing.
       assert.deepEqual(await page.evaluate(signatureScript(RECIPES[fixture.id].probes)), fixture.signature);
       await page.addScriptTag({ content: bundle });

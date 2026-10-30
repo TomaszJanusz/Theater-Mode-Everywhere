@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
 import { bundleModules } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 
-import { twitchHarvestSnapshotMatchesPage } from './main';
+import { twitchHarvestSnapshotMatchesPage } from './harvest';
 
 const shared = sharedTestBrowser(chromium);
 
@@ -35,19 +35,18 @@ describe('Twitch harvest snapshot binding', () => {
 });
 
 it('preserves Twitch transport replacements and decorated promises while harvesting response metadata', async t => {
-  const content = bundleModules([`import { installMainWorldRuntime } from './platform/main-world-runtime';
-      import { readTwitchSnapshot } from './providers/twitch/main';
-      window.installRuntime = installMainWorldRuntime; window.readSnapshot = readTwitchSnapshot;`]);
+  // The manifest's MAIN order on Twitch in one script: runtime, Twitch's entry, then start.
+  const content = bundleModules(["import './entries/main-world';", "import './providers/twitch/main';",
+    "import './entries/main-world-start';", "export { readTwitchSnapshot } from './providers/twitch/harvest';"], 'TwitchMain');
   const context = await shared.newContext(t);
   try {
     const page = await context.newPage();
     await page.route('https://www.twitch.tv/**', route => route.fulfill({ contentType: 'text/html', body: '<div class="video-player"></div>' }));
     await page.goto('https://www.twitch.tv/videos/123');
+    await page.addScriptTag({ content: 'window.__original = window.fetch;' });
     await page.addScriptTag({ content });
     const report = await page.evaluate<{ unchanged: boolean; writable: boolean; sameReplacement: boolean; decorated: boolean; duration: number }>(`(async () => {
-      const original = window.fetch;
-      window.installRuntime();
-      const unchanged = window.fetch === original;
+      const unchanged = window.fetch === window.__original;
       const writable = Object.getOwnPropertyDescriptor(window, 'fetch').writable === true;
       const response = new Response(JSON.stringify({data:{video:{id:'123',lengthSeconds:1200}}}));
       Object.defineProperty(response, 'url', {value:'https://gql.twitch.tv/gql'});
@@ -58,7 +57,7 @@ it('preserves Twitch transport replacements and decorated promises while harvest
       const request = window.fetch('https://gql.twitch.tv/gql');
       const decorated = request === pending && request.abort() === 42;
       await (await request).json();
-      return {unchanged,writable,sameReplacement,decorated,duration:window.readSnapshot().duration};
+      return {unchanged,writable,sameReplacement,decorated,duration:TwitchMain.readTwitchSnapshot().duration};
     })()`);
     assert.deepEqual(report, { unchanged: true, writable: true, sameReplacement: true, decorated: true, duration: 1200 });
   } finally { await context.close(); }
