@@ -36,7 +36,7 @@ const fakeHive = `(() => {
   const track = (id, name, language, title, describes = false) => ({ id, name, language, hasDescribesVideo: describes, hasDialogueEnhancement: false, isSelected: false, displayName: { title } });
   const all = [track(1, 'English', 'en', 'English'), track(14, 'Polish', 'pl', 'Polski'), track(7, 'Spanish', 'es-419', 'Español (Latinoamérica)'),
     track(21, 'English', 'en', 'English', true), track(30, 'German', 'de', 'Deutsch')];
-  const hive = window.__hive = { tracks: [], selected: null, state: 'playing', paused: false, currentTime: 32, playheadMs: 32_000, sets: [], pauses: 0, reloads: 0, listeners: new Set(), timecodes: new Set(), all, step() {} };
+  const hive = window.__hive = { tracks: [], selected: null, state: 'playing', paused: false, currentTime: 32, playheadMs: 32_000, sets: [], pauses: 0, reloads: 0, reloadAfter: 1_000, history: [], listeners: new Set(), timecodes: new Set(), all, step() {} };
   let storeState = { player: { extensions: { audio: { tracks: [] } } } };
   const dispatch = () => {
     storeState = { player: { extensions: { audio: { tracks: hive.tracks, selected: hive.selected && hive.selected.id } } } };
@@ -57,15 +57,17 @@ const fakeHive = `(() => {
   const at = (due, run) => { queue.push({ due, run }); queue.sort((a, b) => a.due - b.due); };
   const apply = (selected, base) => {
     hive.sets.push(selected);
-    at(base + 1_000, () => {
+    const reloadAt = base + hive.reloadAfter;
+    at(reloadAt, () => {
       hive.reloads += 1;
       hive.reloading = true;
       hive.currentTime = 0;
       emit('emptied');
       emit('loadstart');
     });
-    at(base + 1_500, () => {
+    at(reloadAt + 500, () => {
       hive.selected = selected;
+      hive.history.push(selected.id);
       hive.currentTime = 20;
       hive.reloading = false;
       emit('loadedmetadata');
@@ -219,6 +221,36 @@ describe('Disney+ audio tracks', () => {
       assert.equal(await hive(page, 'hive.selected.id'), 7);
       assert.deepEqual(await page.evaluate('window.results'), ['7'], 'only the newest pick is announced');
       assert.equal((await list(page))?.tracks.find(track => track.selected)?.id, '7');
+    });
+
+    it(`does not acknowledge a pick before the reload Hive owes an earlier one has played, in ${engine}`, async t => {
+      const page = await open(t, engine);
+      await page.evaluate('window.__setTracks(); window.__hive.reloadAfter = 1_200');
+      await page.evaluate("controller.select('14'); void 0");
+      await advance(page, 100);
+      await page.evaluate("window.picked = null; controller.select('1').then(ok => { window.picked = ok; window.seenBefore = window.__hive.history.slice(); }); void 0");
+      await advance(page, 1_100);
+      assert.equal(await page.evaluate('window.picked'), null, 'English still shows, but Polish has not played yet');
+      await advance(page, 3_000);
+      assert.equal(await page.evaluate('window.picked'), true);
+      assert.deepEqual(await page.evaluate('window.seenBefore'), [14, 1], 'acknowledged only after Hive reported English again');
+      assert.deepEqual(await page.evaluate('window.results'), ['1']);
+    });
+
+    it(`keeps a Pause pressed during a switch started from playback, in ${engine}`, async t => {
+      const page = await open(t, engine);
+      await page.evaluate('window.__setTracks()');
+      await advance(page, 300);
+      assert.equal(await page.evaluate('video.paused'), false);
+      await page.evaluate("window.picked = null; controller.select('14').then(ok => { window.picked = ok; }); void 0");
+      await advance(page, 300);
+      // The theater's Pause: the resume-cancel request, then the element pause; Hive keeps believing it plays.
+      await page.evaluate(`window.dispatchEvent(new CustomEvent('theater-everywhere-media-seek', { detail: JSON.stringify({ cancelPendingResume: true }) }));
+        video.pause();`);
+      await advance(page, 2_000);
+      assert.equal(await page.evaluate('window.picked'), true);
+      assert.equal(await page.evaluate('video.paused'), true, 'the reload\'s resume did not override the Pause');
+      assert.deepEqual(await hive(page, '[hive.pauses, hive.state]'), [1, 'paused']);
     });
 
     it(`drops pending work on exit, RTE-off and a new title without undoing Hive's switch, in ${engine}`, async t => {

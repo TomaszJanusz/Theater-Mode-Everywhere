@@ -11,7 +11,7 @@ import {
   type DisneyAudioResult,
   type DisneyAudioSnapshot
 } from './audio-bridge';
-import { DISNEY_AUDIO_CHECK_MS, DISNEY_AUDIO_DEBOUNCE_MS, DISNEY_RESUME_GRACE_MS, createDisneyAudioHost } from './audio-main';
+import { DISNEY_AUDIO_CHECK_MS, DISNEY_RESUME_GRACE_MS, createDisneyAudioHost } from './audio-main';
 
 const PLAY = 'd1f7a6c2-3b4e-4f5a-9c8d-7e6f5a4b3c2d';
 const NEXT = 'a0b1c2d3-e4f5-4a6b-8c7d-9e0f1a2b3c4d';
@@ -41,9 +41,11 @@ function setup() {
   let pauses = 0;
   let state = { player: { extensions: { audio: { tracks } } } };
   const storeListeners = new Set<() => void>();
+  /** Getters that throw for a while, as Hive's can while its pipeline reattaches. */
+  const faults = { tracks: false, selected: false };
   const audio = {
-    get availableTracks() { return tracks; },
-    get selectedTrack() { return selected; },
+    get availableTracks() { if (faults.tracks) throw new Error('reattaching'); return tracks; },
+    get selectedTrack() { if (faults.selected) throw new Error('reattaching'); return selected; },
     setTrack(track: unknown) { setTrackCalls.push(track); }
   };
   const player = { audio, pause() { pauses += 1; } };
@@ -96,8 +98,15 @@ function setup() {
   const select = (trackId: string, options: { playId?: string; keepPaused?: boolean; requestId?: string } = {}) =>
     host.select(JSON.stringify({ requestId: options.requestId ?? `s${trackId}`, playId: options.playId ?? PLAY, trackId, keepPaused: options.keepPaused ?? false }));
   const lease = (on: boolean, watchId = 'w1') => host.watch(JSON.stringify({ watchId, on }));
+  /** A media reload, ending with Hive reporting `id` when given. */
+  const reload = (id?: number) => {
+    host.media('emptied', null);
+    host.media('loadstart', null);
+    if (id !== undefined) hostSelects(id);
+    host.media('loadedmetadata', null);
+  };
   return {
-    host, env, tracks, setTrackCalls, advance, hostSelects, query, select, lease, store, storeListeners, player,
+    host, env, tracks, setTrackCalls, advance, hostSelects, query, select, lease, reload, faults, store, storeListeners, player,
     pauses: () => pauses,
     replaceWeb: (next: Record<string, unknown> | null) => { web = next; },
     web: () => web,
@@ -216,17 +225,38 @@ describe('Disney+ audio in MAIN', () => {
     assert.equal(query()?.playId, NEXT);
   });
 
-  it('selects the live track object and confirms only once Hive reports it, after the debounce', () => {
-    const { env, tracks, setTrackCalls, advance, hostSelects, select, pendingTimers } = setup();
+  it('selects the live track object and confirms once a reload after the pick ends with Hive reporting it', () => {
+    const { env, tracks, setTrackCalls, advance, hostSelects, select, reload, host, pendingTimers } = setup();
     select('14');
     assert.equal(setTrackCalls.length, 1);
     assert.equal(setTrackCalls[0], tracks[1], 'the object from availableTracks, not a copy');
     advance(DISNEY_AUDIO_CHECK_MS * 2);
     assert.deepEqual(env.answers, [], 'nothing until selectedTrack moves');
     hostSelects(14);
+    advance(DISNEY_AUDIO_CHECK_MS * 2);
+    assert.deepEqual(env.answers, [], 'a selection without the reload that carries it is not yet the switch');
+    host.media('emptied', null);
     advance(DISNEY_AUDIO_CHECK_MS);
+    assert.deepEqual(env.answers, [], 'nor while the media reloads');
+    reload();
     assert.deepEqual(env.answers, [{ requestId: 's14', ok: true }]);
-    assert.equal(pendingTimers(), 0, 'timers released with the answer');
+    assert.equal(pendingTimers(), 1, 'command timers released with the answer; the playback grace remains');
+    advance(DISNEY_RESUME_GRACE_MS);
+    assert.equal(pendingTimers(), 0, 'and ends on its own');
+  });
+
+  it('accepts at the deadline a selection Hive made without a reload, and refuses one it did not make', () => {
+    const quiet = setup();
+    quiet.select('14');
+    quiet.hostSelects(14);
+    quiet.advance(8_000);
+    assert.deepEqual(quiet.env.answers, [{ requestId: 's14', ok: true }]);
+    const reloading = setup();
+    reloading.select('14');
+    reloading.hostSelects(14);
+    reloading.host.media('emptied', null);
+    reloading.advance(8_000);
+    assert.deepEqual(reloading.env.answers, [{ requestId: 's14', ok: false }], 'a reload still under way at the deadline settles nothing');
   });
 
   it('answers at once for the track already playing, and refuses one no longer offered', () => {
@@ -249,7 +279,7 @@ describe('Disney+ audio in MAIN', () => {
     // The first pick's reload lands while the trailing call is still pending.
     hostSelects(14);
     host.media('loadedmetadata', null);
-    advance(DISNEY_AUDIO_DEBOUNCE_MS);
+    advance(800);
     assert.equal(env.answers.length, 1, 'Polish is not the newest pick');
     host.media('emptied', null);
     hostSelects(7);
@@ -259,15 +289,19 @@ describe('Disney+ audio in MAIN', () => {
     assert.deepEqual(env.answers.at(-1), { requestId: 's7', ok: true });
   });
 
-  it('does not confirm a return to the playing track before Hive\'s trailing call has run', () => {
-    const { env, setTrackCalls, advance, select } = setup();
+  it('does not confirm a return to the playing track before the reloads Hive still owes have run', () => {
+    const { env, setTrackCalls, advance, select, reload } = setup();
     select('14');
     advance(100);
     select('1');
     assert.equal(setTrackCalls.length, 2, 'English must be sent again: Polish is already on its way');
+    // The leading call's reload starts only at 1.2 s; English shows as selected, debounced or not.
+    advance(1_100);
+    assert.deepEqual(env.answers, [{ requestId: 's14', ok: false }], 'English is not acknowledged before Polish has played');
+    reload(14);
     advance(DISNEY_AUDIO_CHECK_MS);
-    assert.deepEqual(env.answers, [{ requestId: 's14', ok: false }], 'English still shows as selected, but the debounce has not fired');
-    advance(DISNEY_AUDIO_CHECK_MS);
+    assert.equal(env.answers.length, 1, 'Polish is not the newest pick');
+    reload(1);
     assert.deepEqual(env.answers.at(-1), { requestId: 's1', ok: true });
   });
 
@@ -334,8 +368,8 @@ describe('Disney+ audio in MAIN', () => {
 
     const late = setup();
     late.select('14', { keepPaused: true });
-    late.hostSelects(14);
-    late.advance(DISNEY_AUDIO_CHECK_MS * 2);
+    late.reload(14);
+    assert.deepEqual(late.env.answers.map(answer => answer.ok), [true]);
     late.host.media('emptied', null);
     late.advance(DISNEY_RESUME_GRACE_MS);
     late.host.media('playing', null);
@@ -347,6 +381,52 @@ describe('Disney+ audio in MAIN', () => {
     moved.env.href = href(NEXT);
     moved.host.media('playing', null);
     assert.equal(moved.pauses(), 0, 'never pauses another title');
+  });
+
+  it('keeps a Pause pressed during a switch started from playback, and pauses after every reload it owes', () => {
+    const paused = setup();
+    paused.select('14');
+    paused.env.contentPaused = false;
+    paused.host.playbackToggled();
+    paused.reload(14);
+    paused.host.media('playing', null);
+    assert.equal(paused.pauses(), 1, 'Pause pressed before the reload resumed playback');
+
+    const playing = setup();
+    playing.select('14');
+    playing.reload(14);
+    playing.host.media('playing', null);
+    assert.equal(playing.pauses(), 0, 'content the viewer plays is never paused');
+
+    const twice = setup();
+    twice.select('14', { keepPaused: true });
+    twice.advance(100);
+    // The second pick happens during the first reload, when the element has no playback history to read.
+    twice.select('7');
+    twice.reload(14);
+    twice.host.media('playing', null);
+    twice.reload(7);
+    twice.host.media('playing', null);
+    assert.equal(twice.pauses(), 2, 'the pause chosen before the first pick holds through both reloads');
+  });
+
+  it('keeps checking through Hive getters that throw while the switch runs', () => {
+    for (const fault of ['tracks', 'selected'] as const) {
+      const context = setup();
+      context.select('14');
+      context.faults[fault] = true;
+      context.host.media('emptied', null);
+      context.advance(DISNEY_AUDIO_CHECK_MS * 3);
+      assert.deepEqual(context.env.answers, [], `${fault}: a throwing read is not an answer`);
+      assert.ok(context.pendingTimers() > 0, `${fault}: the next check is still scheduled`);
+      context.hostSelects(14);
+      context.host.media('loadedmetadata', null);
+      context.advance(DISNEY_AUDIO_CHECK_MS);
+      assert.deepEqual(context.env.answers, [], `${fault}: still unreadable, still waiting`);
+      context.faults[fault] = false;
+      context.advance(DISNEY_AUDIO_CHECK_MS);
+      assert.deepEqual(context.env.answers, [{ requestId: 's14', ok: true }], fault);
+    }
   });
 
   it('follows the state store only while leased, ignoring dispatches that change no audio', () => {

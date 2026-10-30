@@ -20,8 +20,6 @@ import {
   type DisneyAudioSnapshot
 } from './audio-bridge';
 
-/** Hive debounces `audio.setTrack` (leading and trailing): a pick within this window of the last one lands at its end. */
-export const DISNEY_AUDIO_DEBOUNCE_MS = 800;
 /** Re-read while a command is pending only: the store notification for the switch is not confirmed on the host. */
 export const DISNEY_AUDIO_CHECK_MS = 500;
 /** How long after a switch the media reload may still resume a paused title. */
@@ -94,8 +92,15 @@ function isStore(value: unknown): value is HiveStore {
   return isRecord(value) && typeof value.getState === 'function' && typeof value.subscribe === 'function';
 }
 
-type Command = { requestId: string; live: Live; trackId: string; calledAt: number; deadline: number; check: number };
-type Restore = { live: Live; reloadSeen: boolean; end: number | null };
+/** `reloadsBefore`: media reloads begun before the call; only a later one can carry this pick. */
+type Command = { requestId: string; live: Live; trackId: string; reloadsBefore: number; deadline: number; check: number };
+/**
+ * What the viewer wants from playback while a switch runs and for a grace after it: `paused` puts a pause back when
+ * the reload resumes the title, `playing` and `null` (not known) never touch playback.
+ */
+type Playback = { live: Live; intent: 'paused' | 'playing' | null; reloadSeen: boolean; end: number | null };
+/** `gone`: the item or track is no longer there; `waiting`: not observed yet, including a getter that threw. */
+type Observation = 'gone' | 'waiting' | 'selected' | 'other';
 type Subscription = { store: HiveStore; stop: () => void; last: unknown[] };
 
 const sameItem = (a: Live, b: Live) => a.web === b.web && a.player === b.player && a.playId === b.playId;
@@ -106,14 +111,19 @@ const sameSignature = (a: unknown[], b: unknown[]) => a.length === b.length && a
  * by `selectedTrack`. A switch reloads the media (emptied, loadstart, a new MSE timeline whose
  * `currentTime` restarts) and resumes a paused title on its own; the content position stays in
  * Hive's playhead, which the clock publishes, and a pause the viewer chose is put back here.
+ * Hive debounces `setTrack` for 800 ms (leading and trailing), so the track shown before a reload says
+ * nothing about the newest pick: it counts only once a reload begun after that pick has finished.
  */
 export class DisneyAudioHost {
   /** The play id each player was first read under; a player carried over to another title waits for its reload. */
   private readonly seenUnder = new WeakMap<object, string>();
   private readonly watchers = new Set<string>();
   private reloading = false;
+  private reloadsBegun = 0;
+  /** `reloadsBegun` when the last reload finished. */
+  private reloadsDone = 0;
   private command: Command | null = null;
-  private restore: Restore | null = null;
+  private playback: Playback | null = null;
   private subscription: Subscription | null = null;
 
   constructor(private readonly env: DisneyAudioEnv) {}
@@ -137,9 +147,9 @@ export class DisneyAudioHost {
     try { return this.read(); } catch { return null; }
   }
 
-  private endRestore(): void {
-    if (this.restore?.end != null) this.env.clearTimeout(this.restore.end);
-    this.restore = null;
+  private endPlayback(): void {
+    if (this.playback?.end != null) this.env.clearTimeout(this.playback.end);
+    this.playback = null;
   }
 
   private finish(ok: boolean): void {
@@ -149,23 +159,35 @@ export class DisneyAudioHost {
     this.env.clearTimeout(done.deadline);
     this.env.clearTimeout(done.check);
     this.env.answer({ requestId: done.requestId, ok });
-    if (this.restore && this.restore.end === null) this.restore.end = this.env.setTimeout(() => this.endRestore(), DISNEY_RESUME_GRACE_MS);
+    if (this.playback && this.playback.end === null) this.playback.end = this.env.setTimeout(() => this.endPlayback(), DISNEY_RESUME_GRACE_MS);
     if (this.watchers.size) this.env.changed();
+  }
+
+  private observe(pending: Command): Observation {
+    try {
+      const live = this.read();
+      // Another title, player or page, or the integration switched off: the pick no longer applies.
+      if (!live || !sameItem(live, pending.live)) return 'gone';
+      // The list may be rebuilt while the media reloads; only a settled list can withdraw the track.
+      if (!hiveTracks(live.audio).some(track => trackId(track) === pending.trackId)) return this.reloading ? 'waiting' : 'gone';
+      return selectedId(live.audio) === pending.trackId ? 'selected' : 'other';
+    } catch {
+      return 'waiting'; // Hive getters can throw while the pipeline reattaches.
+    }
   }
 
   private check(): void {
     const pending = this.command;
     if (!pending) return;
-    const live = this.safeRead();
-    // Another title, player or page, or the integration switched off: the pick no longer applies.
-    if (!live || !sameItem(live, pending.live) || !hiveTracks(live.audio).some(track => trackId(track) === pending.trackId)) {
-      this.finish(false);
-      return;
-    }
-    if (selectedId(live.audio) !== pending.trackId) return;
-    // Until the debounce has fired and the reload has finished, a trailing call can still move the selection.
-    if (this.reloading || this.env.now() - pending.calledAt < DISNEY_AUDIO_DEBOUNCE_MS) return;
-    this.finish(true);
+    const seen = this.observe(pending);
+    if (seen === 'gone') this.finish(false);
+    else if (seen === 'selected' && !this.reloading && this.reloadsDone > pending.reloadsBefore) this.finish(true);
+  }
+
+  /** Without a reload after the pick, the deadline accepts only a settled selection of the track. */
+  private expire(pending: Command): void {
+    if (this.command !== pending) return;
+    this.finish(this.observe(pending) === 'selected' && !this.reloading);
   }
 
   private signature(store: HiveStore): unknown[] {
@@ -174,8 +196,12 @@ export class DisneyAudioHost {
       const slice = state?.player?.extensions?.audio;
       if (slice !== undefined) return [slice];
     } catch { /* Fall back to the player's getters. */ }
-    const live = this.read();
-    return live ? [live.audio.availableTracks, selectedId(live.audio)] : [];
+    try {
+      const live = this.read();
+      return live ? [live.audio.availableTracks, selectedId(live.audio)] : [];
+    } catch {
+      return [];
+    }
   }
 
   private unsubscribe(): void {
@@ -215,7 +241,7 @@ export class DisneyAudioHost {
   private release(): void {
     this.unsubscribe();
     this.finish(false);
-    this.endRestore();
+    this.endPlayback();
   }
 
   query(requestId: unknown): void {
@@ -252,18 +278,21 @@ export class DisneyAudioHost {
     // The newest pick wins: Hive applies it with the debounce's trailing call.
     const superseded = this.command !== null;
     this.finish(false);
-    if (!superseded && selectedId(live.audio) === request.trackId) {
+    let playing: string | null = null;
+    try { playing = selectedId(live.audio); } catch { playing = null; }
+    if (!superseded && playing === request.trackId) {
       this.env.answer({ requestId: request.requestId, ok: true });
       return;
     }
-    const keepPaused = request.keepPaused || (this.restore !== null && sameItem(this.restore.live, live));
-    this.endRestore();
-    if (keepPaused) this.restore = { live, reloadSeen: false, end: null };
+    // A Pause or Play pressed during an earlier pick on this item still stands.
+    const earlier = this.playback && sameItem(this.playback.live, live) ? this.playback.intent : null;
+    this.endPlayback();
+    this.playback = { live, intent: request.keepPaused ? 'paused' : earlier, reloadSeen: false, end: null };
     try {
       // The live object, never a copy: Hive dispatches it as the selected track.
       live.audio.setTrack?.(track);
     } catch {
-      this.endRestore();
+      this.endPlayback();
       this.env.answer({ requestId: request.requestId, ok: false });
       return;
     }
@@ -272,14 +301,17 @@ export class DisneyAudioHost {
 
   private start(requestId: string, live: Live, id: string): void {
     const pending: Command = {
-      requestId, live, trackId: id, calledAt: this.env.now(),
-      deadline: this.env.setTimeout(() => { if (this.command === pending) this.finish(false); }, DISNEY_AUDIO_TIMEOUT_MS),
+      requestId, live, trackId: id, reloadsBefore: this.reloadsBegun,
+      deadline: this.env.setTimeout(() => this.expire(pending), DISNEY_AUDIO_TIMEOUT_MS),
       check: 0
     };
     const tick = () => {
       if (this.command !== pending) return;
-      this.check();
-      if (this.command === pending) pending.check = this.env.setTimeout(tick, DISNEY_AUDIO_CHECK_MS);
+      try {
+        this.check();
+      } finally {
+        if (this.command === pending) pending.check = this.env.setTimeout(tick, DISNEY_AUDIO_CHECK_MS);
+      }
     };
     this.command = pending;
     pending.check = this.env.setTimeout(tick, DISNEY_AUDIO_CHECK_MS);
@@ -297,8 +329,9 @@ export class DisneyAudioHost {
   /** A media event on a video inside the current `disney-web-player`. */
   media(type: DisneyAudioMediaEvent, video: { pause?: () => unknown } | null): void {
     if (type === 'emptied' || type === 'loadstart') {
+      if (!this.reloading) this.reloadsBegun += 1;
       this.reloading = true;
-      if (this.restore) this.restore.reloadSeen = true;
+      if (this.playback) this.playback.reloadSeen = true;
     } else if (type === 'loadedmetadata') {
       this.reloaded();
     } else {
@@ -308,6 +341,7 @@ export class DisneyAudioHost {
 
   private reloaded(): void {
     this.reloading = false;
+    this.reloadsDone = this.reloadsBegun;
     // The reload is what lets a carried-over player describe the page's title, as for the clock.
     const web = this.env.webPlayer();
     const player = web ? own(web, 'mediaPlayer') : undefined;
@@ -318,24 +352,36 @@ export class DisneyAudioHost {
     if (this.watchers.size) this.env.changed();
   }
 
-  /** The reload's own resume of a title the viewer had paused: pause it again, through Hive so its state agrees. */
+  /**
+   * The reload's own resume of a title the viewer wants paused: pause it again, through Hive so its state agrees.
+   * Each reload is answered once; a later play without another reload is not the reload's.
+   */
   private resumed(video: { pause?: () => unknown } | null): void {
-    const pending = this.restore;
-    if (!pending?.reloadSeen) return;
-    this.endRestore();
+    const pending = this.playback;
+    if (!pending?.reloadSeen || pending.intent !== 'paused') return;
+    pending.reloadSeen = false;
     const live = this.safeRead();
-    if (!live || !sameItem(live, pending.live)) return;
+    if (!live || !sameItem(live, pending.live)) {
+      this.endPlayback();
+      return;
+    }
     try {
       if (typeof live.player.pause === 'function') live.player.pause();
       else video?.pause?.();
     } catch { /* The player may refuse while its pipeline reattaches. */ }
   }
 
-  /** The viewer toggled playback in theater. Starting a paused title cancels the pause we would put back. */
+  /**
+   * The viewer toggled playback in theater, which plays a paused element and pauses a playing one; this runs just
+   * before it acts. That choice wins over the one made when the switch started.
+   */
   playbackToggled(): void {
-    if (!this.restore) return;
+    const pending = this.playback;
+    if (!pending) return;
     const web = this.env.webPlayer();
-    if (!web || this.env.contentPaused(web) !== false) this.endRestore();
+    const paused = web ? this.env.contentPaused(web) : null;
+    if (paused === null) pending.intent = null;
+    else pending.intent = paused ? 'playing' : 'paused';
   }
 
   /** Ends every lease, as when the last theater adapter is gone. */

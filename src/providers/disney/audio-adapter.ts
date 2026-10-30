@@ -63,7 +63,7 @@ export class DisneyAudioAdapter implements MediaFeaturesAdapter {
     view.dispatchEvent(new CustomEvent(DISNEY_AUDIO_QUERY, { detail: requestId }));
     const snapshot = parseDisneyAudioSnapshot(this.doc.getElementById(DISNEY_AUDIO_SNAPSHOT)?.textContent, requestId, pageHref);
     if (!snapshot || snapshot.playId !== playId) return null;
-    // Ads are not known to change this list; the Hive interstitial state was empty when it was read.
+    // Disney+ ad state is not detected (Hive's interstitials were never seen populated), so nothing blocks a pick; TME-203.
     return { mediaId: playId, tracks: disneyAudioTracks(snapshot.tracks), blocked: false };
   }
 
