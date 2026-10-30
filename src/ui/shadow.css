@@ -2051,8 +2051,8 @@ button.theater-time-end:focus-visible,
   align-items: center !important;
   column-gap: 16px !important;
   box-sizing: border-box !important;
-  min-height: 38px !important;
-  padding: 6px 0 !important;
+  min-height: 36px !important;
+  padding: 5px 0 !important;
   border-bottom: 1px solid var(--appearance-border, rgba(63, 63, 70, 0.5)) !important;
   direction: inherit !important;
 }

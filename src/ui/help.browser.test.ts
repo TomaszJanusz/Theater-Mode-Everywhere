@@ -118,7 +118,7 @@ for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium,
             fitsViewport: box('.te-dialog').right <= innerWidth && box('.te-dialog').left >= 0
           };
         });
-        assert.deepEqual(await layout(), { dialog: 920, columns: 2, playbackRightOfView: true, labelRightOfKeys: true, keysLtr: 'ltr', backBeforeForward: true, fitsViewport: true });
+        assert.deepEqual(await layout(), { dialog: 970, columns: 2, playbackRightOfView: true, labelRightOfKeys: true, keysLtr: 'ltr', backBeforeForward: true, fitsViewport: true });
         await page.setViewportSize({ width: 420, height: 800 });
         // The theater surface follows the viewport on its resize event; the dialog then fits.
         await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!

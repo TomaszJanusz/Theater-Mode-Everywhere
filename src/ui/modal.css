@@ -45,7 +45,7 @@
 
 .te-dialog[data-size="wide"] { width: min(650px, 100%) !important; }
 /* Reference content laid out in columns, such as the shortcuts help. */
-.te-dialog[data-size="large"] { width: min(920px, 100%) !important; }
+.te-dialog[data-size="large"] { width: min(970px, 100%) !important; }
 
 .te-dialog-header {
   display: flex !important;

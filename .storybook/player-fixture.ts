@@ -16,14 +16,14 @@ import { waitForFonts } from './fonts';
 import { beginStage } from './stage-owner';
 
 // Menus that the production bar pins open on click. Volume and speed open on hover or focus, which tests drive with real input.
-export const SCENARIOS = ['watching', 'settings', 'captions'] as const;
+export const SCENARIOS = ['watching', 'settings', 'captions', 'help'] as const;
 export type Scenario = typeof SCENARIOS[number];
 
 export interface PlayerEnvironment { locale: string; backdrop: string; reduceMotion: string }
 
 /** Fixed position in the two-second clip, so every capture shows the same decoded frame. */
 const MEDIA_TIME = 1;
-const MENU_TRIGGER: Record<Exclude<Scenario, 'watching'>, string> = { settings: '.player-settings-btn', captions: '.cc-btn' };
+const MENU_TRIGGER: Record<Exclude<Scenario, 'watching' | 'help'>, string> = { settings: '.player-settings-btn', captions: '.cc-btn' };
 
 type FixtureWindow = Window & typeof globalThis;
 /** The global the fixture bundle defines (see player-runtime-entry.ts). */
@@ -178,6 +178,14 @@ export class PlayerFixture {
   }
 
   private showScenario(scenario: Scenario): void {
+    // The shortcuts help is a dialog, not a menu: it opens from the help button and closes with its own button.
+    const help = this.root.querySelector<HTMLElement>('.theater-help-overlay');
+    if (scenario === 'help') {
+      if (!help) this.root.querySelector<HTMLElement>('.help-btn')?.click();
+      if (!this.root.querySelector('.theater-help-overlay')) throw new Error('Player fixture: no control for help');
+      return;
+    }
+    help?.querySelector<HTMLElement>('.te-dialog-close')?.click();
     // Production menus exclude each other: opening one closes another, so only a menu to retire needs a click.
     for (const trigger of this.root.querySelectorAll<HTMLElement>('[aria-expanded="true"]')) {
       if (scenario === 'watching' || !trigger.matches(MENU_TRIGGER[scenario])) trigger.click();
