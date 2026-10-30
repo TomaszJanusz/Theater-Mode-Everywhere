@@ -104,8 +104,8 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
   });
 }
 
-/** Settles the provider's pending probe with null when a newer request for it supersedes it. */
-const pendingProviderProbes = new Map<string, () => void>();
+/** Each provider's latest pending probe, settled with null when a newer request supersedes it. Settling twice is a no-op. */
+const pendingProviderProbes = new Map<string, (value: unknown) => void>();
 let providerProbeId = 0;
 
 /**
@@ -114,23 +114,21 @@ let providerProbeId = 0;
  * same provider supersedes this one: only the latest request's reply is ever delivered.
  */
 export function requestProviderProbe(provider: string, timeoutMs = 8000, target: EventTarget = window): Promise<unknown> {
-  pendingProviderProbes.get(provider)?.();
+  pendingProviderProbes.get(provider)?.(null);
   return new Promise((resolve) => {
+    const request = { requestId: ++providerProbeId, provider };
     const finish = (value: unknown) => {
-      if (pendingProviderProbes.get(provider) === cancel) pendingProviderProbes.delete(provider);
       clearTimeout(timer);
-      target.removeEventListener(PROBE_ASYNC_REPLY_EVENT, onResult);
+      target.removeEventListener(PROBE_ASYNC_REPLY_EVENT, onReply);
       resolve(value);
     };
-    const cancel = () => finish(null);
-    const request = { requestId: ++providerProbeId, provider };
-    const onResult = (event: Event) => {
-      const reply = parseProbeAsyncReply((event as CustomEvent<unknown>).detail, request);
+    const onReply = (event: Event) => {
+      const reply = parseProbeAsyncReply((event as CustomEvent<unknown>).detail, request.requestId);
       if (reply) finish(reply.value);
     };
-    const timer = setTimeout(cancel, timeoutMs);
-    pendingProviderProbes.set(provider, cancel);
-    target.addEventListener(PROBE_ASYNC_REPLY_EVENT, onResult);
+    const timer = setTimeout(finish, timeoutMs, null);
+    pendingProviderProbes.set(provider, finish);
+    target.addEventListener(PROBE_ASYNC_REPLY_EVENT, onReply);
     target.dispatchEvent(new CustomEvent(PROBE_ASYNC_EVENT, { detail: encodeProbeAsyncRequest(request) }));
   });
 }

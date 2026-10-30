@@ -146,14 +146,13 @@ describe('asynchronous provider probe', () => {
     const probe = requestProviderProbe('bilibili', 60_000, world);
     const forged = [
       { requestId, provider: 'bilibili', value: 'object detail' },
-      JSON.stringify({ requestId: requestId + 1, provider: 'bilibili', value: 'other request' }),
-      JSON.stringify({ requestId, provider: 'bilibiliIntl', value: 'other provider' }),
-      JSON.stringify({ requestId, provider: 'bilibili' }),
+      JSON.stringify({ requestId: requestId + 1, value: 'other request' }),
+      JSON.stringify({ requestId }),
       'not json'
     ];
     for (const detail of forged) world.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, { detail }));
     assert.equal(await settled(probe), 'pending');
-    world.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, { detail: JSON.stringify({ requestId, provider: 'bilibili', value: 'ok' }) }));
+    world.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, { detail: JSON.stringify({ requestId, value: 'ok' }) }));
     assert.equal(await settled(probe), 'ok');
   });
 
