@@ -2,7 +2,7 @@ import { type Page } from 'playwright';
 
 import { fail, THEATER_VIDEO_CLASS, timeScenario } from './helpers';
 export async function assertEmbeddedKeysAndFullscreen(page: Page, origin: string): Promise<void> {
-  return timeScenario('assertEmbeddedKeysAndFullscreen', async () => {
+  return timeScenario('assertEmbeddedKeysAndFullscreen', { syncWrites: 0 }, async () => {
     await page.goto(`${origin}/iframe-key-capture`, { waitUntil: 'domcontentloaded' });
     const frame = page.frameLocator('#child');
     const fullscreen = () => page.evaluate(() => document.fullscreenElement?.tagName ?? null);

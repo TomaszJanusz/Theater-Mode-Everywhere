@@ -1,9 +1,10 @@
 import type { BrowserContext, Page } from 'playwright';
+
 import { extensionWorker, fail, timeScenario } from './helpers';
 
 /** Real storage and the installed isolated-to-MAIN audio bridge; UI cycles live in the fixture suite. */
 export async function assertAudioWorld(page: Page, context: BrowserContext): Promise<void> {
-  await timeScenario('assertAudioWorld', async () => {
+  await timeScenario('assertAudioWorld', { syncWrites: 7 }, async () => {
     const worker = await extensionWorker(context);
     const keys = ['voiceBoost', 'volumeLeveling', 'bassLevel', 'volumeBoostEnabled'];
     await page.locator('video#player').evaluate(async (video: HTMLVideoElement) => {

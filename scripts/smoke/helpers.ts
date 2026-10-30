@@ -7,6 +7,8 @@ import { chromium, firefox, type BrowserContext, type Page, type Route } from 'p
 
 import { manifestScriptsForUrl } from '../provider-descriptors';
 
+import type { SyncQuotaGuard } from './sync-quota-guard';
+
 export type { BrowserContext, Page, Route };
 
 export type SmokeBrowser = 'chromium' | 'firefox';
@@ -190,11 +192,28 @@ export async function declineVideoActivatorPrompt(page: Page): Promise<void> {
   await page.locator('.auto-theater-btn [data-direction="1"]').focus();
 }
 
-/** Inclusive scenario durations; nested rows must not be summed with their parent. */
-export async function timeScenario(name: string, action: () => Promise<void>): Promise<void> {
+let syncQuota: SyncQuotaGuard | null = null;
+let scenarioDepth = 0;
+
+/** Chromium only: Firefox's sync storage has no per-minute write quota, so its smoke is not gated. */
+export function useSyncQuota(guard: SyncQuotaGuard | null): void {
+  syncQuota = guard;
+}
+
+/**
+ * Inclusive scenario durations; nested rows must not be summed with their parent.
+ * `syncWrites` is the most `chrome.storage.sync` changes the scenario makes (see `sync-quota.ts`); a nested
+ * scenario is covered by its outermost one.
+ */
+export async function timeScenario(name: string, { syncWrites }: { syncWrites: number }, action: () => Promise<void>): Promise<void> {
   const start = performance.now();
-  try { await action(); }
-  finally {
+  const outermost = scenarioDepth === 0;
+  scenarioDepth++;
+  try {
+    if (outermost && syncQuota) await syncQuota.run(name, syncWrites, action);
+    else await action();
+  } finally {
+    scenarioDepth--;
     if (process.env.THEATER_SMOKE_TIMING === '1') {
       console.log(`TIMING ${name} ${((performance.now() - start) / 1000).toFixed(3)}`);
     }

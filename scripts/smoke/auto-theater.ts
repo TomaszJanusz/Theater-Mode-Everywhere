@@ -1,13 +1,15 @@
-import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
-import { shouldOfferVideoActivator } from '../../src/ui/video-activator-settings';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+
 import { type BrowserContext, type Page } from 'playwright';
+
+import { shouldOfferVideoActivator } from '../../src/ui/video-activator-settings';
+import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
 
 import { waitForPlayer, theaterEntered, ROOT, timeScenario } from './helpers';
 import { declineVideoActivatorPrompt } from './helpers';
 export async function assertAutoTheater(page: Page, context: BrowserContext): Promise<void> {
-  return timeScenario('assertAutoTheater', async () => {
+  return timeScenario('assertAutoTheater', { syncWrites: 7 }, async () => {
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     const fixture = readFileSync(path.join(ROOT, 'test/fixtures/youtube-watch.html'), 'utf8');
     await context.route('https://www.youtube.com/**', route => route.fulfill({ contentType: 'text/html', body: fixture }));

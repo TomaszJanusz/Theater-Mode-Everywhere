@@ -5,7 +5,7 @@ import { WHATS_NEW_ACK_STORAGE_KEY } from '../../src/whatsNew-release';
 
 import { fail, extensionWorker, waitForPlayer, timeScenario } from './helpers';
 export async function assertPinStorage(page: Page, context: BrowserContext): Promise<void> {
-  return timeScenario('assertPinStorage', async () => {
+  return timeScenario('assertPinStorage', { syncWrites: 7 }, async () => {
     const gear = page.locator('.player-settings-btn');
     const menu = page.locator('.theater-settings-menu');
     const waitForPin = (pinned: boolean) => page.locator(`.controls-visibility-toggle[data-active="${pinned}"]`).waitFor({ state: 'attached' });

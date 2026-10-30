@@ -1,17 +1,19 @@
-import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+
 import { type BrowserContext, type Page } from 'playwright';
 
-import { fail, extensionWorker, waitForPlayer, theaterEntered, THEATER_VIDEO_CLASS, PARENT_HOST, PARENT_BLACKLIST, ROOT, timeScenario, setBlacklist } from './smoke/helpers';
+import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
+
 import { runBrowsers } from './smoke/browsers';
+import { fail, extensionWorker, waitForPlayer, theaterEntered, THEATER_VIDEO_CLASS, PARENT_HOST, PARENT_BLACKLIST, ROOT, timeScenario, setBlacklist } from './smoke/helpers';
 // Legacy real deadlines stay here so moving modules cannot reset their per-file ratchet.
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function assertShortcutManagement(page: Page, context: BrowserContext): Promise<void> {
-  return timeScenario('assertShortcutManagement', async () => {
+  return timeScenario('assertShortcutManagement', { syncWrites: 10 }, async () => {
     const worker = await extensionWorker(context);
     await worker.evaluate(async ({ key, id }) => { await chrome.storage.local.set({ [key]: id }); }, { key: WHATS_NEW_ACK_STORAGE_KEY, id: WHATS_NEW_RELEASE.id });
     const options = await context.newPage();
@@ -116,7 +118,7 @@ export async function assertShortcutManagement(page: Page, context: BrowserConte
 }
 
 export async function assertBlacklistBlocksTheater(page: Page): Promise<void> {
-  return timeScenario('assertBlacklistBlocksTheater', async () => {
+  return timeScenario('assertBlacklistBlocksTheater', { syncWrites: 0 }, async () => {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await page.click('video#player');
@@ -130,7 +132,7 @@ export async function assertBlacklistBlocksTheater(page: Page): Promise<void> {
 }
 
 export async function assertIframeHandshake(page: Page, origin: string): Promise<void> {
-  return timeScenario('assertIframeHandshake', async () => {
+  return timeScenario('assertIframeHandshake', { syncWrites: 4 }, async () => {
     await page.goto(`${origin}/iframe`, { waitUntil: 'domcontentloaded' });
     const frame = page.frameLocator('#child');
     await frame.locator('video#player').click({ timeout: 15_000 });
@@ -256,7 +258,7 @@ export async function assertIframeHandshake(page: Page, origin: string): Promise
 }
 
 export async function assertParentBlacklist(page: Page, origin: string, context: BrowserContext): Promise<void> {
-  return timeScenario('assertParentBlacklist', async () => {
+  return timeScenario('assertParentBlacklist', { syncWrites: 1 }, async () => {
     await setBlacklist(context, [PARENT_BLACKLIST]);
     const port = new URL(origin).port;
     await page.goto(`http://${PARENT_HOST}:${port}/`, { waitUntil: 'domcontentloaded' });
@@ -271,7 +273,7 @@ export async function assertParentBlacklist(page: Page, origin: string, context:
 }
 
 export async function assertLanguageMenu(page: Page, origin: string, context: BrowserContext): Promise<void> {
-  return timeScenario('assertLanguageMenu', async () => {
+  return timeScenario('assertLanguageMenu', { syncWrites: 4 }, async () => {
     const worker = await extensionWorker(context);
     const catalog = (locale: string): Record<string, { message: string }> => JSON.parse(
       readFileSync(path.join(ROOT, '_locales', locale, 'messages.json'), 'utf8'));
@@ -380,7 +382,7 @@ export async function assertLanguageMenu(page: Page, origin: string, context: Br
   });
 }
 
-runBrowsers({ assertShortcutManagement, assertBlacklistBlocksTheater, assertIframeHandshake, assertParentBlacklist, assertLanguageMenu }).catch(error => {
+runBrowsers({ assertShortcutManagement, assertBlacklistBlocksTheater, assertIframeHandshake, assertParentBlacklist, assertLanguageMenu }, { now: Date.now, wait: delay }).catch(error => {
   console.error(error);
   process.exit(1);
 });
