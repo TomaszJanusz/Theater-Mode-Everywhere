@@ -10,26 +10,11 @@
   },
   "bilibiliIntl": {
     "src/media-features": {
-      "serviceId": 10,
-      "domain": 4,
-      "identifier": 19,
-      "file": 1
-    },
-    "src/platform": {
-      "hostCheck": 3,
-      "serviceId": 1,
-      "identifier": 7
+      "serviceId": 3,
+      "identifier": 2
     },
     "src/providers": {
-      "hostCheck": 7,
-      "serviceId": 4,
-      "domain": 2,
-      "identifier": 8
-    },
-    "src/providers/navigation": {
-      "serviceId": 1,
-      "identifier": 6,
-      "file": 1
+      "identifier": 2
     }
   },
   "crunchyroll": {

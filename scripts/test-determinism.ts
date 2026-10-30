@@ -105,8 +105,22 @@ export function assertBaselineRatchet(
   const files = execFileSync('git', ['ls-tree', '--name-only', base, '--', baseline.path], { cwd: directory, encoding: 'utf8' });
   if (files.trim()) {
     const previous = execFileSync('git', ['show', `${base}:${baseline.path}`], { cwd: directory, encoding: 'utf8' });
-    assertNoGrowth(current, baseline.read(previous), baseline.remedy);
+    assertNoGrowth(current, followMoves(baseline.read(previous), base, directory), baseline.remedy);
   }
+}
+
+/** A file this branch moved keeps the allowance it had at the base, so a move is not growth. */
+function followMoves<T>(previous: Record<string, T>, base: string, directory: string): Record<string, T> {
+  // eslint-disable-next-line sonarjs/no-os-command-from-path -- the same git, fixed arguments, as the base lookup above
+  const moved = execFileSync('git', ['diff', '--name-status', '--find-renames', base], { cwd: directory, encoding: 'utf8' });
+  const result = { ...previous };
+  for (const line of moved.split('\n')) {
+    const [status, from, to] = line.split('\t');
+    if (!status?.startsWith('R') || !from || !to || !(from in result) || to in result) continue;
+    result[to] = result[from];
+    delete result[from];
+  }
+  return result;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

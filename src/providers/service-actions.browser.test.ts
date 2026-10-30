@@ -335,7 +335,7 @@ const code = bundleModules([
   "export { createServiceActions } from './providers/service-actions';",
   "export { createYouTubeServiceActions } from './providers/youtube/service-actions';",
   "export { createBilibiliServiceActions } from './providers/bilibili/service-actions';",
-  "export { createBilibiliIntlServiceActions } from './providers/bilibili-intl/service-actions';",
+  "export { createBilibiliIntlServiceActions } from './providers/bilibiliIntl/service-actions';",
   "export { nativePlaybackSurface } from './playback-surface';",
   "export { DisposableScope } from './core/disposable-scope';",
   "export { mountServiceActionCta } from './ui/service-actions';"

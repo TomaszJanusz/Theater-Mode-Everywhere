@@ -183,16 +183,24 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     return this.selectChapters();
   }
 
-  async getChaptersForSource(source: string): Promise<Chapter[]> {
-    return this.selectChapters(source);
+  /** The first adapter's action chapters, continuing past adapters that fail. */
+  async getActionChapters(): Promise<Chapter[] | null> {
+    for (const adapter of this.adapters) {
+      if (!adapter.getActionChapters) continue;
+      try {
+        return await adapter.getActionChapters();
+      } catch {
+        // Keep looking; one provider's chapter failure is not fatal.
+      }
+    }
+    return null;
   }
 
-  private async selectChapters(source?: string): Promise<Chapter[]> {
+  private async selectChapters(): Promise<Chapter[]> {
     for (const adapter of this.adapters) {
       if (!adapter.getChapters) continue;
       try {
-        const list = await adapter.getChapters();
-        const chapters = source === undefined ? list : list.filter(chapter => chapter.source === source);
+        const chapters = await adapter.getChapters();
         if (chapters.length > 0) return chapters;
       } catch {
         // Keep looking; one provider's chapter failure is not fatal.

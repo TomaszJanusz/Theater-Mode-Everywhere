@@ -1,7 +1,6 @@
-/**
- * Bilibili.tv's static media URL policy. The shared fetch allowlist applies it, so it stays here until the provider
- * registers its own admission; the provider's metadata imports it from here.
- */
+import type { MediaFetchRequest } from '../../media-features/fetch-allowlist';
+
+/** Bilibili.tv's static media URL policy: subtitle files, timeline preview sheets and their shot index. */
 const OGV_SUBTITLE_PATH = /^\/ogv\/subtitle\/[a-f0-9]{16,80}\.(?:ass|json)$/i;
 /** Public upload captions, observed on `p.bstarstatic.com` without `auth_key`. */
 const UGC_SUBTITLE_PATH = /^\/ugc\/subtitle\/\d{10,13}_[a-f0-9]{16,32}_subtitle-\d{10,16}\.(?:json|ass)$/i;
@@ -56,4 +55,9 @@ export function bilibiliIntlShotImageUrl(value: unknown): string | null {
 
 export function bilibiliIntlShotBinUrl(value: unknown): string | null {
   return allowedStaticUrl(value, 'pic.bstarstatic.com', SHOT_BIN_PATH, 'none');
+}
+
+/** Subtitle files are the only media this provider fetches through the page broker. */
+export function allowsIntlMediaFetch(request: MediaFetchRequest): boolean {
+  return request.provider === 'bilibiliIntl' && request.kind === 'caption-track' && bilibiliIntlSubtitleUrl(request.url) !== null;
 }

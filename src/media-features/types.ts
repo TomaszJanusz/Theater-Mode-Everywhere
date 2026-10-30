@@ -144,8 +144,11 @@ export interface MediaFeaturesAdapter {
    */
   prepareCaptionCueRefresh?(id: string, time: number): CaptionCueRefresh | null;
   getChapters?(): Promise<Chapter[]>;
-  /** Select a provider's chapters independently of the preferred timeline list. */
-  getChaptersForSource?(source: string): Promise<Chapter[]>;
+  /**
+   * Chapters the service's episode actions use even when another source owns the timeline, such as the host's
+   * intro/outro windows. Null, like a missing method, leaves actions with the timeline's chapters.
+   */
+  getActionChapters?(): Promise<Chapter[] | null>;
   getHeatmap?(): TimelineHeatmap | null;
   getPreviewSource?(): Promise<PreviewSource>;
   getPreviewFrame?(time: number, duration: number): PreviewFrame | null;

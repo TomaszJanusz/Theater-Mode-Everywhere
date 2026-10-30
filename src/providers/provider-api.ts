@@ -14,7 +14,7 @@ import type { MediaSeekDetail } from '../protocol/media-seek';
 
 import type { observeProviderDom } from './dom-watch';
 import type { LauncherPlacementFactory } from './launcher-placement';
-import type { NativeServiceActionHooks } from './native-service-actions';
+import type { ServiceActionOptions } from './native-service-actions';
 import type { CollectedControl, PlaylistHelpers } from './playlist-controls';
 import type { ProviderTimeline } from './timeline/types';
 import type { WatchPlayback } from './watch-playback';
@@ -96,12 +96,17 @@ type IsolatedOnlyHooks = {
   hostCaptions?: () => HostCaptionLayoutSource;
   /** The adapter leaves its title to native page metadata rather than providing a service title. */
   titleFromPage?: boolean;
+  /**
+   * The host swaps the playing element without the replacement reporting a new duration, so the theater reloads this
+   * provider's media data after an element reset (while its integration is on).
+   */
+  refreshOnElementReset?: boolean;
   launcherPlacement?: LauncherPlacementFactory;
   /** Host clocks, live bounds and seek dispatch in the isolated world. */
   timeline?: ProviderTimeline;
   timelineMarkers?: (video: HTMLElement) => TimelineMarkerSource | null;
-  /** `options` binds the source to the theater session's document and surface. */
-  serviceActions?: (options: NativeServiceActionHooks) => ServiceActionSource;
+  /** `options` binds the source to the theater session's document, surface, chapters and seek. */
+  serviceActions?: (options: ServiceActionOptions) => ServiceActionSource;
   navigation?: {
     /** Scopes the host's controls to the player holding the video; without it every control on the page counts. */
     playerSelector?: string;

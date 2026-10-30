@@ -1,34 +1,6 @@
 [
   {
     "type": "dependency",
-    "from": "src/providers/bilibili-intl/service-actions.ts",
-    "to": "src/providers/navigation/bilibili-intl.ts",
-    "unresolvedTo": "../navigation/bilibili-intl",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/providers/bilibili-intl/watch-playback.ts",
-    "to": "src/providers/navigation/bilibili-intl.ts",
-    "unresolvedTo": "../navigation/bilibili-intl",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/providers/navigation/disney.ts",
     "to": "src/providers/disney/play-next.ts",
     "unresolvedTo": "../disney/play-next",
@@ -380,20 +352,6 @@
   {
     "type": "dependency",
     "from": "src/media-features/resolve-adapter.ts",
-    "to": "src/providers/bilibili-intl/adapter.ts",
-    "unresolvedTo": "../providers/bilibili-intl/adapter",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/media-features/resolve-adapter.ts",
     "to": "src/providers/crunchyroll/adapter.ts",
     "unresolvedTo": "../providers/crunchyroll/adapter",
     "dependencyTypes": [
@@ -452,20 +410,6 @@
     "from": "src/media-features/resolve-adapter.ts",
     "to": "src/providers/tencent/adapter.ts",
     "unresolvedTo": "../providers/tencent/adapter",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/platform/main-world-runtime.ts",
-    "to": "src/providers/bilibili-intl/main.ts",
-    "unresolvedTo": "../providers/bilibili-intl/main",
     "dependencyTypes": [
       "local",
       "import"

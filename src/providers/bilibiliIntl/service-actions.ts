@@ -1,24 +1,17 @@
 import type { ServiceAction, ServiceActionSource } from '../../core/service-actions';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import type { Chapter } from '../../media-features/types';
-import type { PlaybackSurface } from '../../playback-surface';
-import { isBilibiliIntlHost } from '../hosts';
 import {
   nativeServiceActionId, serviceActionRoute, serviceControlLabel, serviceElementToken, servicePlayer,
-  usableServiceControl, type NativeServiceActionHooks
+  usableServiceControl, type ServiceActionOptions
 } from '../native-service-actions';
-import { BILIBILI_INTL_PLAYER_SELECTOR } from '../navigation/bilibili-intl';
 
-import { bilibiliIntlPathKind, bilibiliIntlRouteEpisodeId } from './main';
+import { isBilibiliIntlHost } from './hosts';
 import { BILIBILI_INTL_SKIP_DURATION_SLACK_SECONDS } from './metadata';
+import { BILIBILI_INTL_PLAYER_SELECTOR } from './navigation';
+import { bilibiliIntlPathKind, bilibiliIntlRouteEpisodeId } from './snapshot';
 
-export type ServiceActionChapterContext = { mediaId: string; chapters: readonly Chapter[] };
-export type BilibiliIntlServiceActionHooks = NativeServiceActionHooks & {
-  video?: PlaybackSurface;
-  chapters?: () => ServiceActionChapterContext | null;
-  label?: (key: 'skipIntro' | 'skipOutro' | 'nextVideo') => string;
-  seek?: (time: number) => void;
-};
+/** A registered provider passes the runtime's lent `serviceElementToken` as `elementToken` rather than bundling a second counter. */
+export type BilibiliIntlServiceActionHooks = ServiceActionOptions & { elementToken?: (element: Element) => number };
 
 type LiveAction = ServiceAction & { element?: HTMLElement; end?: number };
 
@@ -27,6 +20,7 @@ export function createBilibiliIntlServiceActions(hooks: BilibiliIntlServiceActio
   const enabled = hooks.enabled ?? (() => mediaProviderIntegrationEnabled('bilibiliIntl'));
   const host = hooks.host ?? (() => isBilibiliIntlHost());
   const href = hooks.href ?? (() => window.location.href);
+  const token = hooks.elementToken ?? serviceElementToken;
   const label = hooks.label ?? (key => ({ skipIntro: 'Skip intro', skipOutro: 'Skip outro', nextVideo: 'Next' })[key]);
 
   const live = (): LiveAction[] => {
@@ -47,7 +41,7 @@ export function createBilibiliIntlServiceActions(hooks: BilibiliIntlServiceActio
     const route = serviceActionRoute(href());
     const media = hooks.video?.element ?? (video as HTMLVideoElement);
     const native = hooks.video?.nativeMedia ?? (video as HTMLVideoElement);
-    const identity = JSON.stringify([route, episode, serviceElementToken(root), serviceElementToken(media),
+    const identity = JSON.stringify([route, episode, token(root), token(media),
       native?.currentSrc || '', native?.getAttribute('src') || '']);
     const actions: LiveAction[] = [];
     const context = hooks.chapters?.();
@@ -70,7 +64,7 @@ export function createBilibiliIntlServiceActions(hooks: BilibiliIntlServiceActio
       const next = root.querySelector<HTMLElement>('.player-mobile-control-btn-next-episode .ip-next-episode');
       if (next && usableServiceControl(next)) {
         const nativeLabel = serviceControlLabel(next) || serviceControlLabel(next.parentElement!);
-        actions.push({ id: nativeServiceActionId('bilibiliIntl:next', identity, root, next, media),
+        actions.push({ id: nativeServiceActionId('bilibiliIntl:next', identity, root, next, media, token),
           label: nativeLabel || label('nextVideo'), element: next });
       }
     }

@@ -1,5 +1,4 @@
 import { coercePlaybackSurface, type PlaybackSurface } from '../playback-surface';
-import { BilibiliIntlAdapter } from '../providers/bilibili-intl/adapter';
 import { CrunchyrollAdapter } from '../providers/crunchyroll/adapter';
 import { DisneyAdapter } from '../providers/disney/adapter';
 import { createHostCaptionLayoutSource } from '../providers/host-captions';
@@ -43,7 +42,6 @@ export function createMediaFeaturesAdapter(
   const adapters: MediaFeaturesAdapter[] = [];
   if (shouldAttachDisneyAdapter(flags)) adapters.push(new DisneyAdapter());
   if (shouldAttachNetflixAdapter(flags)) adapters.push(new NetflixAdapter());
-  if (shouldAttachProvider('bilibiliIntl', flags)) adapters.push(new BilibiliIntlAdapter());
   if (shouldAttachProvider('tencent', flags)) adapters.push(new TencentAdapter());
   if (shouldAttachProvider('crunchyroll', flags)) adapters.push(new CrunchyrollAdapter());
   adapters.push(...registeredAdapters(flags, surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null));

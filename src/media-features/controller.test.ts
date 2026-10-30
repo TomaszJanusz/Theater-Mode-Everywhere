@@ -157,7 +157,7 @@ function createController(adapter: TestAdapter, extras: Partial<MediaFeaturesBin
 }
 
 describe('MediaFeaturesController chapter context', () => {
-  it('keeps Bilibili episode actions when native chapters take timeline precedence', async () => {
+  it("keeps a provider's episode action chapters when native chapters take timeline precedence", async () => {
     let mediaId = 'ogv:one';
     const native: Chapter[] = [{ start: 0, end: 100, title: 'Native chapter', source: 'native-text-track', confidence: 'high' }];
     let windows: Chapter[] = [
@@ -173,8 +173,8 @@ describe('MediaFeaturesController chapter context', () => {
     });
     const composite = new CompositeMediaAdapter([
       stub({ getChapters: async () => native }),
-      stub({ getChapters: async () => { throw new Error('unavailable chapter source'); } }),
-      stub({ getChapters: async () => windows, mediaId: () => mediaId })
+      stub({ getChapters: async () => { throw new Error('unavailable chapter source'); }, getActionChapters: async () => { throw new Error('unavailable'); } }),
+      stub({ getChapters: async () => windows, getActionChapters: async () => windows, mediaId: () => mediaId })
     ]);
     let timeline: readonly Chapter[] = [];
     const { controller } = createController(composite, {
@@ -197,6 +197,13 @@ describe('MediaFeaturesController chapter context', () => {
     assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:two', chapters: [] }, 'missing provider windows must not fall back to native chapters');
     controller.dispose();
     assert.equal(controller.chapterContext(), null);
+
+    // Without action chapters, episode actions see the timeline's.
+    const plain = new CompositeMediaAdapter([stub({ getChapters: async () => native, mediaId: () => 'plain' })]);
+    const { controller: timelineOnly } = createController(plain, { adapter: plain });
+    await timelineOnly.refresh();
+    assert.deepEqual(timelineOnly.chapterContext(), { mediaId: 'plain', chapters: native });
+    timelineOnly.dispose();
   });
 
   it('withholds previous episode windows during refresh, mismatch and disposal', async () => {

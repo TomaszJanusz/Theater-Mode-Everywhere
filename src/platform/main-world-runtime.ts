@@ -7,7 +7,6 @@ import { MEDIA_SEEK_EVENT, parseMediaSeekDetail } from '../protocol/media-seek';
 import { MODAL_KEY_EVENT } from '../protocol/modal';
 import { parseProbeRequest } from '../protocol/page-requests';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope, type WorldEnvelope } from '../protocol/world-messages';
-import { installIntlNavigation, readBilibiliIntlSnapshot, bilibiliIntlIntegrationEnabled } from '../providers/bilibili-intl/main';
 import { consumeCrunchyrollWrappedFetch, crunchyrollAllowsCaptionFetch, crunchyrollIntegrationEnabled, isCrunchyrollOwnedRequest, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
 import {
   captureDisneyNetworkResponse,
@@ -21,7 +20,7 @@ import {
   MAX_BIF_BYTES,
   readDisneySnapshot
 } from '../providers/disney/main';
-import { isBilibiliIntlHost } from '../providers/hosts';
+import { } from '../providers/hosts';
 import {
   installNetflixMain,
   handleNetflixMediaSeek,
@@ -271,8 +270,7 @@ export function installMainWorldRuntime(): void {
     });
   }
 
-  if (harvestHost || isBilibiliIntlHost(window.location.hostname) || providerRegistry.all().some(hooks => hooks.watchPlayback)) installWatchPlaybackQueries();
-  if (isBilibiliIntlHost(window.location.hostname)) installIntlNavigation();
+  if (harvestHost || providerRegistry.all().some(hooks => hooks.watchPlayback)) installWatchPlaybackQueries();
 
   installProviders();
   if (harvestHost) {
@@ -490,15 +488,6 @@ export function installMainWorldRuntime(): void {
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
       detail: { requestId, providers: probeProviders(), disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot() }
     }));
-    // Bilibili.tv needs asynchronous metadata. Keep the original fast probe for
-    // other adapters and deliver Bilibili.tv's result through its own event.
-    if (bilibiliIntlIntegrationEnabled()) {
-      void readBilibiliIntlSnapshot().then((bilibiliIntl) => {
-        window.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
-          detail: { requestId, bilibiliIntl }
-        }));
-      }).catch(() => {});
-    }
   });
 
   function pageFetchAllowed(url: string): boolean {
@@ -506,7 +495,6 @@ export function installMainWorldRuntime(): void {
     const classified = classifyMediaFetchUrl(url, window.location.href);
     if (!classified) return false;
     if (classified.provider === 'disney') return disneyIntegrationEnabled();
-    if (classified.provider === 'bilibiliIntl') return bilibiliIntlIntegrationEnabled();
     if (classified.provider === 'tencent') return tencentIntegrationEnabled();
     if (classified.provider === 'crunchyroll') return crunchyrollAllowsCaptionFetch(url);
     if (providerRegistry.get(classified.provider)) return mediaProviderIntegrationEnabled(classified.provider);

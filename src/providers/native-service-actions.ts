@@ -1,4 +1,6 @@
 import type { ServiceAction, ServiceActionSource } from '../core/service-actions';
+import type { Chapter } from '../media-features/types';
+import type { PlaybackSurface } from '../playback-surface';
 
 export type NativeServiceActionHooks = {
   enabled?: () => boolean;
@@ -7,6 +9,16 @@ export type NativeServiceActionHooks = {
   document?: Document;
   /** Bind controls to the surface that owns the current theater session. */
   element?: HTMLElement;
+};
+
+export type ActionChapterContext = { mediaId: string; chapters: readonly Chapter[] };
+
+/** What the theater session lends a provider's actions: its playback surface, the media's chapters, labels and seek. */
+export type ServiceActionOptions = NativeServiceActionHooks & {
+  video?: PlaybackSurface;
+  chapters?: () => ActionChapterContext | null;
+  label?: (key: 'skipIntro' | 'skipOutro' | 'nextVideo') => string;
+  seek?: (time: number) => void;
 };
 
 export type NativeServiceAction = ServiceAction & { element: HTMLElement };

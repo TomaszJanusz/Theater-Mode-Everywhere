@@ -25,6 +25,8 @@
       "exclude_matches": [
         "*://*.bilibili.com/*",
         "*://*.bilibili.com./*",
+        "*://*.bilibili.tv/*",
+        "*://*.bilibili.tv./*",
         "*://*.iq.com/*",
         "*://*.iq.com./*",
         "*://*.patreon.com/*",
@@ -62,6 +64,22 @@
       "js": [
         "content.js",
         "providers/bilibili/isolated.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
+        "*://*.bilibili.tv/*",
+        "*://*.bilibili.tv./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/bilibiliIntl/isolated.js",
         "contentStart.js"
       ],
       "run_at": "document_start",
@@ -193,6 +211,8 @@
       "exclude_matches": [
         "*://*.bilibili.com/*",
         "*://*.bilibili.com./*",
+        "*://*.bilibili.tv/*",
+        "*://*.bilibili.tv./*",
         "*://*.iq.com/*",
         "*://*.iq.com./*",
         "*://*.patreon.com/*",
@@ -228,6 +248,20 @@
       "js": [
         "mainWorld.js",
         "providers/bilibili/main.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.bilibili.tv/*",
+        "*://*.bilibili.tv./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/bilibiliIntl/main.js",
         "mainWorldStart.js"
       ],
       "run_at": "document_start",

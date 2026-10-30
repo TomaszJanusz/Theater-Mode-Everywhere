@@ -57,8 +57,9 @@ localized skip actions only while the playback time is inside `[start, end)`.
 Activating seeks to the window's end through the player's existing seek path
 and preserves playback intent. No extra metadata requests or timer are added.
 
-The controller selects Bilibili.tv's skip windows independently of the preferred
-timeline chapters, so native chapter tracks cannot mask the episode actions.
+The adapter declares its skip windows as action chapters (`getActionChapters`), which
+the controller keeps apart from the preferred timeline chapters, so native chapter
+tracks cannot mask the episode actions.
 The adapter reuses its loaded metadata. The controller exposes this chapter context only for the currently loaded media,
 when it is not refreshing. The provider checks `ogv:<episode>`, the published
 DOM episode/kind and the route together. Uploads, route/id disagreement,
@@ -99,7 +100,7 @@ native controls' usability.
 ad availability, legacy/current/embedded selectors, route/button/root/video/
 source replacement, toast lifecycle, skip-window boundaries, episode mismatch,
 provider flags and CTA disposal. The installed Chromium extension fixture in
-`src/providers/bilibili-intl/runtime.browser.test.ts` exercises the imported
+`src/providers/bilibiliIntl/runtime.browser.test.ts` exercises the imported
 intro window through the actual content-world CTA and checks pause preservation.
 On Bilibili.com only the native “do not skip” confirmation was checked on the live
 page; a logged-in first-watch “still skip” confirmation is covered by the fixture

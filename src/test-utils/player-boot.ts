@@ -41,7 +41,8 @@ export function bundleModules(exports: readonly string[], globalName = 'TheaterT
 export const PROVIDER_ENTRIES = ["import './test-utils/fixture-runtimes';", "import './providers/youtube/isolated';",
   "import './providers/youtube/main';", "import './providers/viki/isolated';", "import './providers/viki/main';",
   "import './providers/twitch/isolated';", "import './providers/twitch/main';",
-  "import './providers/bilibili/isolated';", "import './providers/bilibili/main';"] as const;
+  "import './providers/bilibili/isolated';", "import './providers/bilibili/main';", "import './providers/bilibiliIntl/isolated';",
+  "import './providers/bilibiliIntl/main';"] as const;
 
 /** The player runtime and MAIN-world runtime as global `TheaterTest`, plus extra export lines a test inspects. */
 export function bundlePlayer(extraExports: readonly string[] = []): string {

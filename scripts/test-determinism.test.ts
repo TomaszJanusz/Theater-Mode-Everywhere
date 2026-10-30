@@ -89,3 +89,32 @@ it('allows a missing remote ref locally but rejects it in CI', t => {
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+it('keeps the base allowance of a file this branch moved, and still rejects its growth', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'determinism-move-'));
+  const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { cwd: directory, stdio: 'pipe' });
+  try {
+    git('init', '--quiet');
+    mkdirSync(join(directory, 'scripts'));
+    mkdirSync(join(directory, 'old'));
+    writeFileSync(join(directory, 'old/wait.test.ts'), 'await poll();\n'.repeat(20));
+    writeFileSync(join(directory, baselinePath), JSON.stringify({ 'old/wait.test.ts': { timer: 1 } }));
+    git('add', '-A');
+    git('commit', '--quiet', '-m', 'base');
+    git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+    mkdirSync(join(directory, 'new'));
+    git('mv', 'old/wait.test.ts', 'new/wait.test.ts');
+    writeFileSync(join(directory, baselinePath), JSON.stringify({ 'new/wait.test.ts': { timer: 1 } }));
+    git('commit', '--quiet', '-am', 'move');
+    const previous = process.env.GITHUB_BASE_REF;
+    delete process.env.GITHUB_BASE_REF;
+    try {
+      assertBaselineRatchet({ 'new/wait.test.ts': { timer: 1 } }, directory, true);
+      assert.throws(() => assertBaselineRatchet({ 'new/wait.test.ts': { timer: 2 } }, directory, true), /new\/wait\.test\.ts: timer grew from 1 to 2/);
+    } finally {
+      if (previous !== undefined) process.env.GITHUB_BASE_REF = previous;
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

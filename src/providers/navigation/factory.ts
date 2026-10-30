@@ -2,7 +2,6 @@ import type { PlaylistAction } from '../../playlist-nav';
 import { usableControlIndexes, type PlaylistHelpers } from '../playlist-controls';
 import { providerRegistry } from '../runtime-registration';
 
-import { BILIBILI_INTL_PLAYER_SELECTOR, readBilibiliIntlControls } from './bilibili-intl';
 import { DAILYMOTION_PLAYER_SELECTOR, readDailymotionControls } from './dailymotion';
 import { findDisneyPlaylistActions } from './disney';
 import { findNetflixPlaylistActions } from './netflix';
@@ -12,7 +11,6 @@ import { readVideoJsControls, peerTubeNeighborPreviews, VIDEOJS_PLAYER_SELECTOR 
 export const HOST_PLAYER_SCOPE = [
   VIDEOJS_PLAYER_SELECTOR,
   DAILYMOTION_PLAYER_SELECTOR,
-  BILIBILI_INTL_PLAYER_SELECTOR,
   TENCENT_PLAYER_SELECTOR
 ].join(', ');
 
@@ -63,7 +61,6 @@ function readHostControls(root: ParentNode) {
   return [
     ...readVideoJsControls(root),
     ...readDailymotionControls(root),
-    ...readBilibiliIntlControls(root),
     ...readTencentControls(root),
     ...providerRegistry.all().flatMap(hooks => hooks.navigation?.readControls(root) ?? [])
   ];

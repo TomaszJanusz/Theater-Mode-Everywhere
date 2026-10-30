@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { classifyMediaFetchUrl, isAllowedMediaFetchUrl, assertSafeRedirect } from '../../media-features/fetch-allowlist';
-import { bilibiliIntlShotImageUrl, bilibiliIntlSubtitleUrl } from '../../media-features/parsers/bilibili-intl';
-import { parseProbeRequest } from '../../protocol/page-requests';
+import { classifyMediaFetchUrl, assertSafeRedirect } from '../../media-features/fetch-allowlist';
+import { requestPageFetch, requestProviderProbe } from '../../media-features/probe';
+import { navigationObserver } from '../../platform/navigation-visit';
+import { encodeProbeAsyncReply, parseProbeAsyncRequest, PROBE_ASYNC_EVENT, PROBE_ASYNC_REPLY_EVENT } from '../../protocol/page-requests';
 import { createWorldMessage, type WorldEnvelope } from '../../protocol/world-messages';
 
 import { BilibiliIntlAdapter } from './adapter';
-import { bilibiliIntlPageId, readBilibiliIntlSnapshot } from './main';
+import { allowsIntlMediaFetch, bilibiliIntlShotImageUrl, bilibiliIntlSubtitleUrl } from './fetch-policy';
 import {
   bilibiliIntlCaptionTracks,
   bilibiliIntlPreviewFrame,
@@ -16,9 +17,11 @@ import {
   normalizeBilibiliIntlSnapshot,
   parseBilibiliIntlCaptions,
   parseBilibiliIntlShotIndex,
+  parseIntlSnapshot,
   parseBilibiliIntlSkipChapters,
   parseBilibiliIntlStoryboard
 } from './metadata';
+import { bilibiliIntlPageId, readBilibiliIntlSnapshot, trackIntlVisits } from './snapshot';
 
 // English ASS lines and the thumbnail index prefix from
 // https://www.bilibili.tv/en/play/1053337 episode 11371243. Drawing line is synthetic.
@@ -62,6 +65,9 @@ const state = {
   }
 };
 
+/** The runtime's lent services, which cross worlds through the test's fake MAIN on `window`. */
+const SERVICES = { requestPageFetch, requestProviderProbe };
+
 describe('Bilibili.tv RTE', () => {
   it('parses the observed ASS and JSON cue shapes', () => {
     const cues = parseBilibiliIntlCaptions(ASS);
@@ -103,7 +109,7 @@ describe('Bilibili.tv RTE', () => {
     assert.equal(bilibiliIntlSubtitleUrl('https://p.bstarstatic.com/ogv/subtitle/c350955fde09ca9f62098c78ddf0add4.ass'), null);
     assert.equal(bilibiliIntlSubtitleUrl('https://s.bstarstatic.com/ugc/subtitle/1791206531_9b2afa9ce631f644_subtitle-1791206531413.json'), null);
     assert.equal(bilibiliIntlSubtitleUrl('https://p.bstarstatic.com/ugc/subtitle/1791206531_9b2afa9ce631f644_subtitle-1791206531413.json?token=1'), null);
-    assert.equal(isAllowedMediaFetchUrl({ provider: 'bilibiliIntl', kind: 'caption-track', url: UGC_SUBTITLE_URL }), true);
+    assert.equal(allowsIntlMediaFetch({ provider: 'bilibiliIntl', kind: 'caption-track', url: UGC_SUBTITLE_URL }), true);
     const tracks = bilibiliIntlCaptionTracks('11371243', {
       subtitles: [
         { url: SUBTITLE_URL, lang: 'English', lang_key: 'en', subtitle_id: 1617629757006 },
@@ -117,8 +123,10 @@ describe('Bilibili.tv RTE', () => {
       video_subtitle: [{ lang_key: 'en', lang: 'English', srt: { url: '' }, ass: { url: SUBTITLE_URL } }]
     });
     assert.equal(legacy[0].url, SUBTITLE_URL);
-    assert.deepEqual(classifyMediaFetchUrl(SUBTITLE_URL), { provider: 'bilibiliIntl', kind: 'caption-track', url: SUBTITLE_URL });
-    assert.equal(isAllowedMediaFetchUrl({ provider: 'bilibiliIntl', kind: 'caption-track', url: JSON_URL }), true);
+    // The provider's registration admits them; the shared allowlist holds no Bilibili.tv rule of its own.
+    assert.equal(classifyMediaFetchUrl(SUBTITLE_URL), null);
+    assert.equal(allowsIntlMediaFetch({ provider: 'bilibiliIntl', kind: 'caption-track', url: SUBTITLE_URL }), true);
+    assert.equal(allowsIntlMediaFetch({ provider: 'bilibiliIntl', kind: 'caption-track', url: JSON_URL }), true);
     for (const url of [
       'http://s.bstarstatic.com/ogv/subtitle/c350955fde09ca9f62098c78ddf0add4.ass',
       'https://user@s.bstarstatic.com/ogv/subtitle/c350955fde09ca9f62098c78ddf0add4.ass',
@@ -127,7 +135,7 @@ describe('Bilibili.tv RTE', () => {
       'https://pic.bstarstatic.com/videoshot/n240826er2gfbhsx7mrzqd1eeshl4f6l.jpg',
       `${SUBTITLE_URL}&next=https://evil.test/a.ass`
     ]) {
-      assert.equal(isAllowedMediaFetchUrl({ provider: 'bilibiliIntl', kind: 'caption-track', url }), false, url);
+      assert.equal(allowsIntlMediaFetch({ provider: 'bilibiliIntl', kind: 'caption-track', url }), false, url);
     }
     assert.equal(assertSafeRedirect('https://evil.test/ogv/subtitle/c350955fde09ca9f62098c78ddf0add4.ass', {
       provider: 'bilibiliIntl', kind: 'caption-track', url: SUBTITLE_URL
@@ -319,6 +327,57 @@ describe('Bilibili.tv RTE', () => {
     }
   });
 
+  it('reads again after A→B→A before metadata settles, and lets one request stop waiting without ending the shared read', async () => {
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    const oldFetch = globalThis.fetch;
+    const page = { ...state, ogv: { ...state.ogv, epId: '11371243' } };
+    // An intercepted navigation.navigate(): the Navigation API commits the entry and no history method runs.
+    const navigation = new EventTarget();
+    const location = { hostname: 'www.bilibili.tv', pathname: '/en/play/1053337/11371243', search: '', href: '' };
+    const history = { pushState() {}, replaceState() {} } as unknown as History;
+    const win = Object.assign(new EventTarget(), { location, history, navigation, __initialState: page });
+    const navigate = (pathname: string) => {
+      Object.assign(location, { pathname, href: `https://www.bilibili.tv${pathname}` });
+      navigation.dispatchEvent(Object.assign(new Event('currententrychange'), { navigationType: 'push' }));
+    };
+    const attrs = new Map<string, string>();
+    const pending: Array<{ resolve(value: Response): void; signal?: AbortSignal | null }> = [];
+    try {
+      globalThis.window = win as any;
+      globalThis.document = {
+        title: 'The Last Summoner E1 - BiliBili',
+        querySelector: () => null,
+        documentElement: {
+          hasAttribute: (name: string) => attrs.has(name),
+          getAttribute: (name: string) => attrs.get(name) ?? null,
+          setAttribute: (name: string, value: string) => { attrs.set(name, value); },
+          removeAttribute: (name: string) => { attrs.delete(name); }
+        }
+      } as any;
+      globalThis.fetch = ((_url: string, init?: RequestInit) => new Promise<Response>(resolve => { pending.push({ resolve, signal: init?.signal }); })) as typeof fetch;
+      trackIntlVisits(navigationObserver(win as unknown as Window));
+      const first = readBilibiliIntlSnapshot();
+      const reads = pending.length;
+      assert.equal(reads, 3);
+      navigate('/en/play/1053337/11371316');
+      assert.ok(pending.every(request => request.signal?.aborted), "leaving A aborts A's metadata requests");
+      navigate('/en/play/1053337/11371243');
+      const second = readBilibiliIntlSnapshot();
+      assert.equal(pending.length, 2 * reads, 'the return to A reads again instead of reusing the earlier pending read');
+      const stopped = new AbortController();
+      const waiter = readBilibiliIntlSnapshot(stopped.signal);
+      assert.equal(pending.length, 2 * reads, 'the same visit shares one read');
+      stopped.abort();
+      assert.equal(await waiter, null, 'an aborted request stops waiting at once');
+      for (const request of pending) request.resolve(new Response('{"code":0,"data":{}}'));
+      assert.equal(await first, null, 'the earlier visit never answers');
+      assert.equal((await second)?.videoId, '11371243');
+    } finally {
+      globalThis.window = oldWindow; globalThis.document = oldDocument; globalThis.fetch = oldFetch;
+    }
+  });
+
   it('reads a hydrated Vue initial state on an episode page and does not reuse that episode on an upload path', async () => {
     const oldWindow = globalThis.window;
     const oldDocument = globalThis.document;
@@ -469,18 +528,17 @@ describe('Bilibili.tv RTE', () => {
       }
     } as any;
     attrs.set('data-te-bilibili-intl-episode', '11371243');
-    win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = parseProbeRequest((event as CustomEvent).detail);
-      win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
-        detail: { requestId, bilibiliIntl: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+    win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
+      const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
+      win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
+          detail: encodeProbeAsyncReply(requestId, normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
-        }, null) }
-      }));
+        }, null)) }));
     });
     (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
       ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ASS }, request.requestId, request.nonce, request.origin));
     };
-    const adapter = new BilibiliIntlAdapter();
+    const adapter = new BilibiliIntlAdapter(SERVICES);
     try {
       const tracks = await adapter.listCaptionTracks();
       const active = await adapter.activateCaptionTrack(tracks[0].id);
@@ -528,13 +586,12 @@ describe('Bilibili.tv RTE', () => {
       }
     } as any;
     attrs.set('data-te-bilibili-intl-episode', '11371243');
-    win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = parseProbeRequest((event as CustomEvent).detail);
-      win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
-        detail: { requestId, bilibiliIntl: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+    win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
+      const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
+      win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
+          detail: encodeProbeAsyncReply(requestId, normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
-        }, null) }
-      }));
+        }, null)) }));
     });
     const deliveries: Array<(body: string) => void> = [];
     (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
@@ -542,7 +599,7 @@ describe('Bilibili.tv RTE', () => {
         ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin));
       });
     };
-    const adapter = new BilibiliIntlAdapter();
+    const adapter = new BilibiliIntlAdapter(SERVICES);
     try {
       const tracks = await adapter.listCaptionTracks();
       const changedEpisode = adapter.activateCaptionTrack(tracks[0].id);
@@ -603,13 +660,12 @@ describe('Bilibili.tv RTE', () => {
       }
     } as any;
     attrs.set('data-te-bilibili-intl-episode', '11371243');
-    win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = parseProbeRequest((event as CustomEvent).detail);
-      win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
-        detail: { requestId, bilibiliIntl: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+    win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
+      const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
+      win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
+          detail: encodeProbeAsyncReply(requestId, normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
-        }, null) }
-      }));
+        }, null)) }));
     });
     const deliveries: Array<(body: string) => void> = [];
     (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
@@ -617,7 +673,7 @@ describe('Bilibili.tv RTE', () => {
         ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin));
       });
     };
-    const adapter = new BilibiliIntlAdapter();
+    const adapter = new BilibiliIntlAdapter(SERVICES);
     try {
       const tracks = await adapter.listCaptionTracks();
       const movedSeason = adapter.activateCaptionTrack(tracks[0].id);
@@ -667,12 +723,11 @@ describe('Bilibili.tv RTE', () => {
     } as any;
     attrs.set('data-te-bilibili-intl-episode', '11371243');
     const replies: Array<(payload: ReturnType<typeof normalizeBilibiliIntlSnapshot> | null) => void> = [];
-    win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = parseProbeRequest((event as CustomEvent).detail);
+    win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
+      const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
       replies.push((payload) => {
-        win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
-          detail: { requestId, bilibiliIntl: payload }
-        }));
+        win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
+          detail: encodeProbeAsyncReply(requestId, payload) }));
       });
     });
     const storyboard = parseBilibiliIntlStoryboard({
@@ -681,7 +736,7 @@ describe('Bilibili.tv RTE', () => {
     const episode = (id: string, title: string, tracks: boolean) => normalizeBilibiliIntlSnapshot(id, title, 1504, {
       subtitles: tracks ? [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }] : []
     }, storyboard);
-    const adapter = new BilibiliIntlAdapter();
+    const adapter = new BilibiliIntlAdapter(SERVICES);
     try {
       const listed = adapter.listCaptionTracks();
       replies[0](episode('11371243', 'Old title', true));
@@ -767,7 +822,23 @@ describe('Bilibili.tv RTE', () => {
     }
   });
 
-  it('accepts a legacy OGV snapshot that omits kind and chapters', async () => {
+  it('accepts a MAIN snapshot that crossed worlds and rejects malformed or foreign fields', () => {
+    const storyboard = parseBilibiliIntlStoryboard({ x_len: 10, y_len: 10, x_size: 160, y_size: 90, images: [IMAGE] }, parseBilibiliIntlShotIndex(SHOT_PREFIX));
+    const snapshot = normalizeBilibiliIntlSnapshot('11371243', 'Episode', 1504, {
+      subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
+    }, storyboard, [{ start: 0, end: 90, title: 'Intro' }], 'ogv');
+    const crossed = JSON.parse(JSON.stringify(snapshot));
+    assert.deepEqual(parseIntlSnapshot(crossed), JSON.parse(JSON.stringify(snapshot)));
+    for (const value of [
+      null, 'text', { ...crossed, videoId: '11371243<' }, { ...crossed, kind: 'live' },
+      { ...crossed, captionTracks: [{ ...crossed.captionTracks[0], url: 'https://evil.test/a.ass' }] },
+      { ...crossed, chapters: [{ start: 90, end: 10, title: 'Intro' }] }, { ...crossed, chapters: [{ start: 0, end: 10, title: 'Recap' }] },
+      { ...crossed, storyboard: { ...crossed.storyboard, images: ['https://evil.test/videoshot/a.jpg'] } },
+      { ...crossed, storyboard: { ...crossed.storyboard, times: [5, 1, 9] } }
+    ]) assert.equal(parseIntlSnapshot(value), null, JSON.stringify(value)?.slice(0, 120));
+  });
+
+  it('fails closed on a snapshot without kind or chapters and on a kind that does not match the route', async () => {
     const oldWindow = globalThis.window;
     const oldDocument = globalThis.document;
     const attrs = new Map<string, string>();
@@ -788,32 +859,36 @@ describe('Bilibili.tv RTE', () => {
     const storyboard = parseBilibiliIntlStoryboard({
       x_len: 10, y_len: 10, x_size: 160, y_size: 90, images: [IMAGE]
     }, parseBilibiliIntlShotIndex(SHOT_PREFIX));
-    const published = normalizeBilibiliIntlSnapshot('11371243', 'Legacy episode', 1504, {
+    const published = normalizeBilibiliIntlSnapshot('11371243', 'Episode', 1504, {
       subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
     }, storyboard);
     const legacy = { ...published } as Partial<typeof published>;
     delete legacy.kind;
     delete legacy.chapters;
     const replies: Array<(payload: typeof published | null) => void> = [];
-    win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = parseProbeRequest((event as CustomEvent).detail);
+    win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
+      const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
       replies.push((payload) => {
-        win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
-          detail: { requestId, bilibiliIntl: payload }
-        }));
+        win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
+          detail: encodeProbeAsyncReply(requestId, payload) }));
       });
     });
-    const adapter = new BilibiliIntlAdapter();
+    const adapter = new BilibiliIntlAdapter(SERVICES);
     try {
       assert.equal('kind' in legacy, false);
       assert.equal('chapters' in legacy, false);
+      // Only this build's MAIN answers the provider probe, and it always names both.
       const pending = adapter.probe();
       replies[0](legacy as typeof published);
-      const capabilities = await pending;
-      assert.deepEqual(capabilities, { captions: true, chapters: false, previews: true });
+      assert.deepEqual(await pending, { captions: false, chapters: false, previews: false });
+      assert.equal(adapter.mediaId(), null);
+      const complete = adapter.reload();
+      replies.at(-1)!(published);
+      await complete;
+      assert.deepEqual(await adapter.probe(), { captions: true, chapters: false, previews: true });
       assert.deepEqual(await adapter.getChapters(), []);
       assert.equal(adapter.mediaId(), 'ogv:11371243');
-      assert.equal(adapter.getTitle(), 'Legacy episode');
+      assert.equal(adapter.getTitle(), 'Episode');
       const tracks = await adapter.listCaptionTracks();
       assert.equal(tracks.length, 1);
       assert.equal(tracks[0].id.startsWith('bilibiliIntl:ogv:11371243:'), true);
@@ -867,16 +942,15 @@ describe('Bilibili.tv RTE', () => {
       subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
     }, null);
     const replies: Array<(publish: string | null, payload: ReturnType<typeof normalizeBilibiliIntlSnapshot> | null) => void> = [];
-    win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = parseProbeRequest((event as CustomEvent).detail);
+    win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
+      const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
       replies.push((publish, payload) => {
         if (publish) attrs.set('data-te-bilibili-intl-episode', publish);
-        win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
-          detail: { requestId, bilibiliIntl: payload }
-        }));
+        win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
+          detail: encodeProbeAsyncReply(requestId, payload) }));
       });
     });
-    const adapter = new BilibiliIntlAdapter();
+    const adapter = new BilibiliIntlAdapter(SERVICES);
     try {
       assert.equal('__initialState' in win, false);
       assert.equal(bilibiliIntlPageId(), null);
@@ -956,22 +1030,21 @@ describe('Bilibili.tv RTE', () => {
       subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
     }, null);
     const replies: Array<() => void> = [];
-    win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = parseProbeRequest((event as CustomEvent).detail);
+    win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
+      const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
       replies.push(() => {
         attrs.set('data-te-bilibili-intl-episode', '11371243');
-        win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
-          detail: { requestId, bilibiliIntl: snapshot }
-        }));
+        win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
+          detail: encodeProbeAsyncReply(requestId, snapshot) }));
       });
     });
     (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
       ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: '<html>login</html>' }, request.requestId, request.nonce, request.origin));
     };
     const trackId = snapshot.captionTracks[0].id;
-    const adapter = new BilibiliIntlAdapter();
-    const duringDispose = new BilibiliIntlAdapter();
-    const afterFailure = new BilibiliIntlAdapter();
+    const adapter = new BilibiliIntlAdapter(SERVICES);
+    const duringDispose = new BilibiliIntlAdapter(SERVICES);
+    const afterFailure = new BilibiliIntlAdapter(SERVICES);
     try {
       const cancelled = adapter.activateCaptionTrack(trackId);
       await Promise.resolve();
@@ -1034,16 +1107,15 @@ describe('Bilibili.tv RTE', () => {
     } as any;
     attrs.set('data-te-bilibili-intl-episode', '11371243');
     const arabic = JSON.stringify({ body: [{ from: 1, to: 2, content: 'سطر جديد' }] });
-    win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = parseProbeRequest((event as CustomEvent).detail);
-      win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
-        detail: { requestId, bilibiliIntl: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+    win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
+      const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
+      win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
+          detail: encodeProbeAsyncReply(requestId, normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [
             { url: SUBTITLE_URL, lang: 'English', lang_key: 'en' },
             { url: JSON_URL, lang: 'العربية', lang_key: 'ar' }
           ]
-        }, null) }
-      }));
+        }, null)) }));
     });
     const deliveries: Array<{ url: string; send: (body: string) => void }> = [];
     (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
@@ -1059,7 +1131,7 @@ describe('Bilibili.tv RTE', () => {
       assert.notEqual(index, -1, url);
       return deliveries.splice(index, 1)[0];
     };
-    const adapter = new BilibiliIntlAdapter();
+    const adapter = new BilibiliIntlAdapter(SERVICES);
     try {
       const tracks = await adapter.listCaptionTracks();
       const english = tracks.find((track) => track.language === 'en');
@@ -1280,14 +1352,13 @@ describe('Bilibili.tv RTE', () => {
       assert.equal(fresh?.storyboard?.columns, 10);
       assert.equal(requested.some((url) => url.includes('/ogv/play/episode') || url.includes('playurl')), false);
 
-      const adapter = new BilibiliIntlAdapter();
+      const adapter = new BilibiliIntlAdapter(SERVICES);
       const win = globalThis.window as EventTarget & { location: { pathname: string }; postMessage?: (request: WorldEnvelope, origin: string, ports: MessagePort[]) => void };
       const ugcCues = JSON.stringify({ body: [{ from: 1, to: 2, content: 'uploaded line' }] });
-      win.addEventListener('theater-everywhere-media-probe', (event) => {
-        const requestId = parseProbeRequest((event as CustomEvent).detail);
-        win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
-          detail: { requestId, bilibiliIntl: fresh }
-        }));
+      win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
+        const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
+        win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
+          detail: encodeProbeAsyncReply(requestId, fresh) }));
       });
       win.postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
         ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ugcCues }, request.requestId, request.nonce, request.origin));

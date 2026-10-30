@@ -1,6 +1,5 @@
 import { encodeProbeRequest, encodeProbeAsyncRequest, parseProbeAsyncReply, PROBE_ASYNC_EVENT, PROBE_ASYNC_REPLY_EVENT } from '../protocol/page-requests';
 import { createWorldMessage, readWorldEnvelope } from '../protocol/world-messages';
-import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
 import type { CrunchyrollSnapshot } from '../providers/crunchyroll/main';
 import type { TencentSnapshot } from '../providers/tencent/main';
 
@@ -51,7 +50,6 @@ export type MediaProbeSnapshot = {
   providers?: Record<string, unknown>;
   disney?: DisneyPlayerSnapshot | null;
   netflix?: NetflixProbeSnapshot | null;
-  bilibiliIntl?: BilibiliIntlSnapshot | null;
   tencent?: TencentSnapshot | null;
   crunchyroll?: CrunchyrollSnapshot | null;
 };
@@ -64,7 +62,7 @@ type ProbeResponse = ProbeRequest & MediaProbeSnapshot;
 
 let requestId = 0;
 
-export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibiliIntl'): Promise<MediaProbeSnapshot> {
+export function requestMediaProbe(timeoutMs = 800): Promise<MediaProbeSnapshot> {
   return new Promise((resolve) => {
     const id = ++requestId;
     let settled = false;
@@ -80,19 +78,17 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibiliIntl'): P
       if (settled) return;
       settled = true;
       window.clearTimeout(timer);
-      window.removeEventListener(resultEvent, onResult as EventListener);
+      window.removeEventListener(MEDIA_PROBE_RESULT_EVENT, onResult as EventListener);
       resolve({
         providers: plainRecord(snapshot.providers),
         disney: snapshot.disney ?? null,
         netflix: snapshot.netflix ?? null,
-        bilibiliIntl: snapshot.bilibiliIntl ?? null,
         tencent: snapshot.tencent ?? null,
         crunchyroll: snapshot.crunchyroll ?? null
       });
     };
 
-    const resultEvent = provider === 'bilibiliIntl' ? 'theater-everywhere-bilibili-intl-probe-result' : MEDIA_PROBE_RESULT_EVENT;
-    window.addEventListener(resultEvent, onResult as EventListener);
+    window.addEventListener(MEDIA_PROBE_RESULT_EVENT, onResult as EventListener);
     window.dispatchEvent(new CustomEvent(MEDIA_PROBE_EVENT, { detail: encodeProbeRequest(id) }));
   });
 }

@@ -16,7 +16,6 @@ import { providerDefinition } from './registry';
 import { VimeoAdapter } from './vimeo/adapter';
 
 const read = (path: string) => readFileSync(resolve(__dirname, path), 'utf8');
-const folders: Record<string, string> = { bilibiliIntl: 'bilibili-intl' };
 const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'patreon', 'viki', 'vimeo', 'twitch']);
 
 /** Static method/source checks deliberately complement the existing behavioral
@@ -67,7 +66,7 @@ describe('provider capability declarations', () => {
     assert.deepEqual(PROVIDER_CAPABILITIES.map(p => p.id).sort(), [...MEDIA_PROVIDER_IDS].sort());
     const declarations = readdirSync(__dirname, { withFileTypes: true }).filter(entry => entry.isDirectory())
       .flatMap(entry => readdirSync(resolve(__dirname, entry.name)).includes('capabilities.ts') ? [entry.name] : []);
-    assert.deepEqual(declarations.sort(), MEDIA_PROVIDER_IDS.map(id => folders[id] ?? id).sort());
+    assert.deepEqual(declarations.sort(), [...MEDIA_PROVIDER_IDS].sort());
     for (const provider of PROVIDER_CAPABILITIES) {
       assert.deepEqual(Object.keys(provider.capabilities).sort(), [...MEDIA_CAPABILITIES].sort());
       for (const support of Object.values(provider.capabilities)) {
@@ -88,8 +87,7 @@ describe('provider capability declarations', () => {
       const entry = extracted ? read(`./${provider.id}/isolated.ts`) : '';
       assert.equal(extracted ? /launcherPlacement:/.test(entry) : Boolean(providerDefinition(provider.id).launcherPlacement), provider.capabilities.launcher.status !== 'no', `${provider.id}.launcher`);
       assert.equal(extracted ? /watchPlayback:/.test(entry) : Boolean(providerDefinition(provider.id).watchPlayback), provider.capabilities.autoTheater.status !== 'no', `${provider.id}.autoTheater`);
-      const folder = folders[provider.id] ?? provider.id;
-      const source = read(localAdapters.has(provider.id) ? `./${folder}/adapter.ts` : `../media-features/${provider.id}-adapter.ts`);
+      const source = read(localAdapters.has(provider.id) ? `./${provider.id}/adapter.ts` : `../media-features/${provider.id}-adapter.ts`);
       const implemented = methods(source);
       const adapterMethods = {
         title: ['getTitle'], subtitles: ['listCaptionTracks', 'activateCaptionTrack'], audio: ['listAudioTracks', 'selectAudioTrack'],
@@ -111,15 +109,15 @@ describe('provider capability declarations', () => {
       // to a previously unsupported provider also trips the declaration guard.
       // A provider migrating hook by hook may still register a feature through the shared factory.
       const entryNavigation = extracted && /readControls:/.test(entry);
-      const hasActions = (extracted && registeredFrom(entry, './service-actions')) || registeredFrom(actions, `./${folder}/service-actions`);
-      const hasNavigation = entryNavigation || registeredFrom(navigation, `./${folder}`);
+      const hasActions = (extracted && registeredFrom(entry, './service-actions')) || registeredFrom(actions, `./${provider.id}/service-actions`);
+      const hasNavigation = entryNavigation || registeredFrom(navigation, `./${provider.id}`);
       // Playlists use the registered PlaylistAction contract, not caption HLS
       // playlists or contextual skip/up-next actions (such as Crunchyroll's).
       assert.equal(hasNavigation, provider.capabilities.playlists.status !== 'no', `${provider.id}.playlists`);
       if (hasNavigation) assert.equal(provider.capabilities.playlists.status, 'conditional');
       assert.equal(hasActions || hasNavigation, provider.capabilities.quickActions.status !== 'no');
-      if (hasActions) assert.match(read(`./${folder}/service-actions.ts`), /activate|nativeServiceActionSource/);
-      if (hasNavigation) assert.match(read(entryNavigation ? `./${folder}/navigation.ts` : `./navigation/${folder}.ts`), /next|collectElement/i);
+      if (hasActions) assert.match(read(`./${provider.id}/service-actions.ts`), /activate|nativeServiceActionSource/);
+      if (hasNavigation) assert.match(read(entryNavigation ? `./${provider.id}/navigation.ts` : `./navigation/${provider.id}.ts`), /next|collectElement/i);
     });
   }
 

@@ -7,7 +7,7 @@ import { bundleModules } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { testEngines } from '../../test-utils/test-engines';
 
-const bundle = bundleModules(["export { bilibiliIntlWatchPlayback as playback } from './providers/bilibili-intl/watch-playback';"], 'IntlTest');
+const bundle = bundleModules(["export { bilibiliIntlWatchPlayback as playback } from './providers/bilibiliIntl/watch-playback';"], 'IntlTest');
 
 for (const engine of testEngines()) {
   const shared = sharedTestBrowser(({ chromium, firefox })[engine]);

@@ -2,18 +2,17 @@
 import type { ServiceActionSource } from '../core/service-actions';
 import { mediaProviderIntegrationEnabled, type MediaProviderId } from '../media-features/provider-flags';
 
-import { createBilibiliIntlServiceActions, type BilibiliIntlServiceActionHooks } from './bilibili-intl/service-actions';
 import { createCrunchyrollServiceActions } from './crunchyroll/service-actions';
 import { createDisneyServiceActions } from './disney/service-actions';
 import { observeProviderDom } from './dom-watch';
-import { isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost } from './hosts';
+import { isCrunchyrollHost, isDisneyHost, isNetflixHost } from './hosts';
+import type { ServiceActionOptions } from './native-service-actions';
 import { createNetflixServiceActions } from './netflix/service-actions';
 import { providerRegistry } from './runtime-registration';
 
 /** Provider composition belongs here; the shared CTA only consumes actions. */
-export function createServiceActions(options: BilibiliIntlServiceActionHooks = {}): ServiceActionSource | null {
+export function createServiceActions(options: ServiceActionOptions = {}): ServiceActionSource | null {
   if (isNetflixHost()) return createNetflixServiceActions();
-  if (isBilibiliIntlHost()) return observed(createBilibiliIntlServiceActions(options), 'bilibiliIntl', '.bstar-player');
   if (isDisneyHost()) return createDisneyServiceActions();
   if (isCrunchyrollHost()) return observed(createCrunchyrollServiceActions(), 'crunchyroll', '#player-container');
   for (const hooks of providerRegistry.all()) {
