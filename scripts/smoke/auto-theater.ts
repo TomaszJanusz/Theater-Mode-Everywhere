@@ -39,9 +39,8 @@ export async function assertAutoTheater(page: Page, context: BrowserContext): Pr
       try {
         await defaults.goto(new URL('options/options.html', worker.url()).href);
         await defaults.locator('#tab-features').click();
-        const defaultToggle = defaults.locator('#auto-enter-theater-toggle');
-        await defaultToggle.waitFor({ state: 'attached' });
-        if (!await defaultToggle.isChecked()) throw new Error('Auto theater options default must be on');
+        // The toggles are filled from storage after the page loads: on by default means waiting for it to read on.
+        await defaults.waitForFunction(() => (document.getElementById('auto-enter-theater-toggle') as HTMLInputElement | null)?.checked);
       } finally {
         await defaults.close();
       }
@@ -68,7 +67,8 @@ export async function assertAutoTheater(page: Page, context: BrowserContext): Pr
         await options.goto(new URL('options/options.html', worker.url()).href);
         await options.locator('#tab-features').click();
         const toggle = options.locator('#auto-enter-theater-toggle');
-        await toggle.waitFor({ state: 'attached' });
+        // Off is also the unfilled state; the saved-on countdown toggle marks that storage has been read.
+        await options.waitForFunction(() => (document.getElementById('auto-theater-skip-countdown-toggle') as HTMLInputElement | null)?.checked);
         if (await toggle.isChecked()) throw new Error('Saved AutoTheater off must stay off in the options');
         await options.locator('label.toggle-switch').filter({ has: toggle }).click();
         await options.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === true);
