@@ -178,9 +178,9 @@ export function createPlayerSettings(
    * A row for a setting with several ordered options: arrows step it down and up without wrapping.
    * Not a button, so the arrows inside it stay valid, focusable controls.
    */
-  function addStepperRow(row: HTMLElement, label: string, section: RowSection, onStep: (direction: 1 | -1) => void) {
+  function addStepperRow(row: HTMLElement, label: string, section: RowSection, step: { onStep: (direction: 1 | -1) => void; newItem?: NewFeatureId }) {
     row.setAttribute('role', 'group');
-    return mountRow(row, label, section, { onStep });
+    return mountRow(row, label, section, step);
   }
 
   function mountRow(row: HTMLElement, label: string, section: RowSection, { newItem, onStep }: { newItem?: NewFeatureId; onStep?: (direction: 1 | -1) => void }) {
@@ -237,7 +237,10 @@ export function createPlayerSettings(
     return {
       /** `shortcut` is the cycle key the row advertises; the arrows themselves are the stepper's own controls. */
       updateStepper(shortcut: string, state: StepperState) {
-        setShortcut(shortcut, label);
+        // A blocked row names its reason, since the arrows alone cannot say why they do nothing.
+        setShortcut(shortcut, state.disabled ? `${label}: ${state.value}` : label);
+        if (state.disabled) row.setAttribute('aria-disabled', 'true');
+        else row.removeAttribute('aria-disabled');
         stepper?.update(state);
         const { navigateLeft, navigateRight } = ctx.ui().shortcuts;
         const env = shortcutDisplayEnv();

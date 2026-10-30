@@ -11,7 +11,7 @@ export async function assertControlsPin(page: Page): Promise<void> {
     input.focus();
   });
   await page.keyboard.press('Shift+H');
-  if (await pin.getAttribute('aria-pressed') !== 'true') fail('Pin shortcut fired in an input.');
+  if (await pin.getAttribute('data-active') !== 'true') fail('Pin shortcut fired in an input.');
   await page.evaluate(() => document.getElementById('pin-test-input')?.remove());
 
   // Keyboard focus keeps Home reachable, and hovering the bar keeps the cursor usable.

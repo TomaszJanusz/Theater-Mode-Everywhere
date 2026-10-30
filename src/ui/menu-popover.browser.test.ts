@@ -28,10 +28,10 @@ describe('settings menu under the pointer', () => {
 
       await page.locator('.player-settings-btn').click();
       assert.equal(await menuOpen(), true, 'a click pins the menu open');
-      // The Layout row keeps focus after its click; each later press then moves focus away from it: to another
-      // row, to nowhere (a stepper row's label is not focusable), or to nowhere again when Pin blurs itself.
-      for (const target of ['.picture-layout-btn', '.video-fit-btn .theater-settings-label', '.controls-visibility-toggle',
-        '.video-fit-btn .theater-stepper-btn[data-direction="1"]', '.picture-layout-btn', '.controls-visibility-toggle']) {
+      // An arrow keeps focus after its click; each later press then moves focus away from it: to another
+      // row's arrow, or to nowhere (a stepper row's label is not focusable).
+      for (const target of ['.picture-layout-btn [data-direction="-1"]', '.video-fit-btn .theater-settings-label', '.controls-visibility-toggle [data-direction="1"]',
+        '.video-fit-btn .theater-stepper-btn[data-direction="1"]', '.picture-layout-btn [data-direction="1"]', '.controls-visibility-toggle [data-direction="-1"]']) {
         await page.locator(target).click();
         assert.equal(await menuOpen(), true, `the menu stays open after clicking ${target}`);
       }

@@ -195,7 +195,7 @@ export async function assertIframeHandshake(page: Page, origin: string): Promise
     await page.locator('body').press('f');
     await page.waitForFunction(() => !document.fullscreenElement);
     // The layout a session starts in depends on the profile (fresh installs differ from a run that already cycled it). The cycle is a two-state toggle, so assert the exact flip and the way back.
-    const layout = frame.locator('.picture-layout-btn .theater-settings-detail');
+    const layout = frame.locator('.picture-layout-btn .theater-stepper-value');
     const flipped: Record<string, string> = { Centered: 'Raised', Raised: 'Centered' };
     const startLayout = (await layout.innerText()).trim();
     const nextLayout = flipped[startLayout];
@@ -206,9 +206,9 @@ export async function assertIframeHandshake(page: Page, origin: string): Promise
     await layout.filter({ hasText: startLayout }).waitFor({ state: 'attached' });
     // A shortcut focused in the parent must update the child player exactly once.
     await page.locator('body').press('Shift+H');
-    await frame.locator('.controls-visibility-toggle[aria-pressed="true"]').waitFor({ state: 'attached' });
+    await frame.locator('.controls-visibility-toggle[data-active="true"]').waitFor({ state: 'attached' });
     await frame.locator('body').press('Shift+H');
-    await frame.locator('.controls-visibility-toggle[aria-pressed="false"]').waitFor({ state: 'attached' });
+    await frame.locator('.controls-visibility-toggle[data-active="false"]').waitFor({ state: 'attached' });
     await page.keyboard.press('Escape');
     await page.waitForFunction((videoClass) => {
       const iframe = document.querySelector('#child');

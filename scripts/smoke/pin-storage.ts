@@ -8,7 +8,7 @@ export async function assertPinStorage(page: Page, context: BrowserContext): Pro
   return timeScenario('assertPinStorage', async () => {
     const gear = page.locator('.player-settings-btn');
     const menu = page.locator('.theater-settings-menu');
-    const waitForPin = (pinned: boolean) => page.locator(`.controls-visibility-toggle[aria-pressed="${pinned}"]`).waitFor({ state: 'attached' });
+    const waitForPin = (pinned: boolean) => page.locator(`.controls-visibility-toggle[data-active="${pinned}"]`).waitFor({ state: 'attached' });
     await page.locator('video#player').click();
     await page.keyboard.press('t');
     await page.locator('.theater-controls-wrapper').waitFor();

@@ -66,8 +66,8 @@ async function menuOrder(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const skip = new Set(['theater-control-btn', 'theater-settings-row', 'active']);
     const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
-    return [...root.querySelectorAll('.theater-settings-menu button.theater-settings-row')].map(button => {
-      return [...button.classList].find(item => !skip.has(item)) ?? '';
+    return [...root.querySelectorAll('.theater-settings-menu :is(button, .theater-settings-stepper-row).theater-settings-row')].map(button => {
+      return [...button.classList].find(item => !skip.has(item) && item !== 'theater-settings-stepper-row') ?? '';
     });
   });
 }
@@ -231,14 +231,20 @@ describe('player settings action order', () => {
             row.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg"></svg>';
             return row;
           };
-          settings.addRow(button('picture-layout-btn'), 'Layout');
-          settings.addRow(button('controls-visibility-toggle'), 'Pin controls');
+          const stepper = (className) => {
+            const row = document.createElement('div');
+            row.className = className;
+            row.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg"></svg>';
+            return row;
+          };
+          settings.addStepperRow(stepper('picture-layout-btn'), 'Layout', 'player', { onStep() {} });
+          settings.addStepperRow(stepper('controls-visibility-toggle'), 'Pin controls', 'player', { onStep() {} });
           settings.addRow(button('help-btn'), 'Keyboard Shortcuts', 'shortcuts');
           settings.addRow(button('switch-video-btn'), 'Switch player');
           settings.addRow(button('extension-settings-btn'), 'Extension settings', 'footer');
           settings.button.click();
-          const skip = new Set(['theater-control-btn', 'theater-settings-row', 'active']);
-          return [...settings.panel.querySelectorAll('button.theater-settings-row')].map(row => {
+          const skip = new Set(['theater-control-btn', 'theater-settings-row', 'theater-settings-stepper-row', 'active']);
+          return [...settings.panel.querySelectorAll(':is(button, .theater-settings-stepper-row).theater-settings-row')].map(row => {
             return [...row.classList].find(item => !skip.has(item)) ?? '';
           });
         })()`) as string[];

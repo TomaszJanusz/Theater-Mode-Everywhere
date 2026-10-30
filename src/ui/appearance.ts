@@ -45,6 +45,11 @@ export const DEFAULT_PICTURE_ALIGN: PictureAlign = 'top';
 export const RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY = 'raiseOnlyWithSubtitles';
 export const DEFAULT_RAISE_ONLY_WITH_SUBTITLES = true;
 
+/** One layout down or up in the options page's order, held at the ends; the cycle shortcut flips on its own. */
+export function stepPictureAlign(align: PictureAlign, direction: 1 | -1): PictureAlign {
+  return stepLevel(PICTURE_ALIGNS, align, direction);
+}
+
 export function resolvePictureAlign(value: unknown): PictureAlign {
   return typeof value === 'string' && PICTURE_ALIGNS.includes(value as PictureAlign)
     ? value as PictureAlign

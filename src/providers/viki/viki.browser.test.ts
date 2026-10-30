@@ -98,7 +98,7 @@ describe('Rakuten Viki provider', () => {
       await enterTheater(page);
       assert.equal(await tabindex(), null, 'the player cannot take focus in theater');
       await page.locator('.player-settings-btn').click();
-      await page.locator('.audio-track-btn, .picture-layout-btn').first().focus();
+      await page.locator('.audio-track-btn, .picture-layout-btn [data-direction="1"]').first().focus();
       const open = () => page.evaluate(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-settings-container')!.classList.contains('is-open'));
       assert.equal(await open(), true);
       await page.evaluate(() => (window as unknown as { vikiFocusTimer(): void }).vikiFocusTimer());

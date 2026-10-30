@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { raisedCaptionRestBottom } from '../media-features/caption-dock';
-import { DEFAULT_PICTURE_ALIGN, DEFAULT_RAISE_ONLY_WITH_SUBTITLES, effectivePictureAlign, horizontalLetterboxPx, objectPositionForPicture, pictureEdgeInsets, pictureHasLetterbox, raisedCaptionsUseBand, resolvePictureAlign, resolveRaiseOnlyWithSubtitles, type PictureFrame } from './appearance';
+import { DEFAULT_PICTURE_ALIGN, DEFAULT_RAISE_ONLY_WITH_SUBTITLES, effectivePictureAlign, horizontalLetterboxPx, objectPositionForPicture, pictureEdgeInsets, pictureHasLetterbox, raisedCaptionsUseBand, resolvePictureAlign, resolveRaiseOnlyWithSubtitles, stepPictureAlign, type PictureFrame } from './appearance';
 
 const widescreen: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 1920, viewportHeight: 1200 };
 const matched: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 1920, viewportHeight: 1080 };
@@ -27,6 +27,13 @@ describe('picture edge insets', () => {
 });
 
 describe('picture align', () => {
+  it('steps from Centered to Raised and holds at both ends instead of wrapping', () => {
+    assert.equal(stepPictureAlign('center', 1), 'top');
+    assert.equal(stepPictureAlign('top', 1), 'top');
+    assert.equal(stepPictureAlign('top', -1), 'center');
+    assert.equal(stepPictureAlign('center', -1), 'center');
+  });
+
   it('raises a fitted picture and keeps every other fit centered', () => {
     assert.equal(objectPositionForPicture('contain', 'top'), 'center top');
     assert.equal(objectPositionForPicture('contain', 'center'), 'center center');

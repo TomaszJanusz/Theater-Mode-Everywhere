@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 
 import { runStepperCase, type StepperCase } from '../fixture-test';
 import { disposeStage } from '../stage-owner';
-import { arrow, arrowDisabled, run, segments, stepperRoot, stepperRow, stepperValue, thumb } from '../stepper-story';
+import { arrow, arrowDisabled, run, segments, segmentsBar, stepperRoot, stepperRow, stepperValue, thumb } from '../stepper-story';
 
 // The stepper owns no timers: its motion is a CSS transition, so these cases need no clock and no sleeps.
 
@@ -160,3 +160,72 @@ const ReducedMotionStatesOnly: Story = {
   }
 };
 test('ReducedMotionStatesOnly', () => runStepperCase(ReducedMotionStatesOnly));
+
+/** Off and On: two segments, and each end is the other's only way out. */
+const TwoOptionsHoldAtBothEnds: Story = {
+  args: { count: 2, index: 0 },
+  play: async () => {
+    await expect(segments().length).toBe(2);
+    await expect(arrowDisabled(-1)).toBe(true);
+    await expect(arrowDisabled(1)).toBe(false);
+    arrow(1).click();
+    await expect(current()).toBe(1);
+    await expect(arrowDisabled(1)).toBe(true);
+    await expect(arrowDisabled(-1)).toBe(false);
+    arrow(1).click();
+    await expect(current()).toBe(1);
+    arrow(-1).click();
+    await expect(current()).toBe(0);
+    await expect(run().steps).toEqual([1, -1]);
+  }
+};
+test('TwoOptionsHoldAtBothEnds', () => runStepperCase(TwoOptionsHoldAtBothEnds));
+
+/** A setting that cannot change: both arrows blocked yet focusable, value muted, no segment bar at all, a press only nudges. */
+const DisabledStaysInert: Story = {
+  args: { count: 2, index: 1, disabled: true },
+  play: async () => {
+    await expect(arrowDisabled(-1)).toBe(true);
+    await expect(arrowDisabled(1)).toBe(true);
+    await expect(segmentsBar()).toBe(null);
+    await expect(segments().length).toBe(0);
+    await expect(stepperValue().textContent).toBe('Unavailable');
+    const muted = getComputedStyle(stepperValue()).color;
+    arrow(1).focus();
+    await userEvent.keyboard('{Enter}');
+    arrow(-1).click();
+    await expect(run().steps).toEqual([]);
+    await expect(stepperRoot().activeElement).toBe(arrow(1));
+    await expect(stepperValue().getAnimations().length).toBe(1);
+    // It comes back to life when the setting does.
+    run().update(2, 1, false);
+    await expect(arrowDisabled(-1)).toBe(false);
+    await expect(segments().length).toBe(2);
+    await expect(current()).toBe(1);
+    await expect(getComputedStyle(stepperValue()).color).not.toBe(muted);
+    // The bar returns in place: the thumb sits on its segment at once, with nothing sliding in from elsewhere.
+    await expect(thumb().getAnimations().length).toBe(0);
+    await expect(Math.abs(thumb().getBoundingClientRect().left - segments()[1].getBoundingClientRect().left)).toBeLessThan(1);
+    // And it can go away again, leaving no stale bar behind.
+    run().update(2, 1, true);
+    await expect(segmentsBar()).toBe(null);
+    await expect(getComputedStyle(stepperValue()).color).toBe(muted);
+  }
+};
+test('DisabledStaysInert', () => runStepperCase(DisabledStaysInert));
+
+/**
+ * The key shown in place of an arrow is set in the menu's own face. A button keeps the browser's default font unless
+ * told otherwise, and that face's metrics put the glyph off-centre in its cap (measured in storybook-player.browser.test.ts).
+ */
+const KeyCapUsesTheMenuFace: Story = {
+  args: { count: 5, index: 2 },
+  play: async () => {
+    arrow(1).focus();
+    await userEvent.keyboard('{Shift}');
+    await expect(arrow(1).matches(':focus-visible')).toBe(true);
+    await expect(getComputedStyle(arrow(1), '::after').content).toBe('"D"');
+    await expect(getComputedStyle(arrow(1)).fontFamily).toBe(getComputedStyle(stepperRow().querySelector('.theater-settings-label')!).fontFamily);
+  }
+};
+test('KeyCapUsesTheMenuFace', () => runStepperCase(KeyCapUsesTheMenuFace));

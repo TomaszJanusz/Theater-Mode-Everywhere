@@ -1184,8 +1184,6 @@ button.theater-time-end:hover {
 .theater-control-btn.cc-btn.active,
 .theater-control-btn.pip-btn.active,
 .theater-control-btn.fullscreen-btn.active,
-.theater-control-btn.controls-visibility-toggle.active,
-.theater-control-btn.auto-theater-btn.active,
 .theater-control-btn.theater-chat-toggle.active {
   color: var(--accent-color, #6366f1) !important;
 }
@@ -1229,8 +1227,8 @@ button.theater-time-end:hover {
   bottom: 100% !important;
   display: none !important;
   flex-direction: column !important;
-  /* Keep the compact footprint; rows truncate labels around keys and reserved values. */
-  width: min(340px, calc(100vw - 48px)) !important;
+  /* Compact, but wide enough for "Volume boost" beside Shift+B and a stepper's fixed column; rows truncate labels around keys and values. */
+  width: min(372px, calc(100vw - 48px)) !important;
   max-height: calc(100vh - 110px) !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
@@ -3432,7 +3430,7 @@ button.theater-time-end:focus-visible,
   column-gap: 2px !important;
   align-items: center !important;
   position: relative !important;
-  color: var(--appearance-ink, #cbd5e1) !important;
+  color: var(--theater-stepper-ink, var(--appearance-ink, #cbd5e1)) !important;
 }
 .theater-stepper-value {
   grid-area: 1 / 2 !important;
@@ -3457,6 +3455,8 @@ button.theater-time-end:focus-visible,
   cursor: pointer !important;
   /* The row carries the focus frame; the arrow shows focus by its key or its darker fill. */
   outline: none !important;
+  /* A button keeps the browser's own face otherwise: the key caps would then sit off-centre in a different font per engine. */
+  font-family: inherit;
 }
 .theater-stepper-btn[data-direction="-1"] { grid-column: 1 !important; }
 .theater-stepper-btn[data-direction="1"] { grid-column: 3 !important; }
@@ -3494,7 +3494,8 @@ button.theater-time-end:focus-visible,
   border-radius: 4px !important;
   font-size: 11px !important;
   font-weight: 600 !important;
-  line-height: 1.2 !important;
+  /* A whole number of pixels: a fractional line box (11px x 1.2) rounds the cap and its glyph differently. */
+  line-height: 13px !important;
   text-align: center !important;
 }
 /* A blocked end keeps focus and the pointer, and fades instead of snapping. */
@@ -3543,4 +3544,6 @@ button.theater-time-end:focus-visible,
 :host([data-motion="reduced"]) .theater-stepper :is(.theater-stepper-btn, .theater-stepper-thumb, .theater-stepper-btn svg) { transition: none !important; }
 :host([data-motion="reduced"]) .theater-stepper-btn:active { transform: none !important; }
 /* Bass red levels recolour the row through --accent-color; the stepper reads it like the row does. */
-.theater-settings-row[data-active="true"] .theater-stepper-value { color: var(--accent-color, #6366f1) !important; }
+/* A setting that cannot change right now (AutoTheater on an unsupported page) reads as muted, and its segments are not rendered. */
+.theater-stepper[data-disabled="true"] { --theater-stepper-ink: var(--appearance-muted, #94a3b8); }
+.theater-settings-row[data-active="true"] .theater-stepper:not([data-disabled="true"]) .theater-stepper-value { color: var(--accent-color, #6366f1) !important; }

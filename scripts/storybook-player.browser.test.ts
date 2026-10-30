@@ -277,4 +277,66 @@ for (const engine of testEngines()) {
     assert.equal(await page.evaluate(() => window.__playerFixture === undefined && window.__storyDocument === undefined), true);
     assert.deepEqual(await snapshot(), baseline);
   });
+
+  for (const [locale, key] of [['en', 'D'], ['ar', 'A']] as const) {
+    test(`Player UI: the key shown in place of a stepper arrow sits in the middle of its cap, in LTR and RTL (${engine}, ${locale})`, { timeout: 120000 }, async t => {
+      const server = await serveStorybook();
+      t.after(server.close);
+      // Twice the pixel density, as on a laptop screen: the glyph and the cap snap to whole device pixels separately.
+      const context = await browser.newContext(t, { reducedMotion: 'reduce', deviceScaleFactor: 2 });
+      await context.addInitScript('window.__name = fn => fn;');
+      const page = await context.newPage();
+      await openStory(page, server.url, PLAYER_STORY, { ...environment(locale), viewport: { width: 1280, height: 720 }, args: { scenario: 'watching' } });
+      // By keyboard throughout, so that the focus that follows is a keyboard focus.
+      await control(page, '.player-settings-btn').focus();
+      await page.keyboard.press('Enter');
+      await control(page, '.theater-settings-menu.visible').waitFor();
+      // Keyboard focus on a row turns its arrows into the keys that step it; the layout row starts Centred, so its next arrow can move.
+      const arrow = control(page, '.picture-layout-btn .theater-stepper-btn[data-direction="1"]');
+      await arrow.focus();
+      assert.equal(await arrow.evaluate(button => getComputedStyle(button, '::after').content.replaceAll('"', '')), key, 'the arrow shows its key');
+      const offsets = await fixtureFrame(page).evaluate(async ({ base64, ink }) => {
+        const bitmap = await createImageBitmap(new Blob([Uint8Array.from(atob(base64), character => character.charCodeAt(0))], { type: 'image/png' }));
+        const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+        const context2d = canvas.getContext('2d')!;
+        context2d.drawImage(bitmap, 0, 0);
+        const { data, width, height } = context2d.getImageData(0, 0, bitmap.width, bitmap.height);
+        const isInk = (x: number, y: number) => {
+          const at = (y * width + x) * 4;
+          return Math.abs(data[at] - ink[0]) + Math.abs(data[at + 1] - ink[1]) + Math.abs(data[at + 2] - ink[2]) < 150;
+        };
+        const middle = Math.floor(height / 2);
+        let edge = 0;
+        while (edge < width && !isInk(edge, middle)) edge++;
+        const outline = new Set<number>();
+        const pending = [middle * width + edge];
+        while (pending.length) {
+          const at = pending.pop()!;
+          if (outline.has(at)) continue;
+          outline.add(at);
+          const [x, y] = [at % width, Math.floor(at / width)];
+          for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+            if (nx >= 0 && ny >= 0 && nx < width && ny < height && isInk(nx, ny) && !outline.has(ny * width + nx)) pending.push(ny * width + nx);
+          }
+        }
+        const bounds = (member: (x: number, y: number) => boolean) => {
+          let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+          for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+            if (!isInk(x, y) || !member(x, y)) continue;
+            left = Math.min(left, x); right = Math.max(right, x + 1); top = Math.min(top, y); bottom = Math.max(bottom, y + 1);
+          }
+          return { left, top, right, bottom };
+        };
+        return { cap: bounds((x, y) => outline.has(y * width + x)), glyph: bounds((x, y) => !outline.has(y * width + x)) };
+      }, {
+        base64: (await arrow.screenshot()).toString('base64'),
+        ink: (await arrow.evaluate(button => getComputedStyle(button).color)).match(/\d+/g)!.map(Number)
+      });
+      const scale = 2;
+      const dy = (offsets.glyph.top + offsets.glyph.bottom - offsets.cap.top - offsets.cap.bottom) / 2 / scale;
+      const dx = (offsets.glyph.left + offsets.glyph.right - offsets.cap.left - offsets.cap.right) / 2 / scale;
+      assert.ok(Math.abs(dy) < 0.75, `the glyph sits ${dy}px off the cap's centre vertically`);
+      assert.ok(Math.abs(dx) < 0.75, `the glyph sits ${dx}px off the cap's centre horizontally`);
+    });
+  }
 }

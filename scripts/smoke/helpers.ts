@@ -187,7 +187,7 @@ export async function declineVideoActivatorPrompt(page: Page): Promise<void> {
   if (!await page.locator('.theater-settings-menu').isVisible()) {
     await page.locator('.player-settings-btn').press('Enter');
   }
-  await page.locator('.auto-theater-btn').focus();
+  await page.locator('.auto-theater-btn [data-direction="1"]').focus();
 }
 
 /** Inclusive scenario durations; nested rows must not be summed with their parent. */

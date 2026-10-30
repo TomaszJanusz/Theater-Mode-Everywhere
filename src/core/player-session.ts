@@ -26,12 +26,16 @@ export type PlayerCommand =
   | { type: 'CYCLE_FIT' }
   | { type: 'STEP_FIT'; direction: 1 | -1 }
   | { type: 'CYCLE_LAYOUT' }
+  | { type: 'STEP_LAYOUT'; direction: 1 | -1 }
   | { type: 'CYCLE_AUDIO'; setting: AudioSettingName }
   | { type: 'STEP_AUDIO'; setting: AudioSettingName; direction: 1 | -1 }
   | { type: 'TOGGLE_VOLUME_BOOST' }
+  | { type: 'STEP_VOLUME_BOOST'; direction: 1 | -1 }
   | { type: 'TOGGLE_AUTO_THEATER' }
+  | { type: 'STEP_AUTO_THEATER'; direction: 1 | -1 }
   | { type: 'TOGGLE_HELP' }
-  | { type: 'TOGGLE_CONTROLS_PIN' };
+  | { type: 'TOGGLE_CONTROLS_PIN' }
+  | { type: 'STEP_CONTROLS_PIN'; direction: 1 | -1 };
 
 export class PlayerSession {
   private epoch = 0;

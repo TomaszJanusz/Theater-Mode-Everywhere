@@ -128,6 +128,7 @@ import {
   resolveRaiseOnlyWithSubtitles,
   resolveVideoFitMode,
   VIDEO_FIT_MODES,
+  stepPictureAlign,
   stepVideoFitMode,
   VIDEO_FIT_STORAGE_KEY,
   videoFitLabel,
@@ -451,19 +452,21 @@ function applyVolumeBoost(enabled: boolean): void {
   syncAudioSettings();
 }
 
-function toggleVolumeBoostCommand(): void {
+/** The toggle shortcut flips boost; the settings stepper picks the end its arrow points to, so it never wraps. */
+function changeVolumeBoost(next: (current: boolean) => boolean): void {
   const surface = sessionSurface();
   const video = sessionNativeVideo();
   if (!surface?.capabilities.volumeBoost || !video || audioBlock(video)) {
     triggerStatusIndicator(audioBlockedMessage(video), VOLUME_BOOST_ICONS.hud);
     return;
   }
-  const next = !ui().volumeBoost;
-  applyVolumeBoost(next);
-  triggerStatusIndicator(t('volumeBoostHud', t(next ? 'volumeBoostOn' : 'volumeBoostOff')), VOLUME_BOOST_ICONS.hud);
+  const enabled = next(ui().volumeBoost);
+  if (enabled === ui().volumeBoost) return;
+  applyVolumeBoost(enabled);
+  triggerStatusIndicator(t('volumeBoostHud', t(enabled ? 'volumeBoostOn' : 'volumeBoostOff')), VOLUME_BOOST_ICONS.hud);
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
-      void chrome.storage.sync.set({ [VOLUME_BOOST_STORAGE_KEY]: next }).catch(error => {
+      void chrome.storage.sync.set({ [VOLUME_BOOST_STORAGE_KEY]: enabled }).catch(error => {
         console.error('[Theater Everywhere] Could not save volume boost:', error);
       });
     }
@@ -603,7 +606,10 @@ function executeCommand(command: PlayerCommand): void {
       cycleTheaterVideo(command.direction);
       break;
     case 'CYCLE_LAYOUT':
-      cyclePictureLayout();
+      changePictureLayout(current => current === 'center' ? 'top' : 'center');
+      break;
+    case 'STEP_LAYOUT':
+      changePictureLayout(current => stepPictureAlign(current, command.direction));
       break;
     case 'CYCLE_FIT':
       cycleVideoFit();
@@ -612,7 +618,10 @@ function executeCommand(command: PlayerCommand): void {
       stepVideoFit(command.direction);
       break;
     case 'TOGGLE_CONTROLS_PIN':
-      toggleControlsPin();
+      changeControlsPin(current => !current);
+      break;
+    case 'STEP_CONTROLS_PIN':
+      changeControlsPin(() => command.direction > 0);
       break;
     case 'CYCLE_AUDIO':
       shiftAudioSetting(command.setting, 'cycle');
@@ -621,10 +630,16 @@ function executeCommand(command: PlayerCommand): void {
       shiftAudioSetting(command.setting, command.direction);
       break;
     case 'TOGGLE_VOLUME_BOOST':
-      toggleVolumeBoostCommand();
+      changeVolumeBoost(current => !current);
+      break;
+    case 'STEP_VOLUME_BOOST':
+      changeVolumeBoost(() => command.direction > 0);
       break;
     case 'TOGGLE_AUTO_THEATER':
-      toggleAutoTheaterCommand();
+      changeAutoTheater(current => !current);
+      break;
+    case 'STEP_AUTO_THEATER':
+      changeAutoTheater(() => command.direction > 0);
       break;
     case 'TOGGLE_HELP':
       toggleHelpOverlay();
@@ -1034,13 +1049,14 @@ function applyKeepControlsVisible(value: unknown): void {
   else showToolbar();
 }
 
-function toggleControlsPin(): void {
-  const next = !ui().keepControlsVisible;
-  applyKeepControlsVisible(next);
-  triggerStatusIndicator(t(next ? 'controlsPinnedHud' : 'controlsUnpinnedHud'), CONTROLS_VISIBILITY_ICON);
+function changeControlsPin(next: (current: boolean) => boolean): void {
+  const pinned = next(ui().keepControlsVisible);
+  if (pinned === ui().keepControlsVisible) return;
+  applyKeepControlsVisible(pinned);
+  triggerStatusIndicator(t(pinned ? 'controlsPinnedHud' : 'controlsUnpinnedHud'), CONTROLS_VISIBILITY_ICON);
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
-      void chrome.storage.sync.set({ [KEEP_CONTROLS_VISIBLE_STORAGE_KEY]: next }).catch((error) => {
+      void chrome.storage.sync.set({ [KEEP_CONTROLS_VISIBLE_STORAGE_KEY]: pinned }).catch((error) => {
         console.error('[Theater Everywhere] Could not save controls visibility:', error);
       });
     }
@@ -1049,13 +1065,14 @@ function toggleControlsPin(): void {
   }
 }
 
-function cyclePictureLayout(): void {
-  const next: PictureAlign = ui().pictureAlign === 'center' ? 'top' : 'center';
-  applyPictureAlign(next);
-  triggerStatusIndicator(t(next === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'), STATUS_HUD_LAYOUT_ICON);
+function changePictureLayout(next: (current: PictureAlign) => PictureAlign): void {
+  const align = next(ui().pictureAlign);
+  if (align === ui().pictureAlign) return;
+  applyPictureAlign(align);
+  triggerStatusIndicator(t(align === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'), STATUS_HUD_LAYOUT_ICON);
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
-      void chrome.storage.sync.set({ [PICTURE_ALIGN_STORAGE_KEY]: next }).catch(error => {
+      void chrome.storage.sync.set({ [PICTURE_ALIGN_STORAGE_KEY]: align }).catch(error => {
         console.error('[Theater Everywhere] Could not save picture layout:', error);
       });
     }
@@ -1281,9 +1298,10 @@ function syncVideoActivator(): void {
   videoActivator.syncTitles();
 }
 
-function toggleAutoTheaterCommand(): void {
+function changeAutoTheater(change: (current: boolean) => boolean): void {
   if (autoTheaterAvailability(window.location.hostname, refs.providerFlags, window === window.top) !== 'available') return;
-  const next = !ui().autoEnterTheater;
+  const next = change(ui().autoEnterTheater);
+  if (next === ui().autoEnterTheater) return;
   uiStore.dispatch({ type: 'SET_AUTO_ENTER_THEATER', value: next });
   syncAutoTheaterRuntime();
   try {

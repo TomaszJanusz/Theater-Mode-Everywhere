@@ -33,11 +33,12 @@ const english = catalog('en');
 // Rows as controls.ts adds them, with the longest realistic chrome: icon dots, a
 // two-chip shortcut and the longest value the row can show.
 const ROWS = [
-  { label: 'videoFitLabel', values: ['videoFitContain', 'videoFitCover', 'videoFitFill'], shortcut: 'Shift+Z' },
-  { label: 'pictureAlignLabel', values: ['pictureAlignTop', 'pictureAlignCenter'], shortcut: 'Shift+L', isNew: 'playerPictureLayout' },
-  { label: 'keepControlsVisibleTitle', values: ['controlsVisibilityOn', 'controlsVisibilityOff'], shortcut: 'Shift+H', isNew: 'playerAlwaysShowControls' },
+  { label: 'volumeBoostLabel', values: ['volumeBoostOn', 'volumeBoostOff'], shortcut: 'Shift+B', stepper: true, section: 'audio' },
+  { label: 'videoFitLabel', values: ['videoFitContain', 'videoFitCover', 'videoFitFill'], shortcut: 'Shift+Z', stepper: true },
+  { label: 'pictureAlignLabel', values: ['pictureAlignTop', 'pictureAlignCenter'], shortcut: 'Shift+L', isNew: 'playerPictureLayout', stepper: true },
+  { label: 'keepControlsVisibleTitle', values: ['controlsVisibilityOn', 'controlsVisibilityOff'], shortcut: 'Shift+H', isNew: 'playerAlwaysShowControls', stepper: true },
   { label: 'cycleSwitchVideo', values: [], shortcut: 'Shift+V' },
-  { label: 'autoEnterTheaterTitle', values: ['autoEnterTheaterOn', 'autoEnterTheaterOff', 'statusUnavailable'], shortcut: 'Shift+A' },
+  { label: 'autoEnterTheaterTitle', values: ['autoEnterTheaterOn', 'autoEnterTheaterOff', 'statusUnavailable'], shortcut: 'Shift+A', stepper: true },
   { label: 'keyboardShortcutsTitle', values: [], shortcut: 'H', section: 'shortcuts' },
   { label: 'extensionSettingsLabel', values: [], shortcut: '', section: 'footer' }
 ];
@@ -79,26 +80,34 @@ describe('settings menu rows stay on one line', () => {
               const scope = new api.DisposableScope();
               const settings = api.createPlayerSettings({
                 t: (key: string) => messages[key] ?? key,
-                ui: () => ({ featureHighlights: { installed: '2.0', seenThrough: '1.0', enabled: true, now: 0 } }),
+                ui: () => ({ featureHighlights: { installed: '2.0', seenThrough: '1.0', enabled: true, now: 0 }, shortcuts: { navigateLeft: 'A', navigateRight: 'D' } }),
                 uiStore: { subscribe: () => () => {} },
                 actions: { setIcon(element: HTMLElement, svg: string) { element.innerHTML = svg; }, showToolbar() {}, updateCaptionDock() {} },
                 paintOverlay() {}
               }, scope);
               mount.append(settings.container);
-              const add = (label: string, section: string, shortcut: string, value: string, isNew?: string) => {
+              const add = (label: string, section: string, shortcut: string, value: string, isNew?: string, stepper = false) => {
+                const icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"></svg>';
+                if (stepper) {
+                  // The stepper's own fixed column, as the rows controls.ts mounts as steppers.
+                  const row = document.createElement('div');
+                  row.innerHTML = icon;
+                  settings.addStepperRow(row, label, section, { onStep() {}, newItem: isNew }).updateStepper(shortcut, { value, index: 0, count: 2 });
+                  return;
+                }
                 const button = document.createElement('button');
                 button.className = 'theater-control-btn';
-                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"></svg>';
+                button.innerHTML = icon;
                 settings.addRow(button, label, section, isNew).update(shortcut, value);
               };
               // The Bass row shows one of four levels; reserve room for the longest.
             const bassValue = ['bassLess', 'bassOriginal', 'bassMore', 'bassMoar', 'bassMoaaarr'].map(key => messages[key]).sort((a, b) => b.length - a.length)[0];
             for (const key of audio) add(messages[key] ?? key, 'audio', 'Shift+A', key === 'bassLabel' ? bassValue : messages.badgeNew);
-              for (const row of rows) add(row.text, row.section ?? 'player', row.shortcut, row.value, row.isNew);
+              for (const row of rows) add(row.text, row.section ?? 'player', row.shortcut, row.value, row.isNew, row.stepper);
               settings.button.click();
               const menu = settings.panel as HTMLElement;
               const bounds = menu.getBoundingClientRect();
-              const rowStats = [...menu.querySelectorAll<HTMLElement>('button.theater-settings-row')].map(row => {
+              const rowStats = [...menu.querySelectorAll<HTMLElement>('.theater-settings-row')].map(row => {
                 const label = row.querySelector<HTMLElement>('.theater-settings-label')!;
                 const box = row.getBoundingClientRect();
                 return {
@@ -114,13 +123,14 @@ describe('settings menu rows stay on one line', () => {
             const context = `${engine} ${locale} ${viewport.width}px`;
             assert.ok(result.rowStats.length >= ROWS.length, context);
             for (const row of result.rowStats) {
-              assert.ok(row.height <= 41, `${context}: "${row.text}" wraps (${row.height}px)`);
+              // A stepper's 24px control makes its row 42px; a wrapped label would add a whole line.
+              assert.ok(row.height <= 42, `${context}: "${row.text}" wraps (${row.height}px)`);
               assert.ok(row.overflow <= 0, `${context}: "${row.text}" overflows its row by ${row.overflow}px`);
               assert.ok(row.titled, `${context}: "${row.text}" lacks its full-text title`);
               // Truncation is the last resort: only when the menu has reached its cap.
-              if (row.truncated) assert.ok(result.width >= Math.min(340, result.viewport - 48) - 1, `${context}: "${row.text}" truncated in a menu below its cap`);
+              if (row.truncated) assert.ok(result.width >= Math.min(372, result.viewport - 48) - 1, `${context}: "${row.text}" truncated in a menu below its cap`);
             }
-            assert.ok(result.width <= Math.min(340, result.viewport - 48) + 1, `${context}: menu exceeds its compact width`);
+            assert.ok(result.width <= Math.min(372, result.viewport - 48) + 1, `${context}: menu exceeds its compact width`);
             assert.ok(result.left >= 0 && result.right <= result.viewport, `${context}: menu leaves the viewport`);
           }
           assert.deepEqual(errors, []);
