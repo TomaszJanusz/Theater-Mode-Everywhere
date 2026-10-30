@@ -43,7 +43,7 @@ export function parseProbeRequest(raw: unknown): number | null {
 }
 
 export const PROBE_ASYNC_EVENT = 'theater-everywhere-probe-async';
-export const PROBE_ASYNC_REPLY_EVENT = 'theater-everywhere-probe-async-reply';
+export const PROBE_ASYNC_REPLY_EVENT = `${PROBE_ASYNC_EVENT}-reply`;
 
 /** A registered provider's asynchronous probe; `provider` is looked up in MAIN's own registry. */
 export type ProbeAsyncRequest = { requestId: number; provider: string };
@@ -54,29 +54,28 @@ export type ProbeAsyncReply = ProbeAsyncRequest & { value: unknown };
 /** Snapshots carry metadata (track lists, storyboards), never media; anything larger is dropped. */
 const MAX_PROBE_REPLY_CHARS = 1024 * 1024;
 
-function providerId(value: unknown): string | null {
-  return typeof value === 'string' && /^[A-Za-z]{1,40}$/.test(value) ? value : null;
-}
-
 export function encodeProbeAsyncRequest(request: ProbeAsyncRequest): string {
   return JSON.stringify(request);
 }
 
+/** `provider` is only shaped here: MAIN's registry lookup decides whether it names a registered provider. */
 export function parseProbeAsyncRequest(raw: unknown): ProbeAsyncRequest | null {
   const record = parseRecord(raw);
   const requestId = record && requestNumber(record.requestId);
-  const provider = record && providerId(record.provider);
+  const provider = record && requestString(record.provider);
   return requestId && provider ? { requestId, provider } : null;
 }
 
-/** Null when the value does not serialize or is too large; the caller then answers with a null value. */
-export function encodeProbeAsyncReply(reply: ProbeAsyncReply): string | null {
+/** A value that does not serialize or is too large is answered as null. */
+export function encodeProbeAsyncReply(reply: ProbeAsyncReply): string {
+  const { requestId, provider } = reply;
   try {
-    const text = JSON.stringify({ requestId: reply.requestId, provider: reply.provider, value: reply.value ?? null });
-    return text.length <= MAX_PROBE_REPLY_CHARS ? text : null;
+    const text = JSON.stringify({ requestId, provider, value: reply.value ?? null });
+    if (text.length <= MAX_PROBE_REPLY_CHARS) return text;
   } catch {
-    return null;
+    // Circular or BigInt values: answered as null below.
   }
+  return JSON.stringify({ requestId, provider, value: null });
 }
 
 /** The reply's value when `raw` answers exactly `request`, else null: a reply to another request or provider never resolves this one. */

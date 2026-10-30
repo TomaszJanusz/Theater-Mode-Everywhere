@@ -52,12 +52,13 @@ describe('asynchronous provider probe', () => {
     const world = new EventTarget();
     const sent = replies(world);
     const reads = [deferred(), deferred()];
-    let call = 0;
-    answerProviderProbes(world, () => ({ probeAsync: () => reads[call++].promise }));
+    const signals: AbortSignal[] = [];
+    answerProviderProbes(world, () => ({ probeAsync: (signal) => { signals.push(signal); return reads[signals.length - 1].promise; } }));
     const stale = requestProviderProbe('bilibili', 60_000, world);
     // The page moved on (episode change, rebinding): the adapter asks again before the first answer.
     const current = requestProviderProbe('bilibili', 60_000, world);
     assert.equal(await settled(stale), null);
+    assert.deepEqual(signals.map(signal => signal.aborted), [true, false], 'the superseded read can stop its own requests');
     reads[0].resolve({ videoId: 'old' });
     await flush();
     assert.equal(sent.length, 0, 'MAIN must not answer the superseded request');
@@ -76,7 +77,26 @@ describe('asynchronous provider probe', () => {
     assert.deepEqual([await settled(cn), await settled(intl)], ['cn', 'intl']);
   });
 
-  it('answers null at once for a provider MAIN refused because it registered after startup', async () => {
+  it('leaves no listener behind once a request settles', async () => {
+    const world = new EventTarget();
+    let listeners = 0;
+    const add = world.addEventListener.bind(world);
+    const remove = world.removeEventListener.bind(world);
+    world.addEventListener = (type, listener, options) => { if (type === PROBE_ASYNC_REPLY_EVENT) listeners++; add(type, listener, options); };
+    world.removeEventListener = (type, listener, options) => { if (type === PROBE_ASYNC_REPLY_EVENT) listeners--; remove(type, listener, options); };
+    const never = deferred();
+    answerProviderProbes(world, id => ({ probeAsync: async () => id === 'tencent' ? never.promise : 'value' }));
+    assert.equal(await settled(requestProviderProbe('bilibili', 60_000, world)), 'value');
+    const timedOut = requestProviderProbe('tencent', 5, world);
+    mock.timers.tick(5);
+    assert.equal(await settled(timedOut), null);
+    const superseded = requestProviderProbe('netflix', 60_000, world);
+    const answered = requestProviderProbe('netflix', 60_000, world);
+    assert.deepEqual([await settled(superseded), await settled(answered)], [null, 'value']);
+    assert.equal(listeners, 0);
+  });
+
+  it('answers null promptly for a provider MAIN refused because it registered after startup', async () => {
     const world = new EventTarget();
     const registry = createProviderRegistry('www.iq.com');
     registry.start();
@@ -143,7 +163,7 @@ describe('asynchronous provider probe', () => {
     let reads = 0;
     answerProviderProbes(world, () => ({ probeAsync: async () => { reads++; return 'x'; } }));
     for (const detail of [{ requestId: 1, provider: 'bilibili' }, JSON.stringify({ requestId: 0, provider: 'bilibili' }),
-      JSON.stringify({ requestId: 1, provider: '../x' }), JSON.stringify({ requestId: 1 })]) {
+      JSON.stringify({ requestId: 1, provider: 7 }), JSON.stringify({ requestId: 1 })]) {
       world.dispatchEvent(new CustomEvent(PROBE_ASYNC_EVENT, { detail }));
     }
     await flush();
