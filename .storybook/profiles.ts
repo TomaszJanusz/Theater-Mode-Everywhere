@@ -74,10 +74,19 @@ export const PLAYER_SHOT_SCENARIOS = ['watching', 'settings', 'captions'] as con
  * are real time, and a capture of them would differ from run to run.
  */
 function playerProfiles(): Profile[] {
-  return PLAYER_SHOT_SCENARIOS.flatMap(scenario => BACKDROPS.map(backdrop => {
+  const menus = PLAYER_SHOT_SCENARIOS.flatMap(scenario => BACKDROPS.map(backdrop => {
     const profile = environment('en', backdrop);
     return { ...profile, name: `${scenario}-${backdrop}`, globals: { ...profile.globals, reduceMotion: 'on' as const }, args: { scenario } };
   }));
+  // The shortcuts help: wide (two columns) in left-to-right, right-to-left and a long locale, and a narrow window (one column).
+  const help = ([['en', 1280], ['ar', 1280], ['de', 1280], ['pl', 1280], ['de', 420]] as const).map(([locale, width]): Profile => {
+    const profile = environment(locale);
+    return {
+      ...profile, name: `help-${locale}-${width}`, globals: { ...profile.globals, reduceMotion: 'on' },
+      args: { scenario: 'help' }, viewport: { width, height: width === 420 ? 800 : 900 }
+    };
+  });
+  return [...menus, ...help];
 }
 
 export function profilesFor(id: string, engine: 'chromium' | 'firefox' = 'chromium'): Profile[] {
