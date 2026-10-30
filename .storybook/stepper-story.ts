@@ -54,6 +54,8 @@ export function renderStepper(args: StepperArgs): HTMLElement {
     });
     const paint = () => control.update({ value: disabled ? 'Unavailable' : `Option ${state.index + 1}`, index: state.index, count, disabled });
     paint();
+    // As the menu does while a row has keyboard focus: the arrows read as the keys that step it.
+    control.setKeys('A', 'D');
     current = {
       ...state,
       get steps() { return state.steps; },

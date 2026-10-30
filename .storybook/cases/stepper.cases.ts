@@ -213,3 +213,19 @@ const DisabledStaysInert: Story = {
   }
 };
 test('DisabledStaysInert', () => runStepperCase(DisabledStaysInert));
+
+/**
+ * The key shown in place of an arrow is set in the menu's own face. A button keeps the browser's default font unless
+ * told otherwise, and that face's metrics put the glyph off-centre in its cap (measured in storybook-player.browser.test.ts).
+ */
+const KeyCapUsesTheMenuFace: Story = {
+  args: { count: 5, index: 2 },
+  play: async () => {
+    arrow(1).focus();
+    await userEvent.keyboard('{Shift}');
+    await expect(arrow(1).matches(':focus-visible')).toBe(true);
+    await expect(getComputedStyle(arrow(1), '::after').content).toBe('"D"');
+    await expect(getComputedStyle(arrow(1)).fontFamily).toBe(getComputedStyle(stepperRow().querySelector('.theater-settings-label')!).fontFamily);
+  }
+};
+test('KeyCapUsesTheMenuFace', () => runStepperCase(KeyCapUsesTheMenuFace));

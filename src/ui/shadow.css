@@ -3455,6 +3455,8 @@ button.theater-time-end:focus-visible,
   cursor: pointer !important;
   /* The row carries the focus frame; the arrow shows focus by its key or its darker fill. */
   outline: none !important;
+  /* A button keeps the browser's own face otherwise: the key caps would then sit off-centre in a different font per engine. */
+  font-family: inherit;
 }
 .theater-stepper-btn[data-direction="-1"] { grid-column: 1 !important; }
 .theater-stepper-btn[data-direction="1"] { grid-column: 3 !important; }
@@ -3492,7 +3494,8 @@ button.theater-time-end:focus-visible,
   border-radius: 4px !important;
   font-size: 11px !important;
   font-weight: 600 !important;
-  line-height: 1.2 !important;
+  /* A whole number of pixels: a fractional line box (11px x 1.2) rounds the cap and its glyph differently. */
+  line-height: 13px !important;
   text-align: center !important;
 }
 /* A blocked end keeps focus and the pointer, and fades instead of snapping. */
