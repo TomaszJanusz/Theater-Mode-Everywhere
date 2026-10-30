@@ -22,16 +22,17 @@ export function isNativeChatEvent(event: Event): boolean {
 }
 
 function matchesServiceChat(element: Element): boolean {
-  const href = element.ownerDocument?.location?.href ?? '';
   let host = '';
   try {
-    host = new URL(href).hostname;
+    // A document without a browsing context has no location; its elements belong to no host.
+    host = new URL((element.ownerDocument.location as Location).href).hostname;
   } catch {
-    host = '';
+    // No host: only registered chats that accept an empty host could match.
   }
   if (isTwitchHost(host) && element.matches(TWITCH_CHAT_EVENT_SELECTOR)) return true;
   const chat = registeredChat();
-  return Boolean(chat?.matchesHost(host) && (element.matches(chat.eventSelector) || chat.matchesEvent?.(element)));
+  if (!chat || !(chat.matchesEventHost ? chat.matchesEventHost(host) : chat.matchesHost(host))) return false;
+  return element.matches(chat.eventSelector) || (chat.matchesEvent ? chat.matchesEvent(element) : false);
 }
 
 function documentOf(event: Event): Document | null {

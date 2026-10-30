@@ -1,5 +1,6 @@
 import { DISNEY_SHADOW_PARENT_CSS } from './disney/stage';
 import { rankNetflixTheaterVideos } from './netflix/playback';
+import { providerRegistry } from './runtime-registration';
 import { twitchVideoAbandoned } from './twitch/discovery';
 import { injectTencentWasmFrameStyles, tencentVideosShareContainer } from './tencent/stage';
 
@@ -52,5 +53,6 @@ export function providerSharesPlaybackHost(current: HTMLVideoElement, replacemen
 }
 
 export function providerVideoAbandoned(video: HTMLVideoElement): boolean {
-  return providerDiscovery.some((hook) => hook.abandonedVideo?.(video) === true);
+  return providerDiscovery.some((hook) => hook.abandonedVideo?.(video) === true)
+    || providerRegistry.all().some(hooks => hooks.discovery?.abandonedVideo(video) === true);
 }

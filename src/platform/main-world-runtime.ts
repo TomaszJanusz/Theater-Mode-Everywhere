@@ -52,9 +52,11 @@ import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
 import { matchesShortcut } from '../ui/shortcuts';
 
 import { findActiveVideo } from './active-video';
+import { readCurrentBlobText } from './blob-text';
 import { isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
 import { installMediaAudioRuntime } from './media-audio-runtime';
 import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
+import { installVisitSignal } from './navigation-visit';
 import { readPageResponseBytes } from './page-body';
 import { fetchPageMedia } from './page-fetch';
 import { noteWrapperFailure } from './wrapper-failures';
@@ -145,6 +147,9 @@ export function installMainWorldRuntime(): void {
       case 'twitch': harvestTwitchResponseText(url, text); break;
     }
   }
+
+  // Before any host script: a provider reading Blob bodies needs every later navigation to end the visit.
+  const visit = harvests.some(harvest => harvest.blobTextTargets) ? installVisitSignal() : null;
 
   /** Each selected consumer owns this single clone. Its text/json read bypasses the host Response observers to avoid a second harvest. */
   function consumeFetchClone(target: HarvestTarget | null, url: string, response: Response): void {
@@ -255,6 +260,15 @@ export function installMainWorldRuntime(): void {
     installXhrHarvest(XMLHttpRequest.prototype, (xhr, url) => {
       const target = harvestTarget(url);
       if (!target) return;
+      // Opted-in Blob bodies only, read as bounded text once; a read that outlives its deadline or a navigation is stale.
+      if (visit && isProviderTarget(target) && xhr.responseType === 'blob') {
+        if (xhr.response instanceof Blob && (target.harvest.blobTextTargets || []).includes(target.id)) {
+          readCurrentBlobText(xhr.response, MAX_CAPTION_BYTES, visit)
+            .then(text => { if (text) harvestText(target, url, text); })
+            .catch((error: unknown) => noteWrapperFailure('xhr', error));
+        }
+        return;
+      }
       if (target === 'crunchyroll-url') { harvestCrunchyrollBody(url, ''); return; }
       if (target === 'twitch-storyboard') { harvestTwitchXhr(url, null, xhr); return; }
       const format = harvestBodyFormat(formatTarget(target), xhr.responseType);

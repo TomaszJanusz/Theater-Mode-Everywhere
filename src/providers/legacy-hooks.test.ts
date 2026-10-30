@@ -3,6 +3,7 @@ import { afterEach, it, mock } from 'node:test';
 
 import type { HostCaptionLayoutSource } from '../media-features/types';
 
+import { providerVideoAbandoned } from './discovery';
 import { createHostCaptionLayoutSource } from './host-captions';
 import type { ProviderHooks } from './provider-api';
 import { providerDefinition } from './registry';
@@ -77,4 +78,18 @@ it('creates independent caption sources without a data integration flag and expo
   assert.equal(providerDefinition('soop').titleFromPage, undefined);
   mock.method(providerRegistry, 'all', () => []);
   assert.equal(createHostCaptionLayoutSource(), null);
+});
+
+it('asks registered discovery whether a connected video was abandoned, without a data integration flag', () => {
+  const video = { closest: () => null } as unknown as HTMLVideoElement;
+  const seen: HTMLVideoElement[] = [];
+  let abandoned = false;
+  const entry: ProviderHooks = { ...hooks(), discovery: { abandonedVideo: candidate => { seen.push(candidate); return abandoned; } } };
+  mock.method(providerRegistry, 'all', () => [entry]);
+  assert.equal(providerVideoAbandoned(video), false);
+  abandoned = true;
+  assert.equal(providerVideoAbandoned(video), true);
+  assert.deepEqual(seen, [video, video]);
+  mock.method(providerRegistry, 'all', () => [hooks()]);
+  assert.equal(providerVideoAbandoned(video), false, 'a provider without the rule keeps the video bound');
 });
