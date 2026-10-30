@@ -26,10 +26,10 @@ fetch('/fixture.webm').then(response => response.blob()).then(blob => { document
 /** Disney+ audio loads per host beside the legacy integration: installed-extension evidence on intercepted host URLs. */
 export async function assertDisneyProvider(page: Page, context: BrowserContext): Promise<void> {
   const worker = await extensionWorker(context);
-  // chrome.storage.sync allows 120 writes a minute and the whole smoke runs inside one in CI, so this case spends
-  // three: the pick's own save, RTE off, and one restore. AutoTheater stays as it is: the fixture never plays.
-  const keys = ['disneyIntegrationEnabled', 'audioPreferenceByHost'];
-  const saved = await worker.evaluate(keys => chrome.storage.sync.get(keys), keys);
+  // chrome.storage.sync allows 120 writes a minute and CI runs the whole Chromium smoke inside one, so this case
+  // spends two: the pick's own save and RTE off. It restores nothing: no later case visits Disney+, the throwaway
+  // profile keeps only Disney+ keys, and a restore would be a third write. AutoTheater stays: the fixture never plays.
+  const saved = await worker.evaluate(() => chrome.storage.sync.get('audioPreferenceByHost'));
   const media = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
   const handler = async (route: Route) => {
     if (new URL(route.request().url()).pathname === '/fixture.webm') await route.fulfill({ contentType: 'video/webm', body: media });
@@ -78,7 +78,7 @@ export async function assertDisneyProvider(page: Page, context: BrowserContext):
       assert.equal(await tracks(), null, `${url} must not load the Disney+ provider`);
     }
 
-    // Last, so the restore below also switches it back on.
+    // Last: Disney+ stays off for the rest of this profile.
     await worker.evaluate(() => chrome.storage.sync.set({ disneyIntegrationEnabled: false }));
     await page.goto(DISNEY);
     await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-disney-integration-off'));
@@ -87,11 +87,5 @@ export async function assertDisneyProvider(page: Page, context: BrowserContext):
     console.log('smoke provider scripts: Disney+ audio registration in both worlds, pick confirmed by Hive and saved, RTE off, spoofed/generic host passed (installed fixture)');
   } finally {
     await context.unroute(hosts, handler);
-    // One write each for the keys that were absent and, only if needed, for those that were set.
-    await worker.evaluate(async ({ keys, saved }) => {
-      const absent = keys.filter(key => !(key in saved));
-      if (absent.length) await chrome.storage.sync.remove(absent);
-      if (Object.keys(saved).length) await chrome.storage.sync.set(saved);
-    }, { keys, saved });
   }
 }
