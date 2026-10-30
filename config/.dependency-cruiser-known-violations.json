@@ -16,36 +16,8 @@
   {
     "type": "dependency",
     "from": "src/providers/bilibili-intl/watch-playback.ts",
-    "to": "src/providers/bilibili/navigation.ts",
-    "unresolvedTo": "../bilibili/navigation",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/providers/bilibili-intl/watch-playback.ts",
     "to": "src/providers/navigation/bilibili-intl.ts",
     "unresolvedTo": "../navigation/bilibili-intl",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/providers/bilibili/service-actions.ts",
-    "to": "src/providers/navigation/bilibili.ts",
-    "unresolvedTo": "../navigation/bilibili",
     "dependencyTypes": [
       "local",
       "import"
@@ -422,20 +394,6 @@
   {
     "type": "dependency",
     "from": "src/media-features/resolve-adapter.ts",
-    "to": "src/providers/bilibili/adapter.ts",
-    "unresolvedTo": "../providers/bilibili/adapter",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/media-features/resolve-adapter.ts",
     "to": "src/providers/crunchyroll/adapter.ts",
     "unresolvedTo": "../providers/crunchyroll/adapter",
     "dependencyTypes": [
@@ -508,34 +466,6 @@
     "from": "src/platform/main-world-runtime.ts",
     "to": "src/providers/bilibili-intl/main.ts",
     "unresolvedTo": "../providers/bilibili-intl/main",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/platform/main-world-runtime.ts",
-    "to": "src/providers/bilibili/main.ts",
-    "unresolvedTo": "../providers/bilibili/main",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/platform/main-world-runtime.ts",
-    "to": "src/providers/bilibili/navigation.ts",
-    "unresolvedTo": "../providers/bilibili/navigation",
     "dependencyTypes": [
       "local",
       "import"

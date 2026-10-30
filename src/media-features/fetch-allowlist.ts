@@ -22,19 +22,6 @@ export type MediaFetchResult = {
   error?: string;
 };
 
-/** JSON subtitle objects on hdslb. AI tracks often have no .json suffix. */
-function isBilibiliSubtitlePath(pathname: string): boolean {
-  if (pathname.includes('\\') || pathname.includes('%') || pathname.split('/').includes('..')) return false;
-  return /^\/bfs\/(?:ai_)?subtitle(?:\/[A-Za-z0-9_-]+)*\/[A-Za-z0-9_-]+(?:\.json)?$/i.test(pathname);
-}
-
-/** Path as written, before URL normalization drops ".." or decodes "%2e%2e". */
-function rawHttpsPath(url: string): string | null {
-  const match = /^https:\/\/[^/?#]*([^?#]*)/i.exec(url.trim());
-  if (!match?.[1]?.startsWith('/')) return null;
-  return match[1];
-}
-
 function parseHttpsUrl(url: string, base?: string): URL | null {
   try {
     const parsed = base ? new URL(url, base) : new URL(url);
@@ -61,15 +48,6 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
 
   if (request.provider === 'bilibiliIntl' && request.kind === 'caption-track') {
     return bilibiliIntlSubtitleUrl(request.url) !== null;
-  }
-
-  if (request.provider === 'bilibili' && request.kind === 'caption-track') {
-    const rawPath = rawHttpsPath(request.url);
-    return !parsed.username && !parsed.password && !parsed.port
-      && (parsed.hostname === 'hdslb.com' || parsed.hostname.endsWith('.hdslb.com'))
-      && rawPath !== null
-      && rawPath === parsed.pathname
-      && isBilibiliSubtitlePath(rawPath);
   }
 
   if (request.provider === 'youtube' && request.kind === 'caption-track') return isYoutubeTimedtextUrl(request.url, base);
@@ -121,7 +99,7 @@ export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest)
   return isAllowedMediaFetchUrl({ ...request, url: finalUrl });
 }
 
-const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', ...PROVIDER_CATALOG.map(item => item.id)];
+const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'disney', 'bilibiliIntl', 'tencent', 'crunchyroll', ...PROVIDER_CATALOG.map(item => item.id)];
 // Netflix stays off this list. Public playback renders subtitles in the host
 // player and did not expose a caption or storyboard URL safe to fetch.
 const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json', 'chapters'];

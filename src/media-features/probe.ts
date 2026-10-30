@@ -1,6 +1,5 @@
 import { encodeProbeRequest, encodeProbeAsyncRequest, parseProbeAsyncReply, PROBE_ASYNC_EVENT, PROBE_ASYNC_REPLY_EVENT } from '../protocol/page-requests';
 import { createWorldMessage, readWorldEnvelope } from '../protocol/world-messages';
-import type { BilibiliSnapshot } from '../providers/bilibili/metadata';
 import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
 import type { CrunchyrollSnapshot } from '../providers/crunchyroll/main';
 import type { TencentSnapshot } from '../providers/tencent/main';
@@ -52,7 +51,6 @@ export type MediaProbeSnapshot = {
   providers?: Record<string, unknown>;
   disney?: DisneyPlayerSnapshot | null;
   netflix?: NetflixProbeSnapshot | null;
-  bilibili?: BilibiliSnapshot | null;
   bilibiliIntl?: BilibiliIntlSnapshot | null;
   tencent?: TencentSnapshot | null;
   crunchyroll?: CrunchyrollSnapshot | null;
@@ -66,7 +64,7 @@ type ProbeResponse = ProbeRequest & MediaProbeSnapshot;
 
 let requestId = 0;
 
-export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bilibiliIntl'): Promise<MediaProbeSnapshot> {
+export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibiliIntl'): Promise<MediaProbeSnapshot> {
   return new Promise((resolve) => {
     const id = ++requestId;
     let settled = false;
@@ -87,18 +85,13 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
         providers: plainRecord(snapshot.providers),
         disney: snapshot.disney ?? null,
         netflix: snapshot.netflix ?? null,
-        bilibili: snapshot.bilibili ?? null,
         bilibiliIntl: snapshot.bilibiliIntl ?? null,
         tencent: snapshot.tencent ?? null,
         crunchyroll: snapshot.crunchyroll ?? null
       });
     };
 
-    const resultEvent = provider === 'bilibili'
-      ? 'theater-everywhere-bilibili-probe-result'
-      : provider === 'bilibiliIntl'
-        ? 'theater-everywhere-bilibili-intl-probe-result'
-        : MEDIA_PROBE_RESULT_EVENT;
+    const resultEvent = provider === 'bilibiliIntl' ? 'theater-everywhere-bilibili-intl-probe-result' : MEDIA_PROBE_RESULT_EVENT;
     window.addEventListener(resultEvent, onResult as EventListener);
     window.dispatchEvent(new CustomEvent(MEDIA_PROBE_EVENT, { detail: encodeProbeRequest(id) }));
   });

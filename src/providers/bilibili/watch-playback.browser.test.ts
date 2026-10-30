@@ -7,7 +7,7 @@ import { bundleModules } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { testEngines } from '../../test-utils/test-engines';
 
-const bundle = bundleModules(["export { bilibiliWatchPlayback as playback } from './providers/bilibili/watch-playback'; export { installBilibiliNavigation as install } from './providers/bilibili/navigation';"], 'BilibiliTest');
+const bundle = bundleModules(["export { bilibiliWatchPlayback as playback } from './providers/bilibili/watch-playback'; export { installBilibiliHistory as install } from './providers/bilibili/history';"], 'BilibiliTest');
 
 for (const engine of testEngines()) {
   const shared = sharedTestBrowser(({ chromium, firefox })[engine]);

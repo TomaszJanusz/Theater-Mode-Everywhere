@@ -1,6 +1,6 @@
 import type { WatchPlayback } from '../watch-playback';
 
-import { BILIBILI_NAVIGATE_EVENT } from './navigation';
+import { BILIBILI_NAVIGATE_EVENT } from './history';
 
 /** Parts are separate visits; tracking parameters and timestamps are not. */
 export function bilibiliVideoIdentity(url: URL): string | null {
