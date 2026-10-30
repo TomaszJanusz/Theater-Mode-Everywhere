@@ -39,7 +39,7 @@ const PROVIDER_SCENARIOS: ReadonlyArray<{ name: string; syncWrites: number; run:
   { name: 'assertYoutubeProvider', syncWrites: 4, run: assertYoutubeProvider },
   { name: 'assertTwitchProvider', syncWrites: 7, run: assertTwitchProvider },
   { name: 'assertVikiProvider', syncWrites: 7, run: assertVikiProvider },
-  { name: 'assertNetflixAudio', syncWrites: 0, run: assertNetflixAudio }
+  { name: 'assertNetflixAudio', syncWrites: 5, run: assertNetflixAudio }
 ];
 
 async function runProviderScenarios(page: Page, context: BrowserContext): Promise<void> {
