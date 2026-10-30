@@ -39,7 +39,7 @@ const PROVIDER_SCENARIOS: ReadonlyArray<{ name: string; syncWrites: number; run:
   { name: 'assertBilibiliTvProvider', syncWrites: 7, run: assertBilibiliTvProvider },
   { name: 'assertYoutubeProvider', syncWrites: 4, run: assertYoutubeProvider },
   { name: 'assertTwitchProvider', syncWrites: 7, run: assertTwitchProvider },
-  { name: 'assertDisneyProvider', syncWrites: 2, run: assertDisneyProvider },
+  { name: 'assertDisneyProvider', syncWrites: 3, run: assertDisneyProvider },
   { name: 'assertVikiProvider', syncWrites: 7, run: assertVikiProvider },
   { name: 'assertNetflixAudio', syncWrites: 5, run: assertNetflixAudio }
 ];
