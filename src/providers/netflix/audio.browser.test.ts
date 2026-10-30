@@ -3,6 +3,7 @@ import { describe, it, type TestContext } from 'node:test';
 
 import type { Page } from 'playwright';
 
+import { NETFLIX_HARVEST_EVENT } from '../../media-features/parsers/netflix-page';
 import type { AudioTrackList } from '../../media-features/types';
 import { sharedEngineBrowsers } from '../../test-utils/engine-browsers';
 import { bundleModules } from '../../test-utils/player-boot';
@@ -22,15 +23,20 @@ const AD = 'A:2:1;2;en;1;0;0;';
 const EN = 'A:2:1;2;en;0;0;0;';
 const FR = 'A:fr-CA';
 
-async function open(t: TestContext, engine: 'chromium' | 'firefox', browsers: ReturnType<typeof sharedEngineBrowsers>): Promise<Page> {
+async function open(t: TestContext, engine: 'chromium' | 'firefox', browsers: ReturnType<typeof sharedEngineBrowsers>, beforeObserve = ''): Promise<Page> {
   const page = await (await browsers[engine].newContext(t)).newPage();
   await page.route('https://www.netflix.com/**', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: netflixAudioHtml }));
   await page.goto('https://www.netflix.com/watch/12345');
   await page.addScriptTag({ content: `${bundle}\nwindow.AudioTest = AudioTest;` });
-  await page.evaluate(`window.stopMain = AudioTest.installNetflixAudio(AudioTest.navigationObserver());
+  if (beforeObserve) await page.evaluate(beforeObserve);
+  await page.evaluate(`window.navigationCount = 0; const navigation = AudioTest.navigationObserver();
+    window.stopMain = AudioTest.installNetflixAudio({ check: () => navigation.check(), subscribe(listener) {
+      navigationCount++; const stop = navigation.subscribe(listener);
+      return () => { navigationCount--; stop(); };
+    } });
     window.adapter = new AudioTest.NetflixAudioAdapter(document.querySelector('video'));
-    window.changes = 0;
-    window.stopAudio = adapter.observeAudioTracks(() => { changes++; });`);
+    window.changes = 0; window.observed = null;
+    window.stopAudio = adapter.observeAudioTracks(() => { changes++; observed = adapter.listAudioTracks(); });`);
   return page;
 }
 const list = (page: Page): Promise<AudioTrackList | null> => page.evaluate('adapter.listAudioTracks()');
@@ -40,7 +46,7 @@ const begin = (page: Page, id = PL) => page.evaluate(`window.outcome = 'pending'
 const outcome = (page: Page) => page.evaluate('window.outcome');
 
 // A single browser engine is selected per command on runner02, so heavyweight engines never overlap.
-describe('Netflix audio recorded-shape fixtures', { timeout: 30_000 }, () => {
+describe('Netflix audio recorded-shape fixtures', { timeout: 60_000 }, () => {
   const browsers = sharedEngineBrowsers();
   for (const engine of testEngines()) {
     it(`uses the matching session and exact current track objects in ${engine}`, async t => {
@@ -56,6 +62,44 @@ describe('Netflix audio recorded-shape fixtures', { timeout: 30_000 }, () => {
       assert.equal((await list(page))!.tracks.find(track => track.selected)?.id, PL);
       assert.equal(await page.evaluate('nfSessions[0].sets.length'), 0, 'preloaded session untouched');
       assert.equal(await page.evaluate('changes > 0'), true);
+    });
+
+    for (const trigger of ['loadedmetadata', 'loadedtracks', 'audiotracklistchanged', NETFLIX_HARVEST_EVENT, 'navigation']) {
+      it(`discovers a session missing at first bind through ${trigger} in ${engine}`, async t => {
+        const page = await open(t, engine, browsers, 'window.savedNetflix = window.netflix; window.netflix = undefined;');
+        assert.equal(await page.evaluate('nf.listenerCount()'), 0);
+        assert.equal(await page.evaluate('navigationCount'), 1, 'discovery belongs to the unbound client already');
+        await page.evaluate(`window.netflix = savedNetflix;
+          if (${JSON.stringify(trigger)} === 'navigation') history.replaceState(null, '', location.href);
+          else document.querySelector('video').dispatchEvent(new Event(${JSON.stringify(trigger)}, { bubbles: true }));`);
+        await page.waitForFunction('observed?.tracks.length === 13');
+        assert.equal(await page.evaluate('observed.blocked'), false);
+        const changes = await page.evaluate<number>('changes');
+        await page.evaluate('nf.emit("audiotracklistchanged")');
+        assert.ok(await page.evaluate<number>('changes') > changes, 'discovery now follows Cadmium events');
+        await page.evaluate('stopAudio(); stopAudio();');
+        assert.equal(await page.evaluate('navigationCount'), 0);
+        assert.equal(await page.evaluate('nf.listenerCount()'), 0);
+      });
+    }
+
+    it(`releases unbound discovery and keeps a replacement client owned separately in ${engine}`, async t => {
+      const missing = 'window.savedNetflix = window.netflix; window.netflix = undefined;';
+      const page = await open(t, engine, browsers, missing);
+      await page.evaluate('stopAudio(); stopAudio();');
+      assert.equal(await page.evaluate('navigationCount'), 0, 'an unbound subscription is still disposed');
+      await page.evaluate(`window.netflix = savedNetflix; document.querySelector('video').dispatchEvent(new Event('loadedmetadata'));`);
+      assert.equal(await page.evaluate('changes'), 0);
+      assert.equal(await page.evaluate('nf.listenerCount()'), 0);
+      await page.evaluate(`window.netflix = undefined; window.stopOld = adapter.observeAudioTracks(() => { changes++; });
+        window.replacement = new AudioTest.NetflixAudioAdapter(document.querySelector('video'));
+        window.stopReplacement = replacement.observeAudioTracks(() => { observed = replacement.listAudioTracks(); });
+        stopOld(); window.netflix = savedNetflix; document.querySelector('video').dispatchEvent(new Event('loadedmetadata'));`);
+      await page.waitForFunction('observed?.tracks.length === 13');
+      assert.equal(await page.evaluate('navigationCount'), 1, 'old client cannot stop its replacement');
+      await page.evaluate('stopReplacement(); replacement.dispose(); adapter.dispose(); stopMain(); stopMain();');
+      assert.equal(await page.evaluate('navigationCount'), 0);
+      assert.equal(await page.evaluate('nf.listenerCount()'), 0);
     });
 
     it(`waits for late manifest data and follows rebuilt/reordered lists without polling in ${engine}`, async t => {
@@ -131,7 +175,10 @@ describe('Netflix audio recorded-shape fixtures', { timeout: 30_000 }, () => {
         await page.evaluate('old.complete()');
         await page.waitForFunction('result === false');
         assert.deepEqual(await page.evaluate('saves'), []);
-        if (!['ad', 'session'].includes(invalidation)) assert.deepEqual(await page.evaluate('reports'), [], 'no stale HUD');
+        if (['ad', 'session'].includes(invalidation)) {
+          assert.equal(await page.evaluate(`reports.every(report => report.refused?.track.id === '${PL}' && report.playing?.track.id !== '${PL}')`), true,
+            'no stale success HUD; any refusal describes the current state');
+        } else assert.deepEqual(await page.evaluate('reports'), [], 'no stale HUD');
         assert.equal(await page.evaluate('nf === old || nf.current.trackId === nf.tracks[0].trackId'), true, 'new title/session keeps its choice');
         await page.evaluate('controller.dispose(); adapter.dispose(); stopAudio(); stopAudio(); stopMain(); stopMain();');
         assert.equal(await page.evaluate('nfSessions.every(session => session.listenerCount() === 0)'), true, 'all player callbacks released');

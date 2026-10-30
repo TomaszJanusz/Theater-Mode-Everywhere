@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { audioPreferenceForTrack, pickPreferredAudioTrack } from '../../media-features/audio-preference';
 
 import { netflixAudioTrack, parseAudioAck, parseAudioQuery, parseAudioSelect, parseAudioSnapshot, type AudioRequest, type AudioSelect } from './audio-bridge';
-import { readNetflixAudio } from './audio-main';
+import { netflixAudioBlocked, readNetflixAudio, type NetflixAudioPlayer } from './audio-main';
 
 const request: AudioRequest = { requestId: 'r:1', clientId: 'client:1', pageHref: 'https://www.netflix.com/watch/123', mediaId: '123' };
 const select: AudioSelect = { ...request, bindingId: 'binding:1', trackId: 'A:2:1;2;pl;0;0;0;' };
@@ -46,6 +46,37 @@ describe('Netflix public audio records', () => {
     assert.equal(readNetflixAudio({ getAudioTrackList: () => Array(101).fill(original) }, '123'), null);
     assert.equal(readNetflixAudio({ getAudioTrackList: () => [original], getAudioTrack: () => original }, '123')?.blocked, true, 'unknown ad state fails closed');
     assert.deepEqual(readNetflixAudio({ getAudioTrackList: () => [original], getAudioTrack: () => original, getAdManager: () => ({ adPresenting: false }) }, '123'), list);
+  });
+});
+
+describe('Netflix ad state', () => {
+  it('unwraps observable values and accepts only literal false, including the legacy boolean', () => {
+    const player = (adPresenting: unknown): NetflixAudioPlayer => ({
+      getAudioTrackList: () => [original], getAudioTrack: () => original,
+      getAdManager: () => ({ adPresenting })
+    });
+    const inherited = Object.create({ get value() { return false; } });
+    for (const value of [false, { value: false }, inherited]) {
+      assert.equal(netflixAudioBlocked(player(value)), false);
+      assert.deepEqual(readNetflixAudio(player(value), '123'), list);
+    }
+    for (const value of [true, { value: true }, undefined, null, {}, { _value: false }, 0, 'false', { value: 0 }]) {
+      assert.equal(netflixAudioBlocked(player(value)), true);
+      assert.equal(readNetflixAudio(player(value), '123')?.blocked, true);
+    }
+  });
+
+  it('fails closed for missing managers and throwing manager, property or observable getters', () => {
+    const players: NetflixAudioPlayer[] = [
+      {}, { getAdManager: () => null }, { getAdManager: () => ({}) },
+      { getAdManager() { throw Error('closed'); } },
+      { getAdManager: () => ({ get adPresenting() { throw Error('closed'); } }) },
+      { getAdManager: () => ({ adPresenting: { get value() { throw Error('closed'); } } }) }
+    ];
+    for (const player of players) {
+      assert.equal(netflixAudioBlocked(player), true);
+      assert.equal(readNetflixAudio({ getAudioTrackList: () => [original], getAudioTrack: () => original, ...player }, '123')?.blocked, true);
+    }
   });
 });
 

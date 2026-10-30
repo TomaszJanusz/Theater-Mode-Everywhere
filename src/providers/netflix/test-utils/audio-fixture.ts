@@ -3,14 +3,23 @@ export const netflixAudioFixture = `(() => {
   const raw = [
     { trackId: 'A:2:1;2;en;0;0;0;', bcp47: 'en', displayName: 'English [original]', trackType: 'PRIMARY', rawTrackType: 'PRIMARY', isNative: true },
     { trackId: 'A:2:1;2;pl;0;0;0;', bcp47: 'pl', displayName: 'polski', trackType: 'PRIMARY', rawTrackType: 'PRIMARY', isNative: false },
-    { trackId: 'A:2:1;2;en;1;0;0;', bcp47: 'en', displayName: 'English — Audio Description', trackType: 'ASSISTIVE', rawTrackType: 'ASSISTIVE', isNative: true },
+    { trackId: 'A:2:1;2;en;1;0;0;', bcp47: 'en', displayName: 'English — Audio Description', trackType: 'ASSISTIVE', rawTrackType: 'ASSISTIVE', isNative: false },
     { trackId: 'A:2:1;6;pl;0;0;0;', bcp47: 'pl', displayName: 'polski 5.1', trackType: 'PRIMARY', rawTrackType: 'PRIMARY', isNative: false },
     ...['fr-CA', 'fr', 'es-ES', 'es-419', 'pt-BR', 'de', 'ja', 'ko', 'zh-Hant'].map(tag => ({ trackId: 'A:' + tag, bcp47: tag, displayName: tag, trackType: 'PRIMARY', rawTrackType: 'PRIMARY', isNative: false }))
   ].map(track => ({ channels: '2.0', surroundFormatLabel: '2.0', ...track }));
+  // Live Cadmium stores ad state in an observable with a prototype value getter.
+  class Observable {
+    constructor(value) { this._handlers = new Set(); this._id = 'fixture-ad'; this._value = value; }
+    get value() { return this._value; }
+    addListener(fn) { this._handlers.add(fn); }
+    removeListener(fn) { this._handlers.delete(fn); }
+  }
   const sessions = [];
   const create = (movieId, element) => {
     const listeners = new Map();
     const state = { movieId, element, tracks: raw.map(track => ({ ...track })), manifest: true, ad: false, mode: 'sync', sets: [], reads: 0 };
+    const adPresenting = new Observable(false);
+    Object.defineProperty(state, 'ad', { get: () => adPresenting.value, set: value => { adPresenting._value = value; } });
     state.current = state.tracks[0];
     const emit = type => [...listeners.get(type) || []].forEach(fn => fn());
     const choose = track => { state.current = track; emit('audiotrackchanged'); };
@@ -20,7 +29,7 @@ export const netflixAudioFixture = `(() => {
       isReady: () => true,
       getAudioTrackList: () => { state.reads++; if (!state.manifest) throw Error('manifest loading'); return state.tracks; },
       getAudioTrack: () => { if (!state.manifest) throw Error('manifest loading'); return state.current; },
-      getAdManager: () => ({ adPresenting: state.ad }),
+      getAdManager: () => ({ adPresenting }),
       getTimedTextTrackList: () => [], getTimedTextTrack: () => null, setTimedTextTrack() {},
       setAudioTrack: track => {
         if (!state.tracks.includes(track)) return Promise.reject(Error('Invalid setAudioTrack call'));

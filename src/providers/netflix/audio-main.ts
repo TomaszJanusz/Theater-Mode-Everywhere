@@ -39,6 +39,16 @@ function same(left: Context, right: Context | null): boolean {
     && left.pageHref === right.pageHref && left.mediaId === right.mediaId;
 }
 
+/** Cadmium exposes an observable; older players may expose the boolean directly. */
+export function netflixAudioBlocked(player: NetflixAudioPlayer): boolean {
+  try {
+    const presenting = player.getAdManager?.()?.adPresenting;
+    const value = typeof presenting === 'object' && presenting !== null
+      ? (presenting as { value?: unknown }).value : presenting;
+    return value !== false;
+  } catch { return true; }
+}
+
 /** Cadmium throws before the manifest. Do not turn that into a cached one-track result. */
 export function readNetflixAudio(player: NetflixAudioPlayer, mediaId: string): AudioTrackList | null {
   try {
@@ -47,7 +57,7 @@ export function readNetflixAudio(player: NetflixAudioPlayer, mediaId: string): A
     if (!Array.isArray(raw) || raw.length > 100) return null;
     const tracks = raw.flatMap(track => netflixAudioTrack(track, selected) ?? []);
     if (tracks.length !== raw.length || new Set(tracks.map(track => track.id)).size !== tracks.length || JSON.stringify(tracks).length > 55_000) return null;
-    return { mediaId, tracks, blocked: player.getAdManager?.()?.adPresenting !== false };
+    return { mediaId, tracks, blocked: netflixAudioBlocked(player) };
   } catch { return null; }
 }
 
@@ -55,8 +65,11 @@ export function readNetflixAudio(player: NetflixAudioPlayer, mediaId: string): A
 export function installNetflixAudio(navigation: NavigationObserver): () => void {
   let binding: Binding | null = null;
   let ownerClient: string | null = null;
+  let ownerVideo: HTMLVideoElement | null = null;
+  let observing = false;
   let sequence = 0;
-  let stopWatching = () => {};
+  let stopDiscovery = () => {};
+  let stopPlayer = () => {};
   let cancelPending = () => {};
   let disposed = false;
   const ping = () => window.dispatchEvent(new CustomEvent(AUDIO_CHANGE));
@@ -69,8 +82,11 @@ export function installNetflixAudio(navigation: NavigationObserver): () => void 
   const clear = () => {
     invalidate();
     ownerClient = null;
-    stopWatching();
-    stopWatching = () => {};
+    ownerVideo = null;
+    observing = false;
+    stopPlayer(); stopDiscovery();
+    stopPlayer = () => {};
+    stopDiscovery = () => {};
   };
   const current = (bound: Binding) => {
     try { return binding === bound && same(bound, context(bound.video)); } catch { return false; }
@@ -83,46 +99,21 @@ export function installNetflixAudio(navigation: NavigationObserver): () => void 
     }
     ping();
   };
-  const watch = (bound: Binding) => {
-    const player = bound.player;
-    const attached = new Map<string, () => void>();
-    for (const type of AUDIO_EVENTS) {
-      const listener = () => {
-        changed();
-        // The legacy caption probe owns its snapshot; ask it to refresh a rebuilt host list.
-        if (type.startsWith('timedtext')) window.dispatchEvent(new CustomEvent(NETFLIX_HARVEST_EVENT));
-      };
-      try { player.addEventListener?.(type, listener); attached.set(type, listener); } catch { /* Optional on older players. */ }
-    }
-    // Structure only: never per-timeupdate reads or polling. Queries/events revalidate session identity.
-    const structure = new MutationObserver(() => {
-      if (!bound.video.isConnected || !bound.root.isConnected) { clear(); ping(); }
-    });
-    structure.observe(document, { childList: true, subtree: true });
-    const flags = new MutationObserver(() => {
-      if (!mediaProviderIntegrationEnabled('netflix')) clear();
-      changed();
-    });
-    flags.observe(document.documentElement, { attributes: true, attributeFilter: ['data-te-netflix-integration-off'] });
-    const stopNavigation = navigation.subscribe(() => { invalidate(); ping(); });
-    window.addEventListener(NETFLIX_HARVEST_EVENT, changed);
-    document.addEventListener('loadedmetadata', changed, true);
-    window.addEventListener('pagehide', clear);
-    stopWatching = () => {
-      for (const [type, listener] of attached) {
-        try { player.removeEventListener?.(type, listener); } catch { /* A closed session may throw. */ }
-      }
-      structure.disconnect(); flags.disconnect();
-      stopNavigation();
-      window.removeEventListener(NETFLIX_HARVEST_EVENT, changed);
-      document.removeEventListener('loadedmetadata', changed, true);
-      window.removeEventListener('pagehide', clear);
-    };
-  };
   const query = (event: Event) => {
     const request = parseAudioQuery((event as CustomEvent<unknown>).detail);
     const video = event.target;
-    if (!request || !(video instanceof HTMLVideoElement)) return;
+    if (!request || !(video instanceof HTMLVideoElement) || request.pageHref !== window.location.href
+      || request.mediaId !== netflixWatchId(window.location.pathname)) return;
+    if (!video.isConnected || !mediaProviderIntegrationEnabled('netflix')) { clear(); return; }
+    if (ownerClient !== request.clientId || ownerVideo !== video || observing !== request.observe) {
+      clear();
+      ownerClient = request.clientId;
+      ownerVideo = video;
+      observing = request.observe;
+      if (observing) stopDiscovery = observeDiscovery(video, navigation, {
+        changed, clear, navigate: () => { invalidate(); ping(); }
+      });
+    }
     let active: Context | null = null;
     try { active = context(video); } catch { /* Session is loading/closed. */ }
     if (!active || request.pageHref !== active.pageHref || request.mediaId !== active.mediaId) {
@@ -133,10 +124,10 @@ export function installNetflixAudio(navigation: NavigationObserver): () => void 
       return;
     }
     if (!binding || binding.clientId !== request.clientId || !same(binding, active) || binding.observing !== request.observe) {
-      clear();
-      ownerClient = request.clientId;
+      invalidate();
+      stopPlayer();
       binding = { ...active, clientId: request.clientId, bindingId: `binding:${++sequence}`, observing: request.observe };
-      if (request.observe) watch(binding);
+      stopPlayer = request.observe ? observeAudioPlayer(binding.player, changed) : () => {};
     }
     publishHiddenJson(AUDIO_SNAPSHOT, { ...request, bindingId: binding.bindingId, list: readNetflixAudio(binding.player, binding.mediaId) });
   };
@@ -157,6 +148,48 @@ export function installNetflixAudio(navigation: NavigationObserver): () => void 
     disposed = true;
     clear();
     for (const [type, listener] of handlers) window.removeEventListener(type, listener);
+  };
+}
+
+/** Discovery exists even before Cadmium has a matching session to subscribe to. */
+function observeDiscovery(video: HTMLVideoElement, navigation: NavigationObserver, callbacks: {
+  changed(): void; clear(): void; navigate(): void;
+}): () => void {
+  const root = findNetflixPlayerRoot(document);
+  const structure = new MutationObserver(() => {
+    if (!video.isConnected || (root && !root.isConnected)) { callbacks.clear(); callbacks.changed(); }
+  });
+  structure.observe(document, { childList: true, subtree: true });
+  const flags = new MutationObserver(() => {
+    if (!mediaProviderIntegrationEnabled('netflix')) callbacks.clear();
+    callbacks.changed();
+  });
+  flags.observe(document.documentElement, { attributes: true, attributeFilter: ['data-te-netflix-integration-off'] });
+  const stopNavigation = navigation.subscribe(callbacks.navigate);
+  const discoveryEvents = ['loadedmetadata', 'loadedtracks', 'audiotracklistchanged', NETFLIX_HARVEST_EVENT];
+  for (const type of discoveryEvents) window.addEventListener(type, callbacks.changed, true);
+  window.addEventListener('pagehide', callbacks.clear);
+  return () => {
+    structure.disconnect(); flags.disconnect(); stopNavigation();
+    for (const type of discoveryEvents) window.removeEventListener(type, callbacks.changed, true);
+    window.removeEventListener('pagehide', callbacks.clear);
+  };
+}
+
+function observeAudioPlayer(player: NetflixAudioPlayer, changed: () => void): () => void {
+  const attached = new Map<string, () => void>();
+  for (const type of AUDIO_EVENTS) {
+    const listener = () => {
+      changed();
+      // The legacy caption probe owns its snapshot; ask it to refresh a rebuilt host list.
+      if (type.startsWith('timedtext')) window.dispatchEvent(new CustomEvent(NETFLIX_HARVEST_EVENT));
+    };
+    try { player.addEventListener?.(type, listener); attached.set(type, listener); } catch { /* Optional on older players. */ }
+  }
+  return () => {
+    for (const [type, listener] of attached) {
+      try { player.removeEventListener?.(type, listener); } catch { /* A closed session may throw. */ }
+    }
   };
 }
 
@@ -182,7 +215,7 @@ function selectTrack(bound: Binding, request: AudioSelect, current: () => boolea
     };
     const check = () => {
       try {
-        if (!current() || player.getAdManager?.()?.adPresenting !== false) { finish(false); return; }
+        if (!current() || netflixAudioBlocked(player)) { finish(false); return; }
         const list = readNetflixAudio(player, bound.mediaId);
         // Audio changes can temporarily invalidate both getters or rebuild an empty list.
         // Keep waiting for player events within the same command deadline and session.
