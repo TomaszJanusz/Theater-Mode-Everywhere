@@ -33,7 +33,14 @@ export class NetflixAudioClient {
     return parseAudioSnapshot(document.getElementById(AUDIO_SNAPSHOT)?.textContent, request);
   }
 
-  list(): AudioTrackList | null { return this.snapshot()?.list ?? null; }
+  list(): AudioTrackList | null {
+    const list = this.snapshot()?.list;
+    if (list) return list;
+    const request = this.request();
+    // A temporarily missing manifest/list is still the same title. Keeping its identity
+    // prevents the shared controller from evaluating the saved preference a second time.
+    return request ? { mediaId: request.mediaId, tracks: [], blocked: true } : null;
+  }
 
   async select(trackId: string, mediaId: string | null): Promise<boolean> {
     const snapshot = this.snapshot();

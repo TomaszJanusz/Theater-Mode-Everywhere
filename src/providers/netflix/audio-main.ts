@@ -182,8 +182,12 @@ function selectTrack(bound: Binding, request: AudioSelect, current: () => boolea
     };
     const check = () => {
       try {
+        if (!current() || player.getAdManager?.()?.adPresenting !== false) { finish(false); return; }
         const list = readNetflixAudio(player, bound.mediaId);
-        if (!current() || !list || list.blocked || !list.tracks.some(track => track.id === request.trackId)) finish(false);
+        // Audio changes can temporarily invalidate both getters or rebuild an empty list.
+        // Keep waiting for player events within the same command deadline and session.
+        if (!list || list.tracks.length === 0) return;
+        if (list.blocked || !list.tracks.some(track => track.id === request.trackId)) finish(false);
         else if (returned && list.tracks.some(track => track.id === request.trackId && track.selected)) finish(true);
       } catch { finish(false); }
     };

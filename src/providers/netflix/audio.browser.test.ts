@@ -61,7 +61,7 @@ describe('Netflix audio recorded-shape fixtures', { timeout: 30_000 }, () => {
     it(`waits for late manifest data and follows rebuilt/reordered lists without polling in ${engine}`, async t => {
       const page = await open(t, engine, browsers);
       await page.evaluate('nf.manifest = false; nf.emit("audiotracklistchanged")');
-      assert.equal(await list(page), null);
+      assert.deepEqual(await list(page), { mediaId: '12345', tracks: [], blocked: true });
       await page.evaluate('nf.manifest = true; nf.emit("loadedtracks")');
       assert.equal((await list(page))!.tracks.length, 13);
       await page.evaluate(`nf.tracks = nf.tracks.map(track => ({ ...track })).reverse(); nf.current = nf.tracks.find(track => track.trackId === '${EN}'); nf.emit('audiotracklistchanged')`);
@@ -77,7 +77,9 @@ describe('Netflix audio recorded-shape fixtures', { timeout: 30_000 }, () => {
       await page.evaluate(`nf.mode = 'delayed'`);
       await begin(page);
       assert.equal(await outcome(page), 'pending', 'resolved setter is not a successful selection');
-      await page.evaluate('nf.complete()');
+      await page.evaluate(`nf.manifest = false; nf.emit('audiotracklistchanged')`);
+      assert.equal(await outcome(page), 'pending', 'a manifest rebuild is not refusal');
+      await page.evaluate(`nf.tracks = nf.tracks.map(track => ({ ...track })).reverse(); nf.manifest = true; nf.complete();`);
       await page.waitForFunction('outcome === true');
       await page.evaluate(`nf.mode = 'pending'`);
       await begin(page, FR);
@@ -102,10 +104,10 @@ describe('Netflix audio recorded-shape fixtures', { timeout: 30_000 }, () => {
       assert.equal((await list(page))!.blocked, true);
       assert.equal(await select(page), false);
       await page.evaluate('nf.ad = false; nf.movieId = "999"; nf.emit("loadedtracks")');
-      assert.equal(await list(page), null);
+      assert.deepEqual(await list(page), { mediaId: '12345', tracks: [], blocked: true });
       assert.equal(await select(page), false);
       await page.evaluate('nf.movieId = "12345"; nf.element = document.createElement("video")');
-      assert.equal(await list(page), null, 'detached session rejected');
+      assert.deepEqual(await list(page), { mediaId: '12345', tracks: [], blocked: true }, 'detached session lists no actionable tracks');
       assert.deepEqual(await sets(page), []);
     });
 
@@ -163,7 +165,9 @@ describe('Netflix audio recorded-shape fixtures', { timeout: 30_000 }, () => {
         stopAudio(); controller.bind(adapter);`);
       await page.waitForFunction('reports.length === 1');
       assert.deepEqual(await sets(page), [FR]);
-      await page.evaluate(`nf.choose(nf.tracks[0]); nf.emit('busychanged'); nf.emit('timedtexttracklistchanged');`);
+      await page.evaluate(`nf.manifest = false; nf.emit('audiotracklistchanged');`);
+      assert.deepEqual(await list(page), { mediaId: '12345', tracks: [], blocked: true });
+      await page.evaluate(`nf.manifest = true; nf.choose(nf.tracks[0]); nf.emit('loadedtracks'); nf.emit('busychanged'); nf.emit('timedtexttracklistchanged');`);
       assert.deepEqual(await sets(page), [FR], 'host choice remains after auto-apply');
       assert.equal(await page.evaluate(`controller.select('${AD}')`), true);
       assert.deepEqual(await page.evaluate('saves'), [], 'AD not saved');
