@@ -1,4 +1,5 @@
 import type { WatchPlayback } from '../watch-playback';
+
 import { BILIBILI_NAVIGATE_EVENT } from './navigation';
 
 /** Parts are separate visits; tracking parameters and timestamps are not. */

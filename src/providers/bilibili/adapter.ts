@@ -1,7 +1,8 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
-import { bilibiliPreviewFrame, bilibiliTimelineHeatmap, mergeBilibiliSnapshot, parseBilibiliCaptions, type BilibiliSnapshot } from '../../media-features/parsers/bilibili';
 import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
 import type { CaptionActivationResult, CaptionTrack, MediaCapabilities, MediaFeaturesAdapter, PreviewSource, TimelineHeatmap } from '../../media-features/types';
+
+import { bilibiliPreviewFrame, bilibiliTimelineHeatmap, mergeBilibiliSnapshot, parseBilibiliCaptions, type BilibiliSnapshot } from './metadata';
 
 export class BilibiliAdapter implements MediaFeaturesAdapter {
   private snapshot: BilibiliSnapshot | null = null;

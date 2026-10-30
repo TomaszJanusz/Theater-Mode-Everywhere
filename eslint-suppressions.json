@@ -652,23 +652,6 @@
       "count": 1
     }
   },
-  "src/media-features/parsers/bilibili.ts": {
-    "import/order": {
-      "count": 5
-    },
-    "local/max-symbol-name-length": {
-      "count": 3
-    },
-    "max-params": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    },
-    "sonarjs/no-inverted-boolean-check": {
-      "count": 1
-    }
-  },
   "src/media-features/parsers/captions.ts": {
     "max-params": {
       "count": 1
@@ -1090,16 +1073,17 @@
       "count": 1
     }
   },
-  "src/providers/bilibili/bilibili.test.ts": {
-    "import/order": {
-      "count": 3
-    }
-  },
-  "src/providers/bilibili/main.ts": {
-    "import/order": {
+  "src/providers/bilibili/metadata.ts": {
+    "local/max-symbol-name-length": {
       "count": 3
     },
-    "local/max-symbol-name-length": {
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-inverted-boolean-check": {
       "count": 1
     }
   },
@@ -1109,15 +1093,12 @@
     }
   },
   "src/providers/bilibili/service-actions.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }
   },
-  "src/providers/bilibili/watch-playback.ts": {
-    "import/order": {
+  "src/providers/bilibili/main.ts": {
+    "local/max-symbol-name-length": {
       "count": 1
     }
   },

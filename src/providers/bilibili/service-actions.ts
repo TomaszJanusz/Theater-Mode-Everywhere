@@ -1,10 +1,10 @@
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { isBilibiliHost } from '../hosts';
-import { BILIBILI_PLAYER_SELECTOR } from '../navigation/bilibili';
 import {
   nativeServiceActionId, nativeServiceActionSource, serviceActionRoute, serviceControlLabel, servicePlayer,
   usableServiceControl, type NativeServiceActionHooks
 } from '../native-service-actions';
+import { BILIBILI_PLAYER_SELECTOR } from '../navigation/bilibili';
 
 /** Toast confirmations also serve login and purchases; expose only known skip actions. */
 const CONFIRM = '.bpx-player-toast-row.bpx-player-toast-unfold .bpx-player-toast-confirm';

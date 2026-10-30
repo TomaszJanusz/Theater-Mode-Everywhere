@@ -1,9 +1,9 @@
-import { sanitizeContentTitle } from '../content-title';
-import { parseCaptionPayload } from './captions';
-import { sanitizeCaptionCueText } from '../sanitize';
-import type { CaptionCue, Chapter, PreviewFrame, TimelineHeatmap } from '../types';
-import { isAllowedMediaFetchUrl } from '../fetch-allowlist';
-import { heatmapSvgPath } from '../heatmap-path';
+import { sanitizeContentTitle } from '../../media-features/content-title';
+import { isAllowedMediaFetchUrl } from '../../media-features/fetch-allowlist';
+import { heatmapSvgPath } from '../../media-features/heatmap-path';
+import { parseCaptionPayload } from '../../media-features/parsers/captions';
+import { sanitizeCaptionCueText } from '../../media-features/sanitize';
+import type { CaptionCue, Chapter, PreviewFrame, TimelineHeatmap } from '../../media-features/types';
 
 export type BilibiliCaption = {
   id: string;
