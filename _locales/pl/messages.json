@@ -354,7 +354,7 @@
     "message": "Brak wykluczeń"
   },
   "noExclusionsDescription": {
-    "message": "Tryb kinowy będzie automatycznie aktywowany na wszystkich stronach z wideo."
+    "message": "Tryb kinowy włączy się automatycznie w obsługiwanych serwisach (zobacz AutoTheater). Dodaj tutaj strony, na których ma pozostać wyłączony."
   },
   "removeExclusion": {
     "message": "Usuń wykluczenie"
@@ -983,13 +983,13 @@
     "message": "Integracja z iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Pokazuje tytuł serialu i oznaczenie odcinka, wyświetla i wybiera języki napisów odcinka (rysuje je nadal iQIYI), oznacza intro i outro oraz przechodzi do poprzedniego lub następnego odcinka. AutoTheater działa na stronach odcinków. Można też wybierać ścieżki dźwiękowe odcinka."
+    "message": "Pokazuje tytuł serialu i oznaczenie odcinka, wyświetla i wybiera języki napisów odcinka (wyświetla je odtwarzacz iQIYI), oznacza intro i outro oraz przechodzi do poprzedniego lub następnego odcinka. AutoTheater działa na stronach odcinków. Można też wybierać ścieżki dźwiękowe odcinka."
   },
   "soopIntegrationTitle": {
     "message": "Integracja z SOOP"
   },
   "soopIntegrationDescription": {
-    "message": "Pokazuje tytuł transmisji lub nagrania i streamera, oznacza rozdziały na podstawie historii tytułów nagrania, oferuje poprzednie/następne nagranie odtwarzacza i jego odliczanie do następnego wideo, a AutoTheater potrafi wejść w transmisje na żywo i nagrania. Własny czat SOOP można pokazać obok wideo."
+    "message": "Pokazuje tytuł transmisji lub nagrania i streamera, oznacza rozdziały na podstawie historii tytułów nagrania, oferuje poprzednie/następne nagranie odtwarzacza i jego odliczanie do następnego wideo, a AutoTheater działa w transmisjach na żywo i nagraniach. Własny czat SOOP można pokazać obok wideo."
   },
   "vikiIntegrationTitle": {
     "message": "Integracja z Rakuten Viki"
@@ -1200,7 +1200,7 @@
     "message": "Napisy, podglądy i pomijanie/następny odcinek, gdy udostępnia je odtwarzacz."
   },
   "rteNoteNetflix": {
-    "message": "Podglądy wymagają gotowej sesji trick-play; napisy i pomijanie, gdy dostępne."
+    "message": "Podglądy pojawiają się, gdy Netflix wczyta obrazy podglądu; napisy i pomijanie/następny odcinek, gdy dostępne."
   },
   "rteNoteBilibili": {
     "message": "Niektóre napisy wymagają logowania; funkcje zależą od filmu."

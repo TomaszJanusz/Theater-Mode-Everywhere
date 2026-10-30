@@ -95,7 +95,7 @@
     "message": "画面靠上，下方的黑边留给字幕。适合 16:10 和 4:3 屏幕。"
   },
   "pictureAlignSubtitlesOnlyTitle": {
-    "message": "仅在有字幕时靠上"
+    "message": "仅在开启字幕时靠上"
   },
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "字幕打开时画面靠上，关闭时画面居中。"
@@ -354,7 +354,7 @@
     "message": "还没有排除项"
   },
   "noExclusionsDescription": {
-    "message": "剧场模式会在所有视频页面上自动启用。"
+    "message": "剧场模式会在受支持的服务上自动开启（参见 AutoTheater）。在此添加网站，可让它在这些网站上保持关闭。"
   },
   "removeExclusion": {
     "message": "移除排除项"
@@ -983,13 +983,13 @@
     "message": "iQIYI 集成"
   },
   "iqiyiIntegrationDescription": {
-    "message": "显示剧集标题和集数标签，列出并选择该集的字幕语言（字幕仍由 iQIYI 绘制），标出片头和片尾，并可切换到上一集或下一集。在剧集页面支持 AutoTheater。还可以选择该集的音轨。"
+    "message": "显示剧集标题和集数标签，列出并选择该集的字幕语言（字幕由 iQIYI 播放器显示），标出片头和片尾，并可切换到上一集或下一集。在剧集页面支持 AutoTheater。还可以选择该集的音轨。"
   },
   "soopIntegrationTitle": {
     "message": "SOOP 集成"
   },
   "soopIntegrationDescription": {
-    "message": "显示直播或录像的标题和主播，根据录像的标题历史标出章节，提供播放器的上一个/下一个录像及下一个视频倒计时，AutoTheater 可进入直播和录像。可在视频旁显示 SOOP 自带的聊天。"
+    "message": "显示直播或录像的标题和主播，根据录像的标题历史标出章节，提供播放器的上一个/下一个录像及下一个视频倒计时，AutoTheater 适用于直播和录像。可在视频旁显示 SOOP 自带的聊天。"
   },
   "vikiIntegrationTitle": {
     "message": "Rakuten Viki 集成"
@@ -1200,7 +1200,7 @@
     "message": "播放器提供时支持字幕、预览以及跳过和下一集。"
   },
   "rteNoteNetflix": {
-    "message": "预览需要已就绪的 trick-play 会话；字幕和操作取决于可用性。"
+    "message": "预览会在 Netflix 加载好预览图后显示；字幕以及跳过和下一集取决于可用性。"
   },
   "rteNoteBilibili": {
     "message": "部分字幕需要登录；其他功能取决于视频。"

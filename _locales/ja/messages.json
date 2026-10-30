@@ -95,7 +95,7 @@
     "message": "映像は上に寄り、下の黒い帯は字幕のための場所です。16:10と4:3の画面向きです。"
   },
   "pictureAlignSubtitlesOnlyTitle": {
-    "message": "字幕があるときだけ上寄せ"
+    "message": "字幕がオンのときだけ上寄せ"
   },
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "字幕がオンのときは上寄せ、オフのときは中央にします。"
@@ -354,7 +354,7 @@
     "message": "除外設定はまだありません"
   },
   "noExclusionsDescription": {
-    "message": "すべての動画ページでシアターモードが自動的に有効になります。"
+    "message": "対応サービスではシアターモードが自動的に開始されます（AutoTheater を参照）。オフのままにしたいサイトをここに追加してください。"
   },
   "removeExclusion": {
     "message": "除外を解除"
@@ -983,7 +983,7 @@
     "message": "iQIYI 連携"
   },
   "iqiyiIntegrationDescription": {
-    "message": "シリーズタイトルとエピソード名を表示し、エピソードの字幕言語を一覧して選択でき（字幕の描画は引き続き iQIYI が行います）、イントロとアウトロを示し、前後のエピソードに移動できます。エピソードページでは AutoTheater に対応します。エピソードの音声トラックも選べます。"
+    "message": "シリーズタイトルとエピソード名を表示し、エピソードの字幕言語を一覧して選択でき（字幕は iQIYI のプレーヤーが表示します）、イントロとアウトロを示し、前後のエピソードに移動できます。エピソードページでは AutoTheater に対応します。エピソードの音声トラックも選べます。"
   },
   "soopIntegrationTitle": {
     "message": "SOOP 連携"
@@ -1200,7 +1200,7 @@
     "message": "プレーヤーが提供する字幕、プレビュー、スキップ、次のエピソードに対応。"
   },
   "rteNoteNetflix": {
-    "message": "プレビューには準備済みのtrick-playセッションが必要。字幕と操作は利用可能な場合のみ。"
+    "message": "プレビューは Netflix がプレビュー画像を読み込むと表示されます。字幕、スキップ、次のエピソードは利用可能な場合のみ。"
   },
   "rteNoteBilibili": {
     "message": "一部の字幕にはログインが必要。機能は動画により異なります。"

@@ -92,7 +92,7 @@
     "message": "Raised"
   },
   "pictureAlignTopDescription": {
-    "message": "Picture sits at the top, with a black band below for captions. Best for 16:10 and 4:3 screens."
+    "message": "Picture sits at the top, with a black band below for subtitles. Best for 16:10 and 4:3 screens."
   },
   "pictureAlignSubtitlesOnlyTitle": {
     "message": "Raised only with subtitles"
@@ -354,7 +354,7 @@
     "message": "No exclusions yet"
   },
   "noExclusionsDescription": {
-    "message": "Theatre mode will activate automatically on all video pages."
+    "message": "Theatre mode will start automatically on supported services (see AutoTheater). Add sites here to keep it off there."
   },
   "removeExclusion": {
     "message": "Remove exclusion"
@@ -653,7 +653,7 @@
     "message": "Opacity"
   },
   "subtitlePreviewSample": {
-    "message": "Sample caption"
+    "message": "Sample subtitle"
   },
   "dialogDone": {
     "message": "Done"
@@ -983,13 +983,13 @@
     "message": "iQIYI integration"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Shows the series title and episode label, lists and selects the episode's subtitle languages (iQIYI keeps drawing them), marks intro and outro, and moves to the previous or next episode. AutoTheater is supported on episode pages. Audio tracks of an episode can be chosen too."
+    "message": "Shows the series title and episode label, lists and selects the episode's subtitle languages (shown by iQIYI's own player), marks intro and outro, and moves to the previous or next episode. AutoTheater is supported on episode pages. Audio tracks of an episode can be chosen too."
   },
   "soopIntegrationTitle": {
     "message": "SOOP integration"
   },
   "soopIntegrationDescription": {
-    "message": "Shows the broadcast or recording title and the streamer, marks chapters from a recording's title history, offers the player's previous/next recording and its next-video countdown, and AutoTheater can enter live broadcasts and recordings. SOOP's own chat can be shown beside the video."
+    "message": "Shows the broadcast or recording title and the streamer, marks chapters from a recording's title history, offers the player's previous/next recording and its next-video countdown, and AutoTheater works on live broadcasts and recordings. SOOP's own chat can be shown beside the video."
   },
   "vikiIntegrationTitle": {
     "message": "Rakuten Viki integration"
@@ -1200,7 +1200,7 @@
     "message": "Subtitles, previews and skip/next when the player provides them."
   },
   "rteNoteNetflix": {
-    "message": "Previews need a ready trick-play session; subtitles and skip/next when available."
+    "message": "Previews appear once Netflix has loaded its preview images; subtitles and skip/next when available."
   },
   "rteNoteBilibili": {
     "message": "Some subtitles require login; other features depend on the video."

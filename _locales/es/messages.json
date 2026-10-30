@@ -354,7 +354,7 @@
     "message": "Aún no hay exclusiones"
   },
   "noExclusionsDescription": {
-    "message": "El modo cine se activará automáticamente en todas las páginas con vídeo."
+    "message": "El modo cine se iniciará automáticamente en los servicios compatibles (consulta AutoTheater). Añade aquí los sitios donde quieras mantenerlo desactivado."
   },
   "removeExclusion": {
     "message": "Eliminar exclusión"
@@ -983,13 +983,13 @@
     "message": "Integración con iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Muestra el título de la serie y la etiqueta del episodio, lista y selecciona los idiomas de subtítulos del episodio (iQIYI sigue dibujándolos), marca la intro y los créditos y pasa al episodio anterior o siguiente. AutoTheater funciona en las páginas de episodios. También se pueden elegir las pistas de audio del episodio."
+    "message": "Muestra el título de la serie y la etiqueta del episodio, lista y selecciona los idiomas de subtítulos del episodio (los muestra el propio reproductor de iQIYI), marca la intro y los créditos y pasa al episodio anterior o siguiente. AutoTheater funciona en las páginas de episodios. También se pueden elegir las pistas de audio del episodio."
   },
   "soopIntegrationTitle": {
     "message": "Integración con SOOP"
   },
   "soopIntegrationDescription": {
-    "message": "Muestra el título de la emisión o grabación y el streamer, marca capítulos a partir del historial de títulos de una grabación, ofrece la grabación anterior/siguiente del reproductor y su cuenta atrás del siguiente vídeo, y AutoTheater puede entrar en emisiones en directo y grabaciones. El chat propio de SOOP se puede mostrar junto al vídeo."
+    "message": "Muestra el título de la emisión o grabación y el streamer, marca capítulos a partir del historial de títulos de una grabación, ofrece la grabación anterior/siguiente del reproductor y su cuenta atrás del siguiente vídeo, y AutoTheater funciona en emisiones en directo y grabaciones. El chat propio de SOOP se puede mostrar junto al vídeo."
   },
   "vikiIntegrationTitle": {
     "message": "Integración con Rakuten Viki"
@@ -1200,7 +1200,7 @@
     "message": "Subtítulos, vistas previas y saltar/siguiente si el reproductor los ofrece."
   },
   "rteNoteNetflix": {
-    "message": "Las vistas previas requieren una sesión trick-play lista; subtítulos y acciones si están disponibles."
+    "message": "Las vistas previas aparecen cuando Netflix ha cargado sus imágenes de vista previa; subtítulos y saltar/siguiente si están disponibles."
   },
   "rteNoteBilibili": {
     "message": "Algunos subtítulos requieren iniciar sesión; las funciones dependen del vídeo."

@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AutoTheater now enters on Vimeo video pages (vimeo.com/<id>): Vimeo's current page no longer exposes the player details the check relied on, so it never started there.
 - AutoTheater now enters on Bilibili video pages under a language route, such as bilibili.com/zh-Hans/video/BV…, as it does on bilibili.com/video/BV….
 - Corrected translations in Arabic, Chinese (Simplified), French, German, Italian, Japanese, Polish, Portuguese (Brazil), Russian, Spanish and Ukrainian: AutoTheater and Pin controls now read On/Off instead of Yes/No in French, Italian, Portuguese and Spanish, the confirmation shown when controls are set to auto-hide is shorter, and list punctuation, key names and capitalisation are fixed in several places.
+- The note under an empty Website Exclusions list in Settings no longer says theater mode starts on every video page: it now says theater mode starts automatically on supported services (see AutoTheater) and that adding a site keeps it off there.
 
 ## [2.0.8] - 2026-10-28
 
