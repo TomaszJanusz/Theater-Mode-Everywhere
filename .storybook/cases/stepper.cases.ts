@@ -160,3 +160,45 @@ const ReducedMotionStatesOnly: Story = {
   }
 };
 test('ReducedMotionStatesOnly', () => runStepperCase(ReducedMotionStatesOnly));
+
+/** Off and On: two segments, and each end is the other's only way out. */
+const TwoOptionsHoldAtBothEnds: Story = {
+  args: { count: 2, index: 0 },
+  play: async () => {
+    await expect(segments().length).toBe(2);
+    await expect(arrowDisabled(-1)).toBe(true);
+    await expect(arrowDisabled(1)).toBe(false);
+    arrow(1).click();
+    await expect(current()).toBe(1);
+    await expect(arrowDisabled(1)).toBe(true);
+    await expect(arrowDisabled(-1)).toBe(false);
+    arrow(1).click();
+    await expect(current()).toBe(1);
+    arrow(-1).click();
+    await expect(current()).toBe(0);
+    await expect(run().steps).toEqual([1, -1]);
+  }
+};
+test('TwoOptionsHoldAtBothEnds', () => runStepperCase(TwoOptionsHoldAtBothEnds));
+
+/** A setting that cannot change: both arrows blocked yet focusable, no segment lit, a press only nudges. */
+const DisabledStaysInert: Story = {
+  args: { count: 2, index: 1, disabled: true },
+  play: async () => {
+    await expect(arrowDisabled(-1)).toBe(true);
+    await expect(arrowDisabled(1)).toBe(true);
+    await expect(getComputedStyle(thumb()).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(stepperValue().textContent).toBe('Unavailable');
+    arrow(1).focus();
+    await userEvent.keyboard('{Enter}');
+    arrow(-1).click();
+    await expect(run().steps).toEqual([]);
+    await expect(stepperRoot().activeElement).toBe(arrow(1));
+    await expect(stepperValue().getAnimations().length).toBe(1);
+    // It comes back to life when the setting does.
+    run().update(2, 1, false);
+    await expect(arrowDisabled(-1)).toBe(false);
+    await expect(getComputedStyle(thumb()).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+  }
+};
+test('DisabledStaysInert', () => runStepperCase(DisabledStaysInert));

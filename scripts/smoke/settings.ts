@@ -65,7 +65,7 @@ export async function assertPictureLayout(page: Page, context: BrowserContext): 
       await page.waitForFunction(position => getComputedStyle(document.querySelector('video#player')!).objectPosition === position, position, { timeout: 5000 });
     };
     // A fresh profile defaults to Raised only with subtitles, which sits centered until subtitles are on.
-    if (await row.locator('.theater-settings-detail').innerText() !== 'Raised') fail('Layout did not default to Raised.');
+    if (await row.locator('.theater-stepper-value').innerText() !== 'Raised') fail('Layout did not default to Raised.');
     await waitPosition('50% 50%');
     const layoutWorker = await extensionWorker(context);
     const fresh = await context.newPage();
@@ -76,8 +76,9 @@ export async function assertPictureLayout(page: Page, context: BrowserContext): 
     } finally { await fresh.close(); }
     await page.bringToFront();
     await layoutWorker.evaluate(() => chrome.storage.sync.set({ pictureAlign: 'center', raiseOnlyWithSubtitles: false }));
-    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.picture-layout-btn .theater-settings-detail')?.textContent === 'Centered');
-    await row.click();
+    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.picture-layout-btn .theater-stepper-value')?.textContent === 'Centered');
+    // Centered is the lower option, so the upper arrow raises the layout.
+    await row.locator('.theater-stepper-btn[data-direction="1"]').click();
     await waitPosition('50% 0%');
     if (context) {
       const worker = await extensionWorker(context);
@@ -116,11 +117,11 @@ export async function assertPictureLayout(page: Page, context: BrowserContext): 
     }
     if (process.env.THEATER_SMOKE_SCREENSHOT) {
       await page.mouse.move(640, 300);
-      await row.focus();
+      await row.locator('.theater-stepper-btn[data-direction="-1"]').focus();
       await page.locator('.theater-everywhere-volume-overlay.status-hud').waitFor({ state: 'detached' });
       await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-layout.png') });
     }
-    await row.click(); // Restore Centered for the remaining smoke scenarios.
+    await row.locator('.theater-stepper-btn[data-direction="-1"]').click(); // Restore Centered for the remaining smoke scenarios.
     await waitPosition('50% 50%');
     await page.keyboard.press('Escape'); // Close settings while keeping the session active.
     await page.setViewportSize({ width: 1280, height: 720 });

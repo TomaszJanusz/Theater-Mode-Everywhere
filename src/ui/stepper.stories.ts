@@ -26,9 +26,22 @@ export const Middle: Story = {
 export const First: Story = { ...Middle, args: { index: 0 } };
 export const Last: Story = { ...Middle, args: { index: 4 } };
 export const ThreeOptions: Story = { ...Middle, args: { count: 3, index: 1 } };
-// Reduce motion keeps every state and removes the movement.
+// Off and On: a toggle reads as two segments, with the lower arrow blocked until it is on.
+export const TwoOptions: Story = { ...Middle, args: { count: 2, index: 0 } };
+// Both arrows blocked and no segment lit, as AutoTheater on a page without support.
+export const Disabled: Story = {
+  args: { count: 2, index: 1, disabled: true },
+  play: async () => {
+    await expect(stepperValue().textContent).toBe('Unavailable');
+    await expect(arrowDisabled(-1)).toBe(true);
+    await expect(arrowDisabled(1)).toBe(true);
+    await expect(getComputedStyle(thumb()).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+  }
+};
+// Reduce motion keeps every state and removes the movement. A lifecycle assertion, nothing worth a picture.
 export const ReducedMotion: Story = {
   ...Middle,
+  tags: ['no-shot'],
   globals: { reduceMotion: 'on' },
   play: async context => {
     await Middle.play!(context);

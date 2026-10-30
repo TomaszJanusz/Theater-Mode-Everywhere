@@ -47,8 +47,22 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   if (await page.locator('.audio-voice-btn').getAttribute('aria-keyshortcuts') !== 'V') fail('Voice boost row does not advertise its shortcut.');
   const slider = page.locator('.theater-volume-slider');
   const boost = page.locator('.volume-boost-btn');
-  await boost.click();
+  // Boost is a two-option stepper: the menu holds at Off and On, only Shift+B toggles.
+  const stepBoost = (direction: 1 | -1) => boost.locator(`.theater-stepper-btn[data-direction="${direction}"]`).click();
+  const boostValue = () => boost.locator('.theater-stepper-value').innerText();
+  await stepBoost(1);
   await hud.filter({ hasText: 'Volume boost: On' }).waitFor();
+  if (await boostValue() !== 'On' || await boost.getAttribute('data-active') !== 'true') fail('Volume boost row did not show On.');
+  // Playwright skips an aria-disabled arrow unless forced; the page still answers the press, with a nudge.
+  await boost.locator('.theater-stepper-btn[data-direction="1"]').click({ force: true });
+  if (await boostValue() !== 'On' || await slider.getAttribute('max') !== '1.5') fail('A step past On changed volume boost.');
+  // The row follows the stored setting, e.g. when the options page or another tab changes it.
+  const waitBoostRow = (value: string) => page.waitForFunction(value => document.getElementById('theater-everywhere-ui')?.shadowRoot
+    ?.querySelector('.volume-boost-btn .theater-stepper-value')?.textContent === value, value);
+  await page.evaluate(() => chrome.storage.sync.set({ volumeBoostEnabled: false }));
+  await waitBoostRow('Off');
+  await page.evaluate(() => chrome.storage.sync.set({ volumeBoostEnabled: true }));
+  await waitBoostRow('On');
   if (await shapes(hud) !== await shapes(boost)) fail('Volume boost HUD icon differs from its settings row.');
   if (await slider.getAttribute('max') !== '1.5') fail('Volume boost did not raise the volume ceiling.');
   // A drag stops at 100% first, so reach the boosted level in two moves.
@@ -140,17 +154,20 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   // Opening help closes the settings popover; restore it for the next action.
   if (!await layout.isVisible()) await gear.press('Enter');
   // The start layout depends on whether an earlier step ran with storage, so read it instead of assuming.
-  const startLayout = (await layout.locator('.theater-settings-detail').innerText()).trim();
+  const stepLayout = (direction: 1 | -1) => layout.locator(`.theater-stepper-btn[data-direction="${direction}"]`).click();
+  const startLayout = (await layout.locator('.theater-stepper-value').innerText()).trim();
   const toggledLayout = startLayout === 'Raised' ? 'Centered' : 'Raised';
-  await layout.click();
+  // Centered is the lower option and Raised the upper one, as on the options page.
+  const toggleDirection = startLayout === 'Raised' ? -1 : 1;
+  await stepLayout(toggleDirection);
   await hud.filter({ hasText: toggledLayout }).waitFor();
   if (await shapes(hud) !== await shapes(layout)) fail('Layout HUD icon differs from its settings row.');
-  await layout.click();
+  await stepLayout(-toggleDirection as 1 | -1);
   await hud.filter({ hasText: startLayout }).waitFor();
 
   // Session cleanup must bypass gain as well as the three effects, then
   // restore the remembered boosted level without rebuilding/reloading.
-  await boost.click();
+  await stepBoost(1);
   await hud.filter({ hasText: 'Volume boost: On' }).waitFor();
   await slider.evaluate((input: HTMLInputElement) => {
     input.value = '1.5';
@@ -168,8 +185,9 @@ export async function assertAudioSettings(page: Page): Promise<void> {
     return video?.dataset.theaterLeveling === 'strong' && video.dataset.theaterBoost === '3.0000';
   });
   await gear.click();
-  await boost.click();
+  await stepBoost(-1);
   await hud.filter({ hasText: 'Volume boost: Off' }).waitFor();
+  if (await boostValue() !== 'Off' || await boost.getAttribute('data-active') !== 'false') fail('Volume boost row did not show Off.');
   await page.keyboard.press('Escape'); // Close settings before restoring effects.
     await gear.click();
     // The stepper holds at the top instead of wrapping, so Off is reached by stepping down.
@@ -261,17 +279,26 @@ export async function assertPictureLayoutFixture(page: Page): Promise<void> {
   const waitPosition = (position: string) => page.waitForFunction(position =>
     getComputedStyle(document.querySelector('video#player')!).objectPosition === position, position);
   await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot
-    ?.querySelector('.picture-layout-btn .theater-settings-detail')?.textContent === 'Centered');
-  await row.click();
+    ?.querySelector('.picture-layout-btn .theater-stepper-value')?.textContent === 'Centered');
+  const layoutNext = row.locator('.theater-stepper-btn[data-direction="1"]');
+  const layoutPrevious = row.locator('.theater-stepper-btn[data-direction="-1"]');
+  if (await layoutPrevious.getAttribute('aria-disabled') !== 'true') fail('Centered is the lowest layout, but its lower arrow was not blocked.');
+  await layoutNext.click();
   await waitPosition('50% 0%');
-  if (await row.locator('.theater-settings-detail').innerText() !== 'Raised') fail('Layout click did not update the row.');
+  if (await row.locator('.theater-stepper-value').innerText() !== 'Raised') fail('Layout step did not update the row.');
+  // Raised is the top of the range: a second press holds there instead of wrapping to Centered.
+  await layoutNext.click({ force: true });
+  if (await layoutNext.getAttribute('aria-disabled') !== 'true' || await row.locator('.theater-stepper-value').innerText() !== 'Raised'
+      || await page.locator('video#player').evaluate(video => getComputedStyle(video).objectPosition) !== '50% 0%') {
+    fail('A layout step past Raised wrapped around.');
+  }
   await page.keyboard.down('Shift');
   await page.keyboard.down('l');
   await page.keyboard.down('l');
   await page.keyboard.up('l');
   await page.keyboard.up('Shift');
   await waitPosition('50% 50%');
-  if (await row.locator('.theater-settings-detail').innerText() !== 'Centered') fail('Held layout shortcut toggled repeatedly.');
+  if (await row.locator('.theater-stepper-value').innerText() !== 'Centered') fail('Held layout shortcut toggled repeatedly.');
   await page.evaluate(() => {
     const host = document.createElement('div'); host.id = 'layout-input-test';
     const input = document.createElement('input'); host.attachShadow({ mode: 'open' }).append(input);
@@ -284,7 +311,7 @@ export async function assertPictureLayoutFixture(page: Page): Promise<void> {
   const fitNext = page.locator('.video-fit-btn .theater-stepper-btn[data-direction="1"]');
   const fitPrevious = page.locator('.video-fit-btn .theater-stepper-btn[data-direction="-1"]');
   await fitNext.click();
-  await row.click();
+  await layoutNext.click();
   await waitPosition('50% 50%');
   await fitNext.click();
   await waitPosition('50% 50%');

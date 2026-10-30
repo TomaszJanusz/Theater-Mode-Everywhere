@@ -16,8 +16,9 @@ export async function assertAudioWorld(page: Page, context: BrowserContext): Pro
     });
     await page.keyboard.press('t');
     await page.locator('.player-settings-btn').click();
-    await page.locator('.volume-boost-btn').click();
-    await page.locator('.volume-boost-btn').click();
+    // On, then back to Off: the stepper holds at either end, so each press is a different arrow.
+    await page.locator('.volume-boost-btn .theater-stepper-btn[data-direction="1"]').click();
+    await page.locator('.volume-boost-btn .theater-stepper-btn[data-direction="-1"]').click();
     await page.locator('.audio-voice-btn .theater-stepper-btn[data-direction="1"]').click();
     await page.locator('.audio-leveling-btn .theater-stepper-btn[data-direction="1"]').click();
     await page.locator('.audio-leveling-btn .theater-stepper-btn[data-direction="1"]').click();

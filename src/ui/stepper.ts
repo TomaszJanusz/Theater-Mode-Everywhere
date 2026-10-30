@@ -10,6 +10,8 @@ export interface StepperState {
   index: number;
   /** How many options exist, one segment each. */
   count: number;
+  /** The setting cannot change right now: both arrows are blocked and no segment is highlighted. */
+  disabled?: boolean;
 }
 
 export interface StepperOptions {
@@ -123,10 +125,11 @@ export function createStepper(options: StepperOptions): {
         }
       }
     },
-    update({ value: text, index, count }) {
+    update({ value: text, index, count, disabled = false }) {
       const changed = shown && shown.index !== index;
       const step = shown ? Math.sign(index - shown.index) : 0;
       shown = { value: text, index, count };
+      element.dataset.disabled = String(disabled);
       value.textContent = text;
       value.title = text;
       while (segments.childElementCount - 1 > count) segments.children[1].remove();
@@ -141,8 +144,8 @@ export function createStepper(options: StepperOptions): {
       });
       element.style.setProperty('--theater-stepper-count', String(count));
       element.style.setProperty('--theater-stepper-index', String(index));
-      previous.setAttribute('aria-disabled', String(index <= 0));
-      next.setAttribute('aria-disabled', String(index >= count - 1));
+      previous.setAttribute('aria-disabled', String(disabled || index <= 0));
+      next.setAttribute('aria-disabled', String(disabled || index >= count - 1));
       if (changed && moves()) {
         // The new label arrives from the side of the arrow that was pressed; an older slide yields to it.
         cancelMotion();

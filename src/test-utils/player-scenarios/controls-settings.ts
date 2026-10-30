@@ -12,7 +12,7 @@ export async function preparePinAndMenus(page: Page) {
       const button = root?.querySelector('.controls-visibility-toggle');
       const header = root?.querySelector('.theater-everywhere-header-hud');
       return Boolean(bar && button && header
-        && button.getAttribute('aria-pressed') === String(pinned)
+        && (button as HTMLElement).dataset.active === String(pinned)
         && bar.classList.contains('visible') === visible
         && header.classList.contains('visible') === headerVisible
         && (header as HTMLElement).inert === !headerVisible);
@@ -211,12 +211,19 @@ export async function preparePinAndMenus(page: Page) {
   await menu.locator('.video-fit-btn [data-direction="1"]').click();
   await menu.locator('.video-fit-btn [data-direction="-1"]').click();
   await menu.locator('.video-fit-btn [data-direction="-1"]').click();
-  await pin.focus();
+  // Pin is a two-option stepper: the lower arrow unpins and the upper pins, and neither wraps.
+  const pinArrow = (direction: 1 | -1) => pin.locator(`[data-direction="${direction}"]`);
+  await pinArrow(-1).focus();
   const pausedBeforeSettings = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused);
   await page.keyboard.press('Space');
-  if (await pin.getAttribute('aria-pressed') !== 'false') fail('Space did not activate settings visibility toggle.');
+  if (await pin.getAttribute('data-active') !== 'false') fail('Space did not activate the lower pin arrow.');
+  await page.keyboard.press('Space');
+  if (await pin.getAttribute('data-active') !== 'false' || await pinArrow(-1).evaluate(arrow => !arrow.matches(':focus'))) {
+    fail('A blocked pin step changed the setting or dropped keyboard focus.');
+  }
+  await pinArrow(1).focus();
   await page.keyboard.press('Enter');
-  if (await pin.getAttribute('aria-pressed') !== 'true') fail('Enter did not activate settings visibility toggle.');
+  if (await pin.getAttribute('data-active') !== 'true') fail('Enter did not activate the upper pin arrow.');
   if (await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused) !== pausedBeforeSettings) {
     fail('Activating a settings button also toggled playback.');
   }
@@ -226,17 +233,24 @@ export async function preparePinAndMenus(page: Page) {
     fail('Escape did not dismiss settings and return focus without leaving theater mode.');
   }
   await gear.press('Enter');
-  if (!await menu.locator('.volume-boost-btn').evaluate(button => button.matches(':focus'))) {
+  // Boost starts Off, so its lower arrow is blocked: the first action is the arrow that can move.
+  const boostArrow = (direction: 1 | -1) => menu.locator(`.volume-boost-btn [data-direction="${direction}"]`);
+  if (!await boostArrow(1).evaluate(button => button.matches(':focus'))) {
     fail('Keyboard opening did not focus the first settings action.');
   }
+  // The blocked arrow still takes focus, so Shift+Tab walks back through it to the trigger.
+  await page.keyboard.press('Shift+Tab');
+  if (!await boostArrow(-1).evaluate(button => button.matches(':focus'))) fail('Shift+Tab skipped the blocked lower arrow.');
   await page.keyboard.press('Shift+Tab');
   if (!await gear.evaluate(button => button.matches(':focus')) || !await menu.isVisible()) {
     fail('Shift+Tab from settings did not return to the neighboring trigger.');
   }
   await page.keyboard.press('Tab');
-  if (!await menu.locator('.volume-boost-btn').evaluate(button => button.matches(':focus'))) {
+  if (!await boostArrow(-1).evaluate(button => button.matches(':focus'))) {
     fail('Tab from the trigger skipped open settings.');
   }
+  await page.keyboard.press('Tab');
+  if (!await boostArrow(1).evaluate(button => button.matches(':focus'))) fail('Tab skipped the upper boost arrow.');
   // Both arrows of a stepper are tab stops (an arrow at the end of its range is aria-disabled, so it keeps focus).
   for (const [name, direction] of [['voice', -1], ['voice', 1], ['leveling', -1], ['leveling', 1], ['bass', -1], ['bass', 1]] as const) {
     await page.keyboard.press('Tab');
@@ -246,20 +260,31 @@ export async function preparePinAndMenus(page: Page) {
     await page.keyboard.press('Tab');
     if (!await menu.locator(`.video-fit-btn [data-direction="${direction}"]`).evaluate(button => button.matches(':focus'))) fail('Tab skipped the video fit setting.');
   }
-  await page.keyboard.press('Tab');
-  if (!await menu.locator('.picture-layout-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the picture layout setting.');
-  await page.keyboard.press('Tab');
-  if (!await pin.evaluate(button => button.matches(':focus'))) fail('Tab skipped the controls visibility setting.');
-  await page.keyboard.press('Tab');
+  for (const [name, selector] of [['picture layout', '.picture-layout-btn'], ['controls visibility', '.controls-visibility-toggle']] as const) {
+    for (const direction of [-1, 1]) {
+      await page.keyboard.press('Tab');
+      if (!await menu.locator(`${selector} [data-direction="${direction}"]`).evaluate(button => button.matches(':focus'))) fail(`Tab skipped the ${name} setting.`);
+    }
+  }
   const autoTheater = menu.locator('.auto-theater-btn');
-  if (!await autoTheater.evaluate(button => button.matches(':focus'))) fail('Tab skipped automatic theater entry.');
-  // The generic fixture has no watch-page support, so the row stays focusable but
-  // reads unavailable and Space/Enter leave it untouched (toggling is covered by assertAutoTheater).
-  if (await autoTheater.getAttribute('aria-disabled') !== 'true') fail('AutoTheater was not unavailable on a generic player.');
-  const autoBefore = await autoTheater.getAttribute('aria-pressed');
+  const autoArrow = (direction: 1 | -1) => autoTheater.locator(`[data-direction="${direction}"]`);
+  for (const direction of [-1, 1] as const) {
+    await page.keyboard.press('Tab');
+    if (!await autoArrow(direction).evaluate(button => button.matches(':focus'))) fail('Tab skipped automatic theater entry.');
+  }
+  // The generic fixture has no watch-page support, so both arrows stay focusable but blocked, the
+  // row names its reason, and Space/Enter leave it untouched (toggling is covered by assertAutoTheater).
+  if (await autoTheater.getAttribute('aria-disabled') !== 'true'
+      || await autoArrow(-1).getAttribute('aria-disabled') !== 'true' || await autoArrow(1).getAttribute('aria-disabled') !== 'true') {
+    fail('AutoTheater was not unavailable on a generic player.');
+  }
+  if (await autoTheater.locator('.theater-stepper-value').innerText() !== 'Unavailable') fail('Unavailable AutoTheater did not say why.');
+  const autoBefore = await autoTheater.getAttribute('data-active');
   await page.keyboard.press('Space');
   await page.keyboard.press('Enter');
-  if (await autoTheater.getAttribute('aria-pressed') !== autoBefore) fail('Unavailable automatic theater entry toggled.');
+  if (await autoTheater.getAttribute('data-active') !== autoBefore || await autoArrow(1).evaluate(button => !button.matches(':focus'))) {
+    fail('Unavailable automatic theater entry changed or dropped focus.');
+  }
   if (await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused) !== pausedBeforeSettings) {
     fail('Auto theater keyboard activation changed playback.');
   }
@@ -307,9 +332,9 @@ export async function preparePinAndMenus(page: Page) {
   const helpClose = page.locator('.theater-help-overlay .te-dialog-close');
   await helpClose.waitFor();
   if (!await helpClose.evaluate(button => button.matches(':focus'))) fail('Help left focus on the settings gear.');
-  const pinnedDuringHelp = await pin.getAttribute('aria-pressed');
+  const pinnedDuringHelp = await pin.getAttribute('data-active');
   await page.keyboard.press('Shift+H');
-  if (await pin.getAttribute('aria-pressed') !== pinnedDuringHelp) fail('Controls visibility preference changed behind help.');
+  if (await pin.getAttribute('data-active') !== pinnedDuringHelp) fail('Controls visibility preference changed behind help.');
   for (const key of ['Tab', 'Shift+Tab', 'Shift+Tab']) {
     await page.keyboard.press(key);
     if (!await page.locator('.theater-help-overlay .te-dialog').evaluate(dialog => dialog.contains((dialog.getRootNode() as Document | ShadowRoot).activeElement))) fail('Help let Tab reach controls behind the overlay.');
@@ -391,6 +416,8 @@ export async function preparePinAndMenus(page: Page) {
     fail(`Escape did not dismiss captions and return focus without leaving theater mode: ${JSON.stringify(state)}`);
   }
   await gear.press('Enter');
+  // Opening focuses boost's upper arrow; its blocked lower arrow is a stop of its own before the gear.
+  await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Shift+Tab');
   if (await menu.isVisible() || !await page.locator('.fullscreen-btn').evaluate(button => button.matches(':focus'))) {

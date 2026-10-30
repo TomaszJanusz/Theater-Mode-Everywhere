@@ -1,8 +1,8 @@
 import { requestOptionsPage } from '../protocol/options-page';
 
-import { VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
+import { PICTURE_ALIGNS, VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
 import { audioTrackHudReport, mountAudioTrackMenu } from './audio-track-menu';
-import { shortcutAriaKeyshortcuts, shortcutMarkup } from './shortcut-display';
+import { shortcutMarkup } from './shortcut-display';
 import { exitSpinner } from './spinner-exit';
 import { languageRuntime } from '../i18n-runtime';
 import { observeChromeVisibility } from './chrome-visibility';
@@ -769,7 +769,7 @@ export function createControls(
     };
     updateFitButtonIcon();
     const fitRow = video.capabilities.objectFit
-      ? settings.addStepperRow(fitBtn, t('videoFitLabel'), 'player', direction => executeCommand({ type: 'STEP_FIT', direction }))
+      ? settings.addStepperRow(fitBtn, t('videoFitLabel'), 'player', { onStep: direction => executeCommand({ type: 'STEP_FIT', direction }) })
       : null;
     const updateFitRow = () => fitRow?.updateStepper(ui().shortcuts.cycleFit, {
       value: t(VIDEO_FIT_LABEL_KEYS[ui().videoFit]),
@@ -779,41 +779,36 @@ export function createControls(
     updateFitRow();
     controlsScope.add(ctx.uiStore.subscribe(updateFitRow));
 
-    const layoutBtn = document.createElement('button');
-    layoutBtn.className = 'theater-control-btn picture-layout-btn';
+    const layoutBtn = document.createElement('div');
+    layoutBtn.className = 'picture-layout-btn';
     setIcon(layoutBtn, PICTURE_LAYOUT_ICON);
-    layoutBtn.addEventListener('click', event => {
-      event.stopPropagation();
-      executeCommand({ type: 'CYCLE_LAYOUT' });
+    const layoutRow = settings.addStepperRow(layoutBtn, t('pictureAlignLabel'), 'player',
+      { onStep: direction => executeCommand({ type: 'STEP_LAYOUT', direction }), newItem: 'playerPictureLayout' });
+    const updateLayoutRow = () => layoutRow.updateStepper(ui().shortcuts.cycleLayout, {
+      value: t(ui().pictureAlign === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'),
+      index: PICTURE_ALIGNS.indexOf(ui().pictureAlign),
+      count: PICTURE_ALIGNS.length
     });
-    const layoutRow = settings.addRow(layoutBtn, t('pictureAlignLabel'), 'player', 'playerPictureLayout');
-    const updateLayoutRow = () => layoutRow.update(ui().shortcuts.cycleLayout,
-      t(ui().pictureAlign === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'),
-      ['pictureAlignTop', 'pictureAlignCenter'].map(key => t(key)));
     updateLayoutRow();
     controlsScope.add(ctx.uiStore.subscribe(updateLayoutRow));
 
     if (native && video.capabilities.nativeMedia) {
-      const audioRow = (className: string, icon: string, label: string, command: PlayerCommand) => {
-        const button = document.createElement('button');
-        button.className = `theater-control-btn ${className}`;
-        setIcon(button, icon);
-        button.addEventListener('click', event => {
-          event.stopPropagation();
-          executeCommand(command);
-        });
-        return { button, row: settings.addRow(button, t(label), 'audio') };
-      };
-      const boost = video.capabilities.volumeBoost
-        ? audioRow('volume-boost-btn', VOLUME_BOOST_ICONS.menu, 'volumeBoostLabel', { type: 'TOGGLE_VOLUME_BOOST' })
-        : null;
+      // Boost is Off or On, so the menu steps it like a level and holds at either end; only the shortcut toggles.
+      const boost = video.capabilities.volumeBoost ? (() => {
+        const button = document.createElement('div');
+        button.className = 'volume-boost-btn';
+        setIcon(button, VOLUME_BOOST_ICONS.menu);
+        const row = settings.addStepperRow(button, t('volumeBoostLabel'), 'audio',
+          { onStep: direction => executeCommand({ type: 'STEP_VOLUME_BOOST', direction }) });
+        return { button, row };
+      })() : null;
       // Levels are ordered, so the menu steps them without wrapping; only the cycle shortcuts wrap.
       const audioRows = AUDIO_SETTING_NAMES.map((name) => {
         const button = document.createElement('div');
         button.className = `audio-${name}-btn`;
         setIcon(button, AUDIO_SETTING_ICONS[name].menu);
         const row = settings.addStepperRow(button, t(AUDIO_LABEL_KEYS[name]), 'audio',
-          direction => executeCommand({ type: 'STEP_AUDIO', setting: name, direction }));
+          { onStep: direction => executeCommand({ type: 'STEP_AUDIO', setting: name, direction }) });
         return { name, button, row };
       });
       const SWEEP_CLASS = 'is-sweeping';
@@ -824,10 +819,12 @@ export function createControls(
         settings.setAudioNote(block && t(AUDIO_BLOCK_KEYS[block]));
         if (block) return;
         if (boost) {
-          boost.button.setAttribute('aria-pressed', String(ui().volumeBoost));
           boost.button.dataset.active = String(ui().volumeBoost);
-          boost.row.update(shortcuts.toggleVolumeBoost, t(ui().volumeBoost ? 'volumeBoostOn' : 'volumeBoostOff'),
-            ['volumeBoostOn', 'volumeBoostOff'].map(key => t(key)));
+          boost.row.updateStepper(shortcuts.toggleVolumeBoost, {
+            value: t(ui().volumeBoost ? 'volumeBoostOn' : 'volumeBoostOff'),
+            index: Number(ui().volumeBoost),
+            count: 2
+          });
         }
         for (const { name, button, row } of audioRows) {
           button.dataset.active = String(isAudioSettingActive(ui().audio, name));
@@ -890,24 +887,20 @@ export function createControls(
 
     rightSec.append(settings.container);
 
-    const pinBtn = document.createElement('button');
-    pinBtn.type = 'button';
-    pinBtn.className = 'theater-control-btn controls-visibility-toggle';
+    const pinBtn = document.createElement('div');
+    pinBtn.className = 'controls-visibility-toggle';
     setIcon(pinBtn, CONTROLS_VISIBILITY_ICON);
-    const pinRow = settings.addRow(pinBtn, t('keepControlsVisibleTitle'), 'player', 'playerAlwaysShowControls');
+    const pinRow = settings.addStepperRow(pinBtn, t('keepControlsVisibleTitle'), 'player',
+      { onStep: direction => executeCommand({ type: 'STEP_CONTROLS_PIN', direction }), newItem: 'playerAlwaysShowControls' });
     const updatePinButton = () => {
       const pinned = ui().keepControlsVisible;
-      pinBtn.classList.toggle('active', pinned);
-      pinBtn.setAttribute('aria-pressed', String(pinned));
-      pinBtn.setAttribute('aria-label', t('keepControlsVisibleTitle'));
-      pinBtn.setAttribute('aria-keyshortcuts', shortcutAriaKeyshortcuts(ui().shortcuts.toggleControlsPin));
-      pinRow.update(ui().shortcuts.toggleControlsPin, t(pinned ? 'controlsVisibilityOn' : 'controlsVisibilityOff'),
-        ['controlsVisibilityOn', 'controlsVisibilityOff'].map(key => t(key)));
+      pinBtn.dataset.active = String(pinned);
+      pinRow.updateStepper(ui().shortcuts.toggleControlsPin, {
+        value: t(pinned ? 'controlsVisibilityOn' : 'controlsVisibilityOff'),
+        index: Number(pinned),
+        count: 2
+      });
     };
-    pinBtn.addEventListener('click', (event) => {
-      blurMouseToggle(event, pinBtn);
-      executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
-    });
     updatePinButton();
     controlsScope.add(ctx.uiStore.subscribe(updatePinButton));
 
@@ -930,29 +923,24 @@ export function createControls(
     updateHelpRow();
     controlsScope.add(ctx.uiStore.subscribe(updateHelpRow));
 
-    const autoTheaterBtn = document.createElement('button');
-    autoTheaterBtn.className = 'theater-control-btn auto-theater-btn';
+    const autoTheaterBtn = document.createElement('div');
+    autoTheaterBtn.className = 'auto-theater-btn';
     autoTheaterBtn.title = t('autoEnterTheaterDescription');
     setIcon(autoTheaterBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="m10 8 6 4-6 4z"/></svg>`);
-    autoTheaterBtn.addEventListener('click', event => {
-      event.stopPropagation();
-      // aria-disabled keeps the row focusable so its reason stays discoverable.
-      if (autoTheaterBtn.getAttribute('aria-disabled') === 'true') return;
-      executeCommand({ type: 'TOGGLE_AUTO_THEATER' });
-    });
-    const autoTheaterRow = settings.addRow(autoTheaterBtn, t('autoEnterTheaterTitle'));
+    // An unavailable row keeps its aria-disabled arrows focusable, so the reason stays discoverable.
+    const autoTheaterRow = settings.addStepperRow(autoTheaterBtn, t('autoEnterTheaterTitle'), 'player',
+      { onStep: direction => executeCommand({ type: 'STEP_AUTO_THEATER', direction }) });
     const updateAutoTheaterRow = () => {
       const availability = autoTheaterAvailability(window.location.hostname, refs.providerFlags, window === window.top);
       const unavailable = availability !== 'available';
       const on = ui().autoEnterTheater && !unavailable;
-      autoTheaterBtn.classList.toggle('active', on);
-      autoTheaterBtn.classList.toggle('is-unavailable', unavailable);
-      autoTheaterBtn.setAttribute('aria-pressed', String(on));
-      autoTheaterBtn.setAttribute('aria-disabled', String(unavailable));
-      autoTheaterRow.update('', t(unavailable
-        ? 'statusUnavailable'
-        : ui().autoEnterTheater ? 'autoEnterTheaterOn' : 'autoEnterTheaterOff'),
-        ['autoEnterTheaterOn', 'autoEnterTheaterOff', 'statusUnavailable'].map(key => t(key)));
+      autoTheaterBtn.dataset.active = String(on);
+      autoTheaterRow.updateStepper('', {
+        value: t(unavailable ? 'statusUnavailable' : on ? 'autoEnterTheaterOn' : 'autoEnterTheaterOff'),
+        index: Number(on),
+        count: 2,
+        disabled: unavailable
+      });
     };
     updateAutoTheaterRow();
     wrapper._syncAutoTheaterAvailability = updateAutoTheaterRow;

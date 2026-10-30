@@ -77,13 +77,14 @@ export async function assertAutoTheater(page: Page, context: BrowserContext): Pr
         await gear.press('Enter');
         const auto = page.locator('.auto-theater-btn');
         await auto.waitFor({ state: 'visible' });
-        if (await auto.getAttribute('aria-pressed') !== 'true') throw new Error('Player menu did not reflect the options preference');
+        if (await auto.getAttribute('data-active') !== 'true') throw new Error('Player menu did not reflect the options preference');
         if (process.env.THEATER_SMOKE_SCREENSHOT) {
           await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-auto-entry.png') });
         }
         const offerLauncher = shouldOfferVideoActivator(await worker.evaluate(() =>
           chrome.storage.sync.get(['videoActivator', 'videoActivatorPromptAnswer'])));
-        await auto.press('Enter');
+        // The row is a two-option stepper: the lower arrow turns it off, the upper one back on.
+        await auto.locator('[data-direction="-1"]').press('Enter');
         await options.waitForFunction(() => !(document.getElementById('auto-enter-theater-toggle') as HTMLInputElement).checked);
         await options.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === false);
         // This path also runs alone with a fresh profile, before the controls smoke.
@@ -91,10 +92,10 @@ export async function assertAutoTheater(page: Page, context: BrowserContext): Pr
           await declineVideoActivatorPrompt(page);
           await options.waitForFunction(async () => (await chrome.storage.sync.get('videoActivatorPromptAnswer')).videoActivatorPromptAnswer === false);
         }
-        await auto.press('Space');
+        await auto.locator('[data-direction="1"]').press('Space');
         await options.waitForFunction(() => (document.getElementById('auto-enter-theater-toggle') as HTMLInputElement).checked);
         await options.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === true);
-        if (await auto.getAttribute('aria-pressed') !== 'true') throw new Error('Player menu did not retain the enabled preference');
+        if (await auto.getAttribute('data-active') !== 'true') throw new Error('Player menu did not retain the enabled preference');
         await page.keyboard.press('Escape'); // Close only the settings panel.
       } finally {
         await options.close();

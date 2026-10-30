@@ -56,13 +56,14 @@ async function open(page: Page, surface: 'options' | 'player', host = surface ==
     await page.locator('video').evaluate(async (video: HTMLVideoElement) => { await video.play(); video.pause(); });
     await page.keyboard.press('t');
     await page.locator('.theater-controls-wrapper').waitFor();
-    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.auto-theater-btn')?.matches('[aria-pressed="true"], [aria-disabled="true"]'));
+    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.auto-theater-btn')?.matches('[data-active="true"], [aria-disabled="true"]'));
   }
 }
 
 async function toggle(page: Page, surface: 'options' | 'player'): Promise<void> {
   if (surface === 'options') await page.locator('label[for=auto-enter-theater-toggle]').click();
-  else await page.locator('.auto-theater-btn').evaluate((button: HTMLElement) => button.click());
+  // The row is a two-option stepper: the arrow that leaves the current option, as a pointer would press it.
+  else await page.locator('.auto-theater-btn').evaluate((row: HTMLElement) => row.querySelector<HTMLElement>(`[data-direction="${row.dataset.active === 'true' ? -1 : 1}"]`)!.click());
 }
 
 const browsers = new Map(selectTestEngines([chromium, firefox], engine => engine.name()).map(engine => [engine, sharedTestBrowser(engine)] as const));
@@ -161,22 +162,25 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
     await storage(context, saved);
     const row = (page: Page) => page.locator('.auto-theater-btn');
     const state = (page: Page) => row(page).evaluate((button: HTMLElement) => ({
-      disabled: button.getAttribute('aria-disabled'), pressed: button.getAttribute('aria-pressed'), label: button.getAttribute('aria-label') }));
+      disabled: String(button.getAttribute('aria-disabled') === 'true'), pressed: button.dataset.active, label: button.getAttribute('aria-label'),
+      arrows: [...button.querySelectorAll('.theater-stepper-btn')].map(arrow => arrow.getAttribute('aria-disabled')).join() }));
 
     const generic = await context.newPage();
     await open(generic, 'player', 'generic.test');
     await generic.locator('.player-settings-btn').click();
     await generic.screenshot({ path: `/tmp/te-autotheater-unsupported-${engine.name()}.png` });
-    assert.deepEqual(await state(generic), { disabled: 'true', pressed: 'false', label: 'AutoTheater: Unavailable' });
-    // Visible and focusable, but activating it neither changes the saved preference nor prompts.
-    await row(generic).focus();
-    await row(generic).evaluate((button: HTMLElement) => button.click());
+    assert.deepEqual(await state(generic), { disabled: 'true', pressed: 'false', label: 'AutoTheater: Unavailable', arrows: 'true,true' });
+    // Both arrows stay focusable, but pressing one neither changes the saved preference nor prompts.
+    for (const direction of [-1, 1]) {
+      await row(generic).locator(`[data-direction="${direction}"]`).focus();
+      await row(generic).locator(`[data-direction="${direction}"]`).click({ force: true });
+    }
     assert.equal(await generic.locator('.te-dialog-btn-primary').count(), 0);
     assert.equal(saved.autoEnterTheater, true);
 
     const supported = await context.newPage();
     await open(supported, 'player');
-    assert.equal((await state(supported)).disabled, 'false');
+    assert.deepEqual(await state(supported), { disabled: 'false', pressed: 'true', label: 'AutoTheater', arrows: 'false,true' });
     await supported.locator('.player-settings-btn').click();
     await supported.evaluate(() => chrome.storage.sync.set({ vimeoIntegrationEnabled: false }));
     await supported.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot
@@ -185,6 +189,6 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
     await supported.screenshot({ path: `/tmp/te-autotheater-integration-off-${engine.name()}.png` });
     await supported.evaluate(() => chrome.storage.sync.set({ vimeoIntegrationEnabled: true }));
     await supported.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot
-      ?.querySelector('.auto-theater-btn')?.getAttribute('aria-disabled') === 'false');
+      ?.querySelector('.auto-theater-btn')?.hasAttribute('aria-disabled') === false);
   });
 }
