@@ -6,11 +6,12 @@ import { parseCaptionPayload } from '../../media-features/parsers/captions';
 
 import { BilibiliAdapter, type BilibiliServices } from './adapter';
 import { allowsBilibiliMediaFetch } from './fetch-policy';
+import { BILIBILI_NAVIGATE_EVENT } from './history';
 import {
   bilibiliPreviewFrame, bilibiliTimelineHeatmap, mergeBilibiliSnapshot, normalizeBilibiliSnapshot, parseBilibiliCaptions, parseBilibiliHeatmap,
   parseBilibiliSnapshot, parseBilibiliStoryboard, resolveBilibiliSubtitleUrl
 } from './metadata';
-import { readBilibiliSnapshot } from './snapshot';
+import { readBilibiliSnapshot, trackBilibiliVisits } from './snapshot';
 
 // Field names and duplicate timestamps from the live videoshot response for BV1xx411c7mu.
 const shot = {
@@ -114,6 +115,45 @@ describe('Bilibili RTE', () => {
       const fresh = await readBilibiliSnapshot();
       assert.equal(fresh?.videoId, '106:42');
       assert.equal(requests, 4);
+    } finally {
+      globalThis.window = oldWindow; globalThis.document = oldDocument; globalThis.fetch = oldFetch;
+    }
+  });
+
+  it('reads again after A→B→A before metadata settles, and lets one request stop waiting without ending the shared read', async () => {
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    const oldFetch = globalThis.fetch;
+    const state = { aid: 106, cid: 3635863, videoData: { title: 'A before', duration: 318 } };
+    const win = Object.assign(new EventTarget(), {
+      location: { hostname: 'www.bilibili.com', pathname: '/video/BV1xx411c7mu', search: '' }, __INITIAL_STATE__: state
+    });
+    const pending: Array<{ resolve(value: Response): void; signal?: AbortSignal | null }> = [];
+    try {
+      globalThis.window = win as any;
+      globalThis.document = { documentElement: { hasAttribute: () => false }, querySelector: () => null } as any;
+      globalThis.fetch = ((_url: string, init?: RequestInit) => new Promise<Response>(resolve => { pending.push({ resolve, signal: init?.signal }); })) as typeof fetch;
+      trackBilibiliVisits();
+      const first = readBilibiliSnapshot();
+      assert.equal(pending.length, 4);
+      const go = (pathname: string) => { win.location.pathname = pathname; win.dispatchEvent(new Event(BILIBILI_NAVIGATE_EVENT)); };
+      go('/video/BV1yy411c7mu');
+      assert.ok(pending.every(request => request.signal?.aborted), "leaving A aborts A's metadata requests");
+      go('/video/BV1xx411c7mu');
+      state.videoData.title = 'A after';
+      const second = readBilibiliSnapshot();
+      assert.equal(pending.length, 8, 'the return to A reads again instead of reusing the earlier pending read');
+      win.location.search = '?vd_source=tracking';
+      win.dispatchEvent(new Event(BILIBILI_NAVIGATE_EVENT));
+      assert.equal(pending.slice(4).some(request => request.signal?.aborted), false, 'a tracking parameter is the same visit');
+      const stopped = new AbortController();
+      const waiter = readBilibiliSnapshot(stopped.signal);
+      assert.equal(pending.length, 8, 'the same visit shares one read');
+      stopped.abort();
+      assert.equal(await waiter, null, 'an aborted request stops waiting at once');
+      for (const request of pending) request.resolve(new Response('{"code":0,"data":{}}'));
+      assert.equal(await first, null, 'the earlier visit never answers');
+      assert.equal((await second)?.title, 'A after');
     } finally {
       globalThis.window = oldWindow; globalThis.document = oldDocument; globalThis.fetch = oldFetch;
     }
