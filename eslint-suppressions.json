@@ -1878,9 +1878,6 @@
     }
   },
   "src/ui/cc-menu.ts": {
-    "import/order": {
-      "count": 1
-    },
     "max-params": {
       "count": 1
     }

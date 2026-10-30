@@ -84,14 +84,15 @@ export function mountAudioTrackMenu(options: {
     const tracks = options.tracks();
     const labels = tracks.map((track, index) => audioTrackDisplayLabel(track, index, t, locale));
     const saved = options.preference() !== null;
-    const key = JSON.stringify([saved, tracks.map((track, index) => [track.id, labels[index], track.selected])]);
+    const key = JSON.stringify([saved, tracks.map((track, index) => [track.id, labels[index], track.selected, track.disabled])]);
     if (key === lastKey) return;
     lastKey = key;
     const selected = tracks.findIndex(track => track.selected);
     settings.setRowHidden(button, tracks.length < 2);
+    button.disabled = tracks.length > 0 && tracks.every(track => track.disabled);
     menu.setActionHidden(!saved);
     row.update('', selected >= 0 ? labels[selected] : undefined, labels);
-    menu.update(tracks.map((track, index) => ({ id: track.id, label: labels[index], language: track.languageTag, active: track.selected })));
+    menu.update(tracks.map((track, index) => ({ id: track.id, label: labels[index], language: track.languageTag, active: track.selected, disabled: track.disabled })));
   };
   scope.listen(button, 'click', (event: MouseEvent) => {
     event.stopPropagation();

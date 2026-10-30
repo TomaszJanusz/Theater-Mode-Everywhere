@@ -117,6 +117,8 @@ export type AudioTrack = {
   label: string;
   kind: AudioTrackKind;
   selected: boolean;
+  /** Retained knowledge whose live availability has not yet been revalidated. */
+  disabled?: boolean;
 };
 
 /**
@@ -128,6 +130,10 @@ export type AudioTrackList = {
   mediaId: string | null;
   tracks: readonly AudioTrack[];
   blocked: boolean;
+  /** Keep retained tracks visible while blocked; commands and automatic picks stay disabled. */
+  stale?: boolean;
+  /** Optional command identity: a new binding retires picks without re-evaluating the title. */
+  bindingId?: string;
 };
 
 export interface MediaFeaturesAdapter {

@@ -73,7 +73,7 @@ export class AudioTrackController {
 
   /** Tracks offered for the current item; none while blocked, as a choice would not reach it. */
   tracks(): readonly AudioTrack[] {
-    return this.list && !this.list.blocked ? this.list.tracks : [];
+    return this.list && (!this.list.blocked || this.list.stale) ? this.list.tracks : [];
   }
 
   refresh(): void {
@@ -92,6 +92,7 @@ export class AudioTrackController {
 
   /** A viewer's choice: it ends automatic selection for this item and, once accepted, becomes the service's preference. */
   async select(id: string): Promise<boolean> {
+    if (this.list?.stale) return false;
     const index = this.tracks().findIndex(candidate => candidate.id === id);
     const track = this.tracks()[index];
     if (!track) {
@@ -117,7 +118,7 @@ export class AudioTrackController {
 
   private autoApply(): void {
     const list = this.list;
-    if (this.evaluated || !list || list.blocked || list.tracks.length < 2) return;
+    if (this.evaluated || !list || list.blocked || list.stale || list.tracks.length < 2) return;
     this.evaluated = true;
     const target = pickPreferredAudioTrack(list.tracks, this.options.preference(), this.options.locales());
     if (!target) return;
@@ -160,6 +161,7 @@ export class AudioTrackController {
     // A late answer for an earlier item or adapter must not repaint the current one.
     if (this.disposed || generation !== this.generation || adapter !== this.adapter || key !== this.itemKey) return 'stale';
     this.refresh();
+    if (this.list?.stale || list.bindingId !== this.list?.bindingId) return 'stale';
     return ok ? 'accepted' : 'refused';
   }
 

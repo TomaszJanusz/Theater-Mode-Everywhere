@@ -17,7 +17,7 @@ export const netflixAudioFixture = `(() => {
   const sessions = [];
   const create = (movieId, element) => {
     const listeners = new Map();
-    const state = { movieId, element, tracks: raw.map(track => ({ ...track })), manifest: true, ad: false, mode: 'sync', sets: [], reads: 0 };
+    const state = { sessionId: "session:" + sessions.length, movieId, element, tracks: raw.map(track => ({ ...track })), manifest: true, ad: false, mode: 'sync', sets: [], reads: 0 };
     const adPresenting = new Observable(false);
     Object.defineProperty(state, 'ad', { get: () => adPresenting.value, set: value => { adPresenting._value = value; } });
     state.current = state.tracks[0];
@@ -53,8 +53,8 @@ export const netflixAudioFixture = `(() => {
   window.nfSessions = sessions;
   window.nfCreate = create;
   window.netflix = { appContext: { state: { playerApp: { getAPI: () => ({ videoPlayer: {
-    getAllPlayerSessionIds: () => ['preload', 'watch-fixture'],
-    getVideoPlayerBySessionId: id => id === 'preload' ? background.player : window.nf.player
+    getAllPlayerSessionIds: () => ['preload', window.nf.sessionId],
+    getVideoPlayerBySessionId: id => id === 'preload' ? background.player : id === window.nf.sessionId ? window.nf.player : null
   } }) } } } };
 })()`;
 

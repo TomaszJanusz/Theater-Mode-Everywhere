@@ -1,11 +1,11 @@
 import type { CaptionActivationResult, MediaFeaturesAdapter } from '../../media-features/types';
 
-import { NetflixAudioClient } from './audio-client';
+import { NetflixAudioClient, type AudioRecoveryClock } from './audio-client';
 
 /** Audio-only companion to the legacy data adapter, until TME-202 composes the full provider. */
 export class NetflixAudioAdapter implements MediaFeaturesAdapter {
   private readonly audio: NetflixAudioClient;
-  constructor(video: HTMLVideoElement | null) { this.audio = new NetflixAudioClient(video); }
+  constructor(video: HTMLVideoElement | null, clock?: AudioRecoveryClock) { this.audio = new NetflixAudioClient(video, clock); }
   listAudioTracks() { return this.audio.list(); }
   selectAudioTrack(id: string, mediaId: string | null) { return this.audio.select(id, mediaId); }
   observeAudioTracks(onChange: () => void) { return this.audio.observe(onChange); }
