@@ -1,6 +1,8 @@
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
+import { createPageVisits, untilAborted } from '../page-visits';
 
 import { bilibiliIntlShotBinUrl } from './fetch-policy';
+import { INTL_NAVIGATE_EVENT } from './history';
 import { isBilibiliIntlHost } from './hosts';
 import {
   bilibiliIntlEpisodeId,
@@ -175,7 +177,16 @@ function pageDuration(): number | undefined {
   return Number.isFinite(duration) && duration > 0 && duration < 24 * 60 * 60 ? duration : undefined;
 }
 
-let cached: { key: string; expires: number; pending: Promise<BilibiliIntlSnapshot | null> } | null = null;
+let cached: { key: string; visit: object; expires: number; pending: Promise<BilibiliIntlSnapshot | null> } | null = null;
+
+/** A visit is one route path: query parameters such as tracking do not start another. */
+const visits = createPageVisits(locationPath);
+
+/** Installed with the history hook: route changes to another video, episode or season start a new visit. */
+export function trackIntlVisits(): void {
+  for (const event of [INTL_NAVIGATE_EVENT, 'popstate', 'hashchange']) window.addEventListener(event, visits.note);
+  window.addEventListener('pagehide', visits.end);
+}
 
 /**
  * Page locale keys from `vendor-bc097aa0.js` (`$s` / `nU`).
@@ -252,7 +263,7 @@ function metadataUrl(media: MediaRef, resource: 'subtitle' | 'shot' | 'episode')
 
 async function apiData(url: string): Promise<unknown> {
   try {
-    const response = await fetch(url, { credentials: 'omit', signal: AbortSignal.timeout(2500) });
+    const response = await fetch(url, { credentials: 'omit', signal: visits.signal(2500) });
     if (!response.ok || (response.url && new URL(response.url).origin !== 'https://api.bilibili.tv')) return null;
     const body = await response.text();
     if (body.length > 512 * 1024) return null;
@@ -267,7 +278,7 @@ async function readShot(payload: unknown): Promise<BilibiliIntlStoryboard | null
   const binUrl = bilibiliIntlShotBinUrl((payload as { pv_data?: unknown } | null)?.pv_data);
   if (!binUrl) return parseBilibiliIntlStoryboard(payload, null);
   try {
-    const response = await fetch(binUrl, { credentials: 'omit', signal: AbortSignal.timeout(2500) });
+    const response = await fetch(binUrl, { credentials: 'omit', signal: visits.signal(2500) });
     if (!response.ok || (response.url && new URL(response.url).hostname !== 'pic.bstarstatic.com')) return null;
     const buffer = await response.arrayBuffer();
     if (buffer.byteLength === 0 || buffer.byteLength > 64 * 1024) return null;
@@ -283,7 +294,12 @@ function mediaStill(media: MediaRef, locale: string, path: string): boolean {
   return now?.kind === media.kind && now.id === media.id;
 }
 
-export async function readBilibiliIntlSnapshot(): Promise<BilibiliIntlSnapshot | null> {
+/** The route's snapshot, shared by requests within one visit; `signal` releases only this request. */
+export function readBilibiliIntlSnapshot(signal?: AbortSignal): Promise<BilibiliIntlSnapshot | null> {
+  return untilAborted(readSnapshot(), signal);
+}
+
+async function readSnapshot(): Promise<BilibiliIntlSnapshot | null> {
   if (!bilibiliIntlIntegrationEnabled() || !bilibiliIntlPathKind()) {
     cached = null;
     publishMedia(null);
@@ -298,7 +314,8 @@ export async function readBilibiliIntlSnapshot(): Promise<BilibiliIntlSnapshot |
   const locale = apiSLocale();
   const path = locationPath();
   const cacheKey = `${path}|${media.kind}:${media.id}:${locale}`;
-  if (cached?.key === cacheKey && cached.expires > Date.now()) return cached.pending;
+  const visit = visits.current();
+  if (cached?.key === cacheKey && cached.visit === visit && cached.expires > Date.now()) return cached.pending;
   const title = bilibiliIntlTitle(pageState(), document.title, media.kind);
   const duration = pageDuration();
   const pending = Promise.all([
@@ -307,17 +324,17 @@ export async function readBilibiliIntlSnapshot(): Promise<BilibiliIntlSnapshot |
     media.kind === 'ogv' ? apiData(metadataUrl(media, 'episode')) : Promise.resolve(null)
   ]).then(async ([subtitles, shot, episode]) => {
     const storyboard = await readShot(shot);
-    if (!mediaStill(media, locale, path)) {
+    if (visits.current() !== visit || !mediaStill(media, locale, path)) {
       if (cached?.pending === pending) cached = null;
       return null;
     }
     const chapters = media.kind === 'ogv' ? parseBilibiliIntlSkipChapters(episode, duration) : [];
     const snapshot = normalizeBilibiliIntlSnapshot(media.id, title, duration, subtitles, storyboard, chapters, media.kind);
     if (cached?.pending === pending && snapshot.captionTracks.length === 0) {
-      cached = { key: cacheKey, expires: Date.now() + 2000, pending };
+      cached = { key: cacheKey, visit, expires: Date.now() + 2000, pending };
     }
     return snapshot;
   });
-  cached = { key: cacheKey, expires: Date.now() + 15000, pending };
+  cached = { key: cacheKey, visit, expires: Date.now() + 15000, pending };
   return pending;
 }

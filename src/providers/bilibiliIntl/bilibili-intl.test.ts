@@ -8,6 +8,7 @@ import { createWorldMessage, type WorldEnvelope } from '../../protocol/world-mes
 
 import { BilibiliIntlAdapter } from './adapter';
 import { allowsIntlMediaFetch, bilibiliIntlShotImageUrl, bilibiliIntlSubtitleUrl } from './fetch-policy';
+import { INTL_NAVIGATE_EVENT } from './history';
 import {
   bilibiliIntlCaptionTracks,
   bilibiliIntlPreviewFrame,
@@ -20,7 +21,7 @@ import {
   parseBilibiliIntlSkipChapters,
   parseBilibiliIntlStoryboard
 } from './metadata';
-import { bilibiliIntlPageId, readBilibiliIntlSnapshot } from './snapshot';
+import { bilibiliIntlPageId, readBilibiliIntlSnapshot, trackIntlVisits } from './snapshot';
 
 // English ASS lines and the thumbnail index prefix from
 // https://www.bilibili.tv/en/play/1053337 episode 11371243. Drawing line is synthetic.
@@ -326,6 +327,52 @@ describe('Bilibili.tv RTE', () => {
     }
   });
 
+  it('reads again after A→B→A before metadata settles, and lets one request stop waiting without ending the shared read', async () => {
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    const oldFetch = globalThis.fetch;
+    const page = { ...state, ogv: { ...state.ogv, epId: '11371243' } };
+    const win = Object.assign(new EventTarget(), {
+      location: { hostname: 'www.bilibili.tv', pathname: '/en/play/1053337/11371243', search: '' }, __initialState: page
+    });
+    const attrs = new Map<string, string>();
+    const pending: Array<{ resolve(value: Response): void; signal?: AbortSignal | null }> = [];
+    try {
+      globalThis.window = win as any;
+      globalThis.document = {
+        title: 'The Last Summoner E1 - BiliBili',
+        querySelector: () => null,
+        documentElement: {
+          hasAttribute: (name: string) => attrs.has(name),
+          getAttribute: (name: string) => attrs.get(name) ?? null,
+          setAttribute: (name: string, value: string) => { attrs.set(name, value); },
+          removeAttribute: (name: string) => { attrs.delete(name); }
+        }
+      } as any;
+      globalThis.fetch = ((_url: string, init?: RequestInit) => new Promise<Response>(resolve => { pending.push({ resolve, signal: init?.signal }); })) as typeof fetch;
+      trackIntlVisits();
+      const first = readBilibiliIntlSnapshot();
+      const reads = pending.length;
+      assert.equal(reads, 3);
+      const go = (pathname: string) => { win.location.pathname = pathname; win.dispatchEvent(new Event(INTL_NAVIGATE_EVENT)); };
+      go('/en/play/1053337/11371316');
+      assert.ok(pending.every(request => request.signal?.aborted), "leaving A aborts A's metadata requests");
+      go('/en/play/1053337/11371243');
+      const second = readBilibiliIntlSnapshot();
+      assert.equal(pending.length, 2 * reads, 'the return to A reads again instead of reusing the earlier pending read');
+      const stopped = new AbortController();
+      const waiter = readBilibiliIntlSnapshot(stopped.signal);
+      assert.equal(pending.length, 2 * reads, 'the same visit shares one read');
+      stopped.abort();
+      assert.equal(await waiter, null, 'an aborted request stops waiting at once');
+      for (const request of pending) request.resolve(new Response('{"code":0,"data":{}}'));
+      assert.equal(await first, null, 'the earlier visit never answers');
+      assert.equal((await second)?.videoId, '11371243');
+    } finally {
+      globalThis.window = oldWindow; globalThis.document = oldDocument; globalThis.fetch = oldFetch;
+    }
+  });
+
   it('reads a hydrated Vue initial state on an episode page and does not reuse that episode on an upload path', async () => {
     const oldWindow = globalThis.window;
     const oldDocument = globalThis.document;
@@ -479,9 +526,9 @@ describe('Bilibili.tv RTE', () => {
     win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
       const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
       win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
-          detail: encodeProbeAsyncReply({ requestId, value: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+          detail: encodeProbeAsyncReply(requestId, normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
-        }, null) }) }));
+        }, null)) }));
     });
     (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
       ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ASS }, request.requestId, request.nonce, request.origin));
@@ -537,9 +584,9 @@ describe('Bilibili.tv RTE', () => {
     win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
       const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
       win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
-          detail: encodeProbeAsyncReply({ requestId, value: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+          detail: encodeProbeAsyncReply(requestId, normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
-        }, null) }) }));
+        }, null)) }));
     });
     const deliveries: Array<(body: string) => void> = [];
     (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
@@ -611,9 +658,9 @@ describe('Bilibili.tv RTE', () => {
     win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
       const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
       win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
-          detail: encodeProbeAsyncReply({ requestId, value: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+          detail: encodeProbeAsyncReply(requestId, normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
-        }, null) }) }));
+        }, null)) }));
     });
     const deliveries: Array<(body: string) => void> = [];
     (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
@@ -675,7 +722,7 @@ describe('Bilibili.tv RTE', () => {
       const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
       replies.push((payload) => {
         win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
-          detail: encodeProbeAsyncReply({ requestId, value: payload }) }));
+          detail: encodeProbeAsyncReply(requestId, payload) }));
       });
     });
     const storyboard = parseBilibiliIntlStoryboard({
@@ -818,7 +865,7 @@ describe('Bilibili.tv RTE', () => {
       const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
       replies.push((payload) => {
         win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
-          detail: encodeProbeAsyncReply({ requestId, value: payload }) }));
+          detail: encodeProbeAsyncReply(requestId, payload) }));
       });
     });
     const adapter = new BilibiliIntlAdapter(SERVICES);
@@ -895,7 +942,7 @@ describe('Bilibili.tv RTE', () => {
       replies.push((publish, payload) => {
         if (publish) attrs.set('data-te-bilibili-intl-episode', publish);
         win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
-          detail: encodeProbeAsyncReply({ requestId, value: payload }) }));
+          detail: encodeProbeAsyncReply(requestId, payload) }));
       });
     });
     const adapter = new BilibiliIntlAdapter(SERVICES);
@@ -983,7 +1030,7 @@ describe('Bilibili.tv RTE', () => {
       replies.push(() => {
         attrs.set('data-te-bilibili-intl-episode', '11371243');
         win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
-          detail: encodeProbeAsyncReply({ requestId, value: snapshot }) }));
+          detail: encodeProbeAsyncReply(requestId, snapshot) }));
       });
     });
     (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
@@ -1058,12 +1105,12 @@ describe('Bilibili.tv RTE', () => {
     win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
       const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
       win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
-          detail: encodeProbeAsyncReply({ requestId, value: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+          detail: encodeProbeAsyncReply(requestId, normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [
             { url: SUBTITLE_URL, lang: 'English', lang_key: 'en' },
             { url: JSON_URL, lang: 'العربية', lang_key: 'ar' }
           ]
-        }, null) }) }));
+        }, null)) }));
     });
     const deliveries: Array<{ url: string; send: (body: string) => void }> = [];
     (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
@@ -1306,7 +1353,7 @@ describe('Bilibili.tv RTE', () => {
       win.addEventListener(PROBE_ASYNC_EVENT, (event) => {
         const requestId = parseProbeAsyncRequest((event as CustomEvent).detail)!.requestId;
         win.dispatchEvent(new CustomEvent(PROBE_ASYNC_REPLY_EVENT, {
-          detail: encodeProbeAsyncReply({ requestId, value: fresh }) }));
+          detail: encodeProbeAsyncReply(requestId, fresh) }));
       });
       win.postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
         ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ugcCues }, request.requestId, request.nonce, request.origin));
