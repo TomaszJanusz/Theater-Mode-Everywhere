@@ -89,7 +89,8 @@
     "message": "Picture stays in the middle of the screen. Best for 16:9 screens."
   },
   "pictureAlignTop": {
-    "message": "Raised"
+    "message": "Raised",
+    "description": "Name of the picture layout that raises the video to the top of the screen, leaving a black band below for captions. A state label (options and on-video indicator), not an action."
   },
   "pictureAlignTopDescription": {
     "message": "Picture sits at the top, with a black band below for captions. Best for 16:10 and 4:3 screens."
@@ -315,7 +316,8 @@
     "message": "Available when provided by the video or player: Title, Subtitles, Thumbnails. Quick actions: next episode through the player."
   },
   "liveBadge": {
-    "message": "LIVE"
+    "message": "LIVE",
+    "description": "Short badge on the player controls that marks a live stream, as in a broadcast \"LIVE\" tag."
   },
   "jumpToLive": {
     "message": "Go to live"
@@ -558,10 +560,12 @@
     "message": "Next"
   },
   "muteHud": {
-    "message": "Mute"
+    "message": "Mute",
+    "description": "Brief on-video indicator shown after the sound was muted. Names the resulting state, not the command."
   },
   "unmuteHud": {
-    "message": "Unmute"
+    "message": "Unmute",
+    "description": "Brief on-video indicator shown after the sound was unmuted. Names the resulting state, not the command."
   },
   "pictureInPictureTooltip": {
     "message": "Picture-in-Picture $KEY$",
@@ -695,7 +699,8 @@
       "name": {
         "content": "$1"
       }
-    }
+    },
+    "description": "Suffix naming an audio track that carries audio description: narration of on-screen action for blind and low-vision viewers. Not the same as commentary (audioTrackCommentary)."
   },
   "audioTrackCommentary": {
     "message": "$NAME$ (commentary)",
@@ -783,10 +788,12 @@
     "message": "Enter theater mode"
   },
   "autoEnterTheaterOn": {
-    "message": "On"
+    "message": "On",
+    "description": "Value of the AutoTheater setting when it is on (player settings row and Auto/On/Off choice). A state, not a yes/no answer."
   },
   "autoEnterTheaterOff": {
-    "message": "Off"
+    "message": "Off",
+    "description": "Value of the AutoTheater setting when it is off (player settings row and Auto/On/Off choice). A state, not a yes/no answer."
   },
   "autoEnterTheaterDescription": {
     "message": "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled."
@@ -815,7 +822,8 @@
     "message": "Controls pinned"
   },
   "controlsUnpinnedHud": {
-    "message": "Controls auto-hide"
+    "message": "Controls auto-hide",
+    "description": "Brief on-video indicator shown when controls stop being pinned and hide automatically when idle. Keep it as short as controlsPinnedHud."
   },
   "showNativeChat": {
     "message": "Show chat"
@@ -879,10 +887,12 @@
     }
   },
   "controlsVisibilityOn": {
-    "message": "On"
+    "message": "On",
+    "description": "Value of the Pin controls setting when controls are pinned (player settings row and Auto/On/Off choice). A state, not a yes/no answer."
   },
   "controlsVisibilityOff": {
-    "message": "Off"
+    "message": "Off",
+    "description": "Value of the Pin controls setting when controls are not pinned (player settings row and Auto/On/Off choice). A state, not a yes/no answer."
   },
   "extensionSettingsLabel": {
     "message": "Extension settings"

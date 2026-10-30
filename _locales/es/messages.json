@@ -315,7 +315,7 @@
     "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, Miniaturas. Acciones rápidas: siguiente episodio mediante el reproductor."
   },
   "liveBadge": {
-    "message": "EN VIVO"
+    "message": "EN DIRECTO"
   },
   "jumpToLive": {
     "message": "Ir al directo"
@@ -783,10 +783,10 @@
     "message": "Activar el modo cine"
   },
   "autoEnterTheaterOn": {
-    "message": "Sí"
+    "message": "Activado"
   },
   "autoEnterTheaterOff": {
-    "message": "No"
+    "message": "Desactivado"
   },
   "autoEnterTheaterDescription": {
     "message": "Activa el modo cine cuando el vídeo principal comience a reproducirse en las páginas de reproducción de los servicios compatibles con Rich Theater Experience activado."
@@ -815,7 +815,7 @@
     "message": "Controles fijados"
   },
   "controlsUnpinnedHud": {
-    "message": "Los controles se ocultan automáticamente"
+    "message": "Ocultación automática"
   },
   "showNativeChat": {
     "message": "Mostrar chat"
@@ -879,10 +879,10 @@
     }
   },
   "controlsVisibilityOn": {
-    "message": "Sí"
+    "message": "Activado"
   },
   "controlsVisibilityOff": {
-    "message": "No"
+    "message": "Desactivado"
   },
   "extensionSettingsLabel": {
     "message": "Ajustes de la extensión"

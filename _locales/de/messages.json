@@ -815,7 +815,7 @@
     "message": "Steuerung angeheftet"
   },
   "controlsUnpinnedHud": {
-    "message": "Steuerelemente werden automatisch ausgeblendet"
+    "message": "Steuerung blendet sich aus"
   },
   "showNativeChat": {
     "message": "Chat anzeigen"
