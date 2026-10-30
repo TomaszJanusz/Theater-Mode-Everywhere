@@ -36,7 +36,8 @@ export type DisneyAudioRecord = {
   selected: boolean;
 };
 
-export type DisneyAudioSnapshot = { requestId: string; pageHref: string; playId: string; tracks: DisneyAudioRecord[] };
+/** `bindingId` names the Hive player object, so a pick on a replaced one is retired, not refused. */
+export type DisneyAudioSnapshot = { requestId: string; pageHref: string; playId: string; bindingId: string; tracks: DisneyAudioRecord[] };
 export type DisneyAudioSelect = { requestId: string; playId: string; trackId: string; keepPaused: boolean };
 export type DisneyAudioResult = { requestId: string; ok: boolean };
 export type DisneyAudioWatch = { watchId: string; on: boolean };
@@ -78,9 +79,10 @@ function validRecord(value: unknown): value is DisneyAudioRecord {
 export function parseDisneyAudioSnapshot(text: string | null | undefined, requestId: string, pageHref: string): DisneyAudioSnapshot | null {
   const data = parseObject(text, MAX_SNAPSHOT_CHARS);
   if (!data || data.requestId !== requestId || data.pageHref !== pageHref || !isDisneyPlayId(data.playId)) return null;
+  if (typeof data.bindingId !== 'string' || !/^\d{1,9}$/.test(data.bindingId)) return null;
   const tracks = data.tracks;
   if (!Array.isArray(tracks) || tracks.length > MAX_DISNEY_AUDIO_TRACKS || !tracks.every(validRecord)) return null;
-  return { requestId, pageHref, playId: data.playId, tracks };
+  return { requestId, pageHref, playId: data.playId, bindingId: data.bindingId, tracks };
 }
 
 export function parseDisneyAudioSelect(raw: unknown): DisneyAudioSelect | null {

@@ -117,6 +117,9 @@ const sameSignature = (a: unknown[], b: unknown[]) => a.length === b.length && a
 export class DisneyAudioHost {
   /** The play id each player was first read under; a player carried over to another title waits for its reload. */
   private readonly seenUnder = new WeakMap<object, string>();
+  /** One id per Hive player object for the isolated world's `bindingId`. */
+  private readonly bindings = new WeakMap<object, string>();
+  private nextBinding = 0;
   private readonly watchers = new Set<string>();
   private reloading = false;
   private reloadsBegun = 0;
@@ -253,7 +256,12 @@ export class DisneyAudioHost {
         this.syncSubscription();
         const selected = selectedId(live.audio);
         const tracks = hiveTracks(live.audio).flatMap(track => record(track, selected) ?? []);
-        payload = { requestId, pageHref: this.env.href(), playId: live.playId, tracks };
+        let bindingId = this.bindings.get(live.player);
+        if (bindingId === undefined) {
+          bindingId = String(++this.nextBinding);
+          this.bindings.set(live.player, bindingId);
+        }
+        payload = { requestId, pageHref: this.env.href(), playId: live.playId, bindingId, tracks };
       }
     } catch {
       payload = null; // Hive getters can throw while the player attaches.

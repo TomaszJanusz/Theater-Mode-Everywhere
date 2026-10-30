@@ -148,12 +148,14 @@ describe('Disney+ audio bridge', () => {
   });
 
   it('accepts a snapshot only for its request, its page and bounded, well-formed tracks', () => {
-    const good = { requestId: 'r1', pageHref: href(PLAY), playId: PLAY, tracks: [record({})] };
+    const good = { requestId: 'r1', pageHref: href(PLAY), playId: PLAY, bindingId: '1', tracks: [record({})] };
     const parse = (value: unknown, requestId = 'r1', page = href(PLAY)) => parseDisneyAudioSnapshot(JSON.stringify(value), requestId, page);
     assert.deepEqual(parse(good), good);
     assert.equal(parse(good, 'r2'), null, 'an answer to another query');
     assert.equal(parse(good, 'r1', href(NEXT)), null, 'an answer for another page');
     assert.equal(parse({ ...good, playId: 'not-a-uuid' }), null);
+    assert.equal(parse({ ...good, bindingId: undefined }), null);
+    assert.equal(parse({ ...good, bindingId: 'player-1' }), null);
     assert.equal(parse({ ...good, tracks: [record({ id: '<script>' })] }), null);
     assert.equal(parse({ ...good, tracks: [{ ...record({}), description: 'yes' }] }), null);
     assert.equal(parse({ ...good, tracks: [record({ label: 'x'.repeat(201) })] }), null);
@@ -183,10 +185,13 @@ describe('Disney+ audio bridge', () => {
 });
 
 describe('Disney+ audio in MAIN', () => {
-  it('lists the live tracks with the selection read from selectedTrack', () => {
-    const { query } = setup();
+  it('lists the live tracks with the selection read from selectedTrack, and names the player object', () => {
+    const { query, replaceWeb, web, tracks } = setup();
     const snapshot = query();
     assert.equal(snapshot?.playId, PLAY);
+    assert.equal(query()?.bindingId, snapshot?.bindingId, 'the same player keeps its binding');
+    replaceWeb({ ...web(), mediaPlayer: { audio: { availableTracks: tracks, selectedTrack: tracks[0], setTrack() {} } } });
+    assert.notEqual(query()?.bindingId, snapshot?.bindingId, 'a replaced player is a new binding');
     assert.deepEqual(snapshot?.tracks.map(track => [track.id, track.label, track.language, track.description, track.selected]), [
       ['1', 'English', 'en', false, true], ['14', 'Polski', 'pl', false, false], ['7', 'Español (Latinoamérica)', 'es-419', false, false],
       ['8', 'Español (España)', 'es-ES', false, false], ['21', 'English', 'en', true, false]

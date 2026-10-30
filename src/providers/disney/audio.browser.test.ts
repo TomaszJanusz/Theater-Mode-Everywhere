@@ -96,7 +96,8 @@ const fakeHive = `(() => {
     }
   };
   const audio = {
-    get availableTracks() { return hive.tracks; },
+    // Hive's getters throw while its pipeline reattaches; failRead stands in for that.
+    get availableTracks() { if (hive.failRead) throw new Error('reattaching'); return hive.tracks; },
     get selectedTrack() { return hive.selected; },
     get hasTracks() { return hive.tracks.length > 0; },
     setTrack
@@ -118,7 +119,7 @@ const fakeHive = `(() => {
 
 const html = '<!doctype html><body><disney-web-player><video class="hive-video" style="width:640px;height:360px"></video></disney-web-player></body>';
 
-type Listed = { mediaId: string | null; blocked: boolean; tracks: Array<{ id: string; languageTag: string; label: string; kind: string; selected: boolean }> } | null;
+type Listed = { mediaId: string | null; blocked: boolean; bindingId?: string; tracks: Array<{ id: string; languageTag: string; label: string; kind: string; selected: boolean }> } | null;
 
 async function open(test: TestContext, engine: 'chromium' | 'firefox'): Promise<Page> {
   const page = await (await browsers[engine].newContext(test)).newPage();
@@ -160,7 +161,7 @@ describe('Disney+ audio tracks', () => {
   for (const engine of testEngines()) {
     it(`lists tracks once Hive sets them, through the store subscription, in ${engine}`, async t => {
       const page = await open(t, engine);
-      assert.deepEqual(await list(page), { mediaId: PLAY, blocked: false, tracks: [] }, 'Hive has not set its tracks yet');
+      assert.deepEqual(await list(page), { mediaId: PLAY, blocked: false, tracks: [], bindingId: '1' }, 'Hive has not set its tracks yet');
       assert.deepEqual(await offered(page), []);
       assert.equal(await hive(page, 'hive.listeners.size'), 1, 'the controller holds one lease');
       const before = await page.evaluate<number>('window.changes');
@@ -251,6 +252,40 @@ describe('Disney+ audio tracks', () => {
       assert.equal(await page.evaluate('window.picked'), true);
       assert.equal(await page.evaluate('video.paused'), true, 'the reload\'s resume did not override the Pause');
       assert.deepEqual(await hive(page, '[hive.pauses, hive.state]'), [1, 'paused']);
+    });
+
+    it(`keeps the row stale through a transient read failure and recovers it, in ${engine}`, async t => {
+      const page = await open(t, engine);
+      await page.evaluate('window.__setTracks()');
+      const ping = () => page.evaluate("window.dispatchEvent(new CustomEvent('theater-everywhere-disney-audio-change'))");
+      await page.evaluate('window.__hive.failRead = true');
+      await ping();
+      const stale = await page.evaluate(() => {
+        const { controller, adapter } = window as unknown as { controller: { tracks(): Array<{ disabled?: boolean; selected: boolean }> }; adapter: { listAudioTracks(): { stale?: boolean; blocked: boolean } | null } };
+        const list = adapter.listAudioTracks();
+        return { count: controller.tracks().length, disabled: controller.tracks().every(track => track.disabled && !track.selected), stale: list?.stale, blocked: list?.blocked };
+      });
+      assert.deepEqual(stale, { count: 5, disabled: true, stale: true, blocked: true }, 'the title keeps its tracks, not selectable');
+      await page.evaluate("window.picked = null; controller.select('14').then(ok => { window.picked = ok; }); void 0");
+      await advance(page, 0);
+      assert.equal(await page.evaluate('window.picked'), false, 'a retained list cannot select');
+      assert.equal(await hive(page, 'hive.sets.length'), 0);
+      await advance(page, 200);
+      assert.equal(await page.evaluate('controller.tracks().every(track => track.disabled)'), true, 'still degraded before the first retry');
+      await page.evaluate('window.__hive.failRead = false');
+      await advance(page, 300);
+      assert.deepEqual(await page.evaluate('controller.tracks().map(track => [track.id, Boolean(track.disabled), track.selected])'),
+        [['1', false, true], ['14', false, false], ['7', false, false], ['21', false, false], ['30', false, false]], 'the retry read it back');
+      await page.evaluate("window.picked = null; controller.select('14').then(ok => { window.picked = ok; }); void 0");
+      await advance(page, 2_000);
+      assert.equal(await page.evaluate('window.picked'), true, 'selectable again after recovery');
+
+      // A new title while degraded starts over: nothing retained describes it.
+      await page.evaluate('window.__hive.failRead = true');
+      await ping();
+      await page.evaluate(`history.pushState({}, '', '/pl-pl/play/${NEXT}')`);
+      await ping();
+      assert.deepEqual(await offered(page), [], 'another title drops the retained list');
     });
 
     it(`drops pending work on exit, RTE-off and a new title without undoing Hive's switch, in ${engine}`, async t => {
@@ -348,6 +383,19 @@ describe('Disney+ audio in the shipped player', () => {
       await page.waitForFunction(() => { const { __hive } = window as unknown as { __hive: HiveProbe }; __hive.step(); return __hive.selected.id === 21; });
       assert.deepEqual(await saved(), { 'disneyplus.com': 'pl' }, 'audio description is never saved');
 
+      // A transient read failure keeps the row, disabled, and the retry brings it back.
+      await page.evaluate(`window.__hive.failRead = true; window.dispatchEvent(new CustomEvent('theater-everywhere-disney-audio-change'))`);
+      await page.locator('.player-settings-btn').click();
+      await page.waitForFunction(() => {
+        const button = document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector<HTMLButtonElement>('.audio-track-btn');
+        return Boolean(button && !button.hidden && button.disabled);
+      });
+      await page.evaluate('window.__hive.failRead = false');
+      await page.waitForFunction(() => {
+        const button = document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector<HTMLButtonElement>('.audio-track-btn');
+        return Boolean(button && !button.hidden && !button.disabled);
+      });
+      await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');
       await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
       assert.equal(await page.evaluate(() => (window as unknown as { __hive: { listeners: Set<unknown> } }).__hive.listeners.size), 0, 'exit releases the store subscription');
