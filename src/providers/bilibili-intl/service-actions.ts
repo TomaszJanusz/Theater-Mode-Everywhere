@@ -1,15 +1,16 @@
 import type { ServiceAction, ServiceActionSource } from '../../core/service-actions';
-import type { Chapter } from '../../media-features/types';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { BILIBILI_INTL_SKIP_DURATION_SLACK_SECONDS } from '../../media-features/parsers/bilibili-intl';
+import type { Chapter } from '../../media-features/types';
 import type { PlaybackSurface } from '../../playback-surface';
 import { isBilibiliIntlHost } from '../hosts';
-import { BILIBILI_INTL_PLAYER_SELECTOR } from '../navigation/bilibili-intl';
-import { bilibiliIntlPathKind, bilibiliIntlRouteEpisodeId } from './main';
 import {
   nativeServiceActionId, serviceActionRoute, serviceControlLabel, serviceElementToken, servicePlayer,
   usableServiceControl, type NativeServiceActionHooks
 } from '../native-service-actions';
+import { BILIBILI_INTL_PLAYER_SELECTOR } from '../navigation/bilibili-intl';
+
+import { bilibiliIntlPathKind, bilibiliIntlRouteEpisodeId } from './main';
+import { BILIBILI_INTL_SKIP_DURATION_SLACK_SECONDS } from './metadata';
 
 export type ServiceActionChapterContext = { mediaId: string; chapters: readonly Chapter[] };
 export type BilibiliIntlServiceActionHooks = NativeServiceActionHooks & {

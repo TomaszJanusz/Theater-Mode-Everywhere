@@ -1,14 +1,15 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
+import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
+import type { CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter, PreviewSource } from '../../media-features/types';
+
+import { bilibiliIntlIntegrationEnabled, bilibiliIntlLoadScope, bilibiliIntlPageId, type BilibiliIntlLoadScope } from './main';
 import {
   bilibiliIntlPreviewFrame,
   mergeBilibiliIntlSnapshot,
   parseBilibiliIntlCaptions,
   type BilibiliIntlKind,
   type BilibiliIntlSnapshot
-} from '../../media-features/parsers/bilibili-intl';
-import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
-import type { CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter, PreviewSource } from '../../media-features/types';
-import { bilibiliIntlIntegrationEnabled, bilibiliIntlLoadScope, bilibiliIntlPageId, type BilibiliIntlLoadScope } from './main';
+} from './metadata';
 
 const HOST_CAPTIONS_ATTR = 'data-te-bilibili-intl-captions-hidden';
 
