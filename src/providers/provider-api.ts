@@ -153,8 +153,9 @@ export type ProviderHarvest = {
   response?(target: string, url: string, clone: Response): void;
   /**
    * Targets whose XHR `blob` bodies the core reads as UTF-8 text and passes to `text`, for hosts that request metadata
-   * as Blobs. The core streams the body within the text cap and a 15 s deadline, and cancels it on any navigation
-   * (a history entry, even back to the same URL, back/forward, a hash change, page hide); such a read is dropped.
+   * as Blobs. The core streams the body within the text cap and a 15 s deadline, and cancels it on any committed
+   * navigation (even back to the same URL; not a state-only `replaceState`), back/forward, a hash change or page
+   * hide/show; such a read is dropped. `platform/navigation-visit.ts` states the guarantee and its residual gap.
    * Text only: binary bodies (BIF thumbnails) do not fit this field.
    */
   blobTextTargets?: readonly string[];

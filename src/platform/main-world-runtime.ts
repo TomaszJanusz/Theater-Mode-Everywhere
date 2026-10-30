@@ -149,19 +149,7 @@ export function installMainWorldRuntime(): void {
   }
 
   // Before any host script: a provider reading Blob bodies needs every later navigation to end the visit.
-  const visit = harvests.some(harvest => harvest.blobTextTargets?.length) ? installVisitSignal() : null;
-
-  /** Opted-in Blob bodies only, read as bounded text once; a read that outlives its deadline or a navigation is stale. */
-  function harvestBlobText(target: ProviderTarget, url: string, body: unknown): void {
-    if (!visit || !target.harvest.blobTextTargets?.includes(target.id) || !(body instanceof Blob)) return;
-    void readCurrentBlobText(body, MAX_CAPTION_BYTES, visit()).then((text) => {
-      try {
-        if (text) harvestText(target, url, text);
-      } catch (error) {
-        noteWrapperFailure('xhr', error);
-      }
-    });
-  }
+  const visit = harvests.some(harvest => harvest.blobTextTargets) ? installVisitSignal() : null;
 
   /** Each selected consumer owns this single clone. Its text/json read bypasses the host Response observers to avoid a second harvest. */
   function consumeFetchClone(target: HarvestTarget | null, url: string, response: Response): void {
@@ -272,7 +260,15 @@ export function installMainWorldRuntime(): void {
     installXhrHarvest(XMLHttpRequest.prototype, (xhr, url) => {
       const target = harvestTarget(url);
       if (!target) return;
-      if (isProviderTarget(target) && xhr.responseType === 'blob') { harvestBlobText(target, url, xhr.response); return; }
+      // Opted-in Blob bodies only, read as bounded text once; a read that outlives its deadline or a navigation is stale.
+      if (visit && isProviderTarget(target) && xhr.responseType === 'blob') {
+        if (xhr.response instanceof Blob && (target.harvest.blobTextTargets || []).includes(target.id)) {
+          readCurrentBlobText(xhr.response, MAX_CAPTION_BYTES, visit)
+            .then(text => { if (text) harvestText(target, url, text); })
+            .catch((error: unknown) => noteWrapperFailure('xhr', error));
+        }
+        return;
+      }
       if (target === 'crunchyroll-url') { harvestCrunchyrollBody(url, ''); return; }
       if (target === 'twitch-storyboard') { harvestTwitchXhr(url, null, xhr); return; }
       const format = harvestBodyFormat(formatTarget(target), xhr.responseType);
