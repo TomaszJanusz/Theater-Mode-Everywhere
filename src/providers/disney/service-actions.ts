@@ -78,7 +78,8 @@ export function createDisneyServiceActions(hooks: DisneyServiceActionHooks = {})
   };
 
   return {
-    hostEndsPlayback: true,
+    // Up-next or the end card's title; its close button alone offers nothing next.
+    hostEndsPlayback: () => live().some(action => /^disney:(next|end)/.test(action.id)),
     read: () => { progressTargets.clear(); return live().map(({ element: _element, ...action }) => action); },
     subscribe: changed => observeProviderDom({ root: doc,
       selector: 'disney-web-player, skip-overlay, up-next-lite-v1, end-card-overlay', changed,

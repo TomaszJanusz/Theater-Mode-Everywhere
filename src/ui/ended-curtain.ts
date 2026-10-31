@@ -1,5 +1,6 @@
 import { DisposableScope } from '../core/disposable-scope';
 import type { EndScreenSource } from '../core/end-screen';
+import type { ServiceActionSource } from '../core/service-actions';
 import type { PlaybackSurface } from '../playback-surface';
 
 import { strokeIcon, type HudHost } from './hud';
@@ -27,6 +28,9 @@ const EVENTS = ['ended', 'seeking', 'emptied', 'loadstart'];
  * its Next: the same label, icon and action, for pointer and keyboard alike. Hidden controls are left out.
  * `scope` owns it: disposal (rebind, theater exit) removes the node, the timer and the listeners, and reports
  * `changed(false)` when it was showing.
+ *
+ * It yields while `host` offers its own next step: read when the delay ends, so the curtain hides when that step
+ * appears later and shows when it goes (a closed card, a cancelled countdown) while the media stays ended.
  */
 // Positional like createHud: content.js keeps every option name, and its size budget is spent.
 // eslint-disable-next-line max-params -- the alternative options object costs the shared bundle bytes it does not have
@@ -37,10 +41,13 @@ export function mountEndedCurtain(
   controls: readonly [HTMLButtonElement, ...HTMLButtonElement[]],
   changed: (shown: boolean) => void,
   clock: UiClock = systemClock,
-  source?: EndScreenSource
+  source?: EndScreenSource,
+  host?: ServiceActionSource | null
 ): void {
   let curtain: HTMLElement | null = null;
   let timer: number | undefined;
+  let watching = false;
+  let unwatch: (() => void) | undefined;
   let mountScope: DisposableScope | undefined;
   const show = (shown: boolean) => {
     if (shown === Boolean(curtain)) return;
@@ -76,9 +83,15 @@ export function mountEndedCurtain(
     }
     announcePlayerStatus(ctx.t('videoEnded'));
   };
-  const ended = () => media.ended && media.duration < Infinity && !source?.hostEndsPlayback();
+  const ended = () => media.ended && media.duration < Infinity && !source?.hostEndsPlayback() && !host?.hostEndsPlayback?.();
   const sync = () => {
     if (scope.isDisposed) return;
+    // The host is watched only while ended; a subscription reads at once, re-entering here with `watching` set.
+    if (watching !== media.ended) {
+      watching = media.ended;
+      if (watching) unwatch = host?.hostEndsPlayback ? host.subscribe?.(sync) : undefined;
+      else unwatch?.();
+    }
     clock.clearTimeout(timer);
     if (!ended()) show(false);
     // The timer re-reads the media: what changed meanwhile without an event still counts.
@@ -90,6 +103,7 @@ export function mountEndedCurtain(
   sync();
   scope.add(() => {
     clock.clearTimeout(timer);
+    if (watching) unwatch?.();
     show(false);
     source?.dispose();
   });

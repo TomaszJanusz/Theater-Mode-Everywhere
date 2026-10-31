@@ -1566,12 +1566,12 @@ export function createControls(
         onLayout: updateCaptionDock
       });
     }
-    // A host with its own end sequence keeps it; elsewhere the curtain mirrors the bar's play (then Replay) and Next.
-    if (!serviceActions?.hostEndsPlayback) mountEndedCurtain(ctx, controlsScope, video, [playPauseBtn, nextBtn], shown => {
+    // The curtain mirrors the bar's play (then Replay) and Next, and yields while the host offers its own next step.
+    mountEndedCurtain(ctx, controlsScope, video, [playPauseBtn, nextBtn], shown => {
       ended = refs.playbackEnded = shown;
       paintPlayButton();
       if (shown) showToolbar();
-    }, undefined, createEndScreen(video.element));
+    }, undefined, createEndScreen(video.element), serviceActions);
     controlsScope.add(languageRuntime.subscribe(() => {
       // Rebuild only the current chrome; teardown retires caption/provider work.
       // Reuse the bound surface so language changes never seek, pause or exit theater.
