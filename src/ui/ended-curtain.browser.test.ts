@@ -12,6 +12,15 @@ import { TOOLBAR_AUTO_HIDE_DELAY_MS } from './toolbar';
 
 const FIXTURE = vodVideoFixture({ title: 'Ended curtain', pageTitle: 'Ended curtain fixture' });
 const CURTAIN = '.theater-ended-curtain';
+const NEXT = '.ip-next-episode';
+/**
+ * A Bilibili.tv episode whose player has the host's own next-episode control, which the provider offers as a service
+ * action at the end. The episode attributes stand in for the MAIN-world snapshot.
+ */
+const HOST_FIXTURE = FIXTURE
+  .replace('<video ', `<script>document.documentElement.setAttribute('data-te-bilibili-intl-episode', '11371243');
+    document.documentElement.setAttribute('data-te-bilibili-intl-kind', 'ogv');</script><div class="bstar-player"><video `)
+  .replace('</video>', '</video><div class="player-mobile-control-btn-next-episode"><div class="ip-next-episode">Next episode</div></div></div>');
 
 /** Plays the two-second clip out from just before its end. */
 async function playToEnd(page: Page): Promise<void> {
@@ -113,6 +122,58 @@ describe('ended curtain on a generic HTML5 player', () => {
       assert.equal(await curtainCount(page), 0, 'exit leaves no curtain behind');
       await enterTheater(page);
       await page.locator(CURTAIN).waitFor();
+    });
+  }
+});
+
+describe('ended curtain on a service with its own post-play', () => {
+  for (const engine of testEngines()) {
+    const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
+
+    it(`yields only while the host offers its next episode, and covers a finale in ${engine}`, { timeout: 60_000 }, async t => {
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
+      page.setDefaultTimeout(8000);
+      // The fixture is the only page; nothing reaches the real service.
+      await page.route(url => url.hostname !== 'www.bilibili.tv', route => route.abort());
+      await page.clock.install();
+      await page.clock.setFixedTime(0);
+      await serveFixture(page, HOST_FIXTURE, 'https://www.bilibili.tv/en/play/1053337/11371243');
+      await bootPlayer(page, { settings: { keepControlsVisible: false } });
+      await page.waitForFunction(() => Boolean(document.querySelector('video')?.readyState && document.querySelector('video')!.readyState >= 2));
+      await enterTheater(page);
+      const setNext = (offered: boolean) => page.evaluate(([selector, hidden]) => {
+        document.querySelector<HTMLElement>(selector)!.hidden = hidden;
+      }, [NEXT, !offered] as const);
+      /** The curtain's absence has no event: run the grace and the host watch's frames ahead, then check. */
+      const absent = async (message: string) => {
+        await runTimers(page, 2000);
+        assert.equal(await curtainCount(page), 0, message);
+        await page.clock.resume();
+      };
+
+      await playToEnd(page);
+      await absent('the host offers its next episode, so its post-play keeps the picture');
+
+      // The host withdraws it (a cancelled countdown), then offers it again while the media stays ended.
+      await setNext(false);
+      await page.locator(CURTAIN).waitFor();
+      await setNext(true);
+      await page.locator(CURTAIN).waitFor({ state: 'detached' });
+
+      // A finale: no next episode at the end.
+      await setNext(false);
+      await page.locator(CURTAIN).waitFor();
+      assert.equal(await page.locator(`${CURTAIN} button`).first().getAttribute('aria-label'), 'Replay');
+      await page.locator(`${CURTAIN} button`).first().click();
+      await page.locator(CURTAIN).waitFor({ state: 'detached' });
+
+      // Replay ended the watch: a next step that appears during playback does nothing until the next end.
+      await setNext(true);
+      await playToEnd(page);
+      await absent('the next end yields again');
+      await page.locator('.close-btn').click();
+      await page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+      assert.equal(await curtainCount(page), 0, 'exit leaves no curtain behind');
     });
   }
 });
