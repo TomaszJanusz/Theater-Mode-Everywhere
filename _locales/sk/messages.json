@@ -1326,5 +1326,25 @@
   "endScreenSuggestions": {
     "message": "Navrhované videá",
     "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+  },
+  "providerSettingsButton": {
+    "message": "Nastavenia",
+    "description": "Button on a Rich Theater Experience service card that opens its settings dialog."
+  },
+  "providerSettingsTitle": {
+    "message": "Nastavenia služby $1",
+    "description": "Provider settings dialog title. $1 is the service name, e.g. YouTube."
+  },
+  "providerShowRecommendations": {
+    "message": "Zobrazovať odporúčania",
+    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+  },
+  "providerShowRecommendationsDescription": {
+    "message": "Zobrazovať navrhované videá po skončení prehrávania.",
+    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+  },
+  "providerAutoTheaterGlobalOff": {
+    "message": "AutoTheater je globálne vypnutý. Najprv ho zapnite v sekcii Funkcie.",
+    "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
   }
 }

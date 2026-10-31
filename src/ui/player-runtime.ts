@@ -1,6 +1,8 @@
 import type { DisposableScope } from '../core/disposable-scope';
 import { measureNextFrame } from '../core/frame-batch';
 import { AUDIO_PREF_STORAGE_KEY, resolveAudioPreferences, upsertAudioPreference } from '../media-features/audio-preference';
+import { PROVIDER_SETTINGS_KEY } from '../providers/settings';
+import { serviceAutoEnabled } from '../providers/settings-values';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
 import { createSeekHold, SEEK_HOLD_RATE } from './seek-hold';
@@ -1242,6 +1244,7 @@ function refreshExtensionAccentColor(): void {
   }
 }
 
+let providerSettings: unknown;
 let autoTheaterPolicyAllowed = false;
 let settingsLoadEpoch = 0;
 const autoTheaterVisit: { current: AutoTheaterVisit } = { current: { identity: null, entered: false } };
@@ -1260,6 +1263,7 @@ function syncAutoTheaterRuntime(): void {
   autoTheaterRuntime = createAutoTheaterRuntime({
     visit: autoTheaterVisit,
     enabled: () => ui().autoEnterTheater,
+    serviceEnabled: provider => serviceAutoEnabled(providerSettings, provider),
     skipCountdown: () => ui().autoTheaterSkipCountdown,
     policyAllowed: () => autoTheaterPolicyAllowed,
     providerFlags: () => refs.providerFlags,
@@ -1349,6 +1353,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       'shortcuts',
       LANGUAGE_STORAGE_KEY,
       AUTO_THEATER_STORAGE_KEY,
+      PROVIDER_SETTINGS_KEY,
       AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY,
       VIDEO_ACTIVATOR_STORAGE_KEY,
       SEEK_HOLD_STORAGE_KEY,
@@ -1369,6 +1374,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     if (epoch !== settingsLoadEpoch) return;
     await languageRuntime.set(data[LANGUAGE_STORAGE_KEY], languageRevision);
     if (epoch !== settingsLoadEpoch) return;
+    providerSettings = data[PROVIDER_SETTINGS_KEY];
     const blacklist = (data.blacklist || []) as string[];
     hydrateChatPreferences(data[CHAT_PREFERENCES_STORAGE_KEY]);
     const saved = data.shortcuts || {};
@@ -2853,9 +2859,13 @@ export function bootstrapPlayerRuntime(): void {
         applyVolumeBoost(resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue));
       }
 
+      if (changes[PROVIDER_SETTINGS_KEY]) {
+        providerSettings = changes[PROVIDER_SETTINGS_KEY].newValue;
+        autoTheaterRuntime?.refresh();
+      }
       const providerFlagsChanged = mediaProviderFlagStorageKeys().some((key) => changes[key]);
       // Refresh only preferences that affect automatic entry.
-      const autoTheaterSettingsChanged = changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY] || changes[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY] || providerFlagsChanged;
+      const autoTheaterSettingsChanged = changes[PROVIDER_SETTINGS_KEY] || changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY] || changes[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY] || providerFlagsChanged;
       if (autoTheaterSettingsChanged) {
         void checkBlacklistAndInit();
       }

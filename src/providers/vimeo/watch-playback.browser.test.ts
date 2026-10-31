@@ -111,6 +111,7 @@ for (const engine of testEngines()) {
       Object.assign(window, { vimeoProbe: probe });
       window.vimeoRuntime = window.VimeoWatchTest.createAutoTheaterRuntime({
         visit: { current: { identity: null, entered: false } },
+        serviceEnabled: () => true,
         enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
         editableFocused: () => false, theaterActive: () => probe.active, transitioning: () => false,
         findBestVideo: () => document.getElementById('main') as HTMLVideoElement,

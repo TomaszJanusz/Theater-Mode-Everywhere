@@ -1326,5 +1326,25 @@
   "endScreenSuggestions": {
     "message": "Рекомендуемые видео",
     "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+  },
+  "providerSettingsButton": {
+    "message": "Настройки",
+    "description": "Button on a Rich Theater Experience service card that opens its settings dialog."
+  },
+  "providerSettingsTitle": {
+    "message": "Настройки $1",
+    "description": "Provider settings dialog title. $1 is the service name, e.g. YouTube."
+  },
+  "providerShowRecommendations": {
+    "message": "Показывать рекомендации",
+    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+  },
+  "providerShowRecommendationsDescription": {
+    "message": "Показывать предложенные видео после окончания воспроизведения.",
+    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+  },
+  "providerAutoTheaterGlobalOff": {
+    "message": "AutoTheater отключён глобально. Сначала включите его в разделе «Функции».",
+    "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
   }
 }

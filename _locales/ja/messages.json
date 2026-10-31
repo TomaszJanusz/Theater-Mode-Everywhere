@@ -1326,5 +1326,25 @@
   "endScreenSuggestions": {
     "message": "おすすめの動画",
     "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+  },
+  "providerSettingsButton": {
+    "message": "設定",
+    "description": "Button on a Rich Theater Experience service card that opens its settings dialog."
+  },
+  "providerSettingsTitle": {
+    "message": "$1 の設定",
+    "description": "Provider settings dialog title. $1 is the service name, e.g. YouTube."
+  },
+  "providerShowRecommendations": {
+    "message": "おすすめを表示",
+    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+  },
+  "providerShowRecommendationsDescription": {
+    "message": "再生終了時におすすめの動画を表示します。",
+    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+  },
+  "providerAutoTheaterGlobalOff": {
+    "message": "AutoTheater は全体でオフになっています。まず「機能」で有効にしてください。",
+    "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
   }
 }

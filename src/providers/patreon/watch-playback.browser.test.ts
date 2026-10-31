@@ -154,6 +154,7 @@ for (const engine of testEngines()) {
       window.patreonProbe = probe;
       const create = () => window.PatreonTest.createAutoTheaterRuntime({
         visit: { current: { identity: null, entered: false } },
+        serviceEnabled: () => true,
         enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
         editableFocused: () => false, theaterActive: () => probe.active,
         transitioning: () => false,

@@ -66,7 +66,7 @@ async function fixture(context: BrowserContext, options: { holdReads?: boolean; 
   await target.evaluate(media => { document.querySelector('video')!.src = media; }, MEDIA);
   await target.waitForFunction(() => document.querySelector('video')!.readyState > 2);
   await target.evaluate(({ auto, holdReads, skipCountdown }) => {
-    const listeners: Array<(changes: Record<string, { newValue: unknown }>, area: string) => void> = [];
+    const listeners = new Set<(changes: Record<string, { newValue: unknown }>, area: string) => void>();
     const probe: Window['autoStorageProbe'] = {
       values: { autoEnterTheater: auto, autoTheaterSkipCountdown: skipCountdown, keepControlsVisible: true },
       reads: 0, deepScans: 0, playing: false, shortcutRelays: 0, holdReads, pending: [],
@@ -94,7 +94,7 @@ async function fixture(context: BrowserContext, options: { holdReads?: boolean; 
         },
         set: async (values: StorageValues) => { Object.assign(probe.values, values); }
       },
-      onChanged: { addListener: (listener: typeof listeners[number]) => listeners.push(listener) }
+      onChanged: { addListener: (listener: (changes: Record<string, { newValue: unknown }>, area: string) => void) => listeners.add(listener), removeListener: (listener: (changes: Record<string, { newValue: unknown }>, area: string) => void) => listeners.delete(listener) }
     } } });
     const youtubePlayer = document.getElementById('movie_player');
     if (youtubePlayer) Object.assign(youtubePlayer, {
@@ -128,6 +128,44 @@ async function active(target: Page | Frame): Promise<boolean> {
 
 for (const engine of testEngines()) {
   const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
+  it(`per-service AutoTheater in ${engine} cancels pending entry, persists, and waits for navigation on re-enable`, { timeout: 60_000 }, async t => {
+    const { page, target } = await fixture(await shared.newContext(t));
+    await page.clock.install();
+    await page.clock.pauseAt(new Date(Date.now() + 60_000));
+    await target.evaluate(() => {
+      window.autoStorageProbe.playing = true;
+      document.querySelector('video')!.dispatchEvent(new Event('playing'));
+    });
+    await page.clock.runFor(AUTO_ENTER_NOTICE_DELAY_MS);
+    assert.equal(await page.locator('.theater-auto-notice').count(), 1);
+    await target.evaluate(() => window.autoStorageProbe.change({ providerSettings: { youtube: { autoTheater: false } } }));
+    await page.clock.runFor(AUTO_ENTER_NOTICE_MIN_MS + 1000);
+    assert.equal(await active(target), false);
+    assert.equal(await page.locator('.theater-auto-notice').count(), 0);
+    await target.evaluate(() => window.autoStorageProbe.change({ providerSettings: { youtube: { autoTheater: true } } }));
+    await target.evaluate(() => document.querySelector('video')!.dispatchEvent(new Event('playing')));
+    await page.clock.runFor(AUTO_ENTER_NOTICE_MIN_MS + 1000);
+    assert.equal(await active(target), false, 'enabling never enters the already playing visit');
+    await target.evaluate(() => {
+      history.replaceState({}, '', '/watch?v=lmnopqrstuv');
+      document.dispatchEvent(new Event('yt-navigate-finish'));
+    });
+    await page.clock.runFor(AUTO_ENTER_NOTICE_MIN_MS + 1000);
+    assert.equal(await active(target), true, 'the next watch identity can enter');
+    await target.evaluate(() => window.autoStorageProbe.change({ providerSettings: { youtube: { autoTheater: false } } }));
+    assert.equal(await active(target), true, 'disabling never exits an active theater session');
+    assert.deepEqual(await target.evaluate(async () => (await chrome.storage.sync.get('providerSettings')).providerSettings), { youtube: { autoTheater: false } });
+    await page.close();
+    // A preference for an unrelated service cannot suppress this host.
+    const second = await fixture(await shared.newContext(t), { skipCountdown: true });
+    await second.target.evaluate(() => window.autoStorageProbe.change({ providerSettings: { vimeo: { autoTheater: false } } }));
+    await second.target.evaluate(() => {
+      window.autoStorageProbe.playing = true;
+      document.querySelector('video')!.dispatchEvent(new Event('playing'));
+    });
+    assert.equal(await active(second.target), true);
+  });
+
   it(`AutoTheater in ${engine} skips the notice only when enabled, preserving playback gates and visit ownership`, { timeout: 60_000 }, async t => {
     const context = await shared.newContext(t);
     try {

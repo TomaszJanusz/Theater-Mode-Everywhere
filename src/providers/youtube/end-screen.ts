@@ -2,13 +2,16 @@ import type { EndScreenSource } from '../../core/end-screen';
 import { providerOffAttribute } from '../../media-features/provider-flags';
 
 import { readYouTubeSuggestions, type EndScreenSnapshot, type SuggestionSource } from './end-screen-model';
-import { renderEndScreen } from './end-screen-view';
+import { mountEndScreenSettings } from './end-screen-view';
+import { createYouTubeSettings } from './settings';
 import { youtubeWatchPlayback } from './watch-playback';
 
 const SURFACES = '.ytp-fullscreen-grid, .ytp-autonav-toggle-button';
 
 /** Per-controls lifetime; the player reads no data until its host has actually reached the end. */
 export function createYouTubeEndScreen(element: HTMLElement): EndScreenSource & SuggestionSource {
+  const settings = createYouTubeSettings();
+  void settings.ready.catch(error => { console.error('Error loading recommendations:', error); });
   const doc = element.ownerDocument;
   const root = element.closest<HTMLElement>('#movie_player, .html5-video-player');
   const video = element instanceof HTMLVideoElement ? element : null;
@@ -41,22 +44,8 @@ export function createYouTubeEndScreen(element: HTMLElement): EndScreenSource & 
   let refresh = () => {};
   return {
     mount(container, scope, label) {
-      let grid: HTMLElement | null = null;
-      let previous: string | undefined;
-      const update = () => {
-        if (scope.isDisposed) return;
-        const key = JSON.stringify(read());
-        if (key === previous) return;
-        previous = key;
-        const focused = grid?.matches(':focus-within');
-        grid?.remove();
-        grid = renderEndScreen({ read, activate }, label, scope);
-        if (grid) container.append(grid);
-        if (focused) (grid?.querySelector('button') ?? container.querySelector('button'))?.focus();
-      };
-      refresh = update;
-      scope.add(() => { refresh = () => {}; grid?.remove(); });
-      update();
+      refresh = mountEndScreenSettings(container, { read, activate }, { label, scope, settings });
+      scope.add(() => { refresh = () => {}; });
     },
     read, hostEndsPlayback,
     activate,
@@ -91,11 +80,11 @@ export function createYouTubeEndScreen(element: HTMLElement): EndScreenSource & 
       };
       return stop;
     },
-    dispose() { disposed = true; snapshot = null; stop(); }
+    dispose() { disposed = true; snapshot = null; stop(); settings.dispose(); }
   };
 
   function activate(id: string, mediaId: string): boolean {
-    if (!available() || read()?.mediaId !== mediaId) return false;
+    if (!settings.loaded || !settings.values.youtube.showRecommendations || !available() || read()?.mediaId !== mediaId) return false;
     // Never fall back to location.assign: a missing native link degrades without exiting theater.
     const entry = readYouTubeSuggestions(root!).find(entry => entry.item.id === id);
     if (!entry?.anchor.isConnected) return false;

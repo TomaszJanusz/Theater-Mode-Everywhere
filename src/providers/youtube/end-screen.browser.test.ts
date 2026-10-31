@@ -5,6 +5,7 @@ import { describe, it } from 'node:test';
 import { chromium, firefox } from 'playwright';
 
 import { bootPlayer, bundlePlayer, enterTheater } from '../../test-utils/player-boot';
+import { readStylesheet } from '../../test-utils/styles';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { testEngines } from '../../test-utils/test-engines';
 import { serveFixture, vodVideoFixture } from '../../test-utils/video-fixtures';
@@ -43,7 +44,11 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
       });
       await bootPlayer(page, { mainWorld: true, bundle: bundlePlayer([
         "export { createYouTubeEndScreen } from './providers/youtube/end-screen';",
-        "export { readYouTubeSuggestions } from './providers/youtube/end-screen-model';"
+        "export { readYouTubeSuggestions } from './providers/youtube/end-screen-model';",
+        "import { openProviderSettings } from '../options/provider-settings';",
+        "import { createYouTubeSettings } from './providers/youtube/settings';",
+        "import { PROVIDER_SETTINGS } from './providers/catalog';",
+        "export async function openRecommendations() { const store = createYouTubeSettings(); await store.ready; const modal = openProviderSettings({ ...PROVIDER_SETTINGS.find(p => p.id === 'youtube'), name: 'YouTube' }, store); modal.closed.then(() => store.dispose()); }"
       ]) });
       await page.waitForFunction(() => document.querySelector('video')!.readyState >= 2);
       await enterTheater(page);
@@ -64,6 +69,27 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
       };
       await end();
       assert.equal(await page.locator('.theater-end-screen-tile').count(), 3);
+      const switchInput = page.locator('.theater-recommendations-setting input');
+      await switchInput.click();
+      await page.locator('.theater-end-screen').waitFor({ state: 'detached' });
+      assert.equal(await page.locator('.theater-ended-curtain').count(), 1);
+      assert.equal(await switchInput.isVisible(), true);
+      assert.deepEqual(await page.evaluate(async () => (await chrome.storage.sync.get('providerSettings')).providerSettings), { youtube: { showRecommendations: false } });
+      // The options content is production code against the same extension storage edge.
+      await page.addStyleTag({ content: readStylesheet(new URL('../../../options/options.css', import.meta.url)) });
+      await page.evaluate('TheaterTest.openRecommendations()');
+      const modalSwitch = page.locator('.te-dialog-provider-settings').getByRole('switch', { name: 'Show recommendations', exact: true });
+      assert.equal(await modalSwitch.isChecked(), false);
+      await modalSwitch.press('Space');
+      await page.locator('.theater-end-screen-tile').first().waitFor();
+      await page.keyboard.press('Escape');
+      await page.locator('.te-dialog-overlay').waitFor({ state: 'detached' });
+      await switchInput.focus();
+      await page.keyboard.press('Space');
+      await page.locator('.theater-end-screen').waitFor({ state: 'detached' });
+      assert.equal(await switchInput.evaluate(input => (input.getRootNode() as ShadowRoot).activeElement === input), true);
+      await page.keyboard.press('Space');
+      await page.locator('.theater-end-screen-tile').first().waitFor();
       await page.locator('.fullscreen-btn').click();
       await page.waitForFunction(() => Boolean(document.fullscreenElement));
       assert.equal(await page.locator('.theater-end-screen-tile').first().isVisible(), true, 'tiles stay visible in fullscreen');
@@ -85,8 +111,9 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
       }), true, 'the tiles stay within the picture after resize');
       await page.setViewportSize({ width: 1280, height: 720 });
       // A snapshot and anchor retained across an A -> B -> A visit are still stale.
-      assert.equal(await page.evaluate(`(() => {
+      assert.equal(await page.evaluate(`(async () => {
         const source = TheaterTest.createYouTubeEndScreen(document.querySelector('video'));
+        await Promise.resolve();
         const stop = source.subscribe(() => {});
         const snapshot = source.read();
         const oldTile = document.querySelector('#theater-everywhere-ui').shadowRoot.querySelector('.theater-end-screen-tile');
