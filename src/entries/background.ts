@@ -1,3 +1,4 @@
+import { installPlan, SETUP_HASH, SETUP_STATE_KEY } from '../first-run-setup';
 import { ACK_UPDATE_ACTION, isOpenOptionsRequest, type OptionsSection } from '../protocol/options-page';
 import { loadLanguageCatalog } from '../platform/locale-catalog';
 import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
@@ -162,13 +163,13 @@ async function removeObsoleteHighlights(): Promise<void> {
  * Requests run one after another so two quick clicks cannot both find no tab and open two.
  */
 let optionsRequests: Promise<unknown> = Promise.resolve();
-function openOptionsPage(section?: OptionsSection): Promise<void> {
+function openOptionsPage(section?: OptionsSection | typeof SETUP_HASH): Promise<void> {
   const request = optionsRequests.then(() => openOptionsPageNow(section));
   optionsRequests = request.catch(() => {});
   return request;
 }
 
-async function openOptionsPageNow(section?: OptionsSection): Promise<void> {
+async function openOptionsPageNow(section?: OptionsSection | typeof SETUP_HASH): Promise<void> {
   const file = chrome.runtime.getManifest().options_ui?.page;
   if (!section || !file) return chrome.runtime.openOptionsPage();
   const page = chrome.runtime.getURL(file);
@@ -257,6 +258,18 @@ async function migrateLegacyYoutubeExclusion(): Promise<void> {
   await chrome.storage.local.set({ [LEGACY_YOUTUBE_EXCLUSION_MIGRATION_KEY]: true });
 }
 
+/**
+ * Install defaults, and the first-run setup for a fresh profile. Storage is read before anything is written:
+ * the install's own defaults must not look like a synced profile.
+ */
+async function initializeInstall(): Promise<void> {
+  const [sync, local] = await Promise.all([chrome.storage.sync.get(null), chrome.storage.local.get(SETUP_STATE_KEY)]);
+  const plan = installPlan(sync, local[SETUP_STATE_KEY], chrome.runtime.getManifest().version);
+  if (Object.keys(plan.sync).length) await chrome.storage.sync.set(plan.sync);
+  if (plan.state) await chrome.storage.local.set({ [SETUP_STATE_KEY]: plan.state });
+  if (plan.openSetup) await openOptionsPage(SETUP_HASH);
+}
+
 restoreUpdateBadge().catch(error => console.error('[Theater Everywhere] Could not restore the update badge:', error));
 chrome.runtime.onStartup.addListener(() => {
   restoreUpdateBadge().catch(error => console.error('[Theater Everywhere] Could not restore the update badge:', error));
@@ -285,20 +298,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
   if (details.reason === 'install') {
     try {
-      const data = await chrome.storage.sync.get(['shortcuts', 'blacklist']);
-      if (!data.shortcuts) {
-        await chrome.storage.sync.set({
-          shortcuts: {
-            toggle: 'T',
-            exit: 'Escape',
-            seekBack: 'ArrowLeft',
-            seekForward: 'ArrowRight',
-          },
-        });
-      }
-      if (!data.blacklist) {
-        await chrome.storage.sync.set({ blacklist: [] });
-      }
+      await initializeInstall();
     } catch (err) {
       console.error('[Theater Everywhere] Error initializing defaults:', err);
     }

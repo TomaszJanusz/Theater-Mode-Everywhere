@@ -103,8 +103,15 @@ function playerProfiles(): Profile[] {
   return [...menus, ...help];
 }
 
+/** Settings is a page, not an overlay: a desktop window, and the backdrop does not reach its fixture document. */
+const SETTINGS_STORY_PREFIX = 'options-';
+function settingsProfiles(): Profile[] {
+  return LOCALES.map(locale => ({ ...environment(locale), name: `settings-${locale}`, viewport: { width: 1024, height: 900 } }));
+}
+
 export function profilesFor(id: string, engine: 'chromium' | 'firefox' = 'chromium'): Profile[] {
   if (id === PLAYER_STORY) return playerProfiles();
+  if (id.startsWith(SETTINGS_STORY_PREFIX)) return settingsProfiles();
   const profiles = BACKDROPS.map(backdrop => environment('en', backdrop));
   const content = LOCALE_ANCHORS[id];
   if (content) for (const locale of ['de', 'ar'] as const) {

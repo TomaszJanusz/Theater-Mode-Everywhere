@@ -6,6 +6,10 @@ import { MAX_CAPTION_BYTES } from '../platform/media-url-policy';
 import { bundleModules } from '../test-utils/player-boot';
 
 const bundle = bundleModules(["import './entries/background';"], 'BackgroundTest');
+/** The background once every setup step ships: the registry is the only switch for the install-time setup. */
+const completeSetup = bundleModules([
+  "import { SETUP_STEPS } from './first-run-setup'; for (const step of SETUP_STEPS) step.ready = true;", "import './entries/background';"
+], 'BackgroundSetupTest');
 const CURRENT_VERSION = '2.1.0';
 const ignore = { addListener() {} };
 /** Start-up surface for tests about other messages: no announcement is stored. */
@@ -64,7 +68,7 @@ type Details = { reason: string; previousVersion?: string };
 type Listener = (message: unknown, sender: object, reply: (value: unknown) => void) => boolean;
 
 /** The background over an in-memory profile: storage notifies `onChanged` like the browser, the badge records its text. */
-function profile(version: string, local: Record<string, unknown> = {}, sync: Record<string, unknown> = {}) {
+function profile(version: string, local: Record<string, unknown> = {}, sync: Record<string, unknown> = {}, code = bundle) {
   const storageListeners: Array<(changes: object, area: string) => void> = [];
   const badge = { text: '', color: '' };
   const badgeWaiters: Array<() => void> = [];
@@ -89,7 +93,7 @@ function profile(version: string, local: Record<string, unknown> = {}, sync: Rec
       if (Object.keys(changes).length) for (const listener of storageListeners) listener(changes, name);
     }
   });
-  runInNewContext(bundle, {
+  runInNewContext(code, {
     console,
     chrome: {
       action: {
@@ -302,4 +306,46 @@ it('opens one Settings tab for rapid clicks and falls back to a new tab when the
   closedSincePing = true;
   assert.equal((await send()).ok, true);
   assert.deepEqual(JSON.parse(JSON.stringify(calls)).map((call: unknown[]) => call[0]), ['update', 'create']);
+});
+
+const SETUP_URL = 'chrome-extension://extension/options/options.html#setup';
+const plain = (value: unknown) => JSON.parse(JSON.stringify(value));
+
+it('on a fresh install opens one Settings tab at the setup and starts AutoTheater off, once the setup is complete', async () => {
+  const fresh = profile('2.1.0', {}, {}, completeSetup);
+  await fresh.started;
+  await fresh.installed({ reason: 'install' });
+  assert.deepEqual(fresh.opened, [SETUP_URL]);
+  assert.deepEqual(plain(fresh.sync), {
+    shortcuts: { toggle: 'T', exit: 'Escape', seekBack: 'ArrowLeft', seekForward: 'ArrowRight' }, blacklist: [], autoEnterTheater: false
+  });
+  assert.deepEqual(plain(fresh.local.firstRunSetup), { status: 'pending', version: '2.1.0' });
+  // A reinstall over surviving local state (a Firefox temporary add-on on reload) does not ask again.
+  fresh.opened.length = 0;
+  await fresh.installed({ reason: 'install' });
+  assert.deepEqual(fresh.opened, []);
+});
+
+it('never opens the setup for a synced profile or an update, and leaves their AutoTheater alone', async () => {
+  const synced = profile('2.1.0', {}, { blacklist: ['example.com'], language: 'pl' }, completeSetup);
+  await synced.started;
+  await synced.installed({ reason: 'install' });
+  assert.deepEqual(synced.opened, []);
+  assert.equal('autoEnterTheater' in synced.sync, false);
+  assert.deepEqual(plain(synced.local.firstRunSetup), { status: 'profile', version: '2.1.0' });
+  const update = profile('2.1.0', {}, { blacklist: [] }, completeSetup);
+  await update.started;
+  await update.installed({ reason: 'update', previousVersion: '2.0.8' });
+  assert.deepEqual(update.opened, []);
+  assert.equal('autoEnterTheater' in update.sync, false);
+  assert.equal('firstRunSetup' in update.local, false);
+});
+
+it('keeps today\'s install while a setup step is still pending', async () => {
+  const fresh = profile('2.1.0');
+  await fresh.started;
+  await fresh.installed({ reason: 'install' });
+  assert.deepEqual(fresh.opened, []);
+  assert.deepEqual(Object.keys(fresh.sync).sort(), ['blacklist', 'shortcuts']);
+  assert.equal('firstRunSetup' in fresh.local, false);
 });

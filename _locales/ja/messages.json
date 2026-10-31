@@ -1361,5 +1361,93 @@
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater は全体でオフになっています。まず「機能」で有効にしてください。",
     "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
+  },
+  "setupTitle": {
+    "message": "Theater Mode Everywhere のセットアップ",
+    "description": "Heading of the first-run setup shown in Settings after a fresh install. Theater Mode Everywhere is the product name; keep it untranslated."
+  },
+  "setupProgress": {
+    "message": "ステップ $1 / $2",
+    "description": "First-run setup progress. $1 is the current step number, $2 the number of steps."
+  },
+  "setupBack": {
+    "message": "戻る",
+    "description": "First-run setup button: go to the previous step."
+  },
+  "setupNext": {
+    "message": "次へ",
+    "description": "First-run setup button: go to the next step."
+  },
+  "setupFinish": {
+    "message": "完了",
+    "description": "First-run setup button on the last step: save the choices and close the setup."
+  },
+  "setupSkip": {
+    "message": "セットアップをスキップ",
+    "description": "First-run setup button: close the setup without changing any setting."
+  },
+  "setupWelcome": {
+    "message": "インストールありがとうございます。いくつかの選択で、拡張機能がアクセス先のサイトで何をするかが決まります。完了するまで何も保存されません。",
+    "description": "Intro on the first step of the first-run setup."
+  },
+  "setupServicesTitle": {
+    "message": "追加機能を使うサービス",
+    "description": "First-run setup step title and summary label: which video services get Rich Theater Experience integrations (subtitles, chapters and similar)."
+  },
+  "setupServicesDescription": {
+    "message": "対応サービスでは、シアターモードに字幕、チャプター、サムネイル、再生リストを追加できます。そのために、拡張機能は字幕ファイルとプレビューファイルをそのサービス自体に要求します。開発者や他の企業には何も送信されません。",
+    "description": "First-run setup step text explaining service integrations and their network requests. 'Subtitles' is the umbrella term for subtitles and captions."
+  },
+  "setupServicesAll": {
+    "message": "対応するすべてのサービス",
+    "description": "First-run setup choice and summary value: turn integrations on for every supported service."
+  },
+  "setupServicesAllDescription": {
+    "message": "利用できるすべての場所で追加機能をオンにします。",
+    "description": "Description of the 'All supported services' choice in the first-run setup."
+  },
+  "setupServicesChoose": {
+    "message": "サービスを選ぶ",
+    "description": "First-run setup choice: pick services one by one with switches."
+  },
+  "setupServicesChooseDescription": {
+    "message": "追加機能を使うサービスを選びます。",
+    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+  },
+  "setupServicesNone": {
+    "message": "なし",
+    "description": "First-run setup choice and summary value: no service integrations."
+  },
+  "setupServicesNoneDescription": {
+    "message": "シンプルなシアターモードのみ。どの動画でも、シアターモードとそのコントロールは引き続き使えます。",
+    "description": "Description of the 'None' choice in the first-run setup."
+  },
+  "setupServicesFooter": {
+    "message": "後から「設定 → 機能設定 → Rich Theater Experience」で変更できます。",
+    "description": "Footer of the services step. Settings, Features and Rich Theater Experience are names in the Settings page; keep Rich Theater Experience untranslated."
+  },
+  "setupSummaryTitle": {
+    "message": "準備ができました",
+    "description": "Title of the last first-run setup step, which summarises the choices."
+  },
+  "setupSummaryDescription": {
+    "message": "選択内容は次のとおりです。完了すると保存されます。",
+    "description": "Text on the summary step of the first-run setup."
+  },
+  "setupSummaryServicesSome": {
+    "message": "$2 件中 $1 件のサービス",
+    "description": "Summary value when some services are chosen. $1 is how many are on, $2 how many there are."
+  },
+  "setupSummaryFinishAndOpen": {
+    "message": "または完了して開く:",
+    "description": "Label before two buttons on the summary step that save the setup and open Website Exclusions or Keyboard Shortcuts."
+  },
+  "setupProfileFound": {
+    "message": "Theater Mode Everywhere の設定が別のデバイスから届いたため、セットアップは不要です。",
+    "description": "Shown instead of the first-run setup when settings synced from another device arrive. Theater Mode Everywhere is the product name."
+  },
+  "setupOpenSettings": {
+    "message": "設定を開く",
+    "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   }
 }

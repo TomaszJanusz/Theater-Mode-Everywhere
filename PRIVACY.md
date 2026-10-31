@@ -31,7 +31,7 @@ The extension saves preferences with the browser's extension storage:
 
 These use `storage.sync`. If browser sync is enabled, settings — including excluded host names and per-site subtitle and audio language preferences — can sync through your Google, Mozilla or Microsoft browser account. They are not accessible to the developer. They are settings, not a browsing-history log.
 
-`storage.local` holds the version of an update whose highlights you have not opened yet, plus a one-time settings-migration flag. The extension persistently stores only settings and these housekeeping flags, not captions, images, page content or playback history. You can change settings in the extension and remove its stored data through your browser's extension-data controls; browser sync is controlled by your browser.
+`storage.local` holds the version of an update whose highlights you have not opened yet, whether this device has been through the first-run setup, plus a one-time settings-migration flag. The extension persistently stores only settings and these housekeeping flags, not captions, images, page content or playback history. You can change settings in the extension and remove its stored data through your browser's extension-data controls; browser sync is controlled by your browser.
 
 ## Permissions
 

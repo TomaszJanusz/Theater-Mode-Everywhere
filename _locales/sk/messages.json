@@ -1361,5 +1361,93 @@
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater je globálne vypnutý. Najprv ho zapnite v sekcii Funkcie.",
     "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
+  },
+  "setupTitle": {
+    "message": "Nastaviť Theater Mode Everywhere",
+    "description": "Heading of the first-run setup shown in Settings after a fresh install. Theater Mode Everywhere is the product name; keep it untranslated."
+  },
+  "setupProgress": {
+    "message": "Krok $1 z $2",
+    "description": "First-run setup progress. $1 is the current step number, $2 the number of steps."
+  },
+  "setupBack": {
+    "message": "Späť",
+    "description": "First-run setup button: go to the previous step."
+  },
+  "setupNext": {
+    "message": "Ďalej",
+    "description": "First-run setup button: go to the next step."
+  },
+  "setupFinish": {
+    "message": "Dokončiť",
+    "description": "First-run setup button on the last step: save the choices and close the setup."
+  },
+  "setupSkip": {
+    "message": "Preskočiť nastavenie",
+    "description": "First-run setup button: close the setup without changing any setting."
+  },
+  "setupWelcome": {
+    "message": "Ďakujeme za inštaláciu! Niekoľko volieb určí, čo rozšírenie robí na weboch, ktoré navštevujete. Nič sa neuloží, kým nastavenie nedokončíte.",
+    "description": "Intro on the first step of the first-run setup."
+  },
+  "setupServicesTitle": {
+    "message": "Služby s funkciami navyše",
+    "description": "First-run setup step title and summary label: which video services get Rich Theater Experience integrations (subtitles, chapters and similar)."
+  },
+  "setupServicesDescription": {
+    "message": "V podporovaných službách môže režim kina pridať titulky, kapitoly, miniatúry a zoznamy videí. Rozšírenie si na to vyžiada súbory titulkov a náhľadov priamo od služby. Nič sa neposiela vývojárovi ani iným firmám.",
+    "description": "First-run setup step text explaining service integrations and their network requests. 'Subtitles' is the umbrella term for subtitles and captions."
+  },
+  "setupServicesAll": {
+    "message": "Všetky podporované služby",
+    "description": "First-run setup choice and summary value: turn integrations on for every supported service."
+  },
+  "setupServicesAllDescription": {
+    "message": "Zapnúť funkcie navyše všade, kde sú k dispozícii.",
+    "description": "Description of the 'All supported services' choice in the first-run setup."
+  },
+  "setupServicesChoose": {
+    "message": "Vybrať služby",
+    "description": "First-run setup choice: pick services one by one with switches."
+  },
+  "setupServicesChooseDescription": {
+    "message": "Zvoľte služby, v ktorých ich chcete.",
+    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+  },
+  "setupServicesNone": {
+    "message": "Žiadne",
+    "description": "First-run setup choice and summary value: no service integrations."
+  },
+  "setupServicesNoneDescription": {
+    "message": "Len základný režim kina. Každé video má naďalej režim kina a jeho ovládanie.",
+    "description": "Description of the 'None' choice in the first-run setup."
+  },
+  "setupServicesFooter": {
+    "message": "Neskôr to môžete zmeniť v Nastavenia → Funkcie → Rich Theater Experience.",
+    "description": "Footer of the services step. Settings, Features and Rich Theater Experience are names in the Settings page; keep Rich Theater Experience untranslated."
+  },
+  "setupSummaryTitle": {
+    "message": "Všetko je pripravené",
+    "description": "Title of the last first-run setup step, which summarises the choices."
+  },
+  "setupSummaryDescription": {
+    "message": "Toto ste zvolili. Voľby sa uložia, keď nastavenie dokončíte.",
+    "description": "Text on the summary step of the first-run setup."
+  },
+  "setupSummaryServicesSome": {
+    "message": "$1 z $2 služieb",
+    "description": "Summary value when some services are chosen. $1 is how many are on, $2 how many there are."
+  },
+  "setupSummaryFinishAndOpen": {
+    "message": "Alebo dokončiť a otvoriť:",
+    "description": "Label before two buttons on the summary step that save the setup and open Website Exclusions or Keyboard Shortcuts."
+  },
+  "setupProfileFound": {
+    "message": "Vaše nastavenia Theater Mode Everywhere prišli z iného zariadenia, takže nastavenie nie je potrebné.",
+    "description": "Shown instead of the first-run setup when settings synced from another device arrive. Theater Mode Everywhere is the product name."
+  },
+  "setupOpenSettings": {
+    "message": "Otvoriť nastavenia",
+    "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   }
 }

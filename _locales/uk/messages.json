@@ -1361,5 +1361,93 @@
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater вимкнено глобально. Спочатку ввімкніть його в розділі «Функції».",
     "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
+  },
+  "setupTitle": {
+    "message": "Налаштування Theater Mode Everywhere",
+    "description": "Heading of the first-run setup shown in Settings after a fresh install. Theater Mode Everywhere is the product name; keep it untranslated."
+  },
+  "setupProgress": {
+    "message": "Крок $1 з $2",
+    "description": "First-run setup progress. $1 is the current step number, $2 the number of steps."
+  },
+  "setupBack": {
+    "message": "Назад",
+    "description": "First-run setup button: go to the previous step."
+  },
+  "setupNext": {
+    "message": "Далі",
+    "description": "First-run setup button: go to the next step."
+  },
+  "setupFinish": {
+    "message": "Готово",
+    "description": "First-run setup button on the last step: save the choices and close the setup."
+  },
+  "setupSkip": {
+    "message": "Пропустити налаштування",
+    "description": "First-run setup button: close the setup without changing any setting."
+  },
+  "setupWelcome": {
+    "message": "Дякуємо за встановлення! Кілька рішень визначать, що розширення робить на сайтах, які ви відвідуєте. Нічого не збережеться, доки ви не завершите.",
+    "description": "Intro on the first step of the first-run setup."
+  },
+  "setupServicesTitle": {
+    "message": "Сервіси з додатковими функціями",
+    "description": "First-run setup step title and summary label: which video services get Rich Theater Experience integrations (subtitles, chapters and similar)."
+  },
+  "setupServicesDescription": {
+    "message": "На підтримуваних сервісах режим кінотеатру може додавати субтитри, розділи, мініатюри та списки відтворення. Для цього розширення запитує файли субтитрів і попереднього перегляду в самого сервісу. Нічого не надсилається розробнику чи іншим компаніям.",
+    "description": "First-run setup step text explaining service integrations and their network requests. 'Subtitles' is the umbrella term for subtitles and captions."
+  },
+  "setupServicesAll": {
+    "message": "Усі підтримувані сервіси",
+    "description": "First-run setup choice and summary value: turn integrations on for every supported service."
+  },
+  "setupServicesAllDescription": {
+    "message": "Увімкнути додаткові функції всюди, де вони доступні.",
+    "description": "Description of the 'All supported services' choice in the first-run setup."
+  },
+  "setupServicesChoose": {
+    "message": "Вибрати сервіси",
+    "description": "First-run setup choice: pick services one by one with switches."
+  },
+  "setupServicesChooseDescription": {
+    "message": "Позначте сервіси, на яких вони потрібні.",
+    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+  },
+  "setupServicesNone": {
+    "message": "Жодні",
+    "description": "First-run setup choice and summary value: no service integrations."
+  },
+  "setupServicesNoneDescription": {
+    "message": "Лише звичайний режим кінотеатру. Кожне відео й надалі має режим кінотеатру та його керування.",
+    "description": "Description of the 'None' choice in the first-run setup."
+  },
+  "setupServicesFooter": {
+    "message": "Це можна змінити пізніше в меню «Налаштування → Функції → Rich Theater Experience».",
+    "description": "Footer of the services step. Settings, Features and Rich Theater Experience are names in the Settings page; keep Rich Theater Experience untranslated."
+  },
+  "setupSummaryTitle": {
+    "message": "Усе готово",
+    "description": "Title of the last first-run setup step, which summarises the choices."
+  },
+  "setupSummaryDescription": {
+    "message": "Ось що ви вибрали. Вибір збережеться, коли ви завершите.",
+    "description": "Text on the summary step of the first-run setup."
+  },
+  "setupSummaryServicesSome": {
+    "message": "$1 з $2 сервісів",
+    "description": "Summary value when some services are chosen. $1 is how many are on, $2 how many there are."
+  },
+  "setupSummaryFinishAndOpen": {
+    "message": "Або завершити й відкрити:",
+    "description": "Label before two buttons on the summary step that save the setup and open Website Exclusions or Keyboard Shortcuts."
+  },
+  "setupProfileFound": {
+    "message": "Ваші налаштування Theater Mode Everywhere надійшли з іншого пристрою, тож налаштування не потрібне.",
+    "description": "Shown instead of the first-run setup when settings synced from another device arrive. Theater Mode Everywhere is the product name."
+  },
+  "setupOpenSettings": {
+    "message": "Відкрити налаштування",
+    "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   }
 }
