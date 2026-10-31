@@ -24,6 +24,7 @@ export type CaptionToggleResult = 'on' | 'off' | 'none' | 'failed';
 
 export type CaptionHudPayload = {
   result: CaptionToggleResult | 'loading' | 'dismiss';
+  /** The track's display name: with `on` the one now playing, with `loading` the one being loaded, when it is known. */
   label?: string;
 };
 
@@ -694,13 +695,13 @@ export class MediaFeaturesController {
    */
   private emitCaptionHud(result: CaptionToggleResult): void {
     if (!this.onCaptionHud) return;
-    const track = result === 'on' && this.activeTrackId
-      ? this.tracks.find((item) => item.id === this.activeTrackId)
-      : undefined;
-    this.onCaptionHud({
-      result,
-      ...(track ? { label: this.captionTrackDisplayLabel(track) } : {})
-    });
+    this.onCaptionHud({ result, ...this.hudLabel(result === 'on' ? this.activeTrackId : null) });
+  }
+
+  /** The label the loading and the loaded HUD share, so a track reads the same before and after it loads. */
+  private hudLabel(id: string | null): { label?: string } {
+    const track = this.tracks.find((item) => item.id === id);
+    return track ? { label: this.captionTrackDisplayLabel(track) } : {};
   }
 
   /**
@@ -809,7 +810,7 @@ export class MediaFeaturesController {
     this.updateCcState();
     const persist = options?.persist !== false;
     if (id) {
-      this.onCaptionHud?.({ result: 'loading' });
+      this.onCaptionHud?.({ result: 'loading', ...this.hudLabel(id) });
     }
     try {
       let activation: CaptionActivationResult = { status: 'failed', delivery: 'none', cues: [] };

@@ -14,7 +14,6 @@ export type CaptionHudView = { kind: 'dismiss' } | LanguageLine;
 type LanguageHudHost = Pick<PlayerChromeContext, 'mountPlayerUi' | 'paintOverlay'> & {
   session: Pick<PlayerChromeContext['session'], 'element' | 'currentEpoch'>;
 };
-type StatusLine = Extract<LanguageLine, { kind: 'status' }>;
 type Place = { x: number; y: number };
 type PlateBox = { box: DOMRect; places: Map<LanguageSource, Place[]> };
 type LeavingCell = { cell: HTMLElement; left: number; top: number; width: number; opacity: string };
@@ -22,6 +21,9 @@ type LeavingCell = { cell: HTMLElement; left: number; top: number; width: number
 const PLATE_MORPH_MS = 225;
 /** "Loading..." gives way in the first part of the ring's exit, before the value starts to reveal. */
 const LOADING_TEXT_FADE_MS = SPINNER_PASSIVE_EXIT_MS * 0.4;
+const LOADING_CLASS = 'language-hud-loading';
+const LOADING_TEXT_CLASS = 'language-hud-loading-text';
+const TEXT_CLASS = 'language-hud-text';
 const ROWS_CLASS = 'language-hud-rows';
 
 const rowOf = (plate: HTMLElement, source: LanguageSource) =>
@@ -42,14 +44,20 @@ function buildRow(source: LanguageSource, line: LanguageLine): HTMLElement {
   row.dataset.languageLine = source;
   const value = span('language-hud-value');
   if (line.kind === 'loading') {
-    const loading = span('language-hud-loading');
+    const loading = span(LOADING_CLASS);
     const spinner = span('language-hud-spinner');
     spinner.setAttribute('aria-hidden', 'true');
-    loading.append(spinner, span('language-hud-loading-text', line.detail));
+    loading.append(spinner, span(LOADING_TEXT_CLASS, line.detail));
     value.append(loading);
-  } else value.append(span('language-hud-text', line.detail));
+  } else value.append(span(TEXT_CLASS, line.detail));
   row.append(span('language-hud-label', line.title), value);
   return row;
+}
+
+/** Where a cell's content is: both columns end-align, so a cell that grows or shrinks keeps its end edge. */
+function placeOf(cell: HTMLElement): Place {
+  const box = cell.getBoundingClientRect();
+  return { x: box[getComputedStyle(cell).direction === 'rtl' ? 'left' : 'right'], y: box.top };
 }
 
 /** Where the plate and its rows are now, running motion included, so an update can ease from there. */
@@ -57,10 +65,7 @@ function measurePlate(plate: HTMLElement): PlateBox {
   const places = new Map<LanguageSource, Place[]>();
   for (const row of plate.querySelectorAll<HTMLElement>(`.${ROWS_CLASS} > [data-language-line]`)) {
     // Per cell: the label holds the plate's end edge while its value moves with the column's width.
-    places.set(row.dataset.languageLine as LanguageSource, cellsOf(row).map(cell => {
-      const { left, top } = cell.getBoundingClientRect();
-      return { x: left, y: top };
-    }));
+    places.set(row.dataset.languageLine as LanguageSource, cellsOf(row).map(cell => placeOf(cell)));
   }
   return { box: plate.getBoundingClientRect(), places };
 }
@@ -133,8 +138,9 @@ class LanguagePlate implements LanguageNoticeView {
   }
 
   /**
-   * A status updates its row in place, so a spinner there zooms out into the new value; a loading
-   * row, or a row the plate did not have, is built new.
+   * A status updates its row in place, so a spinner there zooms out into the new value; so does a
+   * loading line that names another load while its spinner turns, which keeps turning. A row the
+   * plate did not have is built new.
    */
   private renderRow(plate: HTMLElement, source: LanguageSource, line: LanguageLine, freshPlate: boolean): HTMLElement {
     this.stopLineMotion(source);
@@ -143,43 +149,55 @@ class LanguagePlate implements LanguageNoticeView {
       this.updateStatus(current, source, line);
       return current;
     }
+    const turning = line.kind === 'loading' && current?.querySelector(`.${LOADING_TEXT_CLASS}`);
+    if (turning) {
+      turning.textContent = line.detail || '';
+      return current!;
+    }
     const row = buildRow(source, line);
     current?.replaceWith(row);
     if (isElementMotionReduced(plate)) return row;
     // A row joining a plate on screen fades in; a fresh plate reveals its value as one notice always has.
-    const targets = freshPlate ? [...row.querySelectorAll<HTMLElement>('.language-hud-text')] : cellsOf(row);
+    const targets = freshPlate ? [...row.querySelectorAll<HTMLElement>(`.${TEXT_CLASS}`)] : cellsOf(row);
     const reveals = targets.filter(node => node.textContent).map(node => animateReveal(node));
     if (reveals.length) this.lineMotion.set(source, () => { for (const reveal of reveals) reveal.cancel(); });
     return row;
   }
 
-  private updateStatus(row: HTMLElement, source: LanguageSource, line: StatusLine): void {
+  private updateStatus(row: HTMLElement, source: LanguageSource, line: LanguageLine): void {
     const [label, value] = cellsOf(row);
     label.textContent = line.title;
-    // An exit cut short by this update leaves its spinner behind; it goes at once.
-    for (const stale of value.querySelectorAll('.language-hud-loading.leaving')) stale.remove();
-    value.style.removeProperty('min-width');
-    value.querySelector('.language-hud-text')?.remove();
-    const text = span('language-hud-text', line.detail);
-    value.append(text);
-    const loading = value.querySelector<HTMLElement>('.language-hud-loading');
+    value.querySelector(`.${TEXT_CLASS}`)?.remove();
+    const loading = value.querySelector<HTMLElement>(`.${LOADING_CLASS}`);
+    const name = loading?.querySelector<HTMLElement>(`.${LOADING_TEXT_CLASS}`);
+    // A load that already named the result keeps that text where it is: only the spinner leaves.
+    const kept = line.detail && name?.textContent === line.detail ? name : null;
+    const text = kept ?? span(TEXT_CLASS, line.detail);
     const reduced = isElementMotionReduced(row.parentElement!);
+    if (kept) {
+      kept.className = TEXT_CLASS;
+      // The text keeps its width, so with the spinner gone it neither rewraps nor shifts.
+      kept.style.width = `${kept.getBoundingClientRect().width}px`;
+    } else value.append(text);
     if (loading) {
-      // The value takes the spinner's place; the slot keeps the spinner's width until it has gone, so
-      // "Loading..." is never cut, and then the plate eases to the value's own width.
+      // The value takes the spinner's place; the slot keeps the loading width until the spinner has gone
+      // (it leaves the flow only when it is removed, which would snap the plate), so "Loading..." is never
+      // cut, and then the plate eases to the value's own width.
       value.style.minWidth = `${loading.offsetWidth}px`;
-      loading.classList.add('leaving');
-      const fade = reduced ? null : loading.querySelector('.language-hud-loading-text')!.animate(
+      if (!kept) loading.classList.add('leaving');
+      const fade = reduced || kept ? null : name!.animate(
         [{ opacity: 1 }, { opacity: 0 }], { duration: LOADING_TEXT_FADE_MS, easing: 'ease-out', fill: 'both' });
+      // An exit cut short by this update ends here too: the spinner goes at once.
+      const settle = () => {
+        loading.replaceWith(...kept ? [kept] : []);
+        value.style.removeProperty('min-width');
+      };
       const stopExit = exitSpinner(loading.querySelector<HTMLElement>('.language-hud-spinner')!, {
-        mode: 'passive', reveal: line.detail ? text : undefined, clock: this.clock,
+        mode: 'passive', reveal: line.detail && !kept ? text : undefined, clock: this.clock,
         isCurrent: () => row.isConnected && this.isCurrent(),
-        onFinish: () => this.reflow(() => {
-          loading.remove();
-          value.style.removeProperty('min-width');
-        })
+        onFinish: () => this.reflow(settle)
       });
-      this.lineMotion.set(source, () => { stopExit(); fade?.cancel(); });
+      this.lineMotion.set(source, () => { stopExit(); fade?.cancel(); settle(); });
     } else if (line.detail && !reduced) {
       const reveal = animateReveal(text);
       this.lineMotion.set(source, () => reveal.cancel());
@@ -265,9 +283,9 @@ class LanguagePlate implements LanguageNoticeView {
       const row = rowOf(plate, source);
       if (!row) continue;
       cellsOf(row).forEach((cell, index) => {
-        const now = cell.getBoundingClientRect();
-        const dx = place[index].x - now.left;
-        const dy = place[index].y - now.top;
+        const now = placeOf(cell);
+        const dx = place[index].x - now.x;
+        const dy = place[index].y - now.y;
         if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) this.play(cell, [{ translate: `${dx}px ${dy}px` }, { translate: '0 0' }]);
       });
     }

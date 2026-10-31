@@ -632,6 +632,15 @@
   "subtitlesHudFailed": {
     "message": "Échec du chargement"
   },
+  "subtitlesLoadingNamedHud": {
+    "message": "Chargement des sous-titres : $LABEL$",
+    "description": "On-video notice and screen reader announcement while a subtitle track loads. $LABEL$ is the track's name, usually its language (for example \"Polish\"); it stays in the track's own language and is inserted unchanged. Keep \"subtitles\" as the umbrella term and the label last.",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "noSubtitlesAvailable": {
     "message": "Aucun sous-titre disponible"
   },

@@ -120,6 +120,34 @@ describe('language notice', () => {
     assert.deepEqual(shown(), [['subtitles', 'Deutsch'], ['audio', 'Français']], 'the result cancels the pending spinner');
   });
 
+  it('names the load that supersedes a turning spinner, and reads each load aloud', () => {
+    const { clock, notice, plate, shown } = setup();
+    const named = (detail: string): LanguageLine => ({ kind: 'loading', title: 'Subtitles', detail, announce: `Loading subtitles: ${detail}` });
+    notice.update({ subtitles: named('Polish') });
+    clock.advance(LANGUAGE_LOAD_DELAY_MS);
+    assert.equal(languageNoticeText(plate.lines!), 'Loading subtitles: Polish');
+    notice.update({ subtitles: named('Polish') });
+    assert.deepEqual(plate.renders, [['subtitles']], 'the same load repeated leaves the spinner alone');
+    notice.update({ subtitles: named('German') });
+    assert.deepEqual(plate.renders, [['subtitles'], ['subtitles']]);
+    assert.deepEqual(plate.lines!.map(([, line]) => line.detail), ['German'], 'a superseded pick never keeps its language on screen');
+    assert.equal(languageNoticeText(plate.lines!), 'Loading subtitles: German');
+    notice.update({ subtitles: on('German') });
+    assert.deepEqual(shown(), [['subtitles', 'German']]);
+    assert.equal(languageNoticeText(plate.lines!), 'Subtitles on: German');
+  });
+
+  it('shows only the latest pick when a load is superseded before its spinner appears', () => {
+    const { clock, notice, plate } = setup();
+    notice.update({ subtitles: { kind: 'loading', title: 'Subtitles', detail: 'Polish' } });
+    clock.advance(LANGUAGE_LOAD_DELAY_MS - 1);
+    notice.update({ subtitles: { kind: 'loading', title: 'Subtitles', detail: 'German' } });
+    clock.advance(LANGUAGE_LOAD_DELAY_MS - 1);
+    assert.equal(plate.lines, null);
+    clock.advance(1);
+    assert.deepEqual(plate.lines!.map(([, line]) => line.detail), ['German']);
+  });
+
   it('ignores work for another session and leaves nothing after clear', () => {
     const { clock, session, notice, plate, shown } = setup();
     notice.update({ subtitles: loading });

@@ -104,7 +104,7 @@ describe('caption loading browser regressions', () => {
       const rowText = () => row.evaluate(node => [node.querySelector('.language-hud-label')!.textContent, node.querySelector('.language-hud-value')!.textContent]);
       await page.locator('.theater-everywhere-caption-hud [data-language-line="subtitles"] .language-hud-spinner').waitFor();
       assert.equal(await button.getAttribute('aria-busy'), 'true');
-      assert.deepEqual(await rowText(), ['Subtitles', 'Loading...']);
+      assert.deepEqual(await rowText(), ['Subtitles', 'English'], 'the restored track is named while it loads');
       const colors = await button.locator('svg').evaluate(async svg => {
         const animation = svg.getAnimations()[0];
         if (!animation) throw new Error('CC loading animation is missing');

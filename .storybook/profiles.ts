@@ -36,7 +36,15 @@ export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args'
   // The pictogram has no words, so right-to-left only proves the play triangle keeps pointing forward.
   'components-hud--playback': () => ({}),
   'components-caption-notice--status': locale => ({ detail: locale === 'ar' ? 'العربية' : 'Portugiesisch (Brasilien, automatisch erstellt)' }),
+  // German and Arabic names beside the spinner, and a name long enough to wrap in each.
+  'components-caption-notice--loading-named': locale => ({ detail: locale === 'ar' ? 'العربية' : 'Portugiesisch (Brasilien, automatisch erstellt)' }),
+  'components-caption-notice--loading-named-long': locale => ({
+    detail: locale === 'ar' ? 'العربية (المملكة العربية السعودية)، ترجمة تلقائية منشأة من المسار الصوتي الإنجليزي الأصلي'
+      : 'Portugiesisch (Brasilien), automatisch erstellte Untertitel aus der englischen Originalspur des Films'
+  }),
   'components-language-notice--merged': () => ({}),
+  'components-language-notice--named-spinner-resolves-long': () => ({}),
+  'components-language-notice--named-spinner-superseded': () => ({}),
   'components-language-notice--wrapped-value': () => ({}),
   'components-title-hud--overflow': (locale): Profile['args'] => locale === 'ar'
     ? { title: 'الفيلم الوثائقي الطويل عن السينما والضوء وتاريخ جهاز العرض في العالم', subtitle: 'الحلقة ٣' } : {},
@@ -44,13 +52,14 @@ export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args'
 };
 
 /** Language notice stories whose last step morphs the plate: shot at several fractions of the morph. */
-const LANGUAGE_MORPH = new Set(['merged', 'audio-then-subtitles', 'spinner-with-audio', 'spinner-resolves-with-audio', 'row-leaves']
+const LANGUAGE_MORPH = new Set(['merged', 'audio-then-subtitles', 'spinner-with-audio', 'spinner-resolves-with-audio', 'row-leaves',
+  'named-spinner-resolves', 'named-spinner-resolves-long', 'named-spinner-superseded']
   .map(name => `components-language-notice--${name}`));
 const LANGUAGE_STILL = new Set(['audio-only', 'audio-default', 'refused'].map(name => `components-language-notice--${name}`));
 const MORPH_FRAMES = [0, 0.25, 0.5, 0.75, 1] as const;
 
 const REDUCED = new Set(['components-hud--bass', 'components-title-hud--overflow', 'components-caption-notice--loading-to-result', 'components-auto-theater-notice--counting',
-  'components-language-notice--spinner-resolves-with-audio']);
+  'components-language-notice--spinner-resolves-with-audio', 'components-language-notice--named-spinner-resolves']);
 export const NARROW_ANCHORS = ['components-control-button-tooltip--above', 'components-hud--text-only', 'components-caption-notice--status', 'components-title-hud--overflow'];
 
 /** Real timer states plus animation fractions; persistent titles/loading use only frame sweeps. */
@@ -114,7 +123,7 @@ export function profilesFor(id: string, engine: 'chromium' | 'firefox' = 'chromi
     // in Chromium; Firefox's existing short-title marquee still needs its second position.
     if (id === 'components-title-hud--short' || id === 'components-title-hud--with-subtitle') {
       profile.frames = engine === 'firefox' ? [0, 0.5] : [1];
-    } else if (id === 'components-title-hud--overflow' || id === 'components-caption-notice--loading') {
+    } else if (id === 'components-title-hud--overflow' || (id.startsWith('components-caption-notice--loading') && !id.endsWith('-to-result'))) {
       profile.frames = [0, 0.5];
     } else if (id === 'components-auto-theater-notice--no-ring' || id === 'components-hud--loading-plate') profile.frames = [1];
     else if (LANGUAGE_MORPH.has(id)) profile.frames = MORPH_FRAMES;

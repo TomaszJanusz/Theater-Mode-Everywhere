@@ -7,10 +7,11 @@ import type { UiClock } from './ui-clock';
 export const LANGUAGE_SOURCES = ['subtitles', 'audio', 'audioRefused'] as const;
 export type LanguageSource = typeof LANGUAGE_SOURCES[number];
 
-/** `title` names the source (the row's label); `detail` is what it reports (the row's value). */
-export type LanguageLine =
-  | { kind: 'loading'; title: string; detail?: string }
-  | { kind: 'status'; title: string; detail?: string };
+/**
+ * `title` names the source (the row's label); `detail` is what it reports (the row's value). A loading
+ * line may already name what loads in `detail`, and then says "loading" for screen readers in `announce`.
+ */
+export type LanguageLine = { kind: 'loading' | 'status'; title: string; detail?: string; announce?: string };
 export type LanguageLines = ReadonlyArray<readonly [LanguageSource, LanguageLine]>;
 /** Lines to set; `null` withdraws a source's line, an absent source keeps its line. */
 export type LanguageChanges = Partial<Record<LanguageSource, LanguageLine | null>>;
@@ -35,7 +36,7 @@ export interface LanguageNoticeView {
 
 /** The merged text, read once per update. */
 export function languageNoticeText(lines: LanguageLines): string {
-  return lines.map(([, line]) => line.detail ? `${line.title}: ${line.detail}` : line.title).join('. ');
+  return lines.map(([, line]) => line.announce || (line.detail ? `${line.title}: ${line.detail}` : line.title)).join('. ');
 }
 
 /**
@@ -89,8 +90,10 @@ export class LanguageNotice {
   private set(source: LanguageSource, line: LanguageLine | null): boolean {
     this.cancelPending(source);
     if (line?.kind !== 'loading') return line ? Boolean(this.lines.set(source, line)) : this.lines.delete(source);
-    // A spinner already on screen keeps turning; a new load withdraws the old result at once.
-    if (this.lines.get(source)?.kind === 'loading') return false;
+    // A spinner already on screen keeps turning, and names the load that supersedes it; a new load
+    // withdraws the old result at once.
+    const shown = this.lines.get(source);
+    if (shown?.kind === 'loading') return shown.detail !== line.detail && Boolean(this.lines.set(source, line));
     this.pending.set(source, this.clock.setTimeout(() => {
       this.pending.delete(source);
       if (!this.isCurrent()) return;
