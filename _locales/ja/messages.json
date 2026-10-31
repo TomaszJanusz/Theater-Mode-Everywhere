@@ -270,19 +270,19 @@
     "message": "YouTube連携"
   },
   "youtubeIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, チャプター, ヒートマップ, サムネイル。 クイック操作：広告スキップとキュー内の次の動画。YouTube の Rich Theater Experience と動画ランチャーが有効な場合、ボタンはプレーヤーのツールバー内、自動再生スイッチのすぐ左にあります。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、字幕、チャプター、ヒートマップ、サムネイル。クイック操作：広告スキップとキュー内の次の動画。YouTube の Rich Theater Experience と動画ランチャーが有効な場合、ボタンはプレーヤーのツールバー内、自動再生スイッチのすぐ左にあります。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo連携"
   },
   "vimeoIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, チャプター, サムネイル。 クイック操作：ショーケース内の次の動画。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、チャプター、サムネイル。クイック操作：ショーケース内の次の動画。"
   },
   "patreonIntegrationTitle": {
     "message": "Patreon連携"
   },
   "patreonIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, チャプター, サムネイル。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、字幕、チャプター、サムネイル。"
   },
   "twitchIntegrationTitle": {
     "message": "Twitch連携"
@@ -294,25 +294,25 @@
     "message": "Disney+ 連携"
   },
   "disneyIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, サムネイル。 クイック操作：イントロ・あらすじ・クレジットのスキップと次のエピソード。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、字幕、サムネイル。クイック操作：イントロ・あらすじ・クレジットのスキップと次のエピソード。"
   },
   "netflixIntegrationTitle": {
     "message": "Netflix 連携"
   },
   "netflixIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, サムネイル。 クイック操作：イントロ・あらすじ・クレジットのスキップと次のエピソード。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、字幕、サムネイル。クイック操作：イントロ・あらすじ・クレジットのスキップと次のエピソード。"
   },
   "bilibiliIntegrationTitle": {
     "message": "Bilibili（bilibili.com）連携"
   },
   "bilibiliIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, チャプター, ヒートマップ, サムネイル。 クイック操作：プレーヤーのスキップ確認と次の動画。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、字幕、チャプター、ヒートマップ、サムネイル。クイック操作：プレーヤーのスキップ確認と次の動画。"
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV 連携"
   },
   "tencentIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, サムネイル。 クイック操作：プレーヤー経由の次のエピソード。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、字幕、サムネイル。クイック操作：プレーヤー経由の次のエピソード。"
   },
   "liveBadge": {
     "message": "配信中"
@@ -815,7 +815,7 @@
     "message": "操作バーを固定しました"
   },
   "controlsUnpinnedHud": {
-    "message": "操作バーを自動的に非表示にします"
+    "message": "操作バーを自動で隠す"
   },
   "showNativeChat": {
     "message": "チャットを表示"
@@ -971,13 +971,13 @@
     "message": "Bilibili.tv 連携"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, イントロ・アウトロのマーカー, サムネイル。 クイック操作：イントロ・アウトロのスキップと次のエピソード（エピソードのみ）。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、字幕、イントロ・アウトロのマーカー、サムネイル。クイック操作：イントロ・アウトロのスキップと次のエピソード（エピソードのみ）。"
   },
   "crunchyrollIntegrationTitle": {
     "message": "Crunchyroll 連携"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, イントロ・クレジットのマーカー, サムネイル。 クイック操作：イントロ・クレジットのスキップと次のエピソード。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、字幕、イントロ・クレジットのマーカー、サムネイル。クイック操作：イントロ・クレジットのスキップと次のエピソード。"
   },
   "iqiyiIntegrationTitle": {
     "message": "iQIYI 連携"
@@ -995,7 +995,7 @@
     "message": "Rakuten Viki 連携"
   },
   "vikiIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, イントロ・クレジットのマーカー, サムネイル。 クイック操作：イントロのスキップと次のエピソード。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、字幕、イントロ・クレジットのマーカー、サムネイル。クイック操作：イントロのスキップと次のエピソード。"
   },
   "aboutTitle": {
     "message": "このツールについて"

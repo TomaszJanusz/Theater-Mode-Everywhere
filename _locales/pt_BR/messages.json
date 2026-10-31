@@ -15,7 +15,7 @@
     "message": "DEPOIS"
   },
   "cwsPromoPlayerUiLabel": {
-    "message": "Controles do Player"
+    "message": "Controles do player"
   },
   "cwsPromoShortcutsLabel": {
     "message": "Atalhos"
@@ -65,7 +65,7 @@
     "message": "Indisponível"
   },
   "toggleTheaterModeLower": {
-    "message": "alternar modo cinema"
+    "message": "Alternar modo cinema"
   },
   "createdBy": {
     "message": "Criado por Tomasz Janusz"
@@ -261,7 +261,7 @@
     "message": "Ative integrações aprimoradas apenas para este serviço."
   },
   "volumeBoostTitle": {
-    "message": "Amplificação de Volume"
+    "message": "Amplificação de volume"
   },
   "volumeBoostDescription": {
     "message": "Amplifique o volume até 300% usando a Web Audio API. Um breve indicador de carregamento pode aparecer na primeira vez que você entrar no modo cinema com esta opção ativada."
@@ -327,7 +327,7 @@
     "message": "Mostrar tempo restante"
   },
   "websiteExclusionsTitle": {
-    "message": "Exclusões de Sites"
+    "message": "Exclusões de sites"
   },
   "websiteExclusionsDescription": {
     "message": "Exclua sites onde você não deseja que o modo cinema seja ativado automaticamente."
@@ -336,7 +336,7 @@
     "message": "ex: youtube.com ou cole uma URL"
   },
   "excludedWebsitesTitle": {
-    "message": "Sites Excluídos"
+    "message": "Sites excluídos"
   },
   "exclusionsFooterTip": {
     "message": "Dica: Você também pode gerenciar as exclusões diretamente clicando no ícone da extensão na barra de ferramentas do seu navegador."
@@ -363,19 +363,19 @@
     "message": "Erro ao carregar as configurações."
   },
   "keyboardShortcutsTitle": {
-    "message": "Atalhos de Teclado"
+    "message": "Atalhos de teclado"
   },
   "keyboardShortcutsDescription": {
     "message": "Clique em qualquer campo de entrada e pressione a combinação de teclas desejada para configurar. Modificadores como Ctrl, Alt e Shift são suportados."
   },
   "playerControlsTitle": {
-    "message": "Controles do Player"
+    "message": "Controles do player"
   },
   "toggleTheaterMode": {
-    "message": "Alternar Modo Cinema"
+    "message": "Alternar modo cinema"
   },
   "exitTheaterMode": {
-    "message": "Sair do Modo Cinema"
+    "message": "Sair do modo cinema"
   },
   "cycleSwitchPlayer": {
     "message": "Alternar vídeo na página"
@@ -468,10 +468,10 @@
     "message": "Não"
   },
   "showHideHelp": {
-    "message": "Mostrar/Ocultar Ajuda"
+    "message": "Mostrar/ocultar ajuda"
   },
   "playbackVolumeControlsTitle": {
-    "message": "Controles de Reprodução e Volume"
+    "message": "Controles de reprodução e volume"
   },
   "playPause": {
     "message": "Reproduzir / Pausar"
@@ -489,37 +489,37 @@
     "message": "Segure a tecla Avançar para reproduzir em 2x até soltá-la. Um toque rápido continua avançando 5 s. Com esta opção desativada, segurar a tecla continua avançando."
   },
   "volumeUp5": {
-    "message": "Aumentar Volume (5%)"
+    "message": "Aumentar volume (5%)"
   },
   "volumeDown5": {
-    "message": "Diminuir Volume (5%)"
+    "message": "Diminuir volume (5%)"
   },
   "toggleMute": {
     "message": "Alternar mudo"
   },
   "theaterFullscreenPipTitle": {
-    "message": "Modo Cinema, Tela Cheia e PiP"
+    "message": "Modo cinema, tela cheia e PiP"
   },
   "frameStepBackward": {
-    "message": "Voltar um Quadro"
+    "message": "Voltar um quadro"
   },
   "frameStepForward": {
-    "message": "Avançar um Quadro"
+    "message": "Avançar um quadro"
   },
   "frameStepBackward004": {
-    "message": "Voltar um Quadro (0,04s)"
+    "message": "Voltar um quadro (0,04s)"
   },
   "frameStepForward004": {
-    "message": "Avançar um Quadro (0,04s)"
+    "message": "Avançar um quadro (0,04s)"
   },
   "decreasePlaybackSpeed": {
-    "message": "Diminuir Velocidade de Reprodução"
+    "message": "Diminuir velocidade de reprodução"
   },
   "increasePlaybackSpeed": {
-    "message": "Aumentar Velocidade de Reprodução"
+    "message": "Aumentar velocidade de reprodução"
   },
   "toggleFullscreen": {
-    "message": "Alternar Tela Cheia"
+    "message": "Alternar tela cheia"
   },
   "togglePictureInPicture": {
     "message": "Alternar Picture-in-Picture"
@@ -572,10 +572,10 @@
     }
   },
   "exitFullscreen": {
-    "message": "Sair da Tela Cheia"
+    "message": "Sair da tela cheia"
   },
   "fullscreenTooltip": {
-    "message": "Tela Cheia $KEY$",
+    "message": "Tela cheia $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Sair do Modo Cinema $TOGGLE$ ou $EXIT$",
+    "message": "Sair do modo cinema $TOGGLE$ ou $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -739,7 +739,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "Atalhos de Teclado $KEY$",
+    "message": "Atalhos de teclado $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -783,10 +783,10 @@
     "message": "Ativar o modo cinema"
   },
   "autoEnterTheaterOn": {
-    "message": "Sim"
+    "message": "Ativado"
   },
   "autoEnterTheaterOff": {
-    "message": "Não"
+    "message": "Desativado"
   },
   "autoEnterTheaterDescription": {
     "message": "Ative o modo cinema quando o vídeo principal começar a ser reproduzido nas páginas de exibição dos serviços compatíveis com o Rich Theater Experience ativado."
@@ -815,7 +815,7 @@
     "message": "Controles fixados"
   },
   "controlsUnpinnedHud": {
-    "message": "Os controles se ocultam automaticamente"
+    "message": "Ocultação automática"
   },
   "showNativeChat": {
     "message": "Mostrar chat"
@@ -879,10 +879,10 @@
     }
   },
   "controlsVisibilityOn": {
-    "message": "Sim"
+    "message": "Ativado"
   },
   "controlsVisibilityOff": {
-    "message": "Não"
+    "message": "Desativado"
   },
   "extensionSettingsLabel": {
     "message": "Configurações da extensão"

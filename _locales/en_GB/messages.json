@@ -27,7 +27,7 @@
     "message": "Theater Mode Everywhere - Settings"
   },
   "settingsSubtitle": {
-    "message": "Configure website exclusions, appearance, and theater mode keyboard shortcuts."
+    "message": "Configure website exclusions, appearance, and theatre mode keyboard shortcuts."
   },
   "websiteLabel": {
     "message": "Website"
@@ -65,7 +65,7 @@
     "message": "Unavailable"
   },
   "toggleTheaterModeLower": {
-    "message": "Toggle theater mode"
+    "message": "Toggle theatre mode"
   },
   "createdBy": {
     "message": "Created by Tomasz Janusz"
@@ -252,13 +252,13 @@
     "message": "Features"
   },
   "featuresDescription": {
-    "message": "Turn optional theater mode behaviour on or off."
+    "message": "Turn optional theatre mode behaviour on or off."
   },
   "volumeBoostTitle": {
     "message": "Volume Boost"
   },
   "volumeBoostDescription": {
-    "message": "Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled."
+    "message": "Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theatre mode while this is enabled."
   },
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (Experimental)"
@@ -330,7 +330,7 @@
     "message": "Website Exclusions"
   },
   "websiteExclusionsDescription": {
-    "message": "Exclude websites where you do not want theater mode to activate automatically."
+    "message": "Exclude websites where you do not want theatre mode to activate automatically."
   },
   "domainInputPlaceholder": {
     "message": "e.g., youtube.com or paste a URL"
@@ -354,7 +354,7 @@
     "message": "No exclusions yet"
   },
   "noExclusionsDescription": {
-    "message": "Theater mode will activate automatically on all video pages."
+    "message": "Theatre mode will activate automatically on all video pages."
   },
   "removeExclusion": {
     "message": "Remove exclusion"
@@ -372,10 +372,10 @@
     "message": "Player Controls"
   },
   "toggleTheaterMode": {
-    "message": "Toggle Theater Mode"
+    "message": "Toggle Theatre Mode"
   },
   "exitTheaterMode": {
-    "message": "Exit Theater Mode"
+    "message": "Exit Theatre Mode"
   },
   "cycleSwitchPlayer": {
     "message": "Switch Video on Page"
@@ -498,7 +498,7 @@
     "message": "Toggle mute"
   },
   "theaterFullscreenPipTitle": {
-    "message": "Theater, Fullscreen & PiP"
+    "message": "Theatre, Fullscreen & PiP"
   },
   "frameStepBackward": {
     "message": "Frame Step Backward"
@@ -534,7 +534,7 @@
     "message": "Reset to defaults"
   },
   "copyrightHtml": {
-    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. Released under the <a href=\"#about\">MIT license</a>."
+    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. Released under the <a href=\"#about\">MIT licence</a>."
   },
   "play": {
     "message": "Play"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Exit Theater Mode $TOGGLE$ or $EXIT$",
+    "message": "Exit Theatre Mode $TOGGLE$ or $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -771,16 +771,16 @@
     "message": "Enable the video launcher?"
   },
   "videoActivatorPromptDescription": {
-    "message": "AutoTheater is now off. Would you like a small button on videos to enter theater mode manually? You can change this later in Settings → Features → Video launcher."
+    "message": "AutoTheater is now off. Would you like a small button on videos to enter theatre mode manually? You can change this later in Settings → Features → Video launcher."
   },
   "videoActivatorTitle": {
     "message": "Video launcher"
   },
   "videoActivatorDescription": {
-    "message": "Show a small button on the left edge of a video when you point at it. Click it to enter theater mode. On some services with Rich Theater Experience, the button is built into the service’s interface."
+    "message": "Show a small button on the left edge of a video when you point at it. Click it to enter theatre mode. On some services with Rich Theater Experience, the button is built into the service’s interface."
   },
   "videoActivatorLabel": {
-    "message": "Enter theater mode"
+    "message": "Enter theatre mode"
   },
   "autoEnterTheaterOn": {
     "message": "On"
@@ -789,10 +789,10 @@
     "message": "Off"
   },
   "autoEnterTheaterDescription": {
-    "message": "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled."
+    "message": "Enter theatre mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled."
   },
   "autoEnterNoticeTitle": {
-    "message": "Entering theater mode…"
+    "message": "Entering theatre mode…"
   },
   "autoEnterNoticeHint": {
     "message": "Click or press $KEY$ to cancel",
@@ -806,7 +806,7 @@
     "message": "Pin controls"
   },
   "keepControlsVisibleDescription": {
-    "message": "Pin the playback controls and progress bar in theater mode to keep them visible. The title and cursor still hide when idle."
+    "message": "Pin the playback controls and progress bar in theatre mode to keep them visible. The title and cursor still hide when idle."
   },
   "toggleControlsPin": {
     "message": "Toggle controls pinning"
@@ -854,7 +854,7 @@
     "message": "Dark"
   },
   "nativeChatFullscreenUnavailable": {
-    "message": "Fullscreen with chat is unavailable. Theater mode remains active."
+    "message": "Fullscreen with chat is unavailable. Theatre mode remains active."
   },
   "playerSettingsLabel": {
     "message": "Player settings"
@@ -956,7 +956,7 @@
     "message": "Move shortcut"
   },
   "shortcutEscapeReserved": {
-    "message": "Escape is reserved for closing dialogs and exiting theater mode. Choose another shortcut for this action."
+    "message": "Escape is reserved for closing dialogs and exiting theatre mode. Choose another shortcut for this action."
   },
   "shortcutSaveError": {
     "message": "Shortcut could not be saved"
@@ -1042,10 +1042,10 @@
     "message": "Happy watching <span class=\"heart\" aria-hidden=\"true\">❤</span>!"
   },
   "aboutLegalTitle": {
-    "message": "Terms of use • License"
+    "message": "Terms of use • Licence"
   },
   "aboutLicenseNote": {
-    "message": "The extension is available under the MIT license."
+    "message": "The extension is available under the MIT licence."
   },
   "languageTitle": {
     "message": "Language"
@@ -1075,7 +1075,7 @@
     "message": "SponsorBlock support"
   },
   "sponsorBlockMarkersDescription": {
-    "message": "Show markers from the installed SponsorBlock extension on the YouTube theater timeline, using its colours."
+    "message": "Show markers from the installed SponsorBlock extension on the YouTube theatre timeline, using its colours."
   },
   "sponsorBlockCategory_sponsor": {
     "message": "Sponsor"
@@ -1120,7 +1120,7 @@
     "message": "Rich Theater Experience"
   },
   "rteSectionDescription": {
-    "message": "Choose service integrations and explore what each adds to theater mode. Features depend on the video and the service."
+    "message": "Choose service integrations and explore what each adds to theatre mode. Features depend on the video and the service."
   },
   "rteAll": {
     "message": "All services"
