@@ -7,7 +7,12 @@ export function settingBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }
 
-/** Shared by the provider modal and auto-entry. Domain policy and player qualification remain separate gates. */
+/** A service's own AutoTheater switch. Auto-entry checks it beside the global preference, which it never replaces. */
+export function serviceAutoEnabled(settings: unknown, provider: string): boolean {
+  return settingBoolean(settingsRecord(settingsRecord(settings)[provider]).autoTheater, PROVIDER_AUTO_DEFAULT);
+}
+
+/** Effective preference, shared by the provider modal and auto-entry. Domain policy and player qualification remain separate gates. */
 export function providerAutoEnabled(global: boolean, settings: unknown, provider: string): boolean {
-  return global && settingBoolean(settingsRecord(settingsRecord(settings)[provider]).autoTheater, PROVIDER_AUTO_DEFAULT);
+  return global && serviceAutoEnabled(settings, provider);
 }

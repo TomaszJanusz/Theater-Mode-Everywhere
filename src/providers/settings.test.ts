@@ -20,7 +20,7 @@ function storage(initial: unknown = undefined) {
     for (const listener of listeners) listener({ providerSettings: { newValue: value } }, area);
   };
   globalThis.chrome = { storage: {
-    sync: { get: async () => read ? read() : { providerSettings: data }, set: async (value: { providerSettings: unknown }) => {
+    sync: { get: () => read ? read() : Promise.resolve({ providerSettings: data }), set: async (value: { providerSettings: unknown }) => {
       writes.push(value); external(value.providerSettings);
     } },
     onChanged: { addListener: (listener: typeof external) => listeners.add(listener), removeListener: (listener: typeof external) => listeners.delete(listener) }
@@ -81,6 +81,25 @@ it('rejects stale initial snapshots, local events and callbacks after disposal',
   finish({ providerSettings: { sample: { enabled: true } } });
   await disposed.ready;
   assert.equal(changes, before);
+  assert.equal(edge.listeners.size, 0);
+});
+
+it('keeps declared defaults without extension storage and never throws from construction', async () => {
+  globalThis.chrome = undefined as unknown as typeof chrome;
+  const absent = createProviderSettings(providers);
+  await absent.ready;
+  assert.equal(absent.loaded, true);
+  assert.deepEqual(absent.values, { sample: { enabled: true, other: false } });
+  await assert.rejects(absent.set('sample', 'enabled', false), /unavailable/);
+  assert.equal(absent.values.sample.enabled, true);
+  absent.dispose(); absent.dispose();
+  // An orphaned content script's storage throws synchronously; the caller still gets a store.
+  const edge = storage();
+  edge.defer(() => { throw new Error('Extension context invalidated.'); });
+  const orphaned = createProviderSettings(providers);
+  await assert.rejects(orphaned.ready, /invalidated/);
+  assert.equal(orphaned.loaded, false);
+  orphaned.dispose();
   assert.equal(edge.listeners.size, 0);
 });
 

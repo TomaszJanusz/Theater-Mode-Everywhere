@@ -2,7 +2,7 @@ import type { DisposableScope } from '../core/disposable-scope';
 import { measureNextFrame } from '../core/frame-batch';
 import { AUDIO_PREF_STORAGE_KEY, resolveAudioPreferences, upsertAudioPreference } from '../media-features/audio-preference';
 import { PROVIDER_SETTINGS_KEY } from '../providers/settings';
-import { providerAutoEnabled } from '../providers/settings-values';
+import { serviceAutoEnabled } from '../providers/settings-values';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
 import { createSeekHold, SEEK_HOLD_RATE } from './seek-hold';
@@ -1262,7 +1262,8 @@ function syncAutoTheaterRuntime(): void {
   }
   autoTheaterRuntime = createAutoTheaterRuntime({
     visit: autoTheaterVisit,
-    enabled: provider => providerAutoEnabled(ui().autoEnterTheater, providerSettings, provider),
+    enabled: () => ui().autoEnterTheater,
+    serviceEnabled: provider => serviceAutoEnabled(providerSettings, provider),
     skipCountdown: () => ui().autoTheaterSkipCountdown,
     policyAllowed: () => autoTheaterPolicyAllowed,
     providerFlags: () => refs.providerFlags,

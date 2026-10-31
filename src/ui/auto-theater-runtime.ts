@@ -26,7 +26,9 @@ export type AutoTheaterRuntime = {
 /** One visit survives preference/blacklist toggles and runtime scope recreation. */
 export function createAutoTheaterRuntime(options: {
   visit: { current: AutoTheaterVisit };
-  enabled(provider: MediaProviderId): boolean;
+  enabled(): boolean;
+  /** The service's own switch. Unlike the global gate, off consumes the visit. */
+  serviceEnabled(provider: MediaProviderId): boolean;
   policyAllowed(): boolean;
   providerFlags(): MediaProviderFlags;
   editableFocused(): boolean;
@@ -93,9 +95,9 @@ export function createAutoTheaterRuntime(options: {
       page ? `${page.provider}:${page.identity}` : null);
     // The player element is often reused across videos; a new identity restarts the countdown.
     if (options.visit.current.identity !== previousIdentity) intent.cancel();
-    // A disabled service consumes this visit: enabling it waits for the next identity, never mid-watch.
-    if (page && !options.enabled(page.provider)) options.visit.current.entered = true;
-    if (!page || !options.enabled(page.provider) || window !== window.top || !options.policyAllowed()
+    // A switched-off service consumes this visit: switching it on waits for the next identity, never mid-watch.
+    if (page && !options.serviceEnabled(page.provider)) options.visit.current.entered = true;
+    if (!page || !options.enabled() || window !== window.top || !options.policyAllowed()
         || !options.providerFlags()[page.provider] || options.visit.current.entered) {
       intent.cancel();
       clearObservedVideo();
@@ -130,7 +132,7 @@ export function createAutoTheaterRuntime(options: {
     const confirmed = eligible && confirmProviderWatchVideo(video);
     const hostPreparing = !confirmed && requested && confirmProviderPreparingVideo(video);
     const facts = {
-      enabled: options.enabled(page.provider), topLevel: window === window.top, policyAllowed: options.policyAllowed(),
+      enabled: options.enabled() && options.serviceEnabled(page.provider), topLevel: window === window.top, policyAllowed: options.policyAllowed(),
       providerEnabled: options.providerFlags()[page.provider], fullscreen: Boolean(document.fullscreenElement),
       editableFocused: options.editableFocused(), theaterActive: options.theaterActive(),
       transitioning: options.transitioning(), eligibleVideo: true, playing: true,

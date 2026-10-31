@@ -20,8 +20,12 @@ export function resolveProviderSettings(value: unknown, providers: readonly Sett
   }))]));
 }
 
-/** One sync namespace, no writes on load, and no stale initial read after a storage event or disposal. */
+/**
+ * One sync namespace, no writes on load, and no stale initial read after a storage event or disposal.
+ * Without extension storage (a page harness, a script orphaned by an update) the declared defaults apply and writes reject.
+ */
 export function createProviderSettings(providers: readonly SettingsProvider[]) {
+  const storage = typeof chrome === 'undefined' ? undefined : chrome.storage;
   let raw: unknown;
   let values = resolveProviderSettings(raw, providers);
   let revision = 0;
@@ -38,28 +42,31 @@ export function createProviderSettings(providers: readonly SettingsProvider[]) {
     revision++;
     apply(changes[PROVIDER_SETTINGS_KEY].newValue);
   };
-  chrome.storage.onChanged.addListener(onStorage);
-  const ready = chrome.storage.sync.get(PROVIDER_SETTINGS_KEY).then(data => {
+  storage?.onChanged.addListener(onStorage);
+  // Async, so a storage API that throws rejects `ready` instead of breaking the caller's construction.
+  const ready = (async () => {
+    const data = storage ? await storage.sync.get(PROVIDER_SETTINGS_KEY) : {};
     if (disposed) return;
     loaded = true;
     apply(revision ? raw : data[PROVIDER_SETTINGS_KEY]);
-  });
+  })();
   let pending = Promise.resolve();
   const set = (providerId: string, settingId: string, value: boolean): Promise<void> => {
     const setting = providers.find(provider => provider.id === providerId)?.settings.find(setting => setting.id === settingId);
     if (!setting || typeof value !== 'boolean') return Promise.reject(new Error('Unknown provider setting'));
+    if (!storage) return Promise.reject(new Error('Extension storage is unavailable'));
     const write = async () => {
       await ready;
       if (disposed) return;
       // Refresh before writing: preserve other providers, including settings from a newer extension version.
       const beforeRead = revision;
-      const latest = await chrome.storage.sync.get(PROVIDER_SETTINGS_KEY);
+      const latest = await storage.sync.get(PROVIDER_SETTINGS_KEY);
       if (disposed) return;
       const current = beforeRead === revision ? latest[PROVIDER_SETTINGS_KEY] : raw;
       if (resolveProviderSettings(current, providers)[providerId][settingId] === value) { apply(current); return; }
       const next = { ...record(current), [providerId]: { ...record(record(current)[providerId]), [settingId]: value } };
       const beforeWrite = revision;
-      await chrome.storage.sync.set({ [PROVIDER_SETTINGS_KEY]: next });
+      await storage.sync.set({ [PROVIDER_SETTINGS_KEY]: next });
       if (!disposed && revision === beforeWrite) apply(next);
     };
     const result = pending.then(write);
@@ -76,7 +83,7 @@ export function createProviderSettings(providers: readonly SettingsProvider[]) {
       if (disposed) return;
       disposed = true;
       listeners.clear();
-      chrome.storage.onChanged.removeListener(onStorage);
+      storage?.onChanged.removeListener(onStorage);
     }
   };
 }

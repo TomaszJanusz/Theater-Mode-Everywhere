@@ -81,7 +81,8 @@ boolean setting, also on by default, only when it advertises the AutoTheater cap
 RTE enablement and top-frame/watch-player qualification remain independent vetoes.
 A service preference covers that provider across its hosts; exclusions retain their existing
 domain scope. Disabling a service cancels pending entry and consumes its current visit without
-exiting an active theater session. Re-enabling waits for a new watch identity. A visit records
+exiting an active theater session. Re-enabling waits for a new watch identity. The global
+preference, like the other gates, only blocks while off and does not consume the visit. A visit records
 entry so exiting or changing preferences cannot reenter the same content. New content identities reset it.
 Entry is announced first: once the provider confirms the main video's identity and
 playback has been requested (not paused or ended, no media error, a source loading) —
