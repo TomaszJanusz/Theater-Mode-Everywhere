@@ -17,7 +17,7 @@ module.exports = {
       from: { path: '^(?:popup|options)/', ...runtime },
       to: {
         path: '^src/',
-        pathNot: '^src/(?:appearance-preferences|appearance-runtime|audio-settings|auto-theater-preferences|dialog|i18n(?:-runtime)?|installed-version|language|message-catalog|themeHelper|update-notice|protocol/options-page|providers/(?:capabilities|registry|catalog|settings(?:-values)?)|media-features/provider-flags|ui/(?:shortcuts|shortcut-display|kbd-text)|platform/domain-policy)\\.ts$',
+        pathNot: '^src/(?:appearance-preferences|appearance-runtime|audio-settings|auto-theater-preferences|dialog|first-run-setup|i18n(?:-runtime)?|installed-version|language|message-catalog|themeHelper|update-notice|protocol/options-page|providers/(?:capabilities|registry|catalog|settings(?:-values)?)|media-features/provider-flags|ui/(?:shortcuts|shortcut-display|kbd-text)|platform/domain-policy)\\.ts$',
       },
     },
     {

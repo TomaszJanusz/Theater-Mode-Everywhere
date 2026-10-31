@@ -1361,5 +1361,93 @@
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater jest wyłączony globalnie. Włącz go najpierw w sekcji Funkcje.",
     "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
+  },
+  "setupTitle": {
+    "message": "Skonfiguruj Theater Mode Everywhere",
+    "description": "Heading of the first-run setup shown in Settings after a fresh install. Theater Mode Everywhere is the product name; keep it untranslated."
+  },
+  "setupProgress": {
+    "message": "Krok $1 z $2",
+    "description": "First-run setup progress. $1 is the current step number, $2 the number of steps."
+  },
+  "setupBack": {
+    "message": "Wstecz",
+    "description": "First-run setup button: go to the previous step."
+  },
+  "setupNext": {
+    "message": "Dalej",
+    "description": "First-run setup button: go to the next step."
+  },
+  "setupFinish": {
+    "message": "Zakończ",
+    "description": "First-run setup button on the last step: save the choices and close the setup."
+  },
+  "setupSkip": {
+    "message": "Pomiń konfigurację",
+    "description": "First-run setup button: close the setup without changing any setting."
+  },
+  "setupWelcome": {
+    "message": "Dziękuję za instalację! Kilka wyborów decyduje o tym, co rozszerzenie robi na odwiedzanych stronach. Nic nie zostanie zapisane, zanim nie zakończysz.",
+    "description": "Intro on the first step of the first-run setup."
+  },
+  "setupServicesTitle": {
+    "message": "Serwisy z dodatkowymi funkcjami",
+    "description": "First-run setup step title and summary label: which video services get Rich Theater Experience integrations (subtitles, chapters and similar)."
+  },
+  "setupServicesDescription": {
+    "message": "W obsługiwanych serwisach tryb kinowy może dodać napisy, rozdziały, miniatury i playlisty. W tym celu rozszerzenie pobiera pliki napisów i podglądów bezpośrednio z serwisu. Nic nie trafia do autora ani do innych firm.",
+    "description": "First-run setup step text explaining service integrations and their network requests. 'Subtitles' is the umbrella term for subtitles and captions."
+  },
+  "setupServicesAll": {
+    "message": "Wszystkie obsługiwane serwisy",
+    "description": "First-run setup choice and summary value: turn integrations on for every supported service."
+  },
+  "setupServicesAllDescription": {
+    "message": "Włącz dodatkowe funkcje wszędzie tam, gdzie są dostępne.",
+    "description": "Description of the 'All supported services' choice in the first-run setup."
+  },
+  "setupServicesChoose": {
+    "message": "Wybierz serwisy",
+    "description": "First-run setup choice: pick services one by one with switches."
+  },
+  "setupServicesChooseDescription": {
+    "message": "Zaznacz serwisy, w których mają działać.",
+    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+  },
+  "setupServicesNone": {
+    "message": "Żaden",
+    "description": "First-run setup choice and summary value: no service integrations."
+  },
+  "setupServicesNoneDescription": {
+    "message": "Tylko zwykły tryb kinowy. Każdy film nadal ma tryb kinowy i jego sterowanie.",
+    "description": "Description of the 'None' choice in the first-run setup."
+  },
+  "setupServicesFooter": {
+    "message": "Możesz to później zmienić w menu „Ustawienia → Funkcje → Rich Theater Experience”.",
+    "description": "Footer of the services step. Settings, Features and Rich Theater Experience are names in the Settings page; keep Rich Theater Experience untranslated."
+  },
+  "setupSummaryTitle": {
+    "message": "Wszystko gotowe",
+    "description": "Title of the last first-run setup step, which summarises the choices."
+  },
+  "setupSummaryDescription": {
+    "message": "Oto Twoje wybory. Zostaną zapisane, gdy zakończysz.",
+    "description": "Text on the summary step of the first-run setup."
+  },
+  "setupSummaryServicesSome": {
+    "message": "$1 z $2 serwisów",
+    "description": "Summary value when some services are chosen. $1 is how many are on, $2 how many there are."
+  },
+  "setupSummaryFinishAndOpen": {
+    "message": "Albo zakończ i otwórz:",
+    "description": "Label before two buttons on the summary step that save the setup and open Website Exclusions or Keyboard Shortcuts."
+  },
+  "setupProfileFound": {
+    "message": "Twoje ustawienia Theater Mode Everywhere dotarły z innego urządzenia, więc konfiguracja nie jest potrzebna.",
+    "description": "Shown instead of the first-run setup when settings synced from another device arrive. Theater Mode Everywhere is the product name."
+  },
+  "setupOpenSettings": {
+    "message": "Otwórz ustawienia",
+    "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   }
 }

@@ -36,7 +36,7 @@ function playerFixturePlugin(): Plugin {
 }
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.ts'],
+  stories: ['../src/**/*.stories.ts', '../options/**/*.stories.ts'],
   addons: ['@storybook/addon-vitest'],
   framework: '@storybook/html-vite',
   core: { disableTelemetry: true },

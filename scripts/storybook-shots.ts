@@ -71,15 +71,16 @@ async function readCaptureState(page: Page, target: ShotTarget): Promise<void> {
     if (target.effective?.args[key] !== value) throw new Error(`${target.id}: requested arg ${key} was not applied`);
   }
   target.rendered = await page.evaluate(() => {
-    // The Player story's runtime lives in a fixture document of its own.
-    const host = (window.__storyDocument ?? document).getElementById('theater-everywhere-ui');
+    // The Player story's runtime lives in a fixture document of its own; a Settings fixture document is its own root.
+    const doc = window.__storyDocument ?? document;
+    const host = doc.getElementById('theater-everywhere-ui') ?? (window.__storyDocument ? doc.documentElement : null);
     return { locale: host?.lang, direction: host?.dir, motion: host?.dataset.motion, viewport: window.innerWidth };
   });
   const { locale, reduceMotion } = target.profile.globals;
   const expectedMotion = reduceMotion === 'on' || (reduceMotion === 'auto' && target.profile.reducedMotion === 'reduce') ? 'reduced' : 'normal';
   if (target.rendered.locale !== locale || target.rendered.direction !== (locale === 'ar' ? 'rtl' : 'ltr')
     || target.rendered.motion !== expectedMotion || target.rendered.viewport !== target.profile.viewport.width) {
-    throw new Error(`${target.id}: requested environment did not reach the rendered root`);
+    throw new Error(`${target.id}: requested environment did not reach the rendered root: ${JSON.stringify(target.rendered)}`);
   }
 }
 

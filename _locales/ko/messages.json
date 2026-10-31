@@ -1361,5 +1361,93 @@
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater가 전체 설정에서 꺼져 있습니다. 먼저 기능에서 켜세요.",
     "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
+  },
+  "setupTitle": {
+    "message": "Theater Mode Everywhere 설정하기",
+    "description": "Heading of the first-run setup shown in Settings after a fresh install. Theater Mode Everywhere is the product name; keep it untranslated."
+  },
+  "setupProgress": {
+    "message": "$2단계 중 $1단계",
+    "description": "First-run setup progress. $1 is the current step number, $2 the number of steps."
+  },
+  "setupBack": {
+    "message": "뒤로",
+    "description": "First-run setup button: go to the previous step."
+  },
+  "setupNext": {
+    "message": "다음",
+    "description": "First-run setup button: go to the next step."
+  },
+  "setupFinish": {
+    "message": "완료",
+    "description": "First-run setup button on the last step: save the choices and close the setup."
+  },
+  "setupSkip": {
+    "message": "설정 건너뛰기",
+    "description": "First-run setup button: close the setup without changing any setting."
+  },
+  "setupWelcome": {
+    "message": "설치해 주셔서 감사합니다! 몇 가지 선택으로 방문하는 사이트에서 확장 프로그램이 할 일을 정합니다. 완료하기 전에는 아무것도 저장되지 않습니다.",
+    "description": "Intro on the first step of the first-run setup."
+  },
+  "setupServicesTitle": {
+    "message": "추가 기능을 사용할 서비스",
+    "description": "First-run setup step title and summary label: which video services get Rich Theater Experience integrations (subtitles, chapters and similar)."
+  },
+  "setupServicesDescription": {
+    "message": "지원되는 서비스에서는 영화관 모드에 자막, 챕터, 미리보기 이미지, 재생목록을 더할 수 있습니다. 이를 위해 확장 프로그램이 자막 파일과 미리보기 파일을 해당 서비스에 직접 요청합니다. 개발자나 다른 회사로는 아무것도 전송되지 않습니다.",
+    "description": "First-run setup step text explaining service integrations and their network requests. 'Subtitles' is the umbrella term for subtitles and captions."
+  },
+  "setupServicesAll": {
+    "message": "지원되는 모든 서비스",
+    "description": "First-run setup choice and summary value: turn integrations on for every supported service."
+  },
+  "setupServicesAllDescription": {
+    "message": "사용할 수 있는 모든 곳에서 추가 기능을 켭니다.",
+    "description": "Description of the 'All supported services' choice in the first-run setup."
+  },
+  "setupServicesChoose": {
+    "message": "서비스 선택",
+    "description": "First-run setup choice: pick services one by one with switches."
+  },
+  "setupServicesChooseDescription": {
+    "message": "추가 기능을 사용할 서비스를 고르세요.",
+    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+  },
+  "setupServicesNone": {
+    "message": "사용 안 함",
+    "description": "First-run setup choice and summary value: no service integrations."
+  },
+  "setupServicesNoneDescription": {
+    "message": "기본 영화관 모드만 사용합니다. 모든 동영상에서 영화관 모드와 컨트롤은 그대로 사용할 수 있습니다.",
+    "description": "Description of the 'None' choice in the first-run setup."
+  },
+  "setupServicesFooter": {
+    "message": "나중에 설정 → 기능 → Rich Theater Experience에서 변경할 수 있습니다.",
+    "description": "Footer of the services step. Settings, Features and Rich Theater Experience are names in the Settings page; keep Rich Theater Experience untranslated."
+  },
+  "setupSummaryTitle": {
+    "message": "준비가 끝났습니다",
+    "description": "Title of the last first-run setup step, which summarises the choices."
+  },
+  "setupSummaryDescription": {
+    "message": "선택한 내용입니다. 완료하면 저장됩니다.",
+    "description": "Text on the summary step of the first-run setup."
+  },
+  "setupSummaryServicesSome": {
+    "message": "서비스 $2개 중 $1개",
+    "description": "Summary value when some services are chosen. $1 is how many are on, $2 how many there are."
+  },
+  "setupSummaryFinishAndOpen": {
+    "message": "또는 완료하고 열기:",
+    "description": "Label before two buttons on the summary step that save the setup and open Website Exclusions or Keyboard Shortcuts."
+  },
+  "setupProfileFound": {
+    "message": "다른 기기에서 Theater Mode Everywhere 설정을 가져왔으므로 설정할 필요가 없습니다.",
+    "description": "Shown instead of the first-run setup when settings synced from another device arrive. Theater Mode Everywhere is the product name."
+  },
+  "setupOpenSettings": {
+    "message": "설정 열기",
+    "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   }
 }

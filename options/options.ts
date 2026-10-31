@@ -10,6 +10,7 @@ import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown } from '../src/ui/auto-theater';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
 /* Options script for Theater Everywhere */
+import { chromeSetupStorage, routeSetupWizard } from './setup-wizard';
 import { createShortcutEditor, SEEK_HOLD_TOGGLE } from './shortcut-editor';
 import { setupSettingsTabs } from './tabs';
 import licenseText from '../LICENSE?raw';
@@ -120,6 +121,14 @@ async function init() {
   const stopAppearanceChoices = setupAppearanceChoices();
   window.addEventListener('unload', stopAppearanceChoices, { once: true });
   setupSettingsTabs(document.getElementById('settings-tabs') as HTMLElement);
+  // Slice 3's "Run setup again" and "Reset to defaults" start it through `setup.start(...)`.
+  const setup = routeSetupWizard(document.getElementById('setup-wizard')!,
+    ['.privacy-thing-card', '#settings-tabs', '.settings-stack'].map(selector => document.querySelector<HTMLElement>(selector)!), {
+      storage: chromeSetupStorage(),
+      version: installedVersion(),
+      notify: () => notifyAllTabs()
+    });
+  window.addEventListener('unload', () => setup.dispose(), { once: true });
   document.getElementById('license-text')!.textContent = licenseText.trim();
   document.getElementById('privacy-policy-btn')!.addEventListener('click', openPrivacyPolicy);
   const renderVersion = () => { document.getElementById('about-version')!.textContent = t('aboutVersion', installedVersion()); };

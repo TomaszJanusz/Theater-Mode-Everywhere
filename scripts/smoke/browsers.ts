@@ -11,6 +11,7 @@ import { assertAutoTheater } from './auto-theater';
 import { assertBilibiliProvider, assertBilibiliTvProvider } from './bilibili-providers';
 import { assertDisneyProvider } from './disney';
 import { FirefoxRemote } from './firefox-rdp';
+import { assertFreshInstall } from './first-run-setup';
 import { assertEmbeddedKeysAndFullscreen } from './frames';
 import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist, useSyncQuota } from './helpers';
 import { assertNetflixAudio } from './netflix-audio';
@@ -71,7 +72,10 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     skipLocally('Skipping smoke:chromium. Run: pnpm exec playwright install chromium firefox');
   }
   // A browser and profile of its own, started once the shared one has closed.
-  if (await smokeSharedChromium(origin, unpackedDir, scenarios, clock)) await assertBadgeAfterRestart(unpackedDir, launchChromiumExtension);
+  if (await smokeSharedChromium(origin, unpackedDir, scenarios, clock)) {
+    await assertBadgeAfterRestart(unpackedDir, launchChromiumExtension);
+    await assertFreshInstall(unpackedDir, launchChromiumExtension);
+  }
 }
 
 /** Resolves whether the run covers the update notice, so the restart check follows it. */

@@ -1819,3 +1819,108 @@ html { scrollbar-gutter: stable; }
 .provider-setting.is-unavailable { cursor: default; }
 .provider-setting.is-unavailable .provider-setting-label { color: var(--text-secondary); }
 .provider-setting.is-unavailable .toggle-switch { opacity: 0.55; cursor: default; }
+
+/* First-run setup (setup-wizard.ts): a page section over the settings, in the settings' card language. */
+.setup-wizard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+  padding: 24px 28px;
+}
+.setup-wizard[hidden] { display: none; }
+/* The setup replaces the page's own sections, whose display would otherwise beat `hidden`. */
+.options-container > :is(.privacy-thing-card, .settings-tabs, .settings-stack)[hidden] { display: none; }
+.setup-header { display: grid; gap: 8px; }
+.setup-wizard .setup-title { font-size: 20px; }
+.setup-progress {
+  color: var(--appearance-muted, var(--text-secondary));
+  font-size: 13px;
+  font-weight: 600;
+}
+.setup-progress-bar { display: flex; gap: 6px; }
+.setup-progress-bar span {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background-color: var(--border-color);
+}
+.setup-progress-bar span:is([data-state="done"], [data-state="current"]) { background-color: var(--accent-color); }
+.setup-welcome,
+.setup-step-desc,
+.setup-notice { color: var(--appearance-ink, #d4d4d8); }
+.setup-step { display: grid; gap: 14px; animation: setup-step-in 0.2s ease-out both; }
+.setup-step-title { font-size: 17px; font-weight: 700; }
+.setup-step-title:focus,
+.setup-notice:focus { outline: none; }
+.setup-step-body { display: grid; gap: 14px; }
+.setup-choices { display: grid; gap: 10px; }
+.setup-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background-color: var(--appearance-surface, #09090b);
+  cursor: pointer;
+}
+.setup-choice:hover { border-color: var(--appearance-border, color-mix(in srgb, var(--accent-color) 55%, var(--border-color))); }
+.setup-choice:has(input:checked) {
+  border-color: var(--accent-color);
+  background-color: color-mix(in srgb, var(--accent-color) 14%, var(--appearance-surface, #09090b));
+}
+.setup-choice:has(input:focus-visible) { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 40%, transparent); }
+.setup-choice input {
+  flex-shrink: 0;
+  inline-size: 16px;
+  block-size: 16px;
+  margin-block-start: 3px;
+  accent-color: var(--accent-color);
+}
+.setup-choice-copy { display: grid; gap: 2px; }
+.setup-choice-name { font-weight: 600; color: var(--appearance-ink, var(--text-primary)); }
+.setup-choice-desc { font-size: 13px; color: var(--appearance-muted, var(--text-secondary)); }
+.setup-services {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  padding-inline-start: 28px;
+}
+.setup-services[hidden] { display: none; }
+.setup-service {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--appearance-surface, rgba(9, 9, 11, 0.3));
+  cursor: pointer;
+}
+.setup-summary { display: grid; gap: 8px; }
+.setup-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--appearance-surface, rgba(9, 9, 11, 0.3));
+}
+.setup-summary dt { color: var(--appearance-muted, var(--text-secondary)); }
+.setup-summary dd { font-weight: 600; text-align: end; color: var(--appearance-ink, var(--text-primary)); }
+.setup-summary-more { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.setup-summary-more-label { color: var(--appearance-muted, var(--text-secondary)); font-size: 13px; }
+.setup-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.setup-actions [hidden] { display: none; }
+.setup-skip { margin-inline-end: auto; }
+.setup-error { color: var(--appearance-ink, var(--danger-color)); }
+.setup-error[hidden] { display: none; }
+@keyframes setup-step-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+:root[data-motion="reduced"] .setup-step { animation: none; }
