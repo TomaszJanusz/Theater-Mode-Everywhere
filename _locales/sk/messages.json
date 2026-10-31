@@ -354,7 +354,7 @@
     "message": "Zatiaľ žiadne výnimky"
   },
   "noExclusionsDescription": {
-    "message": "Režim kina sa bude automaticky aktivovať na všetkých stránkach s videom."
+    "message": "Režim kina sa automaticky spustí v podporovaných službách (pozri AutoTheater). Pridajte sem weby, na ktorých má zostať vypnutý."
   },
   "removeExclusion": {
     "message": "Odstrániť výnimku"
@@ -983,13 +983,13 @@
     "message": "Integrácia iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Zobrazuje názov seriálu a označenie epizódy, ponúka a vyberá jazyky titulkov epizódy (kreslí ich naďalej iQIYI), označuje úvod a záver a prechádza na predchádzajúcu alebo ďalšiu epizódu. Na stránkach epizód funguje AutoTheater. Dá sa vybrať aj zvuková stopa epizódy."
+    "message": "Zobrazuje názov seriálu a označenie epizódy, ponúka a vyberá jazyky titulkov epizódy (zobrazuje ich vlastný prehrávač iQIYI), označuje úvod a záver a prechádza na predchádzajúcu alebo ďalšiu epizódu. Na stránkach epizód funguje AutoTheater. Dá sa vybrať aj zvuková stopa epizódy."
   },
   "soopIntegrationTitle": {
     "message": "Integrácia SOOP"
   },
   "soopIntegrationDescription": {
-    "message": "Zobrazuje názov vysielania alebo záznamu a streamera, označuje kapitoly podľa histórie názvov záznamu, ponúka predchádzajúci/ďalší záznam prehrávača a jeho odpočet ďalšieho videa a AutoTheater vie vstúpiť do živých vysielaní aj záznamov. Vlastný chat SOOP možno zobraziť vedľa videa."
+    "message": "Zobrazuje názov vysielania alebo záznamu a streamera, označuje kapitoly podľa histórie názvov záznamu, ponúka predchádzajúci/ďalší záznam prehrávača a jeho odpočet ďalšieho videa a AutoTheater funguje pri živých vysielaniach aj záznamoch. Vlastný chat SOOP možno zobraziť vedľa videa."
   },
   "vikiIntegrationTitle": {
     "message": "Integrácia Rakuten Viki"
@@ -1200,7 +1200,7 @@
     "message": "Titulky, náhľady a preskočenie/ďalší diel, ak ich prehrávač poskytuje."
   },
   "rteNoteNetflix": {
-    "message": "Náhľady vyžadujú pripravenú reláciu náhľadového prehrávania; titulky a preskočenie/ďalší diel, ak sú dostupné."
+    "message": "Náhľady sa zobrazia, keď Netflix načíta svoje náhľadové obrázky; titulky a preskočenie/ďalší diel, ak sú dostupné."
   },
   "rteNoteBilibili": {
     "message": "Niektoré titulky vyžadujú prihlásenie; ostatné funkcie závisia od videa."

@@ -193,7 +193,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   subtitleDropShadow: 'Shadow',
   subtitleBackground: 'Background',
   subtitleOpacity: 'Opacity',
-  subtitlePreviewSample: 'Sample caption',
+  subtitlePreviewSample: 'Sample subtitle',
   dialogDone: 'Done',
   dialogClose: 'Close',
   switchVideoTooltip: 'Switch Video on Page $1',

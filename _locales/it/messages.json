@@ -354,7 +354,7 @@
     "message": "Ancora nessuna esclusione"
   },
   "noExclusionsDescription": {
-    "message": "La modalità cinema si attiverà automaticamente su tutte le pagine video."
+    "message": "La modalità cinema si avvierà automaticamente sui servizi supportati (vedi AutoTheater). Aggiungi qui i siti in cui vuoi tenerla disattivata."
   },
   "removeExclusion": {
     "message": "Rimuovi esclusione"
@@ -983,7 +983,7 @@
     "message": "Integrazione iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Mostra il titolo della serie e l’etichetta dell’episodio, elenca e seleziona le lingue dei sottotitoli dell’episodio (iQIYI continua a disegnarli), segna intro e outro e passa all’episodio precedente o successivo. AutoTheater funziona nelle pagine degli episodi. Si possono scegliere anche le tracce audio dell’episodio."
+    "message": "Mostra il titolo della serie e l’etichetta dell’episodio, elenca e seleziona le lingue dei sottotitoli dell’episodio (li mostra il lettore di iQIYI), segna intro e outro e passa all’episodio precedente o successivo. AutoTheater funziona nelle pagine degli episodi. Si possono scegliere anche le tracce audio dell’episodio."
   },
   "soopIntegrationTitle": {
     "message": "Integrazione SOOP"
@@ -1200,7 +1200,7 @@
     "message": "Sottotitoli, anteprime e salta/successivo se offerti dal lettore."
   },
   "rteNoteNetflix": {
-    "message": "Le anteprime richiedono una sessione trick-play pronta; sottotitoli e azioni se disponibili."
+    "message": "Le anteprime compaiono quando Netflix ha caricato le sue immagini di anteprima; sottotitoli e salta/successivo se disponibili."
   },
   "rteNoteBilibili": {
     "message": "Alcuni sottotitoli richiedono l’accesso; le funzioni dipendono dal video."

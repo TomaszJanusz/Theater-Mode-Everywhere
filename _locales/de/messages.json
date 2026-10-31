@@ -354,7 +354,7 @@
     "message": "Noch keine Ausschlüsse"
   },
   "noExclusionsDescription": {
-    "message": "Der Kinomodus wird auf allen Videoseiten automatisch aktiviert."
+    "message": "Der Kinomodus startet auf unterstützten Diensten automatisch (siehe AutoTheater). Füge hier Websites hinzu, auf denen er aus bleiben soll."
   },
   "removeExclusion": {
     "message": "Ausschluss entfernen"
@@ -983,13 +983,13 @@
     "message": "iQIYI-Integration"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Zeigt Serientitel und Folgenbezeichnung, listet und wählt die Untertitelsprachen der Folge (iQIYI zeichnet sie weiter selbst), markiert Intro und Outro und wechselt zur vorherigen oder nächsten Folge. AutoTheater funktioniert auf Folgenseiten. Auch die Tonspuren einer Folge lassen sich wählen."
+    "message": "Zeigt Serientitel und Folgenbezeichnung, listet und wählt die Untertitelsprachen der Folge (angezeigt vom eigenen Player von iQIYI), markiert Intro und Outro und wechselt zur vorherigen oder nächsten Folge. AutoTheater funktioniert auf Folgenseiten. Auch die Tonspuren einer Folge lassen sich wählen."
   },
   "soopIntegrationTitle": {
     "message": "SOOP-Integration"
   },
   "soopIntegrationDescription": {
-    "message": "Zeigt Sendungs- oder Aufzeichnungstitel und Streamer, markiert Kapitel aus dem Titelverlauf einer Aufzeichnung, bietet die Zurück-/Weiter-Funktion des Players mit dem Countdown zum nächsten Video, und AutoTheater kann Live-Sendungen und Aufzeichnungen betreten. Der eigene Chat von SOOP lässt sich neben dem Video anzeigen."
+    "message": "Zeigt Sendungs- oder Aufzeichnungstitel und Streamer, markiert Kapitel aus dem Titelverlauf einer Aufzeichnung, bietet die Zurück-/Weiter-Funktion des Players mit dem Countdown zum nächsten Video, und AutoTheater funktioniert bei Live-Sendungen und Aufzeichnungen. Der eigene Chat von SOOP lässt sich neben dem Video anzeigen."
   },
   "vikiIntegrationTitle": {
     "message": "Rakuten-Viki-Integration"
@@ -1200,7 +1200,7 @@
     "message": "Untertitel, Vorschauen und Überspringen/Weiter, wenn der Player sie anbietet."
   },
   "rteNoteNetflix": {
-    "message": "Vorschauen benötigen eine bereite Trick-Play-Sitzung; Untertitel und Aktionen, wenn verfügbar."
+    "message": "Vorschauen erscheinen, sobald Netflix seine Vorschaubilder geladen hat; Untertitel und Überspringen/Weiter, wenn verfügbar."
   },
   "rteNoteBilibili": {
     "message": "Manche Untertitel erfordern eine Anmeldung; Funktionen hängen vom Video ab."

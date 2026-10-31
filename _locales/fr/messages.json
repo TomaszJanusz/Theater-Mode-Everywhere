@@ -354,7 +354,7 @@
     "message": "Aucune exclusion pour le moment"
   },
   "noExclusionsDescription": {
-    "message": "Le mode cinéma s'activera automatiquement sur toutes les pages contenant une vidéo."
+    "message": "Le mode cinéma démarrera automatiquement sur les services compatibles (voir AutoTheater). Ajoutez ici les sites sur lesquels il doit rester désactivé."
   },
   "removeExclusion": {
     "message": "Supprimer l'exclusion"
@@ -1200,7 +1200,7 @@
     "message": "Sous-titres, aperçus et passer/suivant si le lecteur les propose."
   },
   "rteNoteNetflix": {
-    "message": "Les aperçus nécessitent une session trick-play prête ; sous-titres et actions si disponibles."
+    "message": "Les aperçus s’affichent une fois que Netflix a chargé ses images d’aperçu ; sous-titres et passer/suivant si disponibles."
   },
   "rteNoteBilibili": {
     "message": "Certains sous-titres nécessitent une connexion ; les fonctions dépendent de la vidéo."
