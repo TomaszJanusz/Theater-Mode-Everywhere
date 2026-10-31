@@ -1,0 +1,7 @@
+{
+  "source": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+  "captured": "2026-10-31",
+  "environment": "Public logged-out desktop YouTube, Chromium, PL language, autoplay off; no extension installed",
+  "evidence": "Recorded host DOM fixture, not live extension verification",
+  "notes": "First three native anchors in .ytp-fullscreen-grid. Native anchor click reused the document and video on SPA navigation; the next grid was rebuilt while ytInitialData still referenced the old video. Creator cards and pause overlays are excluded."
+}

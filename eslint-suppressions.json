@@ -1898,9 +1898,6 @@
     }
   },
   "src/ui/controls.ts": {
-    "import/order": {
-      "count": 42
-    },
     "local/max-symbol-name-length": {
       "count": 2
     },
