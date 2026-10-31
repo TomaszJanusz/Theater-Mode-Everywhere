@@ -51,6 +51,29 @@ it('Automatic loads no catalogs and keeps the native getMessage path', async () 
   }
 });
 
+it('keeps shared and surface-specific English fallbacks when native i18n is unavailable', () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'chrome');
+  try {
+    for (const chrome of [undefined, { i18n: { getMessage: () => '' } }, {
+      i18n: { getMessage: () => { throw new Error('Extension context invalidated'); } }
+    }]) {
+      Object.defineProperty(globalThis, 'chrome', { configurable: true, value: chrome });
+      for (const t of [settingsMessage, playerMessage]) {
+        assert.equal(t('shortcutConflictDescription', ['K', 'Play', 'Mute']),
+          'K is assigned to Play. Move it to Mute? The previous actions will no longer have this shortcut.');
+        assert.equal(t('missingKey'), 'missingKey');
+      }
+      assert.equal(settingsMessage('languageAutomatic'), 'Automatic (browser language)');
+      assert.equal(playerMessage('autoEnterNoticeHint', 'K'), 'Click or press K to cancel');
+      assert.equal(playerMessage('languageAutomatic'), 'languageAutomatic');
+      assert.equal(settingsMessage('autoEnterNoticeHint'), 'autoEnterNoticeHint');
+    }
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'chrome', original);
+    else Reflect.deleteProperty(globalThis, 'chrome');
+  }
+});
+
 it('loads only allowlisted packaged resources and falls back to English, never the browser language', async () => {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'chrome');
   const originalFetch = globalThis.fetch;
