@@ -1942,3 +1942,7 @@ html { scrollbar-gutter: stable; }
   from { opacity: 0; transform: translateY(6px); }
 }
 :root[data-motion="reduced"] .setup-step { animation: none; }
+/* Settings → About: run the setup again, or reset first. */
+.setup-actions-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.setup-reset-also { display: flex; align-items: center; gap: 10px; margin-top: 16px; cursor: pointer; }
+.setup-reset-also input { flex-shrink: 0; width: 18px; height: 18px; margin: 0; accent-color: var(--accent-color); }

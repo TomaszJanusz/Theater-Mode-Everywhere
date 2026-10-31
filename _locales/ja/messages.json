@@ -1450,6 +1450,38 @@
     "message": "設定を開く",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   },
+  "setupAgainTitle": {
+    "message": "セットアップ",
+    "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
+  },
+  "setupAgainDescription": {
+    "message": "セットアップをもう一度行って選択を変更するか、すべての設定を新規インストール時の状態に戻します。",
+    "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
+  },
+  "setupRunAgain": {
+    "message": "セットアップをもう一度実行",
+    "description": "Button in Settings → About: open the first-run setup again with the current settings preselected."
+  },
+  "setupResetTitle": {
+    "message": "すべての設定をリセットしますか？",
+    "description": "Title of the dialog that confirms resetting every setting to its default."
+  },
+  "setupResetDescription": {
+    "message": "すべての設定が新規インストール時の状態に戻ります。設定を同期している他のデバイスにも反映されます。その後、もう一度選べるようにセットアップが開きます。",
+    "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
+  },
+  "setupResetAlso": {
+    "message": "除外されたウェブサイトとキーボードショートカットもリセットする",
+    "description": "Checkbox in the reset confirmation dialog, off by default: without it, excluded websites and keyboard shortcuts are kept."
+  },
+  "setupResetConfirm": {
+    "message": "設定をリセット",
+    "description": "Confirm button of the reset dialog: reset every setting."
+  },
+  "setupResetCancel": {
+    "message": "キャンセル",
+    "description": "Cancel button of the reset dialog: close it without changing anything."
+  },
   "setupStartTitle": {
     "message": "シアターモードの開始方法",
     "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."

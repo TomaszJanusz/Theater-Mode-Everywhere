@@ -1,7 +1,7 @@
 import { t as pageMessage } from '../src/i18n';
 import { translateMessage } from '../src/i18n-runtime';
 
-const FALLBACKS: Record<string, string> = {
+export const SETUP_FALLBACKS: Record<string, string> = {
   setupTitle: 'Set up Theater Mode Everywhere',
   setupProgress: 'Step $1 of $2',
   setupBack: 'Back',
@@ -43,11 +43,19 @@ const FALLBACKS: Record<string, string> = {
   setupSummaryOff: 'Off',
   setupSummaryFinishAndOpen: 'Or finish and open:',
   setupProfileFound: 'Your Theater Mode Everywhere settings arrived from another device, so setup is not needed.',
-  setupOpenSettings: 'Open settings'
+  setupOpenSettings: 'Open settings',
+  setupAgainTitle: 'Setup',
+  setupAgainDescription: 'Go through the setup again to change its choices, or reset every setting to how a fresh install starts.',
+  setupRunAgain: 'Run setup again',
+  setupResetTitle: 'Reset all settings?',
+  setupResetDescription: 'Every setting returns to how a fresh install starts, also on other devices that sync your settings. The setup then opens so you can choose again.',
+  setupResetAlso: 'Also reset excluded websites and keyboard shortcuts',
+  setupResetConfirm: 'Reset settings',
+  setupResetCancel: 'Cancel'
 };
 
 /** Setup copy stays out of content.js; existing labels use the page catalog. */
 export function setupMessage(key: string, substitutions?: string | string[]): string {
-  const message = translateMessage(FALLBACKS, key, substitutions);
+  const message = translateMessage(SETUP_FALLBACKS, key, substitutions);
   return message === key ? pageMessage(key, substitutions) : message;
 }

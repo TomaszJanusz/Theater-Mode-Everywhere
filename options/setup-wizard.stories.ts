@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/html-vite';
-import { expect } from 'storybook/test';
+import { expect, waitFor } from 'storybook/test';
 
-import { FRESH_SYNC, renderSetup } from '../.storybook/settings-page';
+import { FRESH_SYNC, renderSetup, renderSetupActions } from '../.storybook/settings-page';
+import { INSTALL_SHORTCUTS } from '../src/first-run-setup';
+import { t } from '../src/i18n';
 import { MEDIA_PROVIDER_FLAG_KEYS } from '../src/media-features/provider-flags';
 import { PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
 
+import { defaultSetupAnswers } from './setup-answers';
 import { setupMessage } from './setup-wizard-copy';
 
 /**
@@ -114,5 +117,56 @@ export const SettingsFound: Story = {
     await expect(query('.setup-notice')?.textContent).toBe(setupMessage('setupProfileFound'));
     await expect(query('.setup-step')).toBe(null);
     await expect(stage().saved).toEqual([{ settings: {}, state: { status: 'profile', version: '2.1.0' } }]);
+  }
+};
+
+/** Someone's settings after a while: a custom theater key, an exclusion and AutoTheater on. */
+const USED_SYNC = { shortcuts: { ...INSTALL_SHORTCUTS, toggle: 'G' }, blacklist: ['example.com'], autoEnterTheater: true, accentColor: 'green' };
+const actions = () => window.__setupActionsStage!;
+const actionButton = (label: string) => [...actions().doc.querySelectorAll<HTMLButtonElement>('button')].find(candidate => candidate.textContent === label)!;
+/** Opens the reset confirmation in the fixture document. */
+async function openReset(): Promise<HTMLElement> {
+  await actions().ready;
+  actionButton(t('resetToDefaults')).click();
+  // The confirmation opens in the click.
+  return actions().doc.querySelector<HTMLElement>('.te-dialog')!;
+}
+
+// Settings → About: run the setup again over the saved settings, or reset first.
+export const SetupAgain: Story = {
+  render: () => renderSetupActions(USED_SYNC),
+  play: async () => {
+    await actions().ready;
+    await expect(actions().doc.querySelector('#setup-actions h2')?.textContent).toBe(setupMessage('setupAgainTitle'));
+    actionButton(setupMessage('setupRunAgain')).click();
+    await expect(actions().started).toEqual([undefined]);
+  }
+};
+
+// The reset confirmation: Cancel focused, excluded websites and shortcuts kept unless ticked.
+export const ResetConfirmation: Story = {
+  render: () => renderSetupActions(USED_SYNC),
+  play: async () => {
+    const dialog = await openReset();
+    await expect(dialog.querySelector('[id$="-title"], h2')?.textContent).toBe(setupMessage('setupResetTitle'));
+    await expect(actions().doc.activeElement?.textContent).toBe(setupMessage('setupResetCancel'));
+    await expect(dialog.querySelector<HTMLInputElement>('.setup-reset-also input')?.checked).toBe(false);
+  }
+};
+
+// Confirming with the checkbox ticked: one remove and one set, then the setup starts at its defaults.
+export const ResetConfirmed: Story = {
+  tags: ['no-shot'],
+  render: () => renderSetupActions(USED_SYNC),
+  play: async () => {
+    const dialog = await openReset();
+    dialog.querySelector<HTMLInputElement>('.setup-reset-also input')!.click();
+    actionButton(setupMessage('setupResetConfirm')).click();
+    await waitFor(() => expect(actions().started.length).toBe(1));
+    await expect(actions().started).toEqual([defaultSetupAnswers()]);
+    await expect(actions().resets).toEqual([{
+      remove: ['accentColor'], set: { autoEnterTheater: false, shortcuts: { ...INSTALL_SHORTCUTS }, blacklist: [] }
+    }]);
+    await expect(actions().doc.querySelector('.te-dialog')).toBe(null);
   }
 };

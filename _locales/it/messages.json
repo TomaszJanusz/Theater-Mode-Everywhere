@@ -1450,6 +1450,38 @@
     "message": "Apri le impostazioni",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   },
+  "setupAgainTitle": {
+    "message": "Configurazione",
+    "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
+  },
+  "setupAgainDescription": {
+    "message": "Ripeti la configurazione per cambiare le tue scelte, oppure riporta tutte le impostazioni a come parte una nuova installazione.",
+    "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
+  },
+  "setupRunAgain": {
+    "message": "Ripeti la configurazione",
+    "description": "Button in Settings → About: open the first-run setup again with the current settings preselected."
+  },
+  "setupResetTitle": {
+    "message": "Ripristinare tutte le impostazioni?",
+    "description": "Title of the dialog that confirms resetting every setting to its default."
+  },
+  "setupResetDescription": {
+    "message": "Tutte le impostazioni tornano a come parte una nuova installazione, anche sugli altri dispositivi che sincronizzano le tue impostazioni. Poi si apre la configurazione per scegliere di nuovo.",
+    "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
+  },
+  "setupResetAlso": {
+    "message": "Ripristina anche i siti web esclusi e le scorciatoie da tastiera",
+    "description": "Checkbox in the reset confirmation dialog, off by default: without it, excluded websites and keyboard shortcuts are kept."
+  },
+  "setupResetConfirm": {
+    "message": "Ripristina le impostazioni",
+    "description": "Confirm button of the reset dialog: reset every setting."
+  },
+  "setupResetCancel": {
+    "message": "Annulla",
+    "description": "Cancel button of the reset dialog: close it without changing anything."
+  },
   "setupStartTitle": {
     "message": "Avvio della modalità cinema",
     "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."
