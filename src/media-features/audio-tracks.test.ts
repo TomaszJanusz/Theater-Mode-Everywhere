@@ -267,6 +267,43 @@ describe('audio track auto-apply', () => {
       assert.deepEqual(manual.results.map(ids), [[null, null]], 'a pick during an ad is refused and said so');
     });
 
+    it('reports and saves only the newest of overlapping picks, whatever the host answers to the earlier ones', async () => {
+      const { host, controller, results, savedPicks } = setup(null);
+      host.offer(...dubbed);
+      host.autoSettle = false;
+      const first = controller.select('de');
+      const second = controller.select('fr');
+      // A host that coalesces picks refuses the one it replaced, then applies the newer.
+      host.tracks = host.tracks.filter(track => track.id !== 'de');
+      host.settle();
+      assert.equal(await first, false);
+      assert.equal(await second, true);
+      assert.deepEqual(results.map(ids), [['fr']], 'no refusal for the replaced pick');
+      assert.deepEqual(savedPicks, ['fr']);
+
+      results.length = 0;
+      savedPicks.length = 0;
+      host.offer(...dubbed);
+      const earlier = controller.select('de');
+      const later = controller.select('en');
+      host.settle();
+      await Promise.all([earlier, later]);
+      assert.deepEqual(results.map(ids), [['en']], 'an earlier pick the host accepted is not announced either');
+      assert.deepEqual(savedPicks, ['original']);
+    });
+
+    it('drops the saved preference\'s answer once the viewer picks during it', async () => {
+      const { host, controller, results } = setup('fr');
+      host.autoSettle = false;
+      host.offer(...dubbed);
+      assert.deepEqual(host.selections.map(selection => selection.id), ['fr']);
+      const manual = controller.select('de');
+      host.settle();
+      assert.equal(await manual, true);
+      await flush();
+      assert.deepEqual(results.map(ids), [['de']]);
+    });
+
     it('says nothing when the answer is for an earlier item, a reset list or a disposed controller', async () => {
       const { host, controller, results } = setup('fr');
       host.autoSettle = false;
@@ -293,6 +330,50 @@ describe('audio track auto-apply', () => {
       await disposing;
       assert.deepEqual(results, [], 'dispose retires the pending answer');
     });
+  });
+});
+
+describe('retained audio knowledge', () => {
+  it('shows stale tracks without selecting, reporting or restarting title evaluation', async () => {
+    const host = new FakeHost();
+    host.offer(...dubbed);
+    const adapter = host.adapter();
+    let list: AudioTrackList = { mediaId: 'video-a', tracks: host.tracks, blocked: false, bindingId: 'one' };
+    adapter.listAudioTracks = () => list;
+    const reports: AudioTrackResult[] = [];
+    const controller = new AudioTrackController({ preference: () => 'en-US', locales: () => ['en'], onChange() {}, onResult: result => reports.push(result) });
+    controller.bind(adapter);
+    assert.equal(reports.length, 1);
+    list = { ...list, blocked: true, stale: true, tracks: list.tracks.map(track => ({ ...track, selected: false, disabled: true })) };
+    host.notify();
+    assert.equal(controller.tracks().length, 3);
+    assert.equal(await controller.select('fr'), false);
+    assert.deepEqual(host.selections, []);
+    assert.equal(reports.length, 1);
+    list = { mediaId: 'video-a', tracks: host.tracks, blocked: false, bindingId: 'two' };
+    host.notify();
+    assert.equal(reports.length, 1, 'revalidation is not a new title or automatic preference decision');
+    controller.dispose();
+  });
+
+  it('retires a result for an old command binding even when the title is unchanged', async () => {
+    const host = new FakeHost();
+    host.offer(...dubbed);
+    host.autoSettle = false;
+    const adapter = host.adapter();
+    let bindingId = 'one';
+    adapter.listAudioTracks = () => ({ mediaId: host.mediaId, tracks: host.tracks, blocked: false, bindingId });
+    const reports: AudioTrackResult[] = [];
+    const saves: string[] = [];
+    const controller = new AudioTrackController({ preference: () => null, locales: () => ['en'], onChange() {},
+      onResult: result => reports.push(result), onPreferenceChange: value => saves.push(value) });
+    controller.bind(adapter);
+    const pending = controller.select('fr');
+    bindingId = 'two'; host.notify(); host.settle();
+    assert.equal(await pending, false);
+    assert.deepEqual(reports, []);
+    assert.deepEqual(saves, []);
+    controller.dispose();
   });
 });
 

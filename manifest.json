@@ -27,6 +27,8 @@
         "*://*.bilibili.com./*",
         "*://*.bilibili.tv/*",
         "*://*.bilibili.tv./*",
+        "*://*.disneyplus.com/*",
+        "*://*.disneyplus.com./*",
         "*://*.iq.com/*",
         "*://*.iq.com./*",
         "*://*.netflix.com/*",
@@ -82,6 +84,22 @@
       "js": [
         "content.js",
         "providers/bilibiliIntl/isolated.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
+        "*://*.disneyplus.com/*",
+        "*://*.disneyplus.com./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/disney/isolated.js",
         "contentStart.js"
       ],
       "run_at": "document_start",
@@ -231,6 +249,8 @@
         "*://*.bilibili.com./*",
         "*://*.bilibili.tv/*",
         "*://*.bilibili.tv./*",
+        "*://*.disneyplus.com/*",
+        "*://*.disneyplus.com./*",
         "*://*.iq.com/*",
         "*://*.iq.com./*",
         "*://*.netflix.com/*",
@@ -282,6 +302,20 @@
       "js": [
         "mainWorld.js",
         "providers/bilibiliIntl/main.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.disneyplus.com/*",
+        "*://*.disneyplus.com./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/disney/main.js",
         "mainWorldStart.js"
       ],
       "run_at": "document_start",

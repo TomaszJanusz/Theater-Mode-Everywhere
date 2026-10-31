@@ -120,8 +120,6 @@ import {
   disneyBifFrameCount,
   disneyBifTimestampSeconds,
   isDisneyTimelineBif,
-  isUsableDisneyMediaVideo,
-  rankDisneyMediaVideos,
   disneyMediaSeekLooksStuck
 } from './parsers/disney-page';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
@@ -1872,29 +1870,7 @@ https://vod-akc-euwest1.media.dssott.com/ps01/video/segment.m4s
     assert.equal(writeDisneyContentTime(receivingVideo, Number.NaN), null);
   });
 
-  it('ignores Disney dummy videos and treats a stuck MSE prefix as a failed seek', () => {
-    const dummy = {
-      className: 'btm-media-client-element',
-      style: { display: 'none' },
-      videoWidth: 0,
-      clientWidth: 0,
-      clientHeight: 0,
-      src: '',
-      currentSrc: ''
-    } as unknown as HTMLVideoElement;
-    const hive = {
-      className: 'hive-video theater-everywhere-video-active',
-      style: { display: 'block' },
-      videoWidth: 1280,
-      clientWidth: 1334,
-      clientHeight: 862,
-      src: 'blob:https://www.disneyplus.com/abc',
-      currentSrc: 'blob:https://www.disneyplus.com/abc',
-      getBoundingClientRect: () => ({ width: 1334, height: 862, top: 0, left: 0, bottom: 862, right: 1334, x: 0, y: 0, toJSON() {} })
-    } as unknown as HTMLVideoElement;
-    assert.equal(isUsableDisneyMediaVideo(dummy), false);
-    assert.equal(isUsableDisneyMediaVideo(hive), true);
-    assert.equal(rankDisneyMediaVideos([dummy, hive])[0], hive);
+  it('treats a stuck MSE prefix as a failed seek', () => {
     assert.equal(disneyMediaSeekLooksStuck(52, 748), true);
     assert.equal(disneyMediaSeekLooksStuck(52, 40), false);
     assert.equal(disneyMediaSeekLooksStuck(null, 748), false);

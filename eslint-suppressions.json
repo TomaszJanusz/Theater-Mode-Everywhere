@@ -1157,9 +1157,6 @@
     }
   },
   "src/providers/disney/main.ts": {
-    "import/order": {
-      "count": 7
-    },
     "local/max-symbol-name-length": {
       "count": 19
     },

@@ -1,5 +1,3 @@
-import { readPageResponseBytes } from '../../platform/page-body';
-import { shouldHarvestDisneyUrl, isDisneyBifUrl as isAllowedDisneyBifUrl } from '../network-harvest';
 import {
   findDisneyContentTitle,
   readDisneyPlayerHeader,
@@ -8,10 +6,14 @@ import {
   type DisneyPlayerHeader,
   type DisneyTitleSource
 } from '../../media-features/content-title';
-import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { findActiveVideo } from '../../platform/active-video';
 import { publishHiddenJson } from '../../platform/hidden-json';
+import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
+import { readPageResponseBytes } from '../../platform/page-body';
+import { isDisneyHost } from '../hosts';
+import { shouldHarvestDisneyUrl, isDisneyBifUrl as isAllowedDisneyBifUrl } from '../network-harvest';
+
 import {
   DISNEY_CLOCK_MOUNT_MS,
   createDisneyClockScheduler,
@@ -23,7 +25,7 @@ import {
   type DisneyClockTick
 } from './clock-policy';
 import { installDisneyPlayNext } from './play-next';
-import { isDisneyHost } from '../hosts';
+import { disneyContentVideo, disneyMediaElement, isDisneyContentVideo, isUsableDisneyMediaVideo } from './watch-playback';
 
 export const MAX_BIF_BYTES = 16 * 1024 * 1024;
 
@@ -74,11 +76,15 @@ let cachedDisneyPlayerHost: Element | null = null;
 const disneyPlayerPlayIds = new WeakMap<DisneyHivePlayer, string | null>();
 const disneyVideoPlayers = new WeakMap<HTMLVideoElement, DisneyHivePlayer>();
 const disneyResettingPlayers = new WeakSet<DisneyHivePlayer>();
+/** The video each reset began on, and whether it had already dropped its metadata then. */
+const disneyResetStarts = new WeakMap<DisneyHivePlayer, { video: HTMLVideoElement; empty: boolean }>();
 const disneyClockBoundPlayers = new WeakSet<object>();
 let clockPlayerGeneration = 0;
 let disneyClockTargets: HTMLVideoElement[] = [];
 let disneyClockVideo: HTMLVideoElement | null = null;
 let unwatchDisneyClockVideo: (() => void) | null = null;
+/** The watched video emptied and has not loaded metadata again; its player stays marked until it does. */
+let clockVideoResetting = false;
 let disneyClockScheduler: DisneyClockScheduler | null = null;
 let disneyClockInstalled = false;
 let lastDispatchedDisneyPlayhead: number | null = null;
@@ -537,26 +543,6 @@ function isDisneyHivePlayer(value: unknown): value is DisneyHivePlayer {
     || typeof player.timeline?.info?.playheadPositionMs === 'number';
 }
 
-function isUsableDisneyMediaVideo(video: HTMLVideoElement | null | undefined): boolean {
-  if (!video || !(video instanceof HTMLVideoElement)) return false;
-  const className = typeof video.className === 'string' ? video.className : '';
-  if (/\bbtm-media-client-element\b/.test(className)) return false;
-  let display = '';
-  try {
-    display = window.getComputedStyle(video).display;
-  } catch {
-    display = video.style?.display || '';
-  }
-  if (display === 'none') return false;
-  const rect = video.getBoundingClientRect();
-  const hasBox = rect.width > 8 && rect.height > 8;
-  const hasSource = Boolean(video.currentSrc || video.src);
-  if (/\bhive-video\b/.test(className) || /\btheater-everywhere-video-active\b/.test(className) || video.hasAttribute('data-theater-everywhere')) {
-    return video.videoWidth > 0 || hasSource || hasBox;
-  }
-  return (video.videoWidth > 0 || hasSource) && hasBox;
-}
-
 function disneyMediaVideos(preferred?: HTMLVideoElement | null): HTMLVideoElement[] {
   const all = Array.from(document.querySelectorAll('video')).filter((node): node is HTMLVideoElement => (
     node instanceof HTMLVideoElement
@@ -569,6 +555,8 @@ function disneyMediaVideos(preferred?: HTMLVideoElement | null): HTMLVideoElemen
     out.push(node);
   };
   push(preferred || null);
+  // Disney's own name for its content video outranks every class, which its UI rewrites.
+  push(disneyMediaElement());
   for (const node of all) {
     if (node.classList.contains('theater-everywhere-video-active') || node.hasAttribute('data-theater-everywhere')) push(node);
   }
@@ -664,9 +652,27 @@ function invalidateDisneyPlayerCache(): void {
   clockPlayerGeneration += 1;
 }
 
+/**
+ * A reset ends when the content video has metadata again. Its `loadedmetadata` normally settles it, but the clock may
+ * not have been watching that video then; without this the reused player would be refused for good and the clock
+ * would stay frozen while Hive plays on.
+ */
+function settleDisneyReset(player: DisneyHivePlayer): boolean {
+  if (!disneyResettingPlayers.has(player)) return true;
+  const video = disneyContentVideo();
+  if (!video?.isConnected || video.readyState < 1) return false;
+  // Metadata counts as new only after the video was seen without it, or on another element.
+  const start = disneyResetStarts.get(player);
+  if (start && start.video === video && !start.empty) return false;
+  disneyResetStarts.delete(player);
+  disneyPlayerPlayIds.set(player, disneyPageMediaId());
+  disneyResettingPlayers.delete(player);
+  return true;
+}
+
 function rememberDisneyPlayer(player: DisneyHivePlayer, host: Element): DisneyHivePlayer | null {
   const playId = disneyPageMediaId();
-  if (disneyResettingPlayers.has(player)) return null;
+  if (!settleDisneyReset(player)) return null;
   if (disneyPlayerPlayIds.has(player) && disneyPlayerPlayIds.get(player) !== playId) return null;
   disneyPlayerPlayIds.set(player, playId);
   if (cachedDisneyPlayer !== player) clockPlayerGeneration += 1;
@@ -677,7 +683,7 @@ function rememberDisneyPlayer(player: DisneyHivePlayer, host: Element): DisneyHi
 
 function disneyPlayerCacheValid(): boolean {
   if (!cachedDisneyPlayer || !isDisneyHivePlayer(cachedDisneyPlayer)) return false;
-  if (disneyResettingPlayers.has(cachedDisneyPlayer)) return false;
+  if (!settleDisneyReset(cachedDisneyPlayer)) return false;
   if (disneyPlayerPlayIds.get(cachedDisneyPlayer) !== disneyPageMediaId()) return false;
   if (!cachedDisneyPlayerHost?.isConnected) return false;
   const web = document.querySelector('disney-web-player');
@@ -829,19 +835,28 @@ function rememberDisneyClockVideo(video: HTMLVideoElement | null): void {
 
 function watchDisneyClockVideo(video: HTMLVideoElement | null): void {
   if (video === disneyClockVideo) return;
+  // Discovery can find no video in the middle of a reset; keep the one that will report its end.
+  if (!video && clockVideoResetting && disneyClockVideo?.isConnected) return;
   unwatchDisneyClockVideo?.();
   unwatchDisneyClockVideo = null;
   disneyClockVideo = video;
+  clockVideoResetting = false;
   if (!video) return;
   const onPlayback = () => ensureDisneyClock();
   let resettingPlayer: DisneyHivePlayer | null = null;
   const onReset = () => {
+    clockVideoResetting = true;
     resettingPlayer = disneyVideoPlayers.get(video) ?? null;
-    if (resettingPlayer) disneyResettingPlayers.add(resettingPlayer);
+    if (resettingPlayer) {
+      disneyResettingPlayers.add(resettingPlayer);
+      const start = disneyResetStarts.get(resettingPlayer);
+      if (start?.video !== video || !start.empty) disneyResetStarts.set(resettingPlayer, { video, empty: video.readyState < 1 });
+    }
     if (resettingPlayer === cachedDisneyPlayer) invalidateDisneyPlayerCache();
     ensureDisneyClock();
   };
   const onMetadata = () => {
+    if (video.readyState >= 1) clockVideoResetting = false;
     // A reused Hive object may adopt the new route only after this video's
     // reset has completed. A URL change or an old timecode alone cannot do it.
     if (resettingPlayer && video.isConnected && video.readyState >= 1) {
@@ -849,8 +864,10 @@ function watchDisneyClockVideo(video: HTMLVideoElement | null): void {
       if (!replacement) {
         disneyPlayerPlayIds.set(resettingPlayer, disneyPageMediaId());
         disneyResettingPlayers.delete(resettingPlayer);
+        disneyResetStarts.delete(resettingPlayer);
       }
-      const current = replacement ?? findDisneyHivePlayer(video, true);
+      // The watched video names its player even when its classes no longer make it a candidate.
+      const current = replacement ?? findDisneyHivePlayer(video, true) ?? rememberDisneyPlayer(resettingPlayer, video);
       if (current) {
         disneyVideoPlayers.set(video, current);
         bindDisneyPlayerClock(current);
@@ -1148,6 +1165,13 @@ function installDisneyClockLifecycle(): void {
   window.addEventListener('popstate', () => ensureDisneyClock());
   window.addEventListener('pagehide', () => disneyClock().suspend());
   window.addEventListener('pageshow', () => ensureDisneyClock(true));
+  // Whatever the clock watches, the content video's own metadata and playback wake it, so a reset whose end went
+  // unseen still settles (`settleDisneyReset`) and the clock rebinds instead of staying frozen.
+  for (const type of ['loadedmetadata', 'playing']) {
+    document.addEventListener(type, event => {
+      if (event.target instanceof HTMLVideoElement && event.target !== disneyClockVideo && isDisneyContentVideo(event.target)) ensureDisneyClock();
+    }, true);
+  }
   // Disable is a dataset flag, not a DOM rebuild. Attribute-only observation stays cheap.
   if (document.documentElement) {
     new MutationObserver(() => ensureDisneyClock(true)).observe(document.documentElement, {

@@ -9,6 +9,7 @@ import { assertAppearanceModes } from './appearance';
 import { assertAudioWorld } from './audio';
 import { assertAutoTheater } from './auto-theater';
 import { assertBilibiliProvider, assertBilibiliTvProvider } from './bilibili-providers';
+import { assertDisneyProvider } from './disney';
 import { FirefoxRemote } from './firefox-rdp';
 import { assertEmbeddedKeysAndFullscreen } from './frames';
 import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist, useSyncQuota } from './helpers';
@@ -38,6 +39,7 @@ const PROVIDER_SCENARIOS: ReadonlyArray<{ name: string; syncWrites: number; run:
   { name: 'assertBilibiliTvProvider', syncWrites: 7, run: assertBilibiliTvProvider },
   { name: 'assertYoutubeProvider', syncWrites: 4, run: assertYoutubeProvider },
   { name: 'assertTwitchProvider', syncWrites: 7, run: assertTwitchProvider },
+  { name: 'assertDisneyProvider', syncWrites: 3, run: assertDisneyProvider },
   { name: 'assertVikiProvider', syncWrites: 7, run: assertVikiProvider },
   { name: 'assertNetflixAudio', syncWrites: 5, run: assertNetflixAudio }
 ];

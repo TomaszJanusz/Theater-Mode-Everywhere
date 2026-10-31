@@ -5,6 +5,7 @@ import { defaultMediaProviderFlags, MEDIA_PROVIDER_IDS } from '../media-features
 
 import { bilibiliVideoIdentity, bilibiliWatchPlayback } from './bilibili/watch-playback';
 import { bilibiliIntlVideoIdentity, bilibiliIntlWatchPlayback } from './bilibiliIntl/watch-playback';
+import { disneyWatchPlayback } from './disney/watch-playback';
 import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
 import { patreonWatchPlayback } from './patreon/watch-playback';
 import { providerDefinition, shouldAttachProvider } from './registry';
@@ -35,7 +36,7 @@ describe('positive provider watch declarations', () => {
   });
 
   it('keeps extracted providers unavailable until their host script registers', () => {
-    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['vimeo', 'https://vimeo.com/123456'], ['iqiyi', 'https://www.iq.com/play/spring-of-the-blade-episode-2-1w9dte7osf8'], ['bilibili', 'https://www.bilibili.com/video/BV1xx411c7mu'], ['bilibiliIntl', 'https://www.bilibili.tv/en/video/4801285774384128'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk'], ['twitch', 'https://www.twitch.tv/videos/2345678901']] as const) {
+    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['vimeo', 'https://vimeo.com/123456'], ['iqiyi', 'https://www.iq.com/play/spring-of-the-blade-episode-2-1w9dte7osf8'], ['bilibili', 'https://www.bilibili.com/video/BV1xx411c7mu'], ['bilibiliIntl', 'https://www.bilibili.tv/en/video/4801285774384128'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk'], ['twitch', 'https://www.twitch.tv/videos/2345678901'], ['disney', 'https://www.disneyplus.com/play/560861a0-55c9-4552-a181-64c498e01b62']] as const) {
       assert.equal(providerDefinition(id).watchPlayback, undefined);
       assert.equal(read(href), null);
     }
@@ -92,7 +93,7 @@ describe('positive provider watch declarations', () => {
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://twitch.tv.evil.test/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['disney', 'netflix']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['netflix']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
@@ -120,7 +121,8 @@ describe('positive provider watch declarations', () => {
     }
   });
 
-  it('qualifies Disney play routes with optional locale, excluding browse, video and malformed paths', () => {
+  it('qualifies Disney play routes with optional locale, excluding browse, video and malformed paths', t => {
+    t.mock.method(providerRegistry, 'get', (id: string) => id === 'disney' ? { id: 'disney', contractVersion: 1, watchPlayback: disneyWatchPlayback } : undefined);
     const id = '560861a0-55c9-4552-a181-64c498e01b62';
     const expected = { provider: 'disney', identity: id };
     for (const path of [`/play/${id}`, `/pl-pl/play/${id}?contextId=tracking`, `/en/play/${id}/`, `/en-US/play/${id.toUpperCase()}`]) {

@@ -21,6 +21,15 @@ export const PROVIDER_CATALOG = [
     "home": "https://www.bilibili.tv/"
   },
   {
+    "id": "disney",
+    "hosts": [
+      {
+        "domain": "disneyplus.com",
+        "includeSubdomains": true
+      }
+    ]
+  },
+  {
     "id": "iqiyi",
     "hosts": [
       {

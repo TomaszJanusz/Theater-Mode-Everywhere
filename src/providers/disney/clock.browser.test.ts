@@ -9,6 +9,8 @@ import { testEngines } from '../../test-utils/test-engines';
 const PLAY_ID = '86e14fdb-3841-4282-ad38-07c8c4aab4b6';
 const compiled = bundleModules(["import { handleDisneyMediaSeek, harvestDisneyData, installDisneyMain } from './providers/disney/main'; import { DisneyAdapter } from './media-features/disney-adapter'; export { handleDisneyMediaSeek, harvestDisneyData, installDisneyMain, DisneyAdapter };"], 'DisneyMain');
 const browsers = sharedEngineBrowsers();
+/** What the reset cases call on the bundled MAIN module. */
+type DisneyClockApi = { installDisneyMain(): void };
 
 type ClockReport = {
   catalog: { intervals: number; watchdogs: number; any: number };
@@ -199,6 +201,113 @@ for (const engine of testEngines()) {
         replacedOnSameVideo: 3800, replacementDuringReset: 3800, replacementAfterReset: 3900,
         nextEpisode: 2844, afterStalePlayer: 2844, replacementDuration: 4000, afterReplacementStale: 4000
       });
+    });
+
+    for (const named of [true, false]) {
+      it(`resumes the clock after Disney rewrites the content video's classes and reloads it (${named ? 'named by mediaElement' : 'no mediaElement'})`, { timeout: 30_000 }, async t => {
+        const page = await (await browsers[engine].newContext(t)).newPage();
+        await page.route('https://www.disneyplus.com/**', route => route.fulfill({
+          contentType: 'text/html', body: '<disney-web-player><video class="hive-video" style="width:640px;height:360px"></video><video id="dummy" class="btm-media-client-element" style="display:none"></video></disney-web-player>'
+        }));
+        await page.goto(`https://www.disneyplus.com/play/${PLAY_ID}`);
+        await page.addScriptTag({ content: 'globalThis.__name = fn => fn;\n' + compiled });
+        await page.evaluate(named => {
+          const api = (window as unknown as { DisneyMain: DisneyClockApi }).DisneyMain;
+          const video = document.querySelector<HTMLVideoElement>('video.hive-video')!;
+          const listeners: Record<string, () => void> = {};
+          const state = { ready: 4 };
+          Object.defineProperty(video, 'readyState', { configurable: true, get: () => state.ready });
+          const player = {
+            seek() {}, play() {}, pause() {},
+            timeline: { info: { playheadPositionMs: 3_020_000, programDurationMs: 5_400_000 } },
+            on(name: string, listener: () => void) { listeners[name] = listener; }
+          };
+          Object.assign(video, { mediaPlayer: player });
+          // Disney names its content video on the player element (a page-world property).
+          if (named) Object.assign(document.querySelector('disney-web-player')!, { mediaElement: video });
+          Object.assign(window, { probe: { player, listeners, state, video } });
+          api.installDisneyMain();
+        }, named);
+        await page.waitForFunction(() => Boolean((window as unknown as { probe: { listeners: Record<string, () => void> } }).probe.listeners['@EVENT/PLAYER/TIMECODE']));
+        const report = await page.evaluate(() => {
+          const { player, listeners, state, video } = (window as unknown as { probe: {
+            player: { timeline: { info: { playheadPositionMs: number } } };
+            listeners: Record<string, () => void>; state: { ready: number }; video: HTMLVideoElement;
+          } }).probe;
+          const tick = (ms: number) => { player.timeline.info.playheadPositionMs = ms; listeners['@EVENT/PLAYER/TIMECODE'](); };
+          const read = () => video.dataset.teDisneyPlayhead ?? null;
+          tick(3_020_380);
+          const before = read();
+          // What disney-web-player.mediaElementUiChanged does on any change of Hive's ui slice, read on the host.
+          video.className = 'btm-media-client-element fontDefault windowOpacity0';
+          tick(3_030_000);
+          const afterWipe = read();
+          // An audio switch reloads the same Hive player: emptied and loadstart, then metadata again.
+          state.ready = 0;
+          video.dispatchEvent(new Event('emptied'));
+          video.dispatchEvent(new Event('loadstart'));
+          tick(3_031_000);
+          const duringReload = read();
+          state.ready = 1;
+          video.dispatchEvent(new Event('loadedmetadata'));
+          tick(3_069_900);
+          const afterReload = read();
+          tick(3_070_150);
+          return { before, afterWipe, duringReload, afterReload, moving: read(),
+            dummy: document.getElementById('dummy')!.dataset.teDisneyPlayhead ?? null };
+        });
+        assert.deepEqual(report, {
+          before: '3020.38', afterWipe: '3030', duringReload: '3030', afterReload: '3069.9', moving: '3070.15', dummy: null
+        }, 'the clock follows Hive through the reload and never targets the dummy');
+      });
+    }
+
+    it('settles a reset whose end the clock never saw, when the content video plays', { timeout: 30_000 }, async t => {
+      const page = await (await browsers[engine].newContext(t)).newPage();
+      await page.route('https://www.disneyplus.com/**', route => route.fulfill({
+        contentType: 'text/html', body: '<disney-web-player><video id="old" class="hive-video" style="width:640px;height:360px"></video></disney-web-player>'
+      }));
+      await page.goto(`https://www.disneyplus.com/play/${PLAY_ID}`);
+      await page.addScriptTag({ content: 'globalThis.__name = fn => fn;\n' + compiled });
+      await page.evaluate(() => {
+        const api = (window as unknown as { DisneyMain: DisneyClockApi }).DisneyMain;
+        const web = document.querySelector('disney-web-player')!;
+        const old = document.getElementById('old') as HTMLVideoElement;
+        const listeners: Record<string, () => void> = {};
+        const player = {
+          seek() {}, play() {}, pause() {},
+          timeline: { info: { playheadPositionMs: 1_000_000, programDurationMs: 5_400_000 } },
+          on(name: string, listener: () => void) { listeners[name] = listener; }
+        };
+        Object.defineProperty(old, 'readyState', { configurable: true, get: () => 0 });
+        Object.assign(old, { mediaPlayer: player });
+        Object.assign(web, { mediaElement: old });
+        Object.assign(window, { probe: { player, listeners, web, old } });
+        api.installDisneyMain();
+      });
+      await page.waitForFunction(() => Boolean((window as unknown as { probe: { listeners: Record<string, () => void> } }).probe.listeners['@EVENT/PLAYER/TIMECODE']));
+      const report = await page.evaluate(() => {
+        const { player, listeners, web, old } = (window as unknown as { probe: {
+          player: { timeline: { info: { playheadPositionMs: number } } }; listeners: Record<string, () => void>;
+          web: Element; old: HTMLVideoElement;
+        } }).probe;
+        const tick = (ms: number) => { player.timeline.info.playheadPositionMs = ms; listeners['@EVENT/PLAYER/TIMECODE'](); };
+        // The reset starts on the old element, and Disney hands the same Hive player a new one: no loadedmetadata on the old.
+        old.dispatchEvent(new Event('emptied'));
+        const next = document.createElement('video');
+        next.className = 'btm-media-client-element fontDefault';
+        next.style.cssText = 'width:640px;height:360px';
+        Object.defineProperty(next, 'readyState', { configurable: true, get: () => 4 });
+        Object.assign(next, { mediaPlayer: player });
+        old.replaceWith(next);
+        Object.assign(web, { mediaElement: next });
+        tick(1_010_000);
+        const beforeWake = next.dataset.teDisneyPlayhead ?? null;
+        next.dispatchEvent(new Event('playing'));
+        tick(1_020_000);
+        return { beforeWake, afterWake: next.dataset.teDisneyPlayhead ?? null };
+      });
+      assert.deepEqual(report, { beforeWake: null, afterWake: '1020' }, 'the playing content video rebinds the clock');
     });
 
     it('keeps timers off the catalog and arms the fallback only while native time is missing', async (t) => {
