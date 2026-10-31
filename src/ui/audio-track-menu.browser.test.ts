@@ -238,7 +238,7 @@ describe('audio track menu and per-service preference', () => {
         await page.locator('.language-hud-spinner').waitFor();
         await page.locator('[data-language-line="audio"]').waitFor();
         assert.deepEqual(await noticeLines(page), { plates: 1, lines: [
-          ['subtitles', 'Subtitles', 'Loading...'], ['audio', 'Audio', 'Français']
+          ['subtitles', 'Subtitles', 'English'], ['audio', 'Audio', 'Français']
         ] });
         release();
         await page.locator('.language-hud-spinner').waitFor({ state: 'detached' });

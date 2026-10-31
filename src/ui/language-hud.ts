@@ -14,7 +14,6 @@ export type CaptionHudView = { kind: 'dismiss' } | LanguageLine;
 type LanguageHudHost = Pick<PlayerChromeContext, 'mountPlayerUi' | 'paintOverlay'> & {
   session: Pick<PlayerChromeContext['session'], 'element' | 'currentEpoch'>;
 };
-type StatusLine = Extract<LanguageLine, { kind: 'status' }>;
 type Place = { x: number; y: number };
 type PlateBox = { box: DOMRect; places: Map<LanguageSource, Place[]> };
 type LeavingCell = { cell: HTMLElement; left: number; top: number; width: number; opacity: string };
@@ -24,6 +23,7 @@ const PLATE_MORPH_MS = 225;
 const LOADING_TEXT_FADE_MS = SPINNER_PASSIVE_EXIT_MS * 0.4;
 const LOADING_CLASS = 'language-hud-loading';
 const LOADING_TEXT_CLASS = 'language-hud-loading-text';
+const TEXT_CLASS = 'language-hud-text';
 const ROWS_CLASS = 'language-hud-rows';
 
 const rowOf = (plate: HTMLElement, source: LanguageSource) =>
@@ -49,7 +49,7 @@ function buildRow(source: LanguageSource, line: LanguageLine): HTMLElement {
     spinner.setAttribute('aria-hidden', 'true');
     loading.append(spinner, span(LOADING_TEXT_CLASS, line.detail));
     value.append(loading);
-  } else value.append(span('language-hud-text', line.detail));
+  } else value.append(span(TEXT_CLASS, line.detail));
   row.append(span('language-hud-label', line.title), value);
   return row;
 }
@@ -146,7 +146,7 @@ class LanguagePlate implements LanguageNoticeView {
       this.updateStatus(current, source, line);
       return current;
     }
-    const turning = line.kind === 'loading' ? current?.querySelector(`.${LOADING_CLASS}:not(.leaving) .${LOADING_TEXT_CLASS}`) : null;
+    const turning = line.kind === 'loading' && current?.querySelector(`.${LOADING_TEXT_CLASS}`);
     if (turning) {
       turning.textContent = line.detail || '';
       return current!;
@@ -155,67 +155,48 @@ class LanguagePlate implements LanguageNoticeView {
     current?.replaceWith(row);
     if (isElementMotionReduced(plate)) return row;
     // A row joining a plate on screen fades in; a fresh plate reveals its value as one notice always has.
-    const targets = freshPlate ? [...row.querySelectorAll<HTMLElement>('.language-hud-text')] : cellsOf(row);
+    const targets = freshPlate ? [...row.querySelectorAll<HTMLElement>(`.${TEXT_CLASS}`)] : cellsOf(row);
     const reveals = targets.filter(node => node.textContent).map(node => animateReveal(node));
     if (reveals.length) this.lineMotion.set(source, () => { for (const reveal of reveals) reveal.cancel(); });
     return row;
   }
 
-  private updateStatus(row: HTMLElement, source: LanguageSource, line: StatusLine): void {
+  private updateStatus(row: HTMLElement, source: LanguageSource, line: LanguageLine): void {
     const [label, value] = cellsOf(row);
     label.textContent = line.title;
-    // An exit cut short by this update leaves its spinner behind; it goes at once.
-    for (const stale of value.querySelectorAll(`.${LOADING_CLASS}.leaving`)) stale.remove();
-    value.style.removeProperty('min-width');
-    value.querySelector('.language-hud-text')?.remove();
+    value.querySelector(`.${TEXT_CLASS}`)?.remove();
     const loading = value.querySelector<HTMLElement>(`.${LOADING_CLASS}`);
+    const name = loading?.querySelector<HTMLElement>(`.${LOADING_TEXT_CLASS}`);
+    // A load that already named the result keeps that text where it is: only the spinner leaves.
+    const kept = line.detail && name?.textContent === line.detail ? name : null;
+    const text = kept ?? span(TEXT_CLASS, line.detail);
     const reduced = isElementMotionReduced(row.parentElement!);
-    if (loading && line.detail && loading.querySelector(`.${LOADING_TEXT_CLASS}`)?.textContent === line.detail) {
-      this.resolveNamedLoading(row, source, loading);
-      return;
-    }
-    const text = span('language-hud-text', line.detail);
-    value.append(text);
+    if (kept) kept.className = TEXT_CLASS;
+    else value.append(text);
     if (loading) {
       // The value takes the spinner's place; the slot keeps the spinner's width until it has gone, so
       // "Loading..." is never cut, and then the plate eases to the value's own width.
-      value.style.minWidth = `${loading.offsetWidth}px`;
-      loading.classList.add('leaving');
-      const fade = reduced ? null : loading.querySelector('.language-hud-loading-text')!.animate(
+      if (!kept) {
+        value.style.minWidth = `${loading.offsetWidth}px`;
+        loading.classList.add('leaving');
+      }
+      const fade = reduced || kept ? null : name!.animate(
         [{ opacity: 1 }, { opacity: 0 }], { duration: LOADING_TEXT_FADE_MS, easing: 'ease-out', fill: 'both' });
+      // An exit cut short by this update ends here too: the spinner goes at once.
+      const settle = () => {
+        loading.replaceWith(...kept ? [kept] : []);
+        value.style.removeProperty('min-width');
+      };
       const stopExit = exitSpinner(loading.querySelector<HTMLElement>('.language-hud-spinner')!, {
-        mode: 'passive', reveal: line.detail ? text : undefined, clock: this.clock,
+        mode: 'passive', reveal: line.detail && !kept ? text : undefined, clock: this.clock,
         isCurrent: () => row.isConnected && this.isCurrent(),
-        onFinish: () => this.reflow(() => {
-          loading.remove();
-          value.style.removeProperty('min-width');
-        })
+        onFinish: () => this.reflow(settle)
       });
-      this.lineMotion.set(source, () => { stopExit(); fade?.cancel(); });
+      this.lineMotion.set(source, () => { stopExit(); fade?.cancel(); settle(); });
     } else if (line.detail && !reduced) {
       const reveal = animateReveal(text);
       this.lineMotion.set(source, () => reveal.cancel());
     }
-  }
-
-  /**
-   * The load named the same text the result shows, so that text stays where it is and only the
-   * spinner leaves, with the plate easing to the narrower row once it has gone.
-   */
-  private resolveNamedLoading(row: HTMLElement, source: LanguageSource, loading: HTMLElement): void {
-    const name = loading.querySelector<HTMLElement>(`.${LOADING_TEXT_CLASS}`)!;
-    name.className = 'language-hud-text';
-    const unwrap = () => loading.replaceWith(name);
-    const stopExit = exitSpinner(loading.querySelector<HTMLElement>('.language-hud-spinner')!, {
-      mode: 'passive', clock: this.clock,
-      isCurrent: () => row.isConnected && this.isCurrent(),
-      onFinish: () => this.reflow(unwrap)
-    });
-    // An update that cuts the exit short ends the spinner at once but keeps the name.
-    this.lineMotion.set(source, () => {
-      stopExit();
-      unwrap();
-    });
   }
 
   /** Removes the rows of sources no longer shown: fading in place while the plate morphs, or at once. */

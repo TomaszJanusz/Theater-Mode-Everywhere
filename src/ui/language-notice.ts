@@ -11,9 +11,7 @@ export type LanguageSource = typeof LANGUAGE_SOURCES[number];
  * `title` names the source (the row's label); `detail` is what it reports (the row's value). A loading
  * line may already name what loads in `detail`, and then says "loading" for screen readers in `announce`.
  */
-export type LanguageLine =
-  | { kind: 'loading'; title: string; detail?: string; announce?: string }
-  | { kind: 'status'; title: string; detail?: string };
+export type LanguageLine = { kind: 'loading' | 'status'; title: string; detail?: string; announce?: string };
 export type LanguageLines = ReadonlyArray<readonly [LanguageSource, LanguageLine]>;
 /** Lines to set; `null` withdraws a source's line, an absent source keeps its line. */
 export type LanguageChanges = Partial<Record<LanguageSource, LanguageLine | null>>;
@@ -38,8 +36,7 @@ export interface LanguageNoticeView {
 
 /** The merged text, read once per update. */
 export function languageNoticeText(lines: LanguageLines): string {
-  return lines.map(([, line]) => (line.kind === 'loading' && line.announce)
-    || (line.detail ? `${line.title}: ${line.detail}` : line.title)).join('. ');
+  return lines.map(([, line]) => line.announce || (line.detail ? `${line.title}: ${line.detail}` : line.title)).join('. ');
 }
 
 /**
@@ -96,11 +93,7 @@ export class LanguageNotice {
     // A spinner already on screen keeps turning, and names the load that supersedes it; a new load
     // withdraws the old result at once.
     const shown = this.lines.get(source);
-    if (shown?.kind === 'loading') {
-      if (shown.title === line.title && shown.detail === line.detail) return false;
-      this.lines.set(source, line);
-      return true;
-    }
+    if (shown?.kind === 'loading') return shown.detail !== line.detail && Boolean(this.lines.set(source, line));
     this.pending.set(source, this.clock.setTimeout(() => {
       this.pending.delete(source);
       if (!this.isCurrent()) return;

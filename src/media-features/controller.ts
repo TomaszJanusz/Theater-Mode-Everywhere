@@ -700,7 +700,7 @@ export class MediaFeaturesController {
 
   /** The label the loading and the loaded HUD share, so a track reads the same before and after it loads. */
   private hudLabel(id: string | null): { label?: string } {
-    const track = id ? this.tracks.find((item) => item.id === id) : undefined;
+    const track = this.tracks.find((item) => item.id === id);
     return track ? { label: this.captionTrackDisplayLabel(track) } : {};
   }
 
