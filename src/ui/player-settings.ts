@@ -114,11 +114,18 @@ export function createPlayerSettings(
   });
   const close = popover.close;
 
-  function openSubview(returnTo: HTMLElement, focus: () => HTMLElement | undefined) {
+  /**
+   * Like the popover, only a keyboard open moves focus into the list. A pointer open leaves focus
+   * nowhere, so a page that later focuses its own element is not focus leaving the menu.
+   */
+  function openSubview(returnTo: HTMLElement, focus: () => HTMLElement | undefined, keyboard: boolean) {
     subviewReturn = returnTo;
+    const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
+    // Blur now rather than on the browser's later fix-up of the hidden row; a null target keeps the menu open.
+    if (!keyboard && active instanceof HTMLElement && body.contains(active)) active.blur();
     body.hidden = true;
     subview.hidden = false;
-    (focus() ?? subview.querySelector('button'))?.focus({ preventScroll: true });
+    if (keyboard) (focus() ?? subview.querySelector('button'))?.focus({ preventScroll: true });
     ctx.actions.updateCaptionDock();
   }
   function closeSubview(restoreFocus: boolean) {

@@ -13,6 +13,7 @@ import { FirefoxRemote } from './firefox-rdp';
 import { assertEmbeddedKeysAndFullscreen } from './frames';
 import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist, useSyncQuota } from './helpers';
 import { assertFeatureHighlights } from './highlights';
+import { assertNetflixAudio } from './netflix-audio';
 import { assertPinStorage } from './pin-storage';
 import { assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, assertTwitchProvider, assertVimeoProvider, assertYoutubeProvider } from './providers';
 import { assertRteSettings, assertPictureLayout } from './settings';
@@ -37,7 +38,8 @@ const PROVIDER_SCENARIOS: ReadonlyArray<{ name: string; syncWrites: number; run:
   { name: 'assertBilibiliTvProvider', syncWrites: 7, run: assertBilibiliTvProvider },
   { name: 'assertYoutubeProvider', syncWrites: 4, run: assertYoutubeProvider },
   { name: 'assertTwitchProvider', syncWrites: 7, run: assertTwitchProvider },
-  { name: 'assertVikiProvider', syncWrites: 7, run: assertVikiProvider }
+  { name: 'assertVikiProvider', syncWrites: 7, run: assertVikiProvider },
+  { name: 'assertNetflixAudio', syncWrites: 5, run: assertNetflixAudio }
 ];
 
 async function runProviderScenarios(page: Page, context: BrowserContext): Promise<void> {

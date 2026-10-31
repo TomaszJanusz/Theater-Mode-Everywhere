@@ -61,6 +61,23 @@ function registeredFrom(source: string, module: string): boolean {
   return [...imports].some(name => calls.has(name));
 }
 
+/** Include companion adapters in a staged extraction, as well as the legacy adapter. */
+function registeredAdapterMethods(entryPath: string): Set<string> {
+  const entry = parse(read(entryPath));
+  const modules = new Map<string, string>();
+  const constructed = new Set<string>();
+  walk(entry, node => {
+    if (node.type === 'ImportDeclaration') {
+      for (const specifier of node.specifiers as AstNode[]) modules.set((specifier.local as AstNode).name as string, (node.source as AstNode).value as string);
+    }
+    if (node.type === 'NewExpression' && (node.callee as AstNode).type === 'Identifier') constructed.add((node.callee as AstNode).name as string);
+  });
+  return new Set([...constructed].flatMap(name => {
+    const module = modules.get(name);
+    return module?.startsWith('.') ? [...methods(readFileSync(resolve(__dirname, entryPath, '..', `${module}.ts`), 'utf8'))] : [];
+  }));
+}
+
 describe('provider capability declarations', () => {
   it('declares every provider once, with all capabilities and no orphan declarations', () => {
     assert.deepEqual(PROVIDER_CAPABILITIES.map(p => p.id).sort(), [...MEDIA_PROVIDER_IDS].sort());
@@ -88,7 +105,7 @@ describe('provider capability declarations', () => {
       assert.equal(extracted ? /launcherPlacement:/.test(entry) : Boolean(providerDefinition(provider.id).launcherPlacement), provider.capabilities.launcher.status !== 'no', `${provider.id}.launcher`);
       assert.equal(extracted ? /watchPlayback:/.test(entry) : Boolean(providerDefinition(provider.id).watchPlayback), provider.capabilities.autoTheater.status !== 'no', `${provider.id}.autoTheater`);
       const source = read(localAdapters.has(provider.id) ? `./${provider.id}/adapter.ts` : `../media-features/${provider.id}-adapter.ts`);
-      const implemented = methods(source);
+      const implemented = new Set([...methods(source), ...(extracted ? registeredAdapterMethods(`./${provider.id}/isolated.ts`) : [])]);
       const adapterMethods = {
         title: ['getTitle'], subtitles: ['listCaptionTracks', 'activateCaptionTrack'], audio: ['listAudioTracks', 'selectAudioTrack'],
         chapters: ['getChapters'], heatmap: ['getHeatmap'], thumbnails: ['getPreviewSource', 'getPreviewFrame']

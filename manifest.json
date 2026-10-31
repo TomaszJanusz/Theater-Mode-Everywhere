@@ -29,6 +29,8 @@
         "*://*.bilibili.tv./*",
         "*://*.iq.com/*",
         "*://*.iq.com./*",
+        "*://*.netflix.com/*",
+        "*://*.netflix.com./*",
         "*://*.patreon.com/*",
         "*://*.patreon.com./*",
         "*://*.sooplive.com/*",
@@ -96,6 +98,22 @@
       "js": [
         "content.js",
         "providers/iqiyi/isolated.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
+        "*://*.netflix.com/*",
+        "*://*.netflix.com./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/netflix/isolated.js",
         "contentStart.js"
       ],
       "run_at": "document_start",
@@ -215,6 +233,8 @@
         "*://*.bilibili.tv./*",
         "*://*.iq.com/*",
         "*://*.iq.com./*",
+        "*://*.netflix.com/*",
+        "*://*.netflix.com./*",
         "*://*.patreon.com/*",
         "*://*.patreon.com./*",
         "*://*.sooplive.com/*",
@@ -276,6 +296,20 @@
       "js": [
         "mainWorld.js",
         "providers/iqiyi/main.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.netflix.com/*",
+        "*://*.netflix.com./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/netflix/main.js",
         "mainWorldStart.js"
       ],
       "run_at": "document_start",

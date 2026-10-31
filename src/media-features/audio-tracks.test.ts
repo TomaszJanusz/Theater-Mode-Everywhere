@@ -295,3 +295,47 @@ describe('audio track auto-apply', () => {
     });
   });
 });
+
+describe('retained audio knowledge', () => {
+  it('shows stale tracks without selecting, reporting or restarting title evaluation', async () => {
+    const host = new FakeHost();
+    host.offer(...dubbed);
+    const adapter = host.adapter();
+    let list: AudioTrackList = { mediaId: 'video-a', tracks: host.tracks, blocked: false, bindingId: 'one' };
+    adapter.listAudioTracks = () => list;
+    const reports: AudioTrackResult[] = [];
+    const controller = new AudioTrackController({ preference: () => 'en-US', locales: () => ['en'], onChange() {}, onResult: result => reports.push(result) });
+    controller.bind(adapter);
+    assert.equal(reports.length, 1);
+    list = { ...list, blocked: true, stale: true, tracks: list.tracks.map(track => ({ ...track, selected: false, disabled: true })) };
+    host.notify();
+    assert.equal(controller.tracks().length, 3);
+    assert.equal(await controller.select('fr'), false);
+    assert.deepEqual(host.selections, []);
+    assert.equal(reports.length, 1);
+    list = { mediaId: 'video-a', tracks: host.tracks, blocked: false, bindingId: 'two' };
+    host.notify();
+    assert.equal(reports.length, 1, 'revalidation is not a new title or automatic preference decision');
+    controller.dispose();
+  });
+
+  it('retires a result for an old command binding even when the title is unchanged', async () => {
+    const host = new FakeHost();
+    host.offer(...dubbed);
+    host.autoSettle = false;
+    const adapter = host.adapter();
+    let bindingId = 'one';
+    adapter.listAudioTracks = () => ({ mediaId: host.mediaId, tracks: host.tracks, blocked: false, bindingId });
+    const reports: AudioTrackResult[] = [];
+    const saves: string[] = [];
+    const controller = new AudioTrackController({ preference: () => null, locales: () => ['en'], onChange() {},
+      onResult: result => reports.push(result), onPreferenceChange: value => saves.push(value) });
+    controller.bind(adapter);
+    const pending = controller.select('fr');
+    bindingId = 'two'; host.notify(); host.settle();
+    assert.equal(await pending, false);
+    assert.deepEqual(reports, []);
+    assert.deepEqual(saves, []);
+    controller.dispose();
+  });
+});

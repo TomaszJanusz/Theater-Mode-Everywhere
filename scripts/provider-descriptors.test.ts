@@ -12,7 +12,7 @@ import { PROVIDER_DEFINITIONS } from '../src/providers/registry';
 import { createProviderRegistry } from '../src/providers/runtime-registration';
 import { bundleQueryModules } from '../src/test-utils/query-bundle';
 
-import { assertProviderSources, catalogSource, classicEntries, contentScripts, discoverDescriptors, parseDescriptor, providerMatches } from './provider-descriptors';
+import { assertProviderSources, catalogSource, classicEntries, contentScripts, discoverDescriptors, isHostOnlySource, parseDescriptor, providerMatches } from './provider-descriptors';
 
 const root = path.resolve(__dirname, '..');
 const descriptors = discoverDescriptors(root);
@@ -106,7 +106,7 @@ it('shared bundles have no extracted implementation and providers have no duplic
   for (const entry of classicEntries(descriptors)) {
     const inputs = await entryInputs(entry.source);
     if (!entry.output.startsWith('providers/')) {
-      for (const descriptor of descriptors) assert.ok(!inputs.some(input => input.includes(`/providers/${descriptor.id}/`)), entry.output);
+      for (const descriptor of descriptors) assert.ok(!inputs.some(input => isHostOnlySource(`${root}/${input}`, descriptor)), entry.output);
     } else {
       assert.ok(!inputs.some(input => /(?:runtime-registration|\/registry|media-features\/probe|platform\/harvest-ownership|platform\/page-fetch)\.ts$/.test(input)), entry.output);
     }
@@ -173,5 +173,16 @@ it('validates broker URL declarations and carries them into the registry-free ca
     { kind: 'caption-track', host: 'example.test', pathname: '/unanchored' },
     { kind: 'caption-track', host: 'example.test', pathname: '^/[$' }]) {
     assert.throws(() => parseDescriptor({ ...descriptors[0], mediaFetch: [rule] }));
+  }
+});
+
+it('keeps staged extraction exemptions exact and entry implementation host-only', () => {
+  const descriptor = descriptors.find(item => item.id === 'netflix')!;
+  assert.equal(isHostOnlySource(`${root}/src/providers/netflix/main.ts`, descriptor), false);
+  for (const name of ['audio-main.ts', 'audio-adapter.ts', 'audio-client.ts', 'audio-bridge.ts', 'nested/main.ts']) {
+    assert.equal(isHostOnlySource(`${root}/src/providers/netflix/${name}`, descriptor), true, name);
+  }
+  for (const files of [[], [descriptor.entries.isolated.file], [descriptor.entries.main.file], ['../main.ts'], ['nested/main.ts'], ['main.ts', 'main.ts'], [42]]) {
+    assert.throws(() => parseDescriptor({ ...descriptor, legacySharedFiles: files }));
   }
 });

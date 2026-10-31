@@ -6,11 +6,14 @@ import { defaultMediaProviderFlags } from '../media-features/provider-flags';
 import { isCrunchyrollHost, isDisneyHost, isNetflixHost, isSoopHost, isTencentHost, isYouTubeHost } from './hosts';
 import {
   matchingProviders,
+  PROVIDER_DEFINITIONS,
+  providerDefinition,
   markFetchPatched,
   markMainWorldBooted,
   shouldAttachProvider,
   shouldPatchMainWorld
 } from './registry';
+import { providerRegistry } from './runtime-registration';
 import { isVikiHost } from './viki/hosts';
 
 describe('provider registry', () => {
@@ -97,6 +100,19 @@ describe('provider registry', () => {
     assert.equal(shouldAttachProvider('soop', { ...defaultMediaProviderFlags(), soop: false }, 'vod.sooplive.com'), false);
     assert.equal(shouldAttachProvider('soop', defaultMediaProviderFlags(), 'vod.sooplive.com'), true);
     assert.equal(shouldAttachProvider('soop', defaultMediaProviderFlags(), 'www.iq.com'), false);
+  });
+
+  it('merges a staged descriptor with its legacy definition without dropping startup or adding a duplicate', t => {
+    const definition = providerDefinition('netflix');
+    assert.equal(PROVIDER_DEFINITIONS.filter(item => item.id === 'netflix').length, 1);
+    const watch = definition.watchPlayback;
+    const createAdapter = () => { throw new Error('getter only'); };
+    t.mock.method(providerRegistry, 'get', (id: string) => id === 'netflix'
+      ? { id: 'netflix', contractVersion: 1, watchPlayback: watch!, createAdapter } : undefined);
+    assert.equal(definition.createAdapter, createAdapter, 'registration stays visible after registry construction');
+    assert.equal(definition.watchPlayback, watch);
+    assert.equal(shouldPatchMainWorld('www.netflix.com'), true, 'legacy MAIN is still required');
+    assert.deepEqual(matchingProviders('www.netflix.com'), ['native', 'netflix']);
   });
 
   it('marks MAIN boot and fetch patches as idempotent', () => {

@@ -167,6 +167,39 @@ describe('audio track menu and per-service preference', () => {
       assert.deepEqual(await enabled(page), [false, false, false, true], 'resetting keeps the current track');
     });
 
+    // A page focusing its own player later, as Netflix's controls-idle timer does, is not the viewer
+    // leaving the menu. The page's focus() is the trigger, whenever it runs, so it is called directly.
+    it(`keeps a pointer-opened list open when the page focuses its own element, and focuses it from the keyboard, in ${engine}`, async t => {
+      const page = await open(t, engine, {});
+      await page.evaluate(() => {
+        const player = document.createElement('div');
+        player.id = 'host-player';
+        player.tabIndex = 0;
+        document.body.append(player);
+      });
+      const menuState = () => page.evaluate(() => {
+        const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+        return {
+          open: root.querySelector('.theater-settings-container')!.classList.contains('is-open'),
+          subview: !root.querySelector<HTMLElement>('.theater-settings-subview')!.hidden,
+          focused: root.activeElement?.textContent?.replace('✓', '') ?? null
+        };
+      });
+      await openAudioMenu(page);
+      await page.evaluate(() => document.getElementById('host-player')!.focus());
+      assert.deepEqual(await menuState(), { open: true, subview: true, focused: null }, 'the page taking focus keeps the list open');
+      await rows(page).nth(1).click();
+      await page.waitForFunction(() => (window as unknown as { __audioChanges: string[] }).__audioChanges.includes('fr'));
+      assert.deepEqual(await enabled(page), [false, true, false, false]);
+
+      await page.locator('.player-settings-btn').click();
+      await row(page).focus();
+      await page.keyboard.press('Enter');
+      assert.deepEqual(await menuState(), { open: true, subview: true, focused: 'English' }, 'a keyboard open focuses the first track');
+      await page.keyboard.press('Escape');
+      assert.equal(await row(page).evaluate(element => element.matches(':focus')), true, 'Escape returns to the Audio track row');
+    });
+
     it(`shows the settings button's New dot only while the hidden Audio track row is available in ${engine}`, async t => {
       const page = await open(t, engine, {}, DUBBED.slice(0, 1));
       const dot = page.locator('.player-settings-btn .te-new-badge');
@@ -189,8 +222,8 @@ describe('audio track menu and per-service preference', () => {
       await dot.waitFor({ state: 'detached' });
     });
 
-    it(`hides the row with fewer than two tracks in ${engine}`, async t => {
-      const page = await open(t, engine, { audioPreferenceByHost: { [HOST]: 'fr' } }, DUBBED.slice(0, 1));
+    for (const count of [0, 1]) it(`hides the row with ${count} tracks in ${engine}`, async t => {
+      const page = await open(t, engine, { audioPreferenceByHost: { [HOST]: 'fr' } }, DUBBED.slice(0, count));
       await page.locator('.player-settings-btn').click();
       await page.locator('.theater-settings-menu .help-btn').waitFor();
       assert.equal(await row(page).isHidden(), true);

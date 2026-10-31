@@ -26,18 +26,22 @@ export type ProviderDefinition = {
   titleFromPage?: boolean;
 };
 
-export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
+const legacyDefinitions: ProviderDefinition[] = [
   { id: 'native', matchesHost: () => true },
   { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname), watchPlayback: disneyWatchPlayback },
   { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname), watchPlayback: netflixWatchPlayback },
   { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },
   { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) },
+];
+
+export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
+  ...legacyDefinitions.filter(item => !PROVIDER_CATALOG.some(descriptor => descriptor.id === item.id)),
   ...PROVIDER_CATALOG.map(descriptor => ({
     id: descriptor.id, matchesHost: (hostname: string) => descriptorMatchesHost(descriptor.hosts, hostname),
     get createAdapter() { return providerRegistry.get(descriptor.id)?.createAdapter; },
-    get watchPlayback() { return providerRegistry.get(descriptor.id)?.watchPlayback; },
+    get watchPlayback() { return providerRegistry.get(descriptor.id)?.watchPlayback ?? legacyDefinitions.find(item => item.id === descriptor.id)?.watchPlayback; },
     get titleFromPage() { return providerRegistry.get(descriptor.id)?.titleFromPage; },
-    get launcherPlacement() { return providerRegistry.get(descriptor.id)?.launcherPlacement; }
+    get launcherPlacement() { return providerRegistry.get(descriptor.id)?.launcherPlacement ?? legacyDefinitions.find(item => item.id === descriptor.id)?.launcherPlacement; }
   }))
 ];
 
@@ -55,7 +59,7 @@ export function matchingProviders(hostname: string): ProviderId[] {
 export function shouldPatchMainWorld(hostname: string): boolean {
   // Registered providers declare harvesting.
   return matchingProviders(hostname).some((id) => id !== 'native'
-    && !PROVIDER_CATALOG.some(descriptor => descriptor.id === id));
+    && legacyDefinitions.some(definition => definition.id === id));
 }
 
 export function shouldAttachProvider(id: MediaProviderId, flags: MediaProviderFlags, hostname?: string): boolean {

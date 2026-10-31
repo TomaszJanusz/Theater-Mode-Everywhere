@@ -31,6 +31,15 @@ export const PROVIDER_CATALOG = [
     "home": "https://www.iq.com/"
   },
   {
+    "id": "netflix",
+    "hosts": [
+      {
+        "domain": "netflix.com",
+        "includeSubdomains": true
+      }
+    ]
+  },
+  {
     "id": "patreon",
     "hosts": [
       {

@@ -8,7 +8,7 @@ export const netflixCapabilities = {
   capabilities: {
     title: { status: 'yes' },
     subtitles: { status: 'conditional', noteKey: 'rteNoteNetflix' },
-    audio: { status: 'no' },
+    audio: { status: 'yes' },
     chapters: { status: 'no' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteNetflix' },

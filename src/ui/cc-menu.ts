@@ -1,11 +1,12 @@
 import { DisposableScope } from '../core/disposable-scope';
 import { CC_SEARCH_KEY_EVENT } from '../protocol/cc-search';
+
 import { closeMenuPopover, MENU_CLOSE_EVENT } from './menu-popover';
 
 // Eight tracks exceed about one screenful of airy rows; translated lists often have 50+.
 const SEARCH_TRACK_THRESHOLD = 8;
 
-export type Choice = { id: string | null; label: string; language?: string; active: boolean };
+export type Choice = { id: string | null; label: string; language?: string; active: boolean; disabled?: boolean };
 type Translate = (key: string, substitutions?: string | string[]) => string;
 
 export type ChoiceMenuConfig = {
@@ -133,7 +134,7 @@ export class ChoiceMenu {
       const button = event.target instanceof Element ? event.target.closest('button') : null;
       if (!button || !this.list.contains(button)) return;
       const choice = this.choices.find(choice => (choice.id ?? '') === button.dataset.trackId);
-      if (!choice) return;
+      if (!choice || choice.disabled) return;
       this.select(choice.id);
     });
     this.scope.listen(config.closeEvents ?? panel, MENU_CLOSE_EVENT, () => {
@@ -215,6 +216,7 @@ export class ChoiceMenu {
       if (this.query && (choice.id === null || !choice.text.includes(this.query))) continue;
       const row = document.createElement('button');
       row.type = 'button';
+      row.disabled = choice.disabled === true;
       row.className = 'theater-control-btn theater-settings-row theater-cc-menu-item';
       row.dataset.trackId = choice.id ?? '';
       row.setAttribute('aria-pressed', String(choice.active));

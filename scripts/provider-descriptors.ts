@@ -16,6 +16,8 @@ export type ProviderDescriptor = {
   home?: string;
   /** Static URL rules also used by the background broker, without a document registry. */
   mediaFetch?: MediaFetchRule[];
+  /** Exact pre-existing shared modules during a staged extraction; new implementation stays host-only. */
+  legacySharedFiles?: string[];
   entries: Record<'isolated' | 'main', { file: string; runAt: 'document_start' }>;
 };
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -50,6 +52,13 @@ export function parseDescriptor(value: unknown): ProviderDescriptor {
       return { kind: rule.kind, host: rule.host, pathname: rule.pathname };
     });
   }
+  let legacySharedFiles: string[] | undefined;
+  if (value.legacySharedFiles !== undefined) {
+    assert.ok(Array.isArray(value.legacySharedFiles) && value.legacySharedFiles.length > 0, 'Invalid legacy shared files');
+    assert.ok(value.legacySharedFiles.every(file => typeof file === 'string' && /^[a-z][a-z0-9-]*\.ts$/.test(file)), 'Invalid legacy shared file');
+    assert.equal(new Set(value.legacySharedFiles).size, value.legacySharedFiles.length, 'Duplicate legacy shared file');
+    legacySharedFiles = value.legacySharedFiles;
+  }
   assert.ok(record(value.entries), 'Missing entries');
   const entry = (world: 'isolated' | 'main') => {
     const item = value.entries && record(value.entries) ? value.entries[world] : null;
@@ -57,7 +66,9 @@ export function parseDescriptor(value: unknown): ProviderDescriptor {
     assert.equal(item.runAt, 'document_start', 'Provider must be ready before startup');
     return { file: item.file, runAt: 'document_start' as const };
   };
-  return { schemaVersion: 1, id, hosts, ...(home ? { home } : {}), ...(mediaFetch ? { mediaFetch } : {}), entries: { isolated: entry('isolated'), main: entry('main') } };
+  const entries = { isolated: entry('isolated'), main: entry('main') };
+  assert.ok(Object.values(entries).every(item => !legacySharedFiles?.includes(item.file)), 'Provider entries must stay host-only');
+  return { schemaVersion: 1, id, hosts, ...(home ? { home } : {}), ...(mediaFetch ? { mediaFetch } : {}), ...(legacySharedFiles ? { legacySharedFiles } : {}), entries };
 }
 
 export function discoverDescriptors(root = process.cwd()): ProviderDescriptor[] {
@@ -68,6 +79,7 @@ export function discoverDescriptors(root = process.cwd()): ProviderDescriptor[] 
       const descriptor = parseDescriptor(JSON.parse(readFileSync(file, 'utf8')));
       assert.equal(path.basename(path.dirname(file)), descriptor.id, 'Provider directory must match id');
       for (const entry of Object.values(descriptor.entries)) assert.ok(existsSync(path.join(path.dirname(file), entry.file)), `Missing entry ${entry.file}`);
+      for (const legacy of descriptor.legacySharedFiles ?? []) assert.ok(existsSync(path.join(path.dirname(file), legacy)), `Missing legacy file ${legacy}`);
       return descriptor;
     });
   const ids = new Set<string>();
@@ -156,4 +168,10 @@ export function manifestScriptsForUrl(manifest: { content_scripts: Array<{ match
   };
   return [...manifest.content_scripts].sort((a, b) => Number(b.world === 'MAIN') - Number(a.world === 'MAIN'))
     .filter(rule => rule.matches.some(matches) && !rule.exclude_matches?.some(matches)).flatMap(rule => rule.js);
+}
+
+/** Incremental extraction permits only enumerated legacy modules, never new host-only code. */
+export function isHostOnlySource(source: string, descriptor: ProviderDescriptor): boolean {
+  const relative = source.split(`/src/providers/${descriptor.id}/`)[1];
+  return relative !== undefined && !descriptor.legacySharedFiles?.includes(relative);
 }
