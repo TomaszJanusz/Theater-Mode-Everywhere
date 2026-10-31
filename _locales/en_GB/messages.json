@@ -354,7 +354,7 @@
     "message": "No exclusions yet"
   },
   "noExclusionsDescription": {
-    "message": "Theatre mode will start automatically on supported services (see AutoTheater). Add sites here to keep it off there."
+    "message": "AutoTheater starts theatre mode on supported services. Add sites here to keep it off."
   },
   "removeExclusion": {
     "message": "Remove exclusion"
@@ -1200,7 +1200,7 @@
     "message": "Subtitles, previews and skip/next when the player provides them."
   },
   "rteNoteNetflix": {
-    "message": "Previews appear once Netflix has loaded its preview images; subtitles and skip/next when available."
+    "message": "Previews once Netflix has loaded them; subtitles and skip/next when available."
   },
   "rteNoteBilibili": {
     "message": "Some subtitles require login; other features depend on the video."
