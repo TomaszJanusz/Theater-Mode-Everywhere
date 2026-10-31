@@ -70,8 +70,13 @@ describe('disney and crunchyroll service actions', () => {
         };
         document.body.replaceChildren();
         const absent = create().read();
+        // The ended curtain yields to up-next or the end card's title, never to a skip or the close button alone.
+        const hostEnds = [];
+        const ends = (step) => { if (create().hostEndsPlayback()) hostEnds.push(step); };
+        ends('absent');
         mountSkip('Pomiń czołówkę');
         const skip = create().read();
+        ends('skip');
         const skipId = skip[0] && skip[0].id;
         const activated = create().activate(skipId);
         const stale = create().activate('disney:skip|nope');
@@ -83,8 +88,10 @@ describe('disney and crunchyroll service actions', () => {
         document.body.replaceChildren(document.createElement('disney-web-player'));
         mountUpNext('Następny odcinek za 4', false);
         const next = create().read();
+        ends('next');
         document.querySelector('up-next-lite-v1').hidden = true;
         const nextHidden = create().read();
+        ends('nextHidden');
         document.body.replaceChildren();
         const player = document.createElement('disney-web-player');
         document.body.append(player);
@@ -99,8 +106,13 @@ describe('disney and crunchyroll service actions', () => {
         shadow.querySelector('.end-card-header__close-container').addEventListener('click', () => { closeClicks += 1; });
         document.body.append(end);
         const endActions = create().read();
+        ends('end');
         create().activate(endActions.find(action => action.id.startsWith('disney:end')).id);
         create().activate(endActions.find(action => action.id.startsWith('disney:close')).id);
+        const tile = shadow.querySelector('.end-card-overlay__content-tile');
+        tile.remove();
+        ends('closeOnly');
+        shadow.append(tile);
         const fadedNext = document.createElement('up-next-lite-v1');
         const fadedButton = document.createElement('button');
         fadedButton.type = 'button';
@@ -122,7 +134,7 @@ describe('disney and crunchyroll service actions', () => {
           href: () => play
         }).read();
         return {
-          absent, skip, activated, stale, hidden, next, nextHidden, endActions, endDespiteFadedNext, tileClicks, closeClicks, flagged, browse, foreign,
+          absent, skip, activated, stale, hidden, next, nextHidden, endActions, endDespiteFadedNext, tileClicks, closeClicks, flagged, browse, foreign, hostEnds,
           skipClicks: window.__skipClicks || 0
         };
       })()`) as {
@@ -140,6 +152,7 @@ describe('disney and crunchyroll service actions', () => {
         flagged: unknown[];
         browse: unknown[];
         foreign: unknown[];
+        hostEnds: string[];
         skipClicks: number;
       };
       assert.deepEqual(report.absent, []);
@@ -160,6 +173,7 @@ describe('disney and crunchyroll service actions', () => {
       assert.deepEqual(report.flagged, []);
       assert.deepEqual(report.browse, []);
       assert.deepEqual(report.foreign, []);
+      assert.deepEqual(report.hostEnds, ['next', 'end']);
     } finally {
       await context.close();
     }
@@ -234,6 +248,10 @@ describe('disney and crunchyroll service actions', () => {
         });
         time = 12;
         const intro = create().read();
+        // The ended curtain yields only to the next-episode control, which a finale does not have.
+        const hostEnds = [];
+        const ends = (step) => { if (create().hostEndsPlayback()) hostEnds.push(step); };
+        ends('intro');
         const introId = intro.find(action => action.id.includes('skip')).id;
         const sought = create().activate(introId);
         const afterSeek = time;
@@ -268,8 +286,12 @@ describe('disney and crunchyroll service actions', () => {
         next.style.opacity = '0';
         next.style.pointerEvents = 'none';
         const finished = create().read();
+        ends('finished');
         const nextId = finished.find(action => action.id.includes(':next|')).id;
         const nextActivated = create().activate(nextId);
+        next.remove();
+        ends('finale');
+        controls.append(next);
         snapshot.textContent = JSON.stringify({ mediaId: 'OTHERMEDIA', windows });
         time = 12;
         ended = false;
@@ -284,7 +306,7 @@ describe('disney and crunchyroll service actions', () => {
         }).read();
         return {
           intro, sought, afterSeek, seekClicks, middle, stale, visible, skipClicks, credits, preview, ending, finished, nextActivated, nextClicks,
-          foreignWindows, flagged, otherEpisode
+          foreignWindows, flagged, otherEpisode, hostEnds
         };
       })()`) as {
         intro: Array<{ id: string; label: string }>;
@@ -304,6 +326,7 @@ describe('disney and crunchyroll service actions', () => {
         foreignWindows: Array<{ label: string }>;
         flagged: unknown[];
         otherEpisode: unknown[];
+        hostEnds: string[];
       };
       assert.deepEqual(report.intro.map(action => action.label), ['Pomiń czołówkę']);
       assert.match(report.intro[0].id, /crunchyroll:skip\|GPWUKZGZX\|intro\|0\|90\|/);
@@ -324,6 +347,7 @@ describe('disney and crunchyroll service actions', () => {
       assert.deepEqual(report.foreignWindows, []);
       assert.deepEqual(report.flagged, []);
       assert.deepEqual(report.otherEpisode, []);
+      assert.deepEqual(report.hostEnds, ['finished']);
     } finally {
       await context.close();
     }
@@ -551,12 +575,12 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
         video.currentTime=99; const intro=source.read()[0];
         const paused=video.paused; const activated=source.activate(intro.id); const pausedAfter=video.paused;
         const boundary=source.read(); const expired=source.activate(intro.id);
-        video.currentTime=1424; const outro=source.read().map(a=>a.label);
+        video.currentTime=1424; const outro=source.read().map(a=>a.label); const outroEnds=source.hostEndsPlayback();
         video.currentTime=1499; const nearEnd=source.read().map(a=>a.label);
         let nextClicks=0; const next=document.querySelector('.ip-next-episode'); next.addEventListener('click',()=>nextClicks++);
         source.activate(source.read()[1].id);
-        next.classList.add('disabled'); const disabledNext=source.read().map(a=>a.label); next.classList.remove('disabled');
-        video.currentTime=1504; const end=source.read().map(a=>a.label);
+        next.classList.add('disabled'); const disabledNext=source.read().map(a=>a.label); const disabledEnds=source.hostEndsPlayback(); next.classList.remove('disabled');
+        video.currentTime=1504; const end=source.read().map(a=>a.label); const endEnds=source.hostEndsPlayback();
         video.currentTime=100; const stale=source.read()[0].id;
         root.setAttribute('data-te-bilibili-intl-episode','11371316');
         const mismatched=source.read(); const staleEpisode=source.activate(stale);
@@ -565,9 +589,9 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
         context={...context,mediaId:'ogv:11371316'};
         const newEpisode=source.read().map(a=>a.label);
         document.documentElement.setAttribute('data-te-bilibili-intl-integration-off',''); const off=source.read();
-        return {before,activated,paused,pausedAfter,seeks,boundary,expired,outro,nearEnd,nextClicks,disabledNext,end,mismatched,staleEpisode,oldMetadata,newEpisode,off};
+        return {before,activated,paused,pausedAfter,seeks,boundary,expired,outro,outroEnds,nearEnd,nextClicks,disabledNext,disabledEnds,end,endEnds,mismatched,staleEpisode,oldMetadata,newEpisode,off};
       })()`);
-      assert.deepEqual(result, { before:[],activated:true,paused:true,pausedAfter:true,seeks:[227],boundary:[],expired:false,outro:['Pomiń napisy końcowe'],nearEnd:['Pomiń napisy końcowe','Next episode'],nextClicks:1,disabledNext:['Pomiń napisy końcowe'],end:['Next episode'],mismatched:[],staleEpisode:false,oldMetadata:[],newEpisode:['Pomiń czołówkę'],off:[] });
+      assert.deepEqual(result, { before:[],activated:true,paused:true,pausedAfter:true,seeks:[227],boundary:[],expired:false,outro:['Pomiń napisy końcowe'],outroEnds:false,nearEnd:['Pomiń napisy końcowe','Next episode'],nextClicks:1,disabledNext:['Pomiń napisy końcowe'],disabledEnds:false,end:['Next episode'],endEnds:true,mismatched:[],staleEpisode:false,oldMetadata:[],newEpisode:['Pomiń czołówkę'],off:[] });
     } finally { await page.close(); }
   });
 

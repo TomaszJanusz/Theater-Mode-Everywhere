@@ -75,7 +75,8 @@ export function createNetflixServiceActions(hooks: NetflixServiceActionHooks = {
   };
 
   return {
-    hostEndsPlayback: true,
+    // Post-play's next episode, its countdown or a recommended title; skips and Watch credits leave the end uncovered.
+    hostEndsPlayback: () => live().some(action => /^(next-episode|postplay)/.test(action.id)),
     read() {
       progressTargets.clear();
       return live().map(({ element: _element, ...action }) => action);

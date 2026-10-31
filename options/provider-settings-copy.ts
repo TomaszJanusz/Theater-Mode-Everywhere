@@ -5,7 +5,7 @@ const FALLBACKS: Record<string, string> = {
   providerSettingsButton: "Settings",
   providerSettingsTitle: "$1 settings",
   providerShowRecommendations: "Show recommendations",
-  providerShowRecommendationsDescription: "Show suggested videos when playback ends.",
+  providerShowRecommendationsDescription: "Show recommended videos when playback ends.",
   providerAutoTheaterGlobalOff: 'AutoTheater is off globally. Enable it in Features first.',
 };
 

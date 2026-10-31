@@ -1339,8 +1339,8 @@
     "message": "Upravit zkratky"
   },
   "endScreenSuggestions": {
-    "message": "Navrhovaná videa",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "message": "Doporučení",
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "Nastavení",
@@ -1352,11 +1352,11 @@
   },
   "providerShowRecommendations": {
     "message": "Zobrazovat doporučení",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
-    "message": "Zobrazovat navrhovaná videa po skončení přehrávání.",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "message": "Zobrazovat doporučená videa po skončení přehrávání.",
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater je globálně vypnutý. Nejprve jej zapněte v sekci Funkce.",
@@ -1411,8 +1411,8 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Zvolte služby, ve kterých je chcete.",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "message": "Vyberte služby, ve kterých chcete funkce navíc zapnout.",
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
     "message": "Žádné",

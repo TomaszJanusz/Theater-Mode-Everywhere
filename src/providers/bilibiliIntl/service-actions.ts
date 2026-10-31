@@ -74,7 +74,8 @@ export function createBilibiliIntlServiceActions(hooks: BilibiliIntlServiceActio
     try { return live(); } catch { return []; }
   };
   return {
-    hostEndsPlayback: true,
+    // Only the host's next control carries an element; skips are seeks.
+    hostEndsPlayback: () => read().some(action => action.element),
     read: () => read().map(({ element: _element, end: _end, ...action }) => action),
     activate(id) {
       const action = read().find(action => action.id === id);

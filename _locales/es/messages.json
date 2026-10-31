@@ -565,7 +565,7 @@
     "message": "Pausar"
   },
   "replay": {
-    "message": "Volver a reproducir",
+    "message": "Volver a ver",
     "description": "Button that plays the video again from the start once it has ended; it replaces Play on the player controls and also sits in the middle of the black end screen."
   },
   "videoEnded": {
@@ -1239,7 +1239,7 @@
     "message": "Subtítulos, vistas previas y saltar/siguiente si el reproductor los ofrece."
   },
   "rteNoteNetflix": {
-    "message": "Las vistas previas aparecen cuando Netflix ha cargado sus imágenes de vista previa; subtítulos y saltar/siguiente si están disponibles."
+    "message": "Vistas previas cuando Netflix las haya cargado; subtítulos y saltar/siguiente si están disponibles."
   },
   "rteNoteBilibili": {
     "message": "Algunos subtítulos requieren iniciar sesión; las funciones dependen del vídeo."
@@ -1339,8 +1339,8 @@
     "message": "Personalizar atajos"
   },
   "endScreenSuggestions": {
-    "message": "Vídeos sugeridos",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "message": "Recomendaciones",
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "Ajustes",
@@ -1352,11 +1352,11 @@
   },
   "providerShowRecommendations": {
     "message": "Mostrar recomendaciones",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
-    "message": "Mostrar vídeos sugeridos al terminar la reproducción.",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "message": "Mostrar vídeos recomendados al terminar la reproducción.",
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater está desactivado globalmente. Actívalo primero en Funciones.",
@@ -1403,7 +1403,7 @@
     "description": "First-run setup choice and summary value: turn integrations on for every supported service."
   },
   "setupServicesAllDescription": {
-    "message": "Activa las funciones adicionales dondequiera que estén disponibles.",
+    "message": "Activa las funciones adicionales donde estén disponibles.",
     "description": "Description of the 'All supported services' choice in the first-run setup."
   },
   "setupServicesChoose": {
@@ -1411,8 +1411,8 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Elige los servicios en los que las quieres.",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "message": "Elige los servicios en los que quieres activar las funciones adicionales.",
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
     "message": "Ninguno",
@@ -1443,7 +1443,7 @@
     "description": "Label before two buttons on the summary step that save the setup and open Website Exclusions or Keyboard Shortcuts."
   },
   "setupProfileFound": {
-    "message": "Tu configuración de Theater Mode Everywhere llegó desde otro dispositivo, así que no hace falta configurarla.",
+    "message": "Tu configuración de Theater Mode Everywhere llegó desde otro dispositivo, así que no hace falta la configuración inicial.",
     "description": "Shown instead of the first-run setup when settings synced from another device arrive. Theater Mode Everywhere is the product name."
   },
   "setupOpenSettings": {
