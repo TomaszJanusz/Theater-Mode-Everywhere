@@ -40,6 +40,8 @@ export type ChromeRefs = {
   toolbarTimer: ReturnType<typeof setTimeout> | null;
   toolbarKeyboardInteractionActive: boolean;
   toolbarActivityBlockedUntil: number;
+  /** The ended curtain is showing (ended-curtain.ts). */
+  playbackEnded: boolean;
   currentToggleFullscreen: (() => void) | null;
   onVolumeAdjustedCallback: (() => void) | null;
   captionPreferenceMap: Record<string, CaptionLanguagePreference>;
@@ -174,6 +176,7 @@ export function createChromeRefs(): ChromeRefs {
     toolbarTimer: null,
     toolbarKeyboardInteractionActive: false,
     toolbarActivityBlockedUntil: 0,
+    playbackEnded: false,
     currentToggleFullscreen: null,
     onVolumeAdjustedCallback: null,
     captionPreferenceMap: {},

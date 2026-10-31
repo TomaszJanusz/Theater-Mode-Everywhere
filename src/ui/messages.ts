@@ -139,6 +139,8 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   resetToDefault: 'Reset to default',
   play: 'Play',
   pause: 'Pause',
+  replay: 'Replay',
+  videoEnded: 'Video ended',
   previousVideo: 'Previous',
   backToStart: 'Back to start',
   nextVideo: 'Next',

@@ -1,6 +1,7 @@
 import { measureNextFrame, type FrameMeasure } from './frame-batch';
 
 type Disposer = () => void;
+type ListenerTarget = Pick<EventTarget, 'addEventListener' | 'removeEventListener'>;
 
 export class DisposableScope {
   private disposed = false;
@@ -36,11 +37,12 @@ export class DisposableScope {
   listen<K extends keyof HTMLElementEventMap>(
     target: HTMLElement, type: K, listener: (event: HTMLElementEventMap[K]) => void, options?: boolean | AddEventListenerOptions
   ): void;
+  /** Any target with the listener pair, such as a playback surface. */
   listen(
-    target: EventTarget, type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions
+    target: ListenerTarget, type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions
   ): void;
   listen(
-    target: EventTarget,
+    target: ListenerTarget,
     type: string,
     listener: EventListenerOrEventListenerObject | ((event: never) => void),
     options?: boolean | AddEventListenerOptions

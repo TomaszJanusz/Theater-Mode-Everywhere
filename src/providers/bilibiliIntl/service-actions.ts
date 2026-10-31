@@ -74,6 +74,7 @@ export function createBilibiliIntlServiceActions(hooks: BilibiliIntlServiceActio
     try { return live(); } catch { return []; }
   };
   return {
+    hostEndsPlayback: true,
     read: () => read().map(({ element: _element, end: _end, ...action }) => action),
     activate(id) {
       const action = read().find(action => action.id === id);

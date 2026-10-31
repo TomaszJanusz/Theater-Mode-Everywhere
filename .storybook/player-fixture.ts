@@ -16,14 +16,14 @@ import { waitForFonts } from './fonts';
 import { beginStage } from './stage-owner';
 
 // Menus that the production bar pins open on click. Volume and speed open on hover or focus, which tests drive with real input.
-export const SCENARIOS = ['watching', 'settings', 'captions', 'help'] as const;
+export const SCENARIOS = ['watching', 'settings', 'captions', 'help', 'ended'] as const;
 export type Scenario = typeof SCENARIOS[number];
 
 export interface PlayerEnvironment { locale: string; backdrop: string; reduceMotion: string }
 
 /** Fixed position in the two-second clip, so every capture shows the same decoded frame. */
 const MEDIA_TIME = 1;
-const MENU_TRIGGER: Record<Exclude<Scenario, 'watching' | 'help'>, string> = { settings: '.player-settings-btn', captions: '.cc-btn' };
+const MENU_TRIGGER: Record<Exclude<Scenario, 'watching' | 'help' | 'ended'>, string> = { settings: '.player-settings-btn', captions: '.cc-btn' };
 
 type FixtureWindow = Window & typeof globalThis;
 /** The global the fixture bundle defines (see player-runtime-entry.ts). */
@@ -170,11 +170,31 @@ export class PlayerFixture {
     await waitFor(win, () => host()?.lang === environment.locale, `locale ${environment.locale}`);
     await tick(win);
     if (revision !== this.revision || this.disposed) return;
+    await this.showPlayback(this.scenario === 'ended');
+    if (revision !== this.revision || this.disposed) return;
     this.showScenario(this.scenario);
     // Finite transitions (menu fade, bar reveal) end before anything is read or captured.
     await Promise.all([...doc.getAnimations(), ...this.root.getAnimations()].filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
       .map(animation => animation.finished.catch(() => undefined)));
     await tick(win);
+  }
+
+  /** Plays the clip to its end, so the production runtime raises its ended curtain; other scenarios show MEDIA_TIME. */
+  private async showPlayback(ended: boolean): Promise<void> {
+    const win = this.window;
+    const video = win.document.querySelector('video')!;
+    if (ended) {
+      if (!video.ended) {
+        video.currentTime = video.duration - 0.05;
+        await video.play();
+      }
+      await waitFor(win, () => Boolean(this.root.querySelector('.theater-ended-curtain')), 'the ended curtain');
+    } else if (video.ended) {
+      const seeked = once(video, 'seeked');
+      video.currentTime = MEDIA_TIME;
+      await seeked;
+      await frameShown(video, win);
+    }
   }
 
   private showScenario(scenario: Scenario): void {
@@ -188,9 +208,9 @@ export class PlayerFixture {
     help?.querySelector<HTMLElement>('.te-dialog-close')?.click();
     // Production menus exclude each other: opening one closes another, so only a menu to retire needs a click.
     for (const trigger of this.root.querySelectorAll<HTMLElement>('[aria-expanded="true"]')) {
-      if (scenario === 'watching' || !trigger.matches(MENU_TRIGGER[scenario])) trigger.click();
+      if (scenario === 'watching' || scenario === 'ended' || !trigger.matches(MENU_TRIGGER[scenario])) trigger.click();
     }
-    if (scenario === 'watching') return;
+    if (scenario === 'watching' || scenario === 'ended') return;
     const trigger = this.root.querySelector<HTMLElement>(MENU_TRIGGER[scenario]);
     if (!trigger) throw new Error(`Player fixture: no control for ${scenario}`);
     if (trigger.getAttribute('aria-expanded') !== 'true') trigger.click();

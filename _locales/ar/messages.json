@@ -542,6 +542,14 @@
   "pause": {
     "message": "إيقاف مؤقت"
   },
+  "replay": {
+    "message": "إعادة التشغيل",
+    "description": "Button that plays the video again from the start once it has ended; it replaces Play on the player controls and also sits in the middle of the black end screen."
+  },
+  "videoEnded": {
+    "message": "انتهى الفيديو",
+    "description": "Announced to screen readers when the video has reached its end and the player shows its black end screen."
+  },
   "previousVideo": {
     "message": "السابق"
   },

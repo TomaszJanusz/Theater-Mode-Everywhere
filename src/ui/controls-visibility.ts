@@ -12,12 +12,14 @@ export type ChromeActivity = {
   keyboardFocused: boolean;
   headerActive: boolean;
   helpOpen: boolean;
+  /** The ended curtain is up: the title and controls stay until playback resumes. */
+  ended: boolean;
 };
 
 /** Always-visible controls hold the playback bar; keyboard focus holds all player chrome. */
 export function resolveChromeVisibility(activity: ChromeActivity) {
   const interaction = activity.controlsHovered || activity.scrubberDragging;
-  const accessibleChrome = activity.keyboardFocused || activity.headerActive || activity.helpOpen;
+  const accessibleChrome = activity.keyboardFocused || activity.headerActive || activity.helpOpen || activity.ended;
   const headerVisible = activity.active || accessibleChrome || (!activity.pinned && interaction);
   return {
     controlsVisible: activity.pinned || headerVisible || interaction,

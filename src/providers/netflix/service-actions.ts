@@ -75,6 +75,7 @@ export function createNetflixServiceActions(hooks: NetflixServiceActionHooks = {
   };
 
   return {
+    hostEndsPlayback: true,
     read() {
       progressTargets.clear();
       return live().map(({ element: _element, ...action }) => action);

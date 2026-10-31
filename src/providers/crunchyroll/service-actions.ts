@@ -76,6 +76,7 @@ export function createCrunchyrollServiceActions(hooks: CrunchyrollServiceActionH
   };
 
   return {
+    hostEndsPlayback: true,
     read: () => live().map(({ element: _element, seek: _seek, end: _end, ...action }) => action),
     activate(id: string): boolean {
       const action = live().find(item => item.id === id);

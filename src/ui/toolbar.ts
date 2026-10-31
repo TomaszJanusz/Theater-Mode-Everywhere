@@ -391,7 +391,8 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
       keyboardFocused: ctx.refs.toolbarKeyboardInteractionActive
         && (controls.querySelector(':focus-visible') !== null || Boolean(header?.querySelector(':focus-visible'))),
       headerActive: Boolean(header?.matches(':hover, :focus-within')),
-      helpOpen: ctx.ui().helpOpen
+      helpOpen: ctx.ui().helpOpen,
+      ended: ctx.refs.playbackEnded
     });
 
     if (!visibility.controlsVisible) {
