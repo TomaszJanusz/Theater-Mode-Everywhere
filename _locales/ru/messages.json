@@ -1450,6 +1450,38 @@
     "message": "Открыть настройки",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   },
+  "setupAgainTitle": {
+    "message": "Начальная настройка",
+    "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
+  },
+  "setupAgainDescription": {
+    "message": "Пройдите начальную настройку ещё раз, чтобы изменить свой выбор, или верните все параметры к состоянию новой установки.",
+    "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
+  },
+  "setupRunAgain": {
+    "message": "Запустить начальную настройку снова",
+    "description": "Button in Settings → About: open the first-run setup again with the current settings preselected."
+  },
+  "setupResetTitle": {
+    "message": "Сбросить все параметры?",
+    "description": "Title of the dialog that confirms resetting every setting to its default."
+  },
+  "setupResetDescription": {
+    "message": "Все параметры вернутся к состоянию новой установки, в том числе на других устройствах, которые синхронизируют ваши настройки. Затем откроется начальная настройка, чтобы вы могли выбрать заново.",
+    "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
+  },
+  "setupResetAlso": {
+    "message": "Также сбросить исключенные сайты и горячие клавиши",
+    "description": "Checkbox in the reset confirmation dialog, off by default: without it, excluded websites and keyboard shortcuts are kept."
+  },
+  "setupResetConfirm": {
+    "message": "Сбросить параметры",
+    "description": "Confirm button of the reset dialog: reset every setting."
+  },
+  "setupResetCancel": {
+    "message": "Отмена",
+    "description": "Cancel button of the reset dialog: close it without changing anything."
+  },
   "setupStartTitle": {
     "message": "Запуск режима кино",
     "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."

@@ -1450,6 +1450,38 @@
     "message": "打开设置",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   },
+  "setupAgainTitle": {
+    "message": "设置向导",
+    "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
+  },
+  "setupAgainDescription": {
+    "message": "再次进行设置以更改你的选择，或将所有设置恢复为全新安装时的状态。",
+    "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
+  },
+  "setupRunAgain": {
+    "message": "重新运行设置",
+    "description": "Button in Settings → About: open the first-run setup again with the current settings preselected."
+  },
+  "setupResetTitle": {
+    "message": "要重置所有设置吗？",
+    "description": "Title of the dialog that confirms resetting every setting to its default."
+  },
+  "setupResetDescription": {
+    "message": "所有设置都会恢复为全新安装时的状态，同步你设置的其他设备也会一并恢复。之后设置会打开，方便你重新选择。",
+    "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
+  },
+  "setupResetAlso": {
+    "message": "同时重置已排除的网站和键盘快捷键",
+    "description": "Checkbox in the reset confirmation dialog, off by default: without it, excluded websites and keyboard shortcuts are kept."
+  },
+  "setupResetConfirm": {
+    "message": "重置设置",
+    "description": "Confirm button of the reset dialog: reset every setting."
+  },
+  "setupResetCancel": {
+    "message": "取消",
+    "description": "Cancel button of the reset dialog: close it without changing anything."
+  },
   "setupStartTitle": {
     "message": "如何开启剧场模式",
     "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."

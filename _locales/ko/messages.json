@@ -1450,6 +1450,38 @@
     "message": "설정 열기",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   },
+  "setupAgainTitle": {
+    "message": "초기 설정",
+    "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
+  },
+  "setupAgainDescription": {
+    "message": "초기 설정을 다시 진행해 선택을 바꾸거나, 모든 설정을 새로 설치했을 때의 상태로 되돌립니다.",
+    "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
+  },
+  "setupRunAgain": {
+    "message": "초기 설정 다시 실행",
+    "description": "Button in Settings → About: open the first-run setup again with the current settings preselected."
+  },
+  "setupResetTitle": {
+    "message": "모든 설정을 초기화할까요?",
+    "description": "Title of the dialog that confirms resetting every setting to its default."
+  },
+  "setupResetDescription": {
+    "message": "모든 설정이 새로 설치했을 때의 상태로 돌아가며, 설정을 동기화하는 다른 기기에도 적용됩니다. 그런 다음 다시 선택할 수 있도록 초기 설정이 열립니다.",
+    "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
+  },
+  "setupResetAlso": {
+    "message": "제외된 웹사이트와 키보드 단축키도 초기화",
+    "description": "Checkbox in the reset confirmation dialog, off by default: without it, excluded websites and keyboard shortcuts are kept."
+  },
+  "setupResetConfirm": {
+    "message": "설정 초기화",
+    "description": "Confirm button of the reset dialog: reset every setting."
+  },
+  "setupResetCancel": {
+    "message": "취소",
+    "description": "Cancel button of the reset dialog: close it without changing anything."
+  },
   "setupStartTitle": {
     "message": "영화관 모드 시작 방법",
     "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."

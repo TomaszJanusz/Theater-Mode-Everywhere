@@ -2,7 +2,7 @@
 import {
   AUTO_SKIP_COUNTDOWN_KEY, AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater, resolveSkipCountdown
 } from '../src/auto-theater-preferences';
-import { FRESH_INSTALL_SETTINGS } from '../src/first-run-setup';
+import { FRESH_INSTALL_SETTINGS, INSTALL_SHORTCUTS } from '../src/first-run-setup';
 import {
   MEDIA_PROVIDER_IDS, mediaProviderFlagStorageUpdate, mediaProviderFlagsEqual, mediaProviderFlagsForRichTheaterExperience,
   resolveMediaProviderFlags, type MediaProviderFlags
@@ -101,4 +101,29 @@ export function setupSettingsPatch(answers: SetupAnswers, stored: Record<string,
   set(SEEK_HOLD_STORAGE_KEY, answers.seekHold, resolveSeekHold);
   set(VOLUME_BOOST_STORAGE_KEY, answers.volumeBoost, resolveVolumeBoostEnabled);
   return patch;
+}
+
+/** Kept by a reset unless the user also asks for them: lists and keys people build up by hand. */
+const KEPT_SETTINGS = ['blacklist', 'shortcuts'] as const;
+
+export interface ResetPatch {
+  /** Sync keys to remove, so their own resolvers apply the code defaults. */
+  remove: string[];
+  /** Sync values a fresh install writes that `sync` does not already hold. */
+  set: Record<string, unknown>;
+}
+
+/**
+ * The sync changes that return `sync` to what a fresh install starts with: one remove and one set at most, and
+ * only for keys that differ. Excluded websites and shortcuts stay unless `everything`.
+ */
+export function resetSettingsPatch(sync: Record<string, unknown>, everything: boolean): ResetPatch {
+  const fresh: Record<string, unknown> = { ...FRESH_INSTALL_SETTINGS };
+  if (everything) Object.assign(fresh, { shortcuts: { ...INSTALL_SHORTCUTS }, blacklist: [] });
+  const kept: readonly string[] = everything ? [] : KEPT_SETTINGS;
+  const same = (key: string) => JSON.stringify(sync[key]) === JSON.stringify(fresh[key]);
+  return {
+    remove: Object.keys(sync).filter(key => !kept.includes(key) && !Object.hasOwn(fresh, key)),
+    set: Object.fromEntries(Object.entries(fresh).filter(([key]) => !same(key)))
+  };
 }

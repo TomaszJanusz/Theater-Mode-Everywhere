@@ -1450,6 +1450,38 @@
     "message": "Otvoriť nastavenia",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   },
+  "setupAgainTitle": {
+    "message": "Úvodné nastavenie",
+    "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
+  },
+  "setupAgainDescription": {
+    "message": "Prejdite úvodné nastavenie znova a zmeňte svoje voľby, alebo vráťte všetky nastavenia do stavu po novej inštalácii.",
+    "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
+  },
+  "setupRunAgain": {
+    "message": "Spustiť úvodné nastavenie znova",
+    "description": "Button in Settings → About: open the first-run setup again with the current settings preselected."
+  },
+  "setupResetTitle": {
+    "message": "Obnoviť všetky nastavenia?",
+    "description": "Title of the dialog that confirms resetting every setting to its default."
+  },
+  "setupResetDescription": {
+    "message": "Všetky nastavenia sa vrátia do stavu po novej inštalácii, aj na ostatných zariadeniach, ktoré synchronizujú vaše nastavenia. Potom sa otvorí úvodné nastavenie, aby ste mohli zvoliť znova.",
+    "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
+  },
+  "setupResetAlso": {
+    "message": "Obnoviť aj vylúčené weby a klávesové skratky",
+    "description": "Checkbox in the reset confirmation dialog, off by default: without it, excluded websites and keyboard shortcuts are kept."
+  },
+  "setupResetConfirm": {
+    "message": "Obnoviť nastavenia",
+    "description": "Confirm button of the reset dialog: reset every setting."
+  },
+  "setupResetCancel": {
+    "message": "Zrušiť",
+    "description": "Cancel button of the reset dialog: close it without changing anything."
+  },
   "setupStartTitle": {
     "message": "Spúšťanie režimu kina",
     "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."

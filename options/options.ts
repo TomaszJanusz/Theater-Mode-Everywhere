@@ -10,6 +10,7 @@ import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown } from '../src/ui/auto-theater';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
 /* Options script for Theater Everywhere */
+import { chromeResetStorage, mountSetupActions } from './setup-reset';
 import { chromeSetupStorage, routeSetupWizard } from './setup-wizard';
 import { createShortcutEditor, SEEK_HOLD_TOGGLE } from './shortcut-editor';
 import { setupSettingsTabs } from './tabs';
@@ -121,7 +122,6 @@ async function init() {
   const stopAppearanceChoices = setupAppearanceChoices();
   window.addEventListener('unload', stopAppearanceChoices, { once: true });
   setupSettingsTabs(document.getElementById('settings-tabs') as HTMLElement);
-  // Slice 3's "Run setup again" and "Reset to defaults" start it through `setup.start(...)`.
   const setup = routeSetupWizard(document.getElementById('setup-wizard')!,
     ['.privacy-thing-card', '#settings-tabs', '.settings-stack'].map(selector => document.querySelector<HTMLElement>(selector)!), {
       storage: chromeSetupStorage(),
@@ -129,6 +129,12 @@ async function init() {
       notify: () => notifyAllTabs()
     });
   window.addEventListener('unload', () => setup.dispose(), { once: true });
+  const disposeSetupActions = mountSetupActions(document.getElementById('setup-actions')!, {
+    storage: chromeResetStorage(),
+    start: initial => setup.start(initial),
+    notify: () => notifyAllTabs()
+  });
+  window.addEventListener('unload', disposeSetupActions, { once: true });
   document.getElementById('license-text')!.textContent = licenseText.trim();
   document.getElementById('privacy-policy-btn')!.addEventListener('click', openPrivacyPolicy);
   const renderVersion = () => { document.getElementById('about-version')!.textContent = t('aboutVersion', installedVersion()); };
@@ -195,6 +201,13 @@ async function init() {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
       if (changes.shortcuts) shortcutEditor.applyStored(changes.shortcuts.newValue);
+      // Another page, another device or a reset can change these while Settings is open.
+      if (changes.blacklist) void loadAndRenderBlacklist({ blacklist: changes.blacklist.newValue });
+      if (changes[ACCENT_COLOR_STORAGE_KEY]) {
+        const preset = resolveAccentColorPreset(changes[ACCENT_COLOR_STORAGE_KEY].newValue);
+        applyAccentColorPreset(document.documentElement, preset);
+        accentGrid.render(preset);
+      }
       if (changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]) {
         raiseOnlyWithSubtitles = resolveRaiseOnlyWithSubtitles(changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY].newValue);
       }

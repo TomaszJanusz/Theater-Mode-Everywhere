@@ -1450,6 +1450,38 @@
     "message": "فتح الإعدادات",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   },
+  "setupAgainTitle": {
+    "message": "الإعداد",
+    "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
+  },
+  "setupAgainDescription": {
+    "message": "أعد الإعداد لتغيير اختياراته، أو أعد كل الإعدادات إلى ما يبدأ به التثبيت الجديد.",
+    "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
+  },
+  "setupRunAgain": {
+    "message": "تشغيل الإعداد مجددًا",
+    "description": "Button in Settings → About: open the first-run setup again with the current settings preselected."
+  },
+  "setupResetTitle": {
+    "message": "إعادة تعيين كل الإعدادات؟",
+    "description": "Title of the dialog that confirms resetting every setting to its default."
+  },
+  "setupResetDescription": {
+    "message": "يعود كل إعداد إلى ما يبدأ به التثبيت الجديد، وكذلك على الأجهزة الأخرى التي تزامن إعداداتك. ثم يُفتح الإعداد لتختار من جديد.",
+    "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
+  },
+  "setupResetAlso": {
+    "message": "إعادة تعيين المواقع المستبعدة واختصارات لوحة المفاتيح أيضًا",
+    "description": "Checkbox in the reset confirmation dialog, off by default: without it, excluded websites and keyboard shortcuts are kept."
+  },
+  "setupResetConfirm": {
+    "message": "إعادة تعيين الإعدادات",
+    "description": "Confirm button of the reset dialog: reset every setting."
+  },
+  "setupResetCancel": {
+    "message": "إلغاء",
+    "description": "Cancel button of the reset dialog: close it without changing anything."
+  },
   "setupStartTitle": {
     "message": "بدء وضع المسرح",
     "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."

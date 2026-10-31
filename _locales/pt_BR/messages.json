@@ -1450,6 +1450,38 @@
     "message": "Abrir configurações",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
   },
+  "setupAgainTitle": {
+    "message": "Configuração inicial",
+    "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
+  },
+  "setupAgainDescription": {
+    "message": "Refaça a configuração inicial para mudar suas escolhas ou restaure todas as configurações para como começa uma nova instalação.",
+    "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
+  },
+  "setupRunAgain": {
+    "message": "Refazer a configuração inicial",
+    "description": "Button in Settings → About: open the first-run setup again with the current settings preselected."
+  },
+  "setupResetTitle": {
+    "message": "Redefinir todas as configurações?",
+    "description": "Title of the dialog that confirms resetting every setting to its default."
+  },
+  "setupResetDescription": {
+    "message": "Todas as configurações voltam a como começa uma nova instalação, inclusive em outros dispositivos que sincronizam suas configurações. Depois, a configuração inicial abre para você escolher de novo.",
+    "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
+  },
+  "setupResetAlso": {
+    "message": "Redefinir também os sites excluídos e os atalhos de teclado",
+    "description": "Checkbox in the reset confirmation dialog, off by default: without it, excluded websites and keyboard shortcuts are kept."
+  },
+  "setupResetConfirm": {
+    "message": "Redefinir configurações",
+    "description": "Confirm button of the reset dialog: reset every setting."
+  },
+  "setupResetCancel": {
+    "message": "Cancelar",
+    "description": "Cancel button of the reset dialog: close it without changing anything."
+  },
   "setupStartTitle": {
     "message": "Início do modo cinema",
     "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."
