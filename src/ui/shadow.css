@@ -2265,7 +2265,7 @@ button.theater-time-end:focus-visible,
   transition: background-color 0.2s ease, background-image 0.2s ease, outline-color 0.2s ease, color 0.2s ease !important;
 }
 
-.theater-everywhere-header-hud.visible .theater-home-pill {
+:is(.theater-everywhere-header-hud.visible, .theater-ended-curtain) .theater-home-pill {
   pointer-events: auto !important;
 }
 
@@ -2295,6 +2295,19 @@ button.theater-time-end:focus-visible,
   display: block !important;
   width: 24px !important;
   height: 24px !important;
+}
+
+/* The ended curtain (ended-curtain.ts) blacks out the picture box, sized like the theater video in content.css; the
+   rest of the player UI stacks above it. Its Replay and Next reuse the header pill. */
+.theater-ended-curtain {
+  position: fixed;
+  inset: 0 0 var(--theater-controls-reserved-height, 0px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #000000;
+  animation: te-modal-fade-in 0.24s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .theater-everywhere-title-hud {

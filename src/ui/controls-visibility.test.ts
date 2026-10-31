@@ -4,7 +4,7 @@ import { resolveChromeVisibility, resolveKeepControlsVisible, type ChromeActivit
 
 const idle: ChromeActivity = {
   active: false, pinned: false, controlsHovered: false, scrubberDragging: false,
-  keyboardFocused: false, headerActive: false, helpOpen: false
+  keyboardFocused: false, headerActive: false, helpOpen: false, ended: false
 };
 
 describe('player chrome visibility', () => {
@@ -16,6 +16,14 @@ describe('player chrome visibility', () => {
     assert.deepEqual(resolveChromeVisibility(idle), {
       controlsVisible: false, headerVisible: false, cursorVisible: false
     });
+  });
+
+  it('holds the title and controls while the ended curtain shows, whatever the pin', () => {
+    for (const pinned of [false, true]) {
+      assert.deepEqual(resolveChromeVisibility({ ...idle, pinned, ended: true }), {
+        controlsVisible: true, headerVisible: true, cursorVisible: true
+      });
+    }
   });
 
   it('holds only the playback bar after activity expires while pinned', () => {

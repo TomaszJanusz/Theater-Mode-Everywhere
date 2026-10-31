@@ -542,6 +542,14 @@
   "pause": {
     "message": "暂停"
   },
+  "replay": {
+    "message": "重播",
+    "description": "Button that plays the video again from the start once it has ended; it replaces Play on the player controls and also sits in the middle of the black end screen."
+  },
+  "videoEnded": {
+    "message": "视频已结束",
+    "description": "Announced to screen readers when the video has reached its end and the player shows its black end screen."
+  },
   "previousVideo": {
     "message": "上一个"
   },

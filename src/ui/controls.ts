@@ -2,6 +2,7 @@ import { requestOptionsPage } from '../protocol/options-page';
 
 import { PICTURE_ALIGNS, VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
 import { audioTrackHudReport, mountAudioTrackMenu } from './audio-track-menu';
+import { mountEndedCurtain, REPLAY_ICON } from './ended-curtain';
 import { shortcutMarkup } from './shortcut-display';
 import { exitSpinner } from './spinner-exit';
 import { languageRuntime } from '../i18n-runtime';
@@ -205,25 +206,24 @@ export function createControls(
     const playPauseBtn = document.createElement('button');
     playPauseBtn.className = 'theater-control-btn play-pause-btn';
   
-    bindCustomTooltip(playPauseBtn, () => {
-      const action = video.paused ? t('play') : t('pause');
-      return `${action} ${shortcutKeys(ui().shortcuts.playPause)}`;
-    });
+    // The ended curtain turns play into Replay while it shows.
+    let ended = false;
+    const playAction = () => {
+      if (ended) return 'replay';
+      return video.paused ? 'play' : 'pause';
+    };
+    bindCustomTooltip(playPauseBtn, () => `${t(playAction())} ${shortcutKeys(ui().shortcuts.playPause)}`);
 
-    const playIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-      </svg>
-    `;
-    const pauseIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-        <rect x="6" y="4" width="4" height="16" rx="1"></rect>
-        <rect x="14" y="4" width="4" height="16" rx="1"></rect>
-      </svg>
-    `;
+    const playIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+    const pauseIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
 
-    setIcon(playPauseBtn, video.paused ? playIcon : pauseIcon);
-    playPauseBtn.setAttribute('aria-label', t(video.paused ? 'play' : 'pause'));
+    const playIcons = { play: playIcon, pause: pauseIcon, replay: REPLAY_ICON };
+    const paintPlayButton = () => {
+      const action = playAction();
+      setIcon(playPauseBtn, playIcons[action]);
+      playPauseBtn.setAttribute('aria-label', t(action));
+    };
+    paintPlayButton();
     playPauseBtn.addEventListener('click', () => {
       executeCommand({ type: 'PLAY_PAUSE' });
     });
@@ -234,12 +234,7 @@ export function createControls(
         <path d="M19 4 8.5 12 19 20z"></path>
       </svg>
     `;
-    const nextIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-        <path d="M5 4 15.5 12 5 20z"></path>
-        <rect x="17.8" y="3" width="2.2" height="18" rx="0.4"></rect>
-      </svg>
-    `;
+    const nextIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M5 4 15.5 12 5 20z"/><rect x="17.8" y="3" width="2.2" height="18" rx="0.4"/></svg>';
 
     const previousBtn = document.createElement('button');
     previousBtn.type = 'button';
@@ -1342,11 +1337,10 @@ export function createControls(
 
     // Event hookups
     const onPlay = () => {
-      setIcon(playPauseBtn, pauseIcon);
-      playPauseBtn.setAttribute('aria-label', t('pause'));
+      paintPlayButton();
       setBuffering(false);
     };
-    const onPause = () => { setIcon(playPauseBtn, playIcon); playPauseBtn.setAttribute('aria-label', t('play')); };
+    const onPause = paintPlayButton;
     let lastMediaHref = window.location.href;
     const onTimeUpdate = () => { 
       updatePlaybackChrome();
@@ -1561,6 +1555,12 @@ export function createControls(
         onLayout: updateCaptionDock
       });
     }
+    // A host with its own end sequence keeps it; elsewhere the curtain mirrors the bar's play (then Replay) and Next.
+    if (!serviceActions?.hostEndsPlayback) mountEndedCurtain(ctx, controlsScope, video, [playPauseBtn, nextBtn], shown => {
+      ended = refs.playbackEnded = shown;
+      paintPlayButton();
+      if (shown) showToolbar();
+    });
     controlsScope.add(languageRuntime.subscribe(() => {
       // Rebuild only the current chrome; teardown retires caption/provider work.
       // Reuse the bound surface so language changes never seek, pause or exit theater.

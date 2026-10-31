@@ -3,6 +3,8 @@ import { expect } from 'storybook/test';
 
 import { renderPlayer, SCENARIOS, type Scenario } from '../../.storybook/player-fixture';
 
+import { t } from './messages';
+
 interface Args { scenario: Scenario }
 
 /**
@@ -32,6 +34,24 @@ export const Composed: StoryObj<Args> = {
   play: async () => {
     await window.__playerFixture!.ready;
     const root = window.__playerFixture!.root;
+    await expect(root.querySelector('.theater-controls-wrapper.visible')).not.toBeNull();
+  }
+};
+
+/**
+ * The clip has played to its end: the curtain covers the picture, the bar's play button has become Replay, and the
+ * title and controls stay up. That they outlast the idle hide runs on the runtime's own timer, so
+ * ended-curtain.browser.test.ts proves it on a held clock.
+ */
+export const Ended: StoryObj<Args> = {
+  args: { scenario: 'ended' },
+  play: async () => {
+    await window.__playerFixture!.ready;
+    const root = window.__playerFixture!.root;
+    const replay = root.querySelector('.theater-controls-wrapper .play-pause-btn');
+    await expect(replay?.getAttribute('aria-label')).toBe(t('replay'));
+    await expect(root.querySelector('.theater-ended-curtain button')?.getAttribute('aria-label')).toBe(t('replay'));
+    await expect(root.querySelector('.theater-everywhere-header-hud.visible')).not.toBeNull();
     await expect(root.querySelector('.theater-controls-wrapper.visible')).not.toBeNull();
   }
 };

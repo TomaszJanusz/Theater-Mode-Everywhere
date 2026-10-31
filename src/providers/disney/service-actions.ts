@@ -78,6 +78,7 @@ export function createDisneyServiceActions(hooks: DisneyServiceActionHooks = {})
   };
 
   return {
+    hostEndsPlayback: true,
     read: () => { progressTargets.clear(); return live().map(({ element: _element, ...action }) => action); },
     subscribe: changed => observeProviderDom({ root: doc,
       selector: 'disney-web-player, skip-overlay, up-next-lite-v1, end-card-overlay', changed,

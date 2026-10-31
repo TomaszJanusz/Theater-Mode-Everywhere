@@ -41,7 +41,7 @@ export const STATUS_HUD_FIT_ICON = `
 `;
 
 /** Settings rows and their confirmation HUD draw one shape set at two sizes. */
-function strokeIcon(shapes: string, size: number): string {
+export function strokeIcon(shapes: string, size: number): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${shapes}</svg>`;
 }
 
