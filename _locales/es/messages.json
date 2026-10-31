@@ -1455,7 +1455,7 @@
     "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
   },
   "setupAgainDescription": {
-    "message": "Vuelve a hacer la configuración inicial para cambiar tus elecciones, o restablece todos los ajustes a como empieza una instalación nueva.",
+    "message": "Vuelve a hacer la configuración inicial para cambiar tus elecciones, o restablece todos los ajustes al estado de una instalación nueva.",
     "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
   },
   "setupRunAgain": {
@@ -1467,7 +1467,7 @@
     "description": "Title of the dialog that confirms resetting every setting to its default."
   },
   "setupResetDescription": {
-    "message": "Todos los ajustes vuelven a como empieza una instalación nueva, también en otros dispositivos que sincronizan tu configuración. Después se abre la configuración inicial para que vuelvas a elegir.",
+    "message": "Todos los ajustes vuelven al estado de una instalación nueva, también en otros dispositivos que sincronizan tu configuración. Después se abre la configuración inicial para que vuelvas a elegir.",
     "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
   },
   "setupResetAlso": {
@@ -1503,7 +1503,7 @@
     "description": "First-run setup choice: the key or the video launcher button. $1 is the theater mode key, usually T."
   },
   "setupStartButtonDescription": {
-    "message": "Aparece un pequeño botón en el borde izquierdo de un vídeo cuando lo señalas.",
+    "message": "Aparece un pequeño botón en el borde izquierdo de un vídeo cuando pasas el cursor por encima.",
     "description": "Description of the video launcher choice in the first-run setup."
   },
   "setupStartAuto": {

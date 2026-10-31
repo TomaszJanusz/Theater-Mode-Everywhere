@@ -1503,7 +1503,7 @@
     "description": "First-run setup choice: the key or the video launcher button. $1 is the theater mode key, usually T."
   },
   "setupStartButtonDescription": {
-    "message": "動画にポインターを合わせると、左端に小さなボタンが表示されます。",
+    "message": "動画にカーソルを合わせると、左端に小さなボタンが表示されます。",
     "description": "Description of the video launcher choice in the first-run setup."
   },
   "setupStartAuto": {
@@ -1531,7 +1531,7 @@
     "description": "First-run setup step text. $1 is the theater mode key (usually T), $2 the fullscreen key (usually F)."
   },
   "setupVolumeBoostDescription": {
-    "message": "音量を最大 300% まで上げます。音声はブラウザーの音声処理を通り、初めてシアターモードに入るときに読み込み表示が短く出ることがあります。",
+    "message": "音量を最大 300% まで上げます。音声はブラウザーの音声処理を通り、初めてシアターモードに入るときに読み込み中の表示が一瞬出ることがあります。",
     "description": "Description of the Volume Boost switch in the first-run setup."
   },
   "setupKeysFooter": {

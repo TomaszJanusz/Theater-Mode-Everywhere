@@ -1455,11 +1455,11 @@
     "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
   },
   "setupAgainDescription": {
-    "message": "再次进行设置以更改你的选择，或将所有设置恢复为全新安装时的状态。",
+    "message": "再次运行设置向导以更改你的选择，或将所有设置恢复为全新安装时的状态。",
     "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
   },
   "setupRunAgain": {
-    "message": "重新运行设置",
+    "message": "重新运行设置向导",
     "description": "Button in Settings → About: open the first-run setup again with the current settings preselected."
   },
   "setupResetTitle": {
@@ -1467,7 +1467,7 @@
     "description": "Title of the dialog that confirms resetting every setting to its default."
   },
   "setupResetDescription": {
-    "message": "所有设置都会恢复为全新安装时的状态，同步你设置的其他设备也会一并恢复。之后设置会打开，方便你重新选择。",
+    "message": "所有设置都会恢复为全新安装时的状态，其他同步了你的设置的设备也会一并恢复。之后会打开设置向导，方便你重新选择。",
     "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
   },
   "setupResetAlso": {
@@ -1503,7 +1503,7 @@
     "description": "First-run setup choice: the key or the video launcher button. $1 is the theater mode key, usually T."
   },
   "setupStartButtonDescription": {
-    "message": "指向视频时，其左边缘会出现一个小按钮。",
+    "message": "将指针移到视频上时，其左边缘会出现一个小按钮。",
     "description": "Description of the video launcher choice in the first-run setup."
   },
   "setupStartAuto": {
