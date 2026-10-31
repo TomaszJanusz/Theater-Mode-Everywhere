@@ -3,7 +3,7 @@ import { userEvent } from 'vitest/browser';
 
 import { manualClock } from '../../.storybook/manual-clock';
 import { DisposableScope } from '../core/disposable-scope';
-import type { EndScreenSource } from '../core/end-screen';
+import type { EndScreenSource, PlaybackEndSource } from '../core/end-screen';
 import { APPEARANCE_MODES, blockingViolations } from '../test-utils/axe';
 
 import { ENDED_CURTAIN_CLASS, ENDED_CURTAIN_DELAY_MS, mountEndedCurtain, REPLAY_ICON } from './ended-curtain';
@@ -33,7 +33,7 @@ function bar(label: string, hidden = false): HTMLButtonElement {
   return button;
 }
 
-function mount({ next = false, duration = 2, source = undefined as EndScreenSource | undefined } = {}) {
+function mount({ next = false, duration = 2, source = undefined as EndScreenSource | undefined, playbackEnd = undefined as PlaybackEndSource | undefined } = {}) {
   scope = new DisposableScope();
   const clock = manualClock();
   const media = new FakeMedia();
@@ -53,7 +53,7 @@ function mount({ next = false, duration = 2, source = undefined as EndScreenSour
     reports.push(shown);
     // As the bar does: the play button turns into Replay before the curtain mirrors it.
     play.setAttribute('aria-label', t(shown ? 'replay' : 'play'));
-  }, clock, source);
+  }, clock, source, playbackEnd);
   const curtain = () => queryPlayerUi<HTMLElement>(`.${ENDED_CURTAIN_CLASS}`);
   const mirrors = () => [...curtain()?.querySelectorAll('button') ?? []];
   const end = () => { media.emit('ended', true); clock.advance(ENDED_CURTAIN_DELAY_MS); };
@@ -61,6 +61,30 @@ function mount({ next = false, duration = 2, source = undefined as EndScreenSour
 }
 
 describe('ended curtain', () => {
+  test('provider end overrides empty media, false vetoes native ended, null defers and teardown cancels stale callbacks', () => {
+    let value: boolean | null = true;
+    let changed = () => {};
+    let stopped = false;
+    const playbackEnd: PlaybackEndSource = { ended: () => value,
+      observe(fn) { changed = fn; return () => { stopped = true; }; } };
+    const { clock, media, curtain, scope: owner } = mount({ duration: NaN, playbackEnd });
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain()).not.toBeNull();
+    value = false; media.ended = true; changed();
+    expect(curtain()).toBeNull();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain()).toBeNull();
+    value = null; media.duration = 2; changed();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain()).not.toBeNull();
+    value = false; changed();
+    value = true; changed();
+    owner.dispose(); owner.dispose(); changed();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(stopped).toBe(true);
+    expect(curtain()).toBeNull();
+    expect(clock.pending).toBe(0);
+  });
   test('a provider gets a fresh mount epoch, disposed before hide and on controls teardown', () => {
     const mounts: DisposableScope[] = [];
     let disposed = false;
