@@ -1455,7 +1455,7 @@
     "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
   },
   "setupAgainDescription": {
-    "message": "أعد الإعداد لتغيير اختياراته، أو أعد كل الإعدادات إلى ما يبدأ به التثبيت الجديد.",
+    "message": "شغّل الإعداد مجددًا لتغيير اختياراتك، أو أعِد كل الإعدادات إلى حالتها عند التثبيت الجديد.",
     "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
   },
   "setupRunAgain": {
@@ -1467,7 +1467,7 @@
     "description": "Title of the dialog that confirms resetting every setting to its default."
   },
   "setupResetDescription": {
-    "message": "يعود كل إعداد إلى ما يبدأ به التثبيت الجديد، وكذلك على الأجهزة الأخرى التي تزامن إعداداتك. ثم يُفتح الإعداد لتختار من جديد.",
+    "message": "تعود كل الإعدادات إلى حالتها عند التثبيت الجديد، وكذلك على الأجهزة الأخرى التي تزامن إعداداتك. ثم يُفتح الإعداد لتختار من جديد.",
     "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
   },
   "setupResetAlso": {
@@ -1491,7 +1491,7 @@
     "description": "First-run setup step text. $1 is the user's theater mode key as Settings shows it, usually T."
   },
   "setupStartKey": {
-    "message": "فقط عندما أضغط $1",
+    "message": "فقط عندما أضغط على $1",
     "description": "First-run setup choice: theater mode starts only with the key. $1 is that key, usually T."
   },
   "setupStartKeyDescription": {
@@ -1503,7 +1503,7 @@
     "description": "First-run setup choice: the key or the video launcher button. $1 is the theater mode key, usually T."
   },
   "setupStartButtonDescription": {
-    "message": "يظهر زر صغير على الحافة اليسرى للفيديو عند الإشارة إليه.",
+    "message": "يظهر زر صغير على الحافة اليسرى للفيديو عند تمرير المؤشر عليه.",
     "description": "Description of the video launcher choice in the first-run setup."
   },
   "setupStartAuto": {
@@ -1515,7 +1515,7 @@
     "description": "Description of the AutoTheater choice. Do not write a number of seconds for the countdown."
   },
   "setupStartAutoUnavailable": {
-    "message": "لاستخدام هذا، شغّل في الخطوة الأولى خدمة تدعمه.",
+    "message": "لاستخدام هذا، فعّل في الخطوة الأولى خدمة تدعمه.",
     "description": "Shown under the disabled 'Start automatically' choice when no service chosen in the first step supports it."
   },
   "setupStartFooter": {

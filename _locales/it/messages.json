@@ -1455,7 +1455,7 @@
     "description": "Heading of the Settings → About card that runs the first-run setup again or resets every setting."
   },
   "setupAgainDescription": {
-    "message": "Ripeti la configurazione per cambiare le tue scelte, oppure riporta tutte le impostazioni a come parte una nuova installazione.",
+    "message": "Ripeti la configurazione per cambiare le tue scelte, oppure riporta tutte le impostazioni allo stato di una nuova installazione.",
     "description": "Text of the Settings → About card with the Run setup again and Reset to defaults buttons."
   },
   "setupRunAgain": {
@@ -1467,7 +1467,7 @@
     "description": "Title of the dialog that confirms resetting every setting to its default."
   },
   "setupResetDescription": {
-    "message": "Tutte le impostazioni tornano a come parte una nuova installazione, anche sugli altri dispositivi che sincronizzano le tue impostazioni. Poi si apre la configurazione per scegliere di nuovo.",
+    "message": "Tutte le impostazioni tornano allo stato di una nuova installazione, anche sugli altri dispositivi che sincronizzano le tue impostazioni. Poi si apre la configurazione per scegliere di nuovo.",
     "description": "Text of the reset confirmation dialog. Settings sync through the browser account, so a reset also reaches other devices; the first-run setup opens afterwards."
   },
   "setupResetAlso": {
@@ -1487,7 +1487,7 @@
     "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."
   },
   "setupStartDescription": {
-    "message": "La modalità cinema fa riempire la finestra al video. Premere $1 la avvia sempre. Scegli se deve avviarla anche altro.",
+    "message": "In modalità cinema il video riempie la finestra. Premere $1 la avvia sempre. Scegli se deve avviarsi anche in altri modi.",
     "description": "First-run setup step text. $1 is the user's theater mode key as Settings shows it, usually T."
   },
   "setupStartKey": {

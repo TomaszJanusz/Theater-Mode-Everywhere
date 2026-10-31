@@ -1487,7 +1487,7 @@
     "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."
   },
   "setupStartDescription": {
-    "message": "Le mode cinéma fait remplir la fenêtre par la vidéo. Appuyer sur $1 le démarre toujours. Choisissez si autre chose doit le démarrer.",
+    "message": "En mode cinéma, la vidéo remplit la fenêtre. Appuyer sur $1 le démarre toujours. Choisissez si autre chose doit le démarrer.",
     "description": "First-run setup step text. $1 is the user's theater mode key as Settings shows it, usually T."
   },
   "setupStartKey": {
@@ -1511,7 +1511,7 @@
     "description": "First-run setup choice: AutoTheater, theater mode starts by itself on supported services."
   },
   "setupStartAutoDescription": {
-    "message": "Sur les pages de lecture des services pris en charge, le mode cinéma démarre quand la vidéo est lue, après un court compte à rebours.",
+    "message": "Sur les pages de lecture des services pris en charge, le mode cinéma démarre au lancement de la vidéo, après un court compte à rebours.",
     "description": "Description of the AutoTheater choice. Do not write a number of seconds for the countdown."
   },
   "setupStartAutoUnavailable": {

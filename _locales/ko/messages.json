@@ -1531,7 +1531,7 @@
     "description": "First-run setup step text. $1 is the theater mode key (usually T), $2 the fullscreen key (usually F)."
   },
   "setupVolumeBoostDescription": {
-    "message": "볼륨을 최대 300%까지 높입니다. 오디오가 브라우저의 오디오 처리를 거치며, 영화관 모드에 처음 들어갈 때 잠시 로딩 표시가 나타날 수 있습니다.",
+    "message": "음량을 최대 300%까지 높입니다. 오디오가 브라우저의 오디오 처리를 거치며, 영화관 모드에 처음 들어갈 때 잠시 로딩 표시가 나타날 수 있습니다.",
     "description": "Description of the Volume Boost switch in the first-run setup."
   },
   "setupKeysFooter": {

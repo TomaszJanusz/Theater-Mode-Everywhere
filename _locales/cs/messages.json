@@ -1411,7 +1411,7 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Vyberte služby, ve kterých chcete funkce navíc zapnout.",
+    "message": "Vyberte služby, u kterých chcete zapnout funkce navíc.",
     "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {

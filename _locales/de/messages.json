@@ -1511,7 +1511,7 @@
     "description": "First-run setup choice: AutoTheater, theater mode starts by itself on supported services."
   },
   "setupStartAutoDescription": {
-    "message": "Auf den Videoseiten unterstützter Dienste startet der Kinomodus, wenn das Video läuft, nach einem kurzen Countdown.",
+    "message": "Auf den Videoseiten unterstützter Dienste startet der Kinomodus nach einem kurzen Countdown, sobald das Video läuft.",
     "description": "Description of the AutoTheater choice. Do not write a number of seconds for the countdown."
   },
   "setupStartAutoUnavailable": {
