@@ -41,7 +41,7 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
           document.dispatchEvent(new Event('yt-navigate-finish', { bubbles: true }));
         });
       });
-      await bootPlayer(page, { bundle: bundlePlayer([
+      await bootPlayer(page, { mainWorld: true, bundle: bundlePlayer([
         "export { createYouTubeEndScreen } from './providers/youtube/end-screen';",
         "export { readYouTubeSuggestions } from './providers/youtube/end-screen-model';"
       ]) });
@@ -103,6 +103,15 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
       await page.waitForURL('**v=YQ8wOO9bvps');
       assert.equal(await page.locator('html.theater-everywhere-html-active').count(), 1, 'native fixture SPA navigation preserves theater');
       await page.locator('.theater-end-screen').waitFor({ state: 'detached' });
+      // Exercise the real runtime's keyboard capture in both worlds, not just native button behavior.
+      for (const [key, id, index] of [['Enter', 'rXnu-4_vDaY', 1], ['Space', 'YQ8wOO9bvps', 0]] as const) {
+        await end();
+        await page.locator('.theater-end-screen-tile').nth(index).focus();
+        await page.keyboard.press(key);
+        await page.waitForURL(`**v=${id}`);
+        assert.equal(await page.locator('html.theater-everywhere-html-active').count(), 1, `${key} keeps theater active`);
+        await page.locator('.theater-end-screen').waitFor({ state: 'detached' });
+      }
       await end();
       // Active host autoplay removes even the plain curtain.
       await page.evaluate(() => {
