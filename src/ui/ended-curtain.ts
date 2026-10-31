@@ -1,5 +1,5 @@
 import { DisposableScope } from '../core/disposable-scope';
-import type { EndScreenSource } from '../core/end-screen';
+import type { EndScreenSource, PlaybackEndSource } from '../core/end-screen';
 import type { ServiceActionSource } from '../core/service-actions';
 import type { PlaybackSurface } from '../playback-surface';
 
@@ -20,7 +20,7 @@ export const REPLAY_ICON = strokeIcon('<path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 
 const EVENTS = ['ended', 'seeking', 'emptied', 'loadstart'];
 
 /**
- * Covers the picture in black once the media has really ended. Only `ended` counts: never a pause near the end, a loop
+ * Covers the picture in black once the media or its provider reports a real end: never a pause near the end, a loop
  * (which never ends) or a live stream (infinite duration). It shows after ENDED_CURTAIN_DELAY_MS and leaves on replay,
  * a seek back or new media.
  *
@@ -42,7 +42,8 @@ export function mountEndedCurtain(
   changed: (shown: boolean) => void,
   clock: UiClock = systemClock,
   source?: EndScreenSource,
-  host?: ServiceActionSource | null
+  host?: ServiceActionSource | null,
+  playbackEnd?: PlaybackEndSource
 ): void {
   let curtain: HTMLElement | null = null;
   let timer: number | undefined;
@@ -83,12 +84,13 @@ export function mountEndedCurtain(
     }
     announcePlayerStatus(ctx.t('videoEnded'));
   };
-  const ended = () => media.ended && media.duration < Infinity && !source?.hostEndsPlayback() && !host?.hostEndsPlayback?.();
+  const over = () => playbackEnd?.ended() ?? (media.ended && media.duration < Infinity);
+  const ended = () => over() && !source?.hostEndsPlayback() && !host?.hostEndsPlayback?.();
   const sync = () => {
     if (scope.isDisposed) return;
     // The host is watched only while ended; a subscription reads at once, re-entering here with `watching` set.
-    if (watching !== media.ended) {
-      watching = media.ended;
+    if (watching !== over()) {
+      watching = !watching;
       if (watching) unwatch = host?.hostEndsPlayback ? host.subscribe?.(sync) : undefined;
       else unwatch?.();
     }
@@ -99,6 +101,7 @@ export function mountEndedCurtain(
   };
   for (const type of EVENTS) scope.listen(media, type, sync);
   if (source) scope.add(source.subscribe(sync));
+  if (playbackEnd) scope.add(playbackEnd.observe(sync));
   // A rebuild of the controls, or entry, on media that has already ended shows it too.
   sync();
   scope.add(() => {

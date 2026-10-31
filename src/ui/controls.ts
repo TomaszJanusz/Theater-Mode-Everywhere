@@ -22,7 +22,7 @@ import {
 } from '../playback-window';
 import { emptyPlaylistNav, type PlaylistNavState } from '../playlist-nav';
 import { requestOptionsPage } from '../protocol/options-page';
-import { createEndScreen } from '../providers/end-screen';
+import { createEndScreen, createPlaybackEnd } from '../providers/end-screen';
 import { observeProviderMediaChanges, refreshProviderAfterElementReset } from '../providers/media-events';
 import { createServiceActions } from '../providers/service-actions';
 import { observeProviderClock, readProviderClock } from '../providers/timeline';
@@ -1571,7 +1571,7 @@ export function createControls(
       ended = refs.playbackEnded = shown;
       paintPlayButton();
       if (shown) showToolbar();
-    }, undefined, createEndScreen(video.element), serviceActions);
+    }, undefined, createEndScreen(video.element), serviceActions, createPlaybackEnd(video.element));
     controlsScope.add(languageRuntime.subscribe(() => {
       // Rebuild only the current chrome; teardown retires caption/provider work.
       // Reuse the bound surface so language changes never seek, pause or exit theater.

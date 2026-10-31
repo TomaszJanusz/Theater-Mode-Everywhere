@@ -3,7 +3,7 @@ import { userEvent } from 'vitest/browser';
 
 import { manualClock } from '../../.storybook/manual-clock';
 import { DisposableScope } from '../core/disposable-scope';
-import type { EndScreenSource } from '../core/end-screen';
+import type { EndScreenSource, PlaybackEndSource } from '../core/end-screen';
 import type { ServiceActionSource } from '../core/service-actions';
 import { APPEARANCE_MODES, blockingViolations } from '../test-utils/axe';
 
@@ -56,7 +56,7 @@ function hostSource(offers = false) {
 }
 
 function mount({ next = false, duration = 2, source = undefined as EndScreenSource | undefined,
-  host = undefined as ServiceActionSource | undefined } = {}) {
+  host = undefined as ServiceActionSource | undefined, playbackEnd = undefined as PlaybackEndSource | undefined } = {}) {
   scope = new DisposableScope();
   const clock = manualClock();
   const media = new FakeMedia();
@@ -76,7 +76,7 @@ function mount({ next = false, duration = 2, source = undefined as EndScreenSour
     reports.push(shown);
     // As the bar does: the play button turns into Replay before the curtain mirrors it.
     play.setAttribute('aria-label', t(shown ? 'replay' : 'play'));
-  }, clock, source, host);
+  }, clock, source, host, playbackEnd);
   const curtain = () => queryPlayerUi<HTMLElement>(`.${ENDED_CURTAIN_CLASS}`);
   const mirrors = () => [...curtain()?.querySelectorAll('button') ?? []];
   const end = () => { media.emit('ended', true); clock.advance(ENDED_CURTAIN_DELAY_MS); };
@@ -84,6 +84,30 @@ function mount({ next = false, duration = 2, source = undefined as EndScreenSour
 }
 
 describe('ended curtain', () => {
+  test('provider end overrides empty media, false vetoes native ended, null defers and teardown cancels stale callbacks', () => {
+    let value: boolean | null = true;
+    let changed = () => {};
+    let stopped = false;
+    const playbackEnd: PlaybackEndSource = { ended: () => value,
+      observe(fn) { changed = fn; return () => { stopped = true; }; } };
+    const { clock, media, curtain, scope: owner } = mount({ duration: NaN, playbackEnd });
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain()).not.toBeNull();
+    value = false; media.ended = true; changed();
+    expect(curtain()).toBeNull();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain()).toBeNull();
+    value = null; media.duration = 2; changed();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain()).not.toBeNull();
+    value = false; changed();
+    value = true; changed();
+    owner.dispose(); owner.dispose(); changed();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(stopped).toBe(true);
+    expect(curtain()).toBeNull();
+    expect(clock.pending).toBe(0);
+  });
   test('a provider gets a fresh mount epoch, disposed before hide and on controls teardown', () => {
     const mounts: DisposableScope[] = [];
     let disposed = false;
@@ -177,6 +201,25 @@ describe('ended curtain', () => {
     other.end();
     expect(other.curtain()).not.toBeNull();
     expect(subscribed).toBe(0);
+  });
+
+  test('a provider-reported end over empty media also watches and yields to the host step', () => {
+    let value: boolean | null = false;
+    let changed = () => {};
+    const playbackEnd: PlaybackEndSource = { ended: () => value, observe(fn) { changed = fn; return () => {}; } };
+    const offered = hostSource(true);
+    const { host } = offered;
+    const { clock, curtain, scope: owner } = mount({ duration: NaN, host: offered.source, playbackEnd });
+    value = true; changed();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(host.live).toBe(1);
+    expect(curtain(), 'the host countdown keeps the picture after a post-roll').toBeNull();
+    offered.set(false);
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain(), 'cancelling it brings the curtain').not.toBeNull();
+    value = false; changed();
+    expect([curtain(), host.live]).toEqual([null, 0]);
+    owner.dispose();
   });
 
   test('shows only after the grace on a real end, and announces it once', async () => {

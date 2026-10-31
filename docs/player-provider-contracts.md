@@ -260,6 +260,14 @@ SOOP's chat is in the same document as its player (`#chatting_area`, with the pa
 
 ## Adding a feature
 
+`ProviderHooks.playbackEnd` (isolated world) supplies a `PlaybackEndSource` for the
+bound element. `ended()` returns true/false when the provider knows the content
+state, or null to defer to the playback surface. Its `observe` callback feeds the
+same curtain grace and teardown lifecycle as native media events; the returned
+cleanup owns all observation. Providers must reject stale media/visits and ads,
+report resumption, and defer when RTE is disabled. No provider timer advances
+playback: autoplay progress and activation remain in `ServiceActionSource`.
+
 `ProviderHooks.endScreen` (isolated world) supplies `EndScreenSource` from
 `src/core/end-screen.ts`. The source belongs to one controls scope and bound media
 element. The shared curtain passes its container, translated region label and a

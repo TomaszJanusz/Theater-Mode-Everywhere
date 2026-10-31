@@ -7,6 +7,7 @@ import { createYouTubeEndScreen } from './end-screen';
 import { youtubeEvents } from './events';
 import { youtubeLauncherPlacement } from './launcher-placement';
 import { findYouTubeQueueNavigation, readYouTubeControls, YOUTUBE_PLAYER_SELECTOR } from './navigation';
+import { createYouTubePlaybackEnd } from './playback-end';
 import { createYouTubeServiceActions } from './service-actions';
 import { youtubeSponsorBlockSource } from './sponsorblock';
 import { youtubeTimeline } from './timeline';
@@ -18,6 +19,7 @@ if (services) api?.register({
   id: 'youtube', contractVersion: 1,
   watchPlayback: youtubeWatchPlayback,
   endScreen: createYouTubeEndScreen,
+  playbackEnd: createYouTubePlaybackEnd,
   createAdapter: video => new YouTubeAdapter(video, services),
   launcherPlacement: youtubeLauncherPlacement,
   timeline: youtubeTimeline,

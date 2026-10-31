@@ -9,3 +9,10 @@ export interface EndScreenSource {
   subscribe(changed: () => void): () => void;
   dispose(): void;
 }
+
+/** Provider knowledge overrides the surface; null defers to its native ended state. */
+export interface PlaybackEndSource {
+  ended(): boolean | null;
+  /** Owns all observers; the returned cleanup is safe to repeat. */
+  observe(changed: () => void): () => void;
+}
