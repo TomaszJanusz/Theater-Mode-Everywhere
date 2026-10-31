@@ -1675,16 +1675,18 @@ html { scrollbar-gutter: stable; }
 /* Badge edges share the title's inline start in both writing directions. */
 .rte-badges { --rte-badge-pad-x: 8px; display: flex; flex-wrap: wrap; gap: 5px; grid-column: 1 / -1; }
 /* Capability colors are shared by tile badges and filter chips. Opaque surfaces
-   keep them legible with reduced transparency as well. */
-[data-capability="title"] { --rte-capability-color: #c4b5fd; }
-[data-capability="subtitles"] { --rte-capability-color: #67e8f9; }
-[data-capability="chapters"] { --rte-capability-color: #fcd34d; }
-[data-capability="heatmap"] { --rte-capability-color: #fda4af; }
-[data-capability="thumbnails"] { --rte-capability-color: #93c5fd; }
-[data-capability="playlists"] { --rte-capability-color: #86efac; }
-[data-capability="launcher"] { --rte-capability-color: #a5b4fc; }
-[data-capability="quickActions"] { --rte-capability-color: #fdba74; }
-[data-capability="autoTheater"] { --rte-capability-color: #f0abfc; }
+   keep them legible with reduced transparency as well. They are calm mid-tones,
+   not pastels: each text color must stay at least 4.5:1 over its own 16% tint
+   (checked in rte-settings.browser.test.ts). */
+[data-capability="title"] { --rte-capability-color: #a599d1; }
+[data-capability="subtitles"] { --rte-capability-color: #62c2cf; }
+[data-capability="chapters"] { --rte-capability-color: #d2b250; }
+[data-capability="heatmap"] { --rte-capability-color: #d18c94; }
+[data-capability="thumbnails"] { --rte-capability-color: #7fa6d1; }
+[data-capability="playlists"] { --rte-capability-color: #78c894; }
+[data-capability="launcher"] { --rte-capability-color: #8c98d0; }
+[data-capability="quickActions"] { --rte-capability-color: #d29e69; }
+[data-capability="autoTheater"] { --rte-capability-color: #c892d1; }
 .rte-badge, .rte-filter-buttons button {
   --rte-badge-color: var(--appearance-ink, var(--rte-capability-color));
   --rte-badge-background: color-mix(in srgb, var(--rte-capability-color) 16%, var(--appearance-normal-background));

@@ -15,6 +15,7 @@ import { selectTestEngines } from '../src/test-utils/test-engines';
 import { brightestStop, hexRgb, luminance, over } from './rte-colors';
 
 
+const contrastRatio = (a: number[], b: number[]) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
 // Counts follow the declarations, so adding a provider or capability never edits these tests.
 const supporting = (...keys: Array<keyof (typeof PROVIDER_CAPABILITIES)[number]['capabilities']>) =>
   PROVIDER_CAPABILITIES.filter(provider => keys.every(key => provider.capabilities[key].status !== 'no'));
@@ -338,6 +339,19 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
       }));
       for (const [filter, badge] of capabilityColors) assert.equal(filter, badge, 'filter and tile share capability colors');
       assert.equal(new Set(capabilityColors.map(([color]) => color)).size, MEDIA_CAPABILITIES.length);
+      // Calm tags may not cost legibility: resting text over its own tint, for tiles and filters alike.
+      const restingPairs = await page.locator('.rte-badge[data-capability], #rte-filter-buttons button').evaluateAll(elements => {
+        const paint = (value: string) => {
+          const context = document.createElement('canvas').getContext('2d')!;
+          context.clearRect(0, 0, 1, 1);
+          context.fillStyle = value;
+          context.fillRect(0, 0, 1, 1);
+          return [...context.getImageData(0, 0, 1, 1).data].slice(0, 3);
+        };
+        return elements.map(el => ({ id: el.getAttribute('data-capability'), text: paint(getComputedStyle(el).color), background: paint(getComputedStyle(el).backgroundColor) }));
+      });
+      assert.ok(restingPairs.length > MEDIA_CAPABILITIES.length);
+      for (const { id, text, background } of restingPairs) assert.ok(contrastRatio(text, background) >= 4.5, `${id}: resting tag contrast ${contrastRatio(text, background).toFixed(2)}`);
       const firstBadge = page.locator('.rte-badge:not(.is-matching)').first();
       const rest = await firstBadge.evaluate(el => getComputedStyle(el).backgroundColor);
       await firstBadge.hover();
@@ -411,7 +425,6 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
       const page = await context.newPage();
       await open(page);
       const veil = Number(/--te-veil:\s*(\d+)%/.exec(css)![1]) / 100;
-      const contrast = (a: number[], b: number[]) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
       for (const mode of [{}, { reduceMotion: 'on' }, { reduceTransparency: 'on' }, { highContrast: 'on' }]) {
         await page.evaluate(mode => (window as unknown as Harness).external({ reduceMotion: 'off', reduceTransparency: 'off', highContrast: 'off', ...mode }), mode);
         for (const enabled of [true, false]) {
@@ -437,7 +450,7 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
             // Full-strength decoration bounds disabled tiles too; high contrast removes it.
             for (const palette of PROVIDER_CAPABILITIES) {
               const surface = hovered && !('highContrast' in mode) ? over(base, veil, brightestStop(palette.brandColors)) : base;
-              assert.ok(contrast(colors.note, surface) >= 4.5, palette.id + ': note contrast');
+              assert.ok(contrastRatio(colors.note, surface) >= 4.5, palette.id + ': note contrast');
             }
           }
         }
