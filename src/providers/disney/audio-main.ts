@@ -19,6 +19,7 @@ import {
   type DisneyAudioResult,
   type DisneyAudioSnapshot
 } from './audio-bridge';
+import { disneyContentVideo, isDisneyContentVideo } from './watch-playback';
 
 /** Re-read while a command is pending only: the store notification for the switch is not confirmed on the host. */
 export const DISNEY_AUDIO_CHECK_MS = 500;
@@ -401,12 +402,12 @@ export class DisneyAudioHost {
 
 export const createDisneyAudioHost = (env: DisneyAudioEnv) => new DisneyAudioHost(env);
 
-const CONTENT_VIDEO = 'video.hive-video';
 let installed = false;
 
+/** Disney's content video, whose classes its UI rewrites: `watch-playback.ts` owns the identity. */
 function contentVideo(event: Event): HTMLVideoElement | null {
   const video = event.target;
-  if (!(video instanceof HTMLVideoElement) || !video.matches(CONTENT_VIDEO)) return null;
+  if (!(video instanceof HTMLVideoElement) || !isDisneyContentVideo(video)) return null;
   return document.querySelector('disney-web-player')?.contains(video) ? video : null;
 }
 
@@ -421,8 +422,8 @@ export function installDisneyAudio(): void {
       return web?.isConnected ? web : null;
     },
     contentPaused: web => {
-      const video = (web as Element).querySelector?.(CONTENT_VIDEO);
-      return video instanceof HTMLVideoElement ? video.paused : null;
+      const video = disneyContentVideo((web as Element).ownerDocument ?? document);
+      return video ? video.paused : null;
     },
     publishSnapshot: payload => publishHiddenJson(DISNEY_AUDIO_SNAPSHOT, payload),
     answer: result => window.dispatchEvent(new CustomEvent(DISNEY_AUDIO_RESULT, { detail: JSON.stringify(result) })),

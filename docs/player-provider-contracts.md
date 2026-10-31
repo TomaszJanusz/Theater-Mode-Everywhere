@@ -118,7 +118,10 @@ Disney+ `/play/<uuid>` (with an optional locale prefix), iQIYI `/play/<slug>-<id
 `/<locale>/play/<series>/<episode>`, and Patreon posts
 (`/posts/<slug>-<id>`, `/<creator>/posts/<slug>-<id>`) declare this capability.
 Netflix requires its watch-page player; Disney+ requires the primary Hive video
-inside `disney-web-player` and excludes the auxiliary BTM media client. Catalog
+inside `disney-web-player` and excludes the auxiliary BTM media client. The primary video is the one
+Disney names as `disney-web-player.mediaElement` (MAIN only, `providers/disney/watch-playback.ts`): Disney
+replaces its classes, `hive-video` included, with the BTM client's whenever its player UI changes, so classes
+decide only when it names none. Catalog
 pages stay ineligible, even when previews are playing. Vimeo pages whose video
 lives in an iframe remain ineligible. A Patreon post qualifies only when its page holds
 exactly one `mux-player` whose single `<video>` (reached through open shadow roots) is not a live
@@ -270,4 +273,4 @@ Every new RTE integration is a per-host provider that loads asynchronously with 
 
 ### Staged provider extraction
 
-A descriptor may enumerate `legacySharedFiles` while a provider migrates feature by feature. These exact, pre-existing files may remain in the shared bundles; every other file under the provider is host-only, including the descriptor entrypoints. The registry keeps one definition per id, retains the legacy MAIN startup gate and composes a registered adapter alongside the legacy one. Remove exemptions as the remaining features migrate; do not add new shared implementation to the list. Netflix's and Disney+'s audio entrypoints are this intermediate step for TME-202 and TME-203, not the full extraction.
+A descriptor may enumerate `legacySharedFiles` while a provider migrates feature by feature. These exact, pre-existing files may remain in the shared bundles; every other file under the provider is host-only, including the descriptor entrypoints. The registry keeps one definition per id, retains the legacy MAIN startup gate and composes a registered adapter alongside the legacy one. Remove exemptions as the remaining features migrate; do not add new shared implementation to the list. Netflix's and Disney+'s audio entrypoints are this intermediate step for TME-202 and TME-203, not the full extraction. Disney+ also registers its watch playback from those entrypoints, so its legacy registry row keeps only host matching.
