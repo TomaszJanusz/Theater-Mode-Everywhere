@@ -354,7 +354,7 @@
     "message": "Nenhuma exclusão ainda"
   },
   "noExclusionsDescription": {
-    "message": "O modo cinema será ativado automaticamente em todas as páginas de vídeo."
+    "message": "O modo cinema será iniciado automaticamente nos serviços compatíveis (veja AutoTheater). Adicione aqui os sites em que ele deve ficar desativado."
   },
   "removeExclusion": {
     "message": "Remover exclusão"
@@ -983,13 +983,13 @@
     "message": "Integração com o iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Mostra o título da série e o rótulo do episódio, lista e seleciona os idiomas de legenda do episódio (o iQIYI continua desenhando as legendas), marca a abertura e o encerramento e vai para o episódio anterior ou seguinte. O AutoTheater funciona nas páginas de episódio. Também é possível escolher as faixas de áudio do episódio."
+    "message": "Mostra o título da série e o rótulo do episódio, lista e seleciona os idiomas de legenda do episódio (exibidas pelo próprio player do iQIYI), marca a abertura e o encerramento e vai para o episódio anterior ou seguinte. O AutoTheater funciona nas páginas de episódio. Também é possível escolher as faixas de áudio do episódio."
   },
   "soopIntegrationTitle": {
     "message": "Integração com o SOOP"
   },
   "soopIntegrationDescription": {
-    "message": "Mostra o título da transmissão ou gravação e o streamer, marca capítulos a partir do histórico de títulos de uma gravação, oferece a gravação anterior/seguinte do player e a contagem regressiva do próximo vídeo, e o AutoTheater pode entrar em transmissões ao vivo e gravações. O chat do próprio SOOP pode ser exibido ao lado do vídeo."
+    "message": "Mostra o título da transmissão ou gravação e o streamer, marca capítulos a partir do histórico de títulos de uma gravação, oferece a gravação anterior/seguinte do player e a contagem regressiva do próximo vídeo, e o AutoTheater funciona em transmissões ao vivo e gravações. O chat do próprio SOOP pode ser exibido ao lado do vídeo."
   },
   "vikiIntegrationTitle": {
     "message": "Integração com a Rakuten Viki"
@@ -1200,7 +1200,7 @@
     "message": "Legendas, prévias e pular/próximo quando oferecidos pelo player."
   },
   "rteNoteNetflix": {
-    "message": "Prévias exigem uma sessão trick-play pronta; legendas e ações quando disponíveis."
+    "message": "As prévias aparecem depois que a Netflix carrega as imagens de prévia; legendas e pular/próximo quando disponíveis."
   },
   "rteNoteBilibili": {
     "message": "Algumas legendas exigem login; os recursos dependem do vídeo."
