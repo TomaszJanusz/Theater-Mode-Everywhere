@@ -1,11 +1,12 @@
 import { DisposableScope } from '../core/disposable-scope';
-import type { MediaProviderFlags } from '../media-features/provider-flags';
+import { mediaHasSource } from '../host-play';
+import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
 import { observeProviderMediaChanges } from '../providers/media-events';
 import { confirmProviderPreparingVideo, confirmProviderWatchVideo, observeProviderWatchPlaybackChanges, readProviderWatchPage } from '../providers/watch-playback';
-import { mediaHasSource } from '../host-play';
 import { isSwitchableTheaterVideo } from '../switchable-videos';
-import { AUTO_ENTER_NOTICE_MIN_MS, createAutoEnterIntent } from './auto-theater-intent';
+
 import { shouldAutoEnterTheater, updateAutoTheaterVisit, type AutoTheaterVisit } from './auto-theater';
+import { AUTO_ENTER_NOTICE_MIN_MS, createAutoEnterIntent } from './auto-theater-intent';
 
 /**
  * The notice waits this long after the countdown starts. Hosts often do heavy main-thread work
@@ -25,7 +26,7 @@ export type AutoTheaterRuntime = {
 /** One visit survives preference/blacklist toggles and runtime scope recreation. */
 export function createAutoTheaterRuntime(options: {
   visit: { current: AutoTheaterVisit };
-  enabled(): boolean;
+  enabled(provider: MediaProviderId): boolean;
   policyAllowed(): boolean;
   providerFlags(): MediaProviderFlags;
   editableFocused(): boolean;
@@ -92,7 +93,9 @@ export function createAutoTheaterRuntime(options: {
       page ? `${page.provider}:${page.identity}` : null);
     // The player element is often reused across videos; a new identity restarts the countdown.
     if (options.visit.current.identity !== previousIdentity) intent.cancel();
-    if (!page || !options.enabled() || window !== window.top || !options.policyAllowed()
+    // A disabled service consumes this visit: enabling it waits for the next identity, never mid-watch.
+    if (page && !options.enabled(page.provider)) options.visit.current.entered = true;
+    if (!page || !options.enabled(page.provider) || window !== window.top || !options.policyAllowed()
         || !options.providerFlags()[page.provider] || options.visit.current.entered) {
       intent.cancel();
       clearObservedVideo();
@@ -127,7 +130,7 @@ export function createAutoTheaterRuntime(options: {
     const confirmed = eligible && confirmProviderWatchVideo(video);
     const hostPreparing = !confirmed && requested && confirmProviderPreparingVideo(video);
     const facts = {
-      enabled: options.enabled(), topLevel: window === window.top, policyAllowed: options.policyAllowed(),
+      enabled: options.enabled(page.provider), topLevel: window === window.top, policyAllowed: options.policyAllowed(),
       providerEnabled: options.providerFlags()[page.provider], fullscreen: Boolean(document.fullscreenElement),
       editableFocused: options.editableFocused(), theaterActive: options.theaterActive(),
       transitioning: options.transitioning(), eligibleVideo: true, playing: true,

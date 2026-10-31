@@ -1,4 +1,3 @@
-import { serviceColorProperties } from './rte-colors';
 import { t } from '../src/i18n';
 import { languageRuntime } from '../src/i18n-runtime';
 import {
@@ -6,6 +5,12 @@ import {
   resolveMediaProviderFlags, type MediaProviderId
 } from '../src/media-features/provider-flags';
 import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES, type MediaCapability } from '../src/providers/capabilities';
+import { PROVIDER_SETTINGS } from '../src/providers/catalog';
+import { createProviderSettings } from '../src/providers/settings';
+
+import { openProviderSettings } from './provider-settings';
+import { settingsMessage } from './provider-settings-copy';
+import { serviceColorProperties } from './rte-colors';
 
 export async function setupRteSettings(notify: () => Promise<void>): Promise<() => void> {
   const tiles = document.getElementById('rte-tiles')!;
@@ -21,6 +26,8 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
   let disposed = false;
   let ready = false;
   const events = new AbortController();
+  const providerSettings = createProviderSettings(PROVIDER_SETTINGS);
+  void providerSettings.ready.catch(() => { error.textContent = t('rteSaveError'); error.hidden = false; });
   const inputs = new Map<MediaProviderId, HTMLInputElement>();
   const badges = new Map<MediaProviderId, Map<MediaCapability, HTMLElement>>();
   const tileElements = new Map<MediaProviderId, HTMLDivElement>();
@@ -103,7 +110,21 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
       description.setAttribute('aria-hidden', String(!expanded));
       region.classList.toggle('is-expanded', expanded);
     }, { signal: events.signal });
-    tile.append(label, details, region);
+    const settings = PROVIDER_SETTINGS.find(item => item.id === provider.id);
+    if (settings) {
+      const actions = document.createElement('div');
+      actions.className = 'rte-card-actions';
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'rte-settings-button';
+      button.setAttribute('aria-haspopup', 'dialog');
+      button.setAttribute('aria-describedby', name.id);
+      button.addEventListener('click', () => {
+        openProviderSettings({ ...settings, name: provider.name }, providerSettings, { signal: events.signal, returnFocus: () => button });
+      }, { signal: events.signal });
+      actions.append(button, details);
+      tile.append(label, actions, region);
+    } else tile.append(label, details, region);
     tiles.append(tile);
     inputs.set(provider.id, input);
     badges.set(provider.id, providerBadges);
@@ -147,6 +168,8 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
         const support = provider.capabilities[key];
         badge.title = support.status === 'conditional' ? t(support.noteKey) : '';
       }
+      const settingsButton = tile.querySelector<HTMLButtonElement>('.rte-settings-button');
+      if (settingsButton) settingsButton.textContent = settingsMessage('providerSettingsButton');
       tile.querySelector<HTMLButtonElement>('.rte-details-toggle')!.textContent = t('rteDetails');
       tile.querySelector<HTMLElement>('.rte-details h3')!.textContent = t(`${provider.id}IntegrationTitle`);
       tile.querySelector<HTMLElement>('.rte-details p')!.textContent = t(`${provider.id}IntegrationDescription`);
@@ -238,6 +261,7 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
   return () => {
     disposed = true;
     events.abort();
+    providerSettings.dispose();
     chrome.storage.onChanged.removeListener(onStorage);
     stopLanguage();
     master.removeEventListener('change', onMaster);

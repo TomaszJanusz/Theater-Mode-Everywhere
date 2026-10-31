@@ -1,22 +1,60 @@
+import { ACCENT_COLOR_STORAGE_KEY } from '../accentTheme';
+import { isMotionReduced } from '../appearance-runtime';
+import {
+  AUDIO_BLOCK_KEYS,
+  AUDIO_HUD_KEYS,
+  AUDIO_SETTING_NAMES,
+  AUDIO_SETTINGS_EVENT,
+  AUDIO_STORAGE_KEYS,
+  audioLevelLabelKey,
+  cycleAudioSetting,
+  stepAudioSetting,
+  DEFAULT_AUDIO_SETTINGS,
+  isNeutralAudio,
+  resolveAudioSettings,
+  resolveStoredAudioSettings,
+  sameAudioSettings,
+  writeAudioDataset,
+  type AudioBlock,
+  type AudioSettingName,
+  type AudioSettings
+} from '../audio-settings';
+import { installChatShortcutRelay, isChatDocument, isChatShortcutMessage, isNativeChatEvent } from '../chat';
 import type { DisposableScope } from '../core/disposable-scope';
 import { measureNextFrame } from '../core/frame-batch';
+import { FrameCoordinator } from '../core/frame-coordinator';
+import { PlayerSession, type PlayerCommand } from '../core/player-session';
+import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, resolveHighlightNewFeatures, withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS } from '../feature-highlights';
+import { readFeatureHighlightsLocal } from '../feature-highlights-storage';
+import { languageRuntime } from '../i18n-runtime';
+import { LANGUAGE_STORAGE_KEY } from '../language';
 import { AUDIO_PREF_STORAGE_KEY, resolveAudioPreferences, upsertAudioPreference } from '../media-features/audio-preference';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
 import { createSeekHold, SEEK_HOLD_RATE } from './seek-hold';
 import { formatRate, holdPlaybackRate, stepPlaybackRate } from './speed-control';
 
-import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
-import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, resolveHighlightNewFeatures, withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS } from '../feature-highlights';
-import { readFeatureHighlightsLocal } from '../feature-highlights-storage';
-import { LANGUAGE_STORAGE_KEY } from '../language';
-import { languageRuntime } from '../i18n-runtime';
+
 import { subscribePlaylistNavigation as subscribeNavigation } from '../providers/navigation/watch';
+import { PROVIDER_SETTINGS_KEY } from '../providers/settings';
+import { providerAutoEnabled } from '../providers/settings-values';
+
 import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown, type AutoTheaterVisit } from './auto-theater';
 import { showAutoTheaterNotice } from './auto-theater-notice';
+import { PlayerUiStore, type PlayerUiState } from './store';
+import {
+  applyTheaterViewportPin,
+  markTheaterVideo,
+  mountTheaterStage,
+  theaterVideoNeedsRestyle,
+  unmarkTheaterVideo,
+  unmountTheaterStage
+} from './theater-layout';
+import { createToolbar } from './toolbar';
 import { createVideoActivator, VIDEO_ACTIVATOR_CLASS, type VideoActivator } from './video-activator';
 import { resolveVideoActivator, VIDEO_ACTIVATOR_STORAGE_KEY } from './video-activator-settings';
+
 import {
   autoTheaterAvailability,
   confirmWatchReplacement,
@@ -25,10 +63,12 @@ import {
   readMiniplayerIdentity,
   readProviderWatchPage
 } from '../providers/watch-playback';
+
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
 import { nextVolumeLevel } from './volume-level';
+
 import { probeMediaCors } from '../platform/media-cors-probe';
 import { reloadForWebAudio } from '../platform/web-audio-reload';
 import {
@@ -96,14 +136,7 @@ import {
   readProviderHostToggle,
   type ProviderPlaybackSession
 } from '../providers/playback-session';
-import {
-  applyTheaterViewportPin,
-  markTheaterVideo,
-  mountTheaterStage,
-  theaterVideoNeedsRestyle,
-  unmarkTheaterVideo,
-  unmountTheaterStage
-} from './theater-layout';
+
 import {
   mountPlayerUi,
   getPlayerUiRoot,
@@ -111,11 +144,10 @@ import {
   queryPlayerUiAll,
   PLAYER_NATIVE_ACTIVATION_SELECTOR
 } from './root';
-import { FrameCoordinator } from '../core/frame-coordinator';
-import { PlayerSession, type PlayerCommand } from '../core/player-session';
+
 import { resolveDomainPolicy } from '../platform/domain-policy';
-import { ACCENT_COLOR_STORAGE_KEY } from '../accentTheme';
 import { createSessionId } from '../protocol/frame-messages';
+
 import {
   applyAccentColorPreset,
   resolveAccentColorPreset,
@@ -138,7 +170,6 @@ import {
 import { applyUiDirection, t } from './messages';
 import { AUDIO_SHORTCUTS, defaultShortcuts, loadKeyboardLayout, matchesShortcut, resolveSeekHold, SEEK_HOLD_STORAGE_KEY, withShortcutDefaults } from './shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
-import { PlayerUiStore, type PlayerUiState } from './store';
 import { createButtonTooltip } from './button-tooltip';
 import { createControls, type ExtendedHTMLDivElement } from './controls';
 import { createDiscovery, isElementInDOMDeep } from './discovery';
@@ -154,36 +185,17 @@ import {
   audioHudIcon,
   VOLUME_BOOST_ICONS
 } from './hud';
-import {
-  AUDIO_BLOCK_KEYS,
-  AUDIO_HUD_KEYS,
-  AUDIO_SETTING_NAMES,
-  AUDIO_SETTINGS_EVENT,
-  AUDIO_STORAGE_KEYS,
-  audioLevelLabelKey,
-  cycleAudioSetting,
-  stepAudioSetting,
-  DEFAULT_AUDIO_SETTINGS,
-  isNeutralAudio,
-  resolveAudioSettings,
-  resolveStoredAudioSettings,
-  sameAudioSettings,
-  writeAudioDataset,
-  type AudioBlock,
-  type AudioSettingName,
-  type AudioSettings
-} from '../audio-settings';
+
 import { mediaAudioAccess } from '../platform/media-audio-access';
+
 import {
   bindRootHelpers,
   createChromeRefs,
   createPlayerChromeContext,
   type AudioTrackHudReport
 } from './runtime-context';
-import { createToolbar } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
 import { closeMenuPopover } from './menu-popover';
-import { installChatShortcutRelay, isChatDocument, isChatShortcutMessage, isNativeChatEvent } from '../chat';
 import { CHAT_PREFERENCES_STORAGE_KEY, hydrateChatPreferences, nativeChatState, startNativeChatSession, stopNativeChatSession, toggleNativeChat } from './chat';
 
 const session = new PlayerSession();
@@ -1242,6 +1254,7 @@ function refreshExtensionAccentColor(): void {
   }
 }
 
+let providerSettings: unknown;
 let autoTheaterPolicyAllowed = false;
 let settingsLoadEpoch = 0;
 const autoTheaterVisit: { current: AutoTheaterVisit } = { current: { identity: null, entered: false } };
@@ -1259,7 +1272,7 @@ function syncAutoTheaterRuntime(): void {
   }
   autoTheaterRuntime = createAutoTheaterRuntime({
     visit: autoTheaterVisit,
-    enabled: () => ui().autoEnterTheater,
+    enabled: provider => providerAutoEnabled(ui().autoEnterTheater, providerSettings, provider),
     skipCountdown: () => ui().autoTheaterSkipCountdown,
     policyAllowed: () => autoTheaterPolicyAllowed,
     providerFlags: () => refs.providerFlags,
@@ -1349,6 +1362,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       'shortcuts',
       LANGUAGE_STORAGE_KEY,
       AUTO_THEATER_STORAGE_KEY,
+      PROVIDER_SETTINGS_KEY,
       AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY,
       VIDEO_ACTIVATOR_STORAGE_KEY,
       SEEK_HOLD_STORAGE_KEY,
@@ -1369,6 +1383,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     if (epoch !== settingsLoadEpoch) return;
     await languageRuntime.set(data[LANGUAGE_STORAGE_KEY], languageRevision);
     if (epoch !== settingsLoadEpoch) return;
+    providerSettings = data[PROVIDER_SETTINGS_KEY];
     const blacklist = (data.blacklist || []) as string[];
     hydrateChatPreferences(data[CHAT_PREFERENCES_STORAGE_KEY]);
     const saved = data.shortcuts || {};
@@ -2853,9 +2868,13 @@ export function bootstrapPlayerRuntime(): void {
         applyVolumeBoost(resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue));
       }
 
+      if (changes[PROVIDER_SETTINGS_KEY]) {
+        providerSettings = changes[PROVIDER_SETTINGS_KEY].newValue;
+        autoTheaterRuntime?.refresh();
+      }
       const providerFlagsChanged = mediaProviderFlagStorageKeys().some((key) => changes[key]);
       // Refresh only preferences that affect automatic entry.
-      const autoTheaterSettingsChanged = changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY] || changes[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY] || providerFlagsChanged;
+      const autoTheaterSettingsChanged = changes[PROVIDER_SETTINGS_KEY] || changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY] || changes[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY] || providerFlagsChanged;
       if (autoTheaterSettingsChanged) {
         void checkBlacklistAndInit();
       }

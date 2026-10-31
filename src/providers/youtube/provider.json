@@ -24,5 +24,21 @@
       "file": "main.ts",
       "runAt": "document_start"
     }
-  }
+  },
+  "settings": [
+    {
+      "id": "showRecommendations",
+      "type": "boolean",
+      "default": true,
+      "label": "providerShowRecommendations",
+      "description": "providerShowRecommendationsDescription"
+    },
+    {
+      "id": "autoTheater",
+      "type": "boolean",
+      "default": true,
+      "label": "autoEnterTheaterTitle",
+      "description": "autoEnterTheaterDescription"
+    }
+  ]
 }

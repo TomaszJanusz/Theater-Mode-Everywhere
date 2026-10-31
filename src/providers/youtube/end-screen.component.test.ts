@@ -6,7 +6,8 @@ import { APPEARANCE_MODES, blockingViolations } from '../../test-utils/axe';
 import { getPlayerUiRoot, mountPlayerUi } from '../../ui/root';
 
 import type { EndScreenItem, SuggestionSource } from './end-screen-model';
-import { renderEndScreen } from './end-screen-view';
+import { mountEndScreenSettings, renderEndScreen } from './end-screen-view';
+import { createYouTubeSettings } from './settings';
 
 let scope: DisposableScope;
 afterEach(() => scope?.dispose());
@@ -35,7 +36,7 @@ function mount(count: number, thumbnail = false) {
   if (grid) curtain.append(grid);
   scope.add(() => curtain.remove());
   const tiles = [...curtain.querySelectorAll<HTMLButtonElement>('.theater-end-screen-tile')];
-  return { curtain, replay, grid, tiles, activations, stale: () => { mediaId = 'second'; } };
+  return { curtain, replay, grid, tiles, activations, source, stale: () => { mediaId = 'second'; } };
 }
 
 describe('YouTube provider tiles in the shared curtain', () => {
@@ -82,6 +83,41 @@ describe('YouTube provider tiles in the shared curtain', () => {
       await expect.poll(() => mode.applied(host)).toBe(true);
       mount(3, true);
       expect(await blockingViolations(host)).toEqual([]);
+    });
+  }
+});
+
+
+describe('YouTube recommendation switch', () => {
+  for (const mode of APPEARANCE_MODES) {
+    test(`stays reversible, labelled and keyboard operable with ${mode.name}`, async () => {
+      const host = getPlayerUiRoot().host as HTMLElement;
+      mode.apply(host);
+      await expect.poll(() => mode.applied(host)).toBe(true);
+      const { curtain, grid, source, replay } = mount(3);
+      grid?.remove();
+      const settings = createYouTubeSettings();
+      scope.add(() => settings.dispose());
+      await settings.ready;
+      mountEndScreenSettings(curtain, source, { label: 'Suggested videos', scope, settings });
+      const input = curtain.querySelector<HTMLInputElement>('[role=switch]')!;
+      await expect.element(input).toHaveAccessibleName('Show recommendations');
+      await userEvent.click(input);
+      await expect.poll(() => curtain.querySelector('.theater-end-screen')).toBeNull();
+      expect(curtain.contains(replay)).toBe(true);
+      expect(getPlayerUiRoot().activeElement).not.toBe(input);
+      expect(input.isConnected).toBe(true);
+      input.focus();
+      await userEvent.keyboard(' ');
+      await expect.poll(() => curtain.querySelectorAll('.theater-end-screen-tile').length).toBe(3);
+      expect(getPlayerUiRoot().activeElement).toBe(input);
+      // External updates use the same store and do not rebuild or lose switch focus.
+      await settings.set('youtube', 'showRecommendations', false);
+      expect(input.checked).toBe(false);
+      expect(getPlayerUiRoot().activeElement).toBe(input);
+      expect(await blockingViolations(host)).toEqual([]);
+      scope.dispose(); scope.dispose();
+      expect(curtain.isConnected).toBe(false);
     });
   }
 });

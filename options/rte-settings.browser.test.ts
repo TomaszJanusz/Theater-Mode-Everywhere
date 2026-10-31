@@ -82,6 +82,46 @@ async function open(page: Page, empty = false, initial: Record<string, unknown> 
 
 for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) describe(`RTE settings (${kind})`, () => {
   const shared = sharedTestBrowser(engine);
+  it('offers descriptor settings only for supporting services, preserves defaults, and follows the global AutoTheater gate', { timeout: 45000 }, async t => {
+    const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 900 } })).newPage();
+    await open(page);
+    const supported = PROVIDER_CAPABILITIES.filter(provider => provider.capabilities.autoTheater.status !== 'no');
+    assert.deepEqual((await page.locator('.rte-tile:has(.rte-settings-button)').evaluateAll(tiles => tiles.map(tile => (tile as HTMLElement).dataset.provider))).sort(), supported.map(provider => provider.id).sort());
+    assert.deepEqual(await page.evaluate(() => (window as unknown as Harness).writes), [], 'opening settings does not write defaults');
+    const button = page.locator('[data-provider="youtube"] .rte-settings-button');
+    await button.click();
+    const dialog = page.locator('.te-dialog-provider-settings');
+    const recommendations = dialog.getByRole('switch', { name: 'Show recommendations', exact: true });
+    const automatic = dialog.getByRole('switch', { name: 'AutoTheater', exact: true });
+    assert.equal(await dialog.getByRole('switch').count(), 2);
+    assert.equal(await automatic.isChecked(), true);
+    assert.equal(await recommendations.isChecked(), true);
+    if (process.env.TME234_SHOTS) await page.screenshot({ animations: 'disabled', path: `${process.env.TME234_SHOTS}/options-youtube-${kind}.png` });
+    await automatic.press('Space');
+    assert.deepEqual(await page.evaluate(() => (window as unknown as Harness).writes), [{ providerSettings: { youtube: { autoTheater: false } } }]);
+    await recommendations.press('Space');
+    await page.evaluate(() => (window as unknown as Harness).external({ autoEnterTheater: false }));
+    assert.equal(await automatic.isDisabled(), true);
+    assert.equal(await recommendations.isDisabled(), false);
+    assert.equal(await dialog.locator('.provider-setting-unavailable:visible').textContent(), 'AutoTheater is off globally. Enable it in Features first.');
+    if (process.env.TME234_SHOTS) await page.screenshot({ animations: 'disabled', path: `${process.env.TME234_SHOTS}/options-global-off-${kind}.png` });
+    await page.evaluate(() => (window as unknown as Harness).external({ autoEnterTheater: true }));
+    assert.equal(await automatic.isDisabled(), false);
+    assert.equal(await automatic.isChecked(), false, 'global flips preserve the saved provider preference');
+    await page.keyboard.press('Escape');
+    assert.equal(await button.evaluate(button => document.activeElement === button), true);
+    const other = supported.find(provider => provider.id !== 'youtube')!;
+    await page.locator(`[data-provider="${other.id}"] .rte-settings-button`).click();
+    assert.equal(await dialog.getByRole('switch').count(), 1);
+    assert.equal(await dialog.getByRole('switch').isChecked(), true, 'another provider keeps its default');
+    if (process.env.TME234_SHOTS) await page.screenshot({ animations: 'disabled', path: `${process.env.TME234_SHOTS}/options-other-${kind}.png` });
+    await page.keyboard.press('Escape');
+    if (process.env.TME234_SHOTS) await page.screenshot({ animations: 'disabled', path: `${process.env.TME234_SHOTS}/options-service-cards-${kind}.png` });
+    await button.click();
+    assert.equal(await recommendations.isChecked(), false);
+    assert.equal(await automatic.isChecked(), false);
+  });
+
   it('uses one-provider writes, mixed/all states, keyboard controls and external storage updates', { timeout: 45000 }, async t => {
     const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
     try {

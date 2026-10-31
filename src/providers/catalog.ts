@@ -125,3 +125,147 @@ export const PROVIDER_CATALOG = [
     ]
   }
 ] as const;
+
+// Separate export: options metadata must be tree-shaken from shared runtimes.
+export const PROVIDER_SETTINGS = [
+  {
+    "id": "bilibili",
+    "settings": [
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  },
+  {
+    "id": "bilibiliIntl",
+    "settings": [
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  },
+  {
+    "id": "disney",
+    "settings": [
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  },
+  {
+    "id": "iqiyi",
+    "settings": [
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  },
+  {
+    "id": "netflix",
+    "settings": [
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  },
+  {
+    "id": "patreon",
+    "settings": [
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  },
+  {
+    "id": "soop",
+    "settings": [
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  },
+  {
+    "id": "twitch",
+    "settings": [
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  },
+  {
+    "id": "viki",
+    "settings": [
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  },
+  {
+    "id": "vimeo",
+    "settings": [
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  },
+  {
+    "id": "youtube",
+    "settings": [
+      {
+        "id": "showRecommendations",
+        "type": "boolean",
+        "default": true,
+        "label": "providerShowRecommendations",
+        "description": "providerShowRecommendationsDescription"
+      },
+      {
+        "id": "autoTheater",
+        "type": "boolean",
+        "default": true,
+        "label": "autoEnterTheaterTitle",
+        "description": "autoEnterTheaterDescription"
+      }
+    ]
+  }
+] as const;
+export const PROVIDER_AUTO_DEFAULT = true;
