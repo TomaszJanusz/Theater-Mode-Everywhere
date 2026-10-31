@@ -11,7 +11,7 @@ import { assertAutoTheater } from './auto-theater';
 import { assertBilibiliProvider, assertBilibiliTvProvider } from './bilibili-providers';
 import { assertDisneyProvider } from './disney';
 import { FirefoxRemote } from './firefox-rdp';
-import { assertFreshInstall } from './first-run-setup';
+import { assertFreshInstall, closeInstallSetup } from './first-run-setup';
 import { assertEmbeddedKeysAndFullscreen } from './frames';
 import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist, useSyncQuota } from './helpers';
 import { assertNetflixAudio } from './netflix-audio';
@@ -88,6 +88,7 @@ async function smokeSharedChromium(origin: string, unpackedDir: string, scenario
 
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     useSyncQuota(await installSyncQuota(context, clock));
+    await closeInstallSetup(context);
     // Escape is always an exit alias, including with a remapped exit shortcut.
     await worker.evaluate(() => chrome.storage.sync.set({ shortcuts: { exit: 'X' } }));
 
@@ -247,6 +248,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
   try {
     installed = await installedFirefox(userDataDir, unpackedDir);
     const { context } = installed;
+    await closeInstallSetup(context);
     const page = context.pages()[0] || await context.newPage();
     if (process.env.THEATER_SMOKE_PROVIDERS_ONLY === '1') {
       await runProviderScenarios(page, context);

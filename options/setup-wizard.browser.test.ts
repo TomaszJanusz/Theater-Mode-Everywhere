@@ -100,6 +100,10 @@ async function open(page: Page, sync: Record<string, unknown> = FRESH, local: Re
 
 const defaultAnswers = () => JSON.parse(JSON.stringify(defaultSetupAnswers())) as unknown;
 const writes = (page: Page) => page.evaluate(() => (window as unknown as Harness).writes);
+/** Next until the last step, whose primary button is Finish. */
+async function toSummary(page: Page): Promise<void> {
+  while (await page.locator('.setup-summary').count() === 0) await page.getByRole('button', { name: 'Next' }).click();
+}
 const focusedText = (page: Page) => page.evaluate(() => document.activeElement?.textContent ?? '');
 
 async function blockingViolations(page: Page): Promise<string[]> {
@@ -117,13 +121,13 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
   const newPage = async (t: Parameters<typeof shared.newContext>[0]) =>
     (await shared.newContext(t, { viewport: { width: 1100, height: 900 } })).newPage();
 
-  it('runs by keyboard, moves focus to each step, and saves only the changed service flags on Finish', { timeout: 45000 }, async t => {
+  it('runs every step by keyboard, moves focus to each step, and saves only the changed settings on Finish', { timeout: 60000 }, async t => {
     const page = await newPage(t);
     await open(page);
     // The setup replaces the settings while the page is at #setup.
     assert.equal(await page.locator('#settings-tabs').isHidden(), true);
     assert.equal(await page.locator('.settings-stack').isHidden(), true);
-    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 1 of 2');
+    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 1 of 4');
     assert.equal(await page.getByRole('radio', { name: 'All supported services' }).isChecked(), true);
     assert.equal(await page.locator('#setup-services').isHidden(), true);
     assert.deepEqual(await blockingViolations(page), []);
@@ -132,8 +136,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     await page.keyboard.press('ArrowDown');
     assert.equal(await page.getByRole('radio', { name: 'Choose services' }).isChecked(), true);
     // The switches come from the provider catalog, all on, and follow the choice in keyboard order.
-    const switches = page.locator('#setup-services').getByRole('switch');
-    assert.equal(await switches.count(), PROVIDER_CAPABILITIES.length);
+    assert.equal(await page.locator('#setup-services').getByRole('switch').count(), PROVIDER_CAPABILITIES.length);
     assert.equal(await page.locator('#setup-services [role="switch"]:checked').count(), PROVIDER_CAPABILITIES.length);
     assert.deepEqual(await blockingViolations(page), []);
     await page.keyboard.press('Tab');
@@ -146,18 +149,48 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     assert.equal(await page.locator('.setup-step').isVisible(), true);
 
     await page.getByRole('button', { name: 'Next' }).click();
-    assert.equal(await focusedText(page), 'You’re all set');
-    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 2 of 2');
-    assert.equal(await page.locator('.setup-summary dd').textContent(), `${PROVIDER_CAPABILITIES.length - 1} of ${PROVIDER_CAPABILITIES.length} services`);
+    assert.equal(await focusedText(page), 'Starting theater mode');
+    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 2 of 4');
+    // The user's own theater key names the choices.
+    assert.equal(await page.getByRole('radio', { name: 'Only when I press T' }).isChecked(), true);
+    assert.equal(await page.locator('#setup-skip-countdown').isHidden(), true);
+    await page.getByRole('radio', { name: 'Only when I press T' }).focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    assert.equal(await page.getByRole('radio', { name: 'Start automatically' }).isChecked(), true);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'setup-skip-countdown');
+    await page.keyboard.press('Space');
     assert.deepEqual(await blockingViolations(page), []);
-    await page.getByRole('button', { name: 'Back' }).click();
-    assert.equal(await focusedText(page), 'Services with extra features');
+
+    await page.getByRole('button', { name: 'Next' }).click();
+    assert.equal(await focusedText(page), 'Keys and sound');
+    assert.match(await page.locator('.setup-step-desc').textContent() ?? '', /T and F also work/);
+    assert.equal(await page.getByRole('switch', { name: 'Hold for 2x speed' }).isChecked(), true);
+    assert.equal(await page.getByRole('switch', { name: 'Volume Boost' }).isChecked(), false);
+    await page.getByRole('switch', { name: 'Volume Boost' }).focus();
+    await page.keyboard.press('Space');
+    assert.deepEqual(await blockingViolations(page), []);
+
+    await page.getByRole('button', { name: 'Next' }).click();
+    assert.equal(await focusedText(page), 'You’re all set');
+    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 4 of 4');
+    assert.deepEqual(await page.locator('.setup-summary dd').allTextContents(), [
+      `${PROVIDER_CAPABILITIES.length - 1} of ${PROVIDER_CAPABILITIES.length} services`, 'Automatically, without a countdown', 'On', 'On'
+    ]);
+    assert.deepEqual(await blockingViolations(page), []);
+    for (const heading of ['Keys and sound', 'Starting theater mode', 'Services with extra features']) {
+      await page.getByRole('button', { name: 'Back' }).click();
+      assert.equal(await focusedText(page), heading);
+    }
     // Answers survive moving between steps.
     assert.equal(await page.getByRole('radio', { name: 'Choose services' }).isChecked(), true);
     assert.equal(await page.locator('#setup-services [role="switch"]:checked').count(), PROVIDER_CAPABILITIES.length - 1);
+    await page.getByRole('button', { name: 'Next' }).click();
+    assert.equal(await page.getByRole('switch', { name: 'Skip countdown' }).isChecked(), true);
     assert.deepEqual(await writes(page), [], 'nothing is written before Finish');
 
-    await page.getByRole('button', { name: 'Next' }).click();
+    await toSummary(page);
     await page.getByRole('button', { name: 'Finish' }).click();
     await page.locator('#features').waitFor();
     assert.equal(new URL(page.url()).hash, '#features');
@@ -165,22 +198,26 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     assert.equal(await page.getByRole('tab', { name: 'Features' }).getAttribute('aria-selected'), 'true');
     const saved = await writes(page);
     assert.equal(saved.length, 2, 'one sync write, then the device state');
-    const [[area, flags], [stateArea, state]] = saved;
+    const [[area, settings], [stateArea, state]] = saved;
     assert.equal(area, 'sync');
-    assert.deepEqual(Object.keys(flags).sort(), mediaProviderFlagStorageKeys().sort());
-    assert.equal(Object.values(flags).filter(value => value === false).length, 1);
     const off = PROVIDER_CAPABILITIES.find(provider => provider.name === first)!;
-    assert.equal(flags[`${off.id}IntegrationEnabled`], false);
+    assert.deepEqual(settings, {
+      ...Object.fromEntries(mediaProviderFlagStorageKeys().map(key => [key, key !== `${off.id}IntegrationEnabled`])),
+      autoEnterTheater: true, autoTheaterSkipCountdown: true, volumeBoostEnabled: true
+    });
     assert.deepEqual([stateArea, state], ['local', { firstRunSetup: { status: 'completed', version: '2.1.0' } }]);
   });
 
-  it('writes no settings for the preselected answers or for Skip, and Skip leaves without asking', async t => {
+  it('writes only the launcher offer for the preselected answers, nothing for Skip, and Skip leaves without asking', async t => {
     const page = await newPage(t);
     await open(page);
-    await page.getByRole('button', { name: 'Next' }).click();
+    await toSummary(page);
+    assert.deepEqual(await page.locator('.setup-summary dd').allTextContents(), ['All supported services', 'Only when you press T', 'On', 'Off']);
     await page.getByRole('button', { name: 'Finish' }).click();
     await page.locator('#features').waitFor();
-    assert.deepEqual(await writes(page), [['local', { firstRunSetup: { status: 'completed', version: '2.1.0' } }]]);
+    assert.deepEqual(await writes(page), [
+      ['sync', { videoActivatorPromptAnswer: false }], ['local', { firstRunSetup: { status: 'completed', version: '2.1.0' } }]
+    ]);
 
     const skipped = await newPage(t);
     await open(skipped);
@@ -195,17 +232,26 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     assert.equal(await unload(), false);
   });
 
-  it('opens the summary sections through Finish', async t => {
+  it('keeps "Start automatically" unavailable, and says why, when no chosen service supports it', async t => {
     const page = await newPage(t);
     await open(page);
     await page.getByRole('radio', { name: 'None' }).check();
     await page.getByRole('button', { name: 'Next' }).click();
-    assert.equal(await page.locator('.setup-summary dd').textContent(), 'None');
+    const auto = page.getByRole('radio', { name: 'Start automatically' });
+    assert.equal(await auto.isDisabled(), true);
+    assert.match(await page.evaluate(() => document.querySelector('input[value="auto"]')!.getAttribute('aria-describedby')!), /setup-choice-auto-unavailable/);
+    assert.equal(await page.locator('#setup-choice-auto-unavailable').textContent(), 'Turn on a service that supports it in the first step to use this.');
+    assert.equal(await page.getByRole('radio', { name: 'Only when I press T' }).isChecked(), true);
+    assert.deepEqual(await blockingViolations(page), []);
+    await page.getByRole('radio', { name: 'T, or a button on videos' }).check();
+    await toSummary(page);
+    assert.deepEqual(await page.locator('.setup-summary dd').allTextContents(), ['None', 'T or a button on videos', 'On', 'Off']);
     await page.getByRole('group', { name: 'Or finish and open:' }).getByRole('button', { name: 'Keyboard Shortcuts' }).click();
     await page.locator('#shortcuts').waitFor();
-    const [[, flags]] = await writes(page);
-    assert.equal(Object.keys(flags).length, MEDIA_PROVIDER_IDS.length);
-    assert.ok(Object.values(flags).every(value => value === false));
+    const [[, settings]] = await writes(page);
+    assert.ok(mediaProviderFlagStorageKeys().every(key => settings[key] === false));
+    assert.equal(Object.keys(settings).length, MEDIA_PROVIDER_IDS.length + 2);
+    assert.deepEqual([settings.videoActivator, settings.videoActivatorPromptAnswer], [true, true]);
   });
 
   it('gives way to settings that sync delivers after the install, and never overwrites them', async t => {
@@ -226,7 +272,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     await open(quiet);
     await quiet.getByRole('radio', { name: 'None' }).check();
     await quiet.evaluate(() => (window as unknown as Harness).external({ language: 'pl' }, true));
-    await quiet.getByRole('button', { name: 'Next' }).click();
+    await toSummary(quiet);
     await quiet.getByRole('button', { name: 'Finish' }).click();
     await quiet.locator('.setup-notice').waitFor();
     assert.deepEqual(await writes(quiet), [['local', { firstRunSetup: { status: 'profile', version: '2.1.0' } }]]);
@@ -270,11 +316,12 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     assert.equal(await page.locator('#settings-tabs').isHidden(), true);
     assert.equal(await page.getByRole('radio', { name: 'Choose services' }).isChecked(), true);
     assert.equal(await page.evaluate(() => history.length), entries, 'the same tab and history entry');
-    await page.getByRole('button', { name: 'Next' }).click();
+    await toSummary(page);
     await page.getByRole('button', { name: 'Finish' }).click();
     await page.locator('#features').waitFor();
     assert.deepEqual((await writes(page)).at(-1), ['local', { firstRunSetup: { status: 'completed', version: '2.1.0' } }]);
-    assert.equal((await writes(page)).some(([area]) => area === 'sync'), false, 'unchanged answers write no settings');
+    // Unchanged answers write no settings beyond answering the launcher offer.
+    assert.deepEqual((await writes(page)).filter(([area]) => area === 'sync'), [['sync', { videoActivatorPromptAnswer: false }]]);
   });
 
   it('lays out right to left in Arabic and stays accessible', async t => {
@@ -282,12 +329,21 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     await open(page);
     await page.evaluate(() => (window as unknown as Harness).setLanguage('ar'));
     assert.equal(await page.evaluate(() => document.documentElement.dir), 'rtl');
-    assert.equal(await page.locator('.setup-progress').textContent(), catalogs.ar.setupProgress.message.replace('$1', '1').replace('$2', '2'));
+    assert.equal(await page.locator('.setup-progress').textContent(), catalogs.ar.setupProgress.message.replace('$1', '1').replace('$2', '4'));
     // Skip sits at the inline start, the step buttons at the inline end: mirrored in right to left.
     const skip = await page.locator('.setup-skip').boundingBox();
     const next = await page.locator('.setup-actions .te-dialog-btn-primary').boundingBox();
     assert.ok(skip && next && skip.x > next.x, 'Skip is on the right in right-to-left');
     await page.getByRole('radio', { name: catalogs.ar.setupServicesChoose.message }).check();
+    assert.deepEqual(await blockingViolations(page), []);
+    // The nested countdown switch indents from the inline start: the right in right to left.
+    await page.locator('.setup-actions .te-dialog-btn-primary').click();
+    await page.getByRole('radio', { name: catalogs.ar.setupStartAuto.message }).check();
+    const choice = await page.locator('.setup-choice:has(input[value="auto"])').boundingBox();
+    const nested = await page.locator('.setup-nested').boundingBox();
+    assert.ok(choice && nested && nested.x + nested.width < choice.x + choice.width, 'indented from the right');
+    assert.deepEqual(await blockingViolations(page), []);
+    await page.locator('.setup-actions .te-dialog-btn-primary').click();
     assert.deepEqual(await blockingViolations(page), []);
   });
 });

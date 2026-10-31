@@ -1,12 +1,11 @@
 import {
-  hasSettingsProfile, resolveSetupState, SETUP_HASH, SETUP_STATE_KEY, shownSetupSteps, type SetupState, type SetupStepId
+  hasSettingsProfile, resolveSetupState, SETUP_HASH, SETUP_STATE_KEY, shownSetupSteps, type SetupState
 } from '../src/first-run-setup';
 import { t } from '../src/i18n';
 import { languageRuntime } from '../src/i18n-runtime';
-import { MEDIA_PROVIDER_IDS } from '../src/media-features/provider-flags';
-import { PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
 
-import { answersFromSettings, serviceFlags, setupSettingsPatch, type ServicesChoice, type SetupAnswers } from './setup-answers';
+import { answersFromSettings, setupSettingsPatch, type SetupAnswers } from './setup-answers';
+import { element, STEP_TITLES, STEP_VIEWS, type StepView } from './setup-steps';
 import { setupMessage as copy } from './setup-wizard-copy';
 
 /** The storage the setup reads and writes; Settings passes `chromeSetupStorage()`, stories and tests a fake. */
@@ -38,148 +37,6 @@ export interface SetupWizard {
   ready: Promise<void>;
   dispose(): void;
 }
-
-interface StepView { element: HTMLElement; localize(): void }
-type StepContext = {
-  doc: Document;
-  answers: SetupAnswers;
-  finish(section: string): void;
-};
-
-const SERVICE_CHOICES: readonly ServicesChoice[] = ['all', 'choose', 'none'];
-const CHOICE_KEYS: Record<ServicesChoice, string> = { all: 'setupServicesAll', choose: 'setupServicesChoose', none: 'setupServicesNone' };
-
-function element<K extends keyof HTMLElementTagNameMap>(doc: Document, tag: K, className?: string): HTMLElementTagNameMap[K] {
-  const node = doc.createElement(tag);
-  if (className) node.className = className;
-  return node;
-}
-
-function servicesStep({ doc, answers }: StepContext): StepView {
-  const root = element(doc, 'div', 'setup-step-body');
-  const description = element(doc, 'p', 'setup-step-desc');
-  const group = element(doc, 'div', 'setup-choices');
-  group.setAttribute('role', 'radiogroup');
-  group.setAttribute('aria-labelledby', 'setup-step-title');
-  const list = element(doc, 'div', 'setup-services');
-  list.id = 'setup-services';
-  list.setAttribute('role', 'group');
-  list.setAttribute('aria-labelledby', 'setup-choice-choose-name');
-  const footer = element(doc, 'p', 'section-desc-footer');
-  const radios = SERVICE_CHOICES.map(choice => {
-    const label = element(doc, 'label', 'setup-choice');
-    const input = element(doc, 'input');
-    input.type = 'radio';
-    input.name = 'setup-services';
-    input.value = choice;
-    input.checked = answers.services === choice;
-    const text = element(doc, 'span', 'setup-choice-copy');
-    const name = element(doc, 'span', 'setup-choice-name');
-    name.id = `setup-choice-${choice}-name`;
-    const desc = element(doc, 'span', 'setup-choice-desc');
-    desc.id = `setup-choice-${choice}-desc`;
-    input.setAttribute('aria-labelledby', name.id);
-    input.setAttribute('aria-describedby', desc.id);
-    text.append(name, desc);
-    label.append(input, text);
-    input.addEventListener('change', () => {
-      if (!input.checked) return;
-      answers.services = choice;
-      list.hidden = choice !== 'choose';
-    });
-    group.append(label);
-    return { choice, name, desc };
-  });
-  list.hidden = answers.services !== 'choose';
-  // The services and names of the Rich Theater Experience cards.
-  const switches = PROVIDER_CAPABILITIES.map(provider => {
-    const row = element(doc, 'label', 'setup-service');
-    const name = element(doc, 'bdi', 'setup-service-name');
-    name.id = `setup-service-${provider.id}`;
-    name.textContent = provider.name;
-    const control = element(doc, 'span', 'toggle-switch');
-    const input = element(doc, 'input');
-    input.type = 'checkbox';
-    input.role = 'switch';
-    input.checked = answers.chosen[provider.id];
-    input.setAttribute('aria-labelledby', name.id);
-    const slider = element(doc, 'span', 'toggle-slider');
-    slider.setAttribute('aria-hidden', 'true');
-    control.append(input, slider);
-    row.append(name, control);
-    input.addEventListener('change', () => {
-      answers.chosen = { ...answers.chosen, [provider.id]: input.checked };
-    });
-    return { provider, row };
-  });
-  // The switches follow the choices, so Tab reaches them right after the selected "Choose services".
-  root.append(description, group, list, footer);
-  return {
-    element: root,
-    localize() {
-      description.textContent = copy('setupServicesDescription');
-      footer.textContent = copy('setupServicesFooter');
-      for (const { choice, name, desc } of radios) {
-        name.textContent = copy(CHOICE_KEYS[choice]);
-        desc.textContent = copy(`${CHOICE_KEYS[choice]}Description`);
-      }
-      // Sorted like the Rich Theater Experience cards, in the current language.
-      const locale = languageRuntime.language === 'automatic' ? t('@@ui_locale') : languageRuntime.language;
-      const collator = new Intl.Collator(locale.startsWith('@@') ? undefined : locale.replace('_', '-'));
-      const focused = doc.activeElement;
-      [...switches].sort((a, b) => collator.compare(a.provider.name, b.provider.name)).forEach(({ row }, position) => {
-        if (list.children[position] !== row) list.insertBefore(row, list.children[position] ?? null);
-      });
-      if (focused instanceof HTMLElement && list.contains(focused) && doc.activeElement !== focused) focused.focus({ preventScroll: true });
-    }
-  };
-}
-
-function servicesSummary(answers: SetupAnswers): string {
-  const flags = serviceFlags(answers);
-  const on = MEDIA_PROVIDER_IDS.filter(id => flags[id]).length;
-  if (on === MEDIA_PROVIDER_IDS.length) return copy('setupServicesAll');
-  if (on === 0) return copy('setupServicesNone');
-  return copy('setupSummaryServicesSome', [String(on), String(MEDIA_PROVIDER_IDS.length)]);
-}
-
-function summaryStep({ doc, answers, finish }: StepContext): StepView {
-  const root = element(doc, 'div', 'setup-step-body');
-  const description = element(doc, 'p', 'setup-step-desc');
-  const list = element(doc, 'dl', 'setup-summary');
-  const row = element(doc, 'div', 'setup-summary-row');
-  const term = element(doc, 'dt');
-  const value = element(doc, 'dd');
-  row.append(term, value);
-  list.append(row);
-  const more = element(doc, 'div', 'setup-summary-more');
-  more.setAttribute('role', 'group');
-  more.setAttribute('aria-labelledby', 'setup-summary-more-label');
-  const moreLabel = element(doc, 'span', 'setup-summary-more-label');
-  moreLabel.id = 'setup-summary-more-label';
-  const sections = [['exclusions', 'websiteExclusionsTitle'], ['shortcuts', 'keyboardShortcutsTitle']] as const;
-  const links = sections.map(([section, key]) => {
-    const button = element(doc, 'button', 'secondary-btn');
-    button.type = 'button';
-    button.addEventListener('click', () => finish(section));
-    return { button, key };
-  });
-  more.append(moreLabel, ...links.map(({ button }) => button));
-  root.append(description, list, more);
-  return {
-    element: root,
-    localize() {
-      description.textContent = copy('setupSummaryDescription');
-      term.textContent = copy('setupServicesTitle');
-      value.textContent = servicesSummary(answers);
-      moreLabel.textContent = copy('setupSummaryFinishAndOpen');
-      for (const { button, key } of links) button.textContent = t(key);
-    }
-  };
-}
-
-const STEP_VIEWS: { [Id in SetupStepId]?: (context: StepContext) => StepView } = { services: servicesStep, summary: summaryStep };
-const STEP_TITLES: { [Id in SetupStepId]?: string } = { services: 'setupServicesTitle', summary: 'setupSummaryTitle' };
 
 /** The registry's ready steps with their views; a ready step without one is a programming error. */
 function setupStepViews() {
@@ -270,6 +127,7 @@ export function mountSetupWizard(root: HTMLElement, options: SetupWizardOptions)
   let index = 0;
   let answers: SetupAnswers | undefined;
   let initial = '';
+  let stored: Record<string, unknown> = {};
   let current: StepView | undefined;
   let stopSync = () => {};
 
@@ -305,7 +163,7 @@ export function mountSetupWizard(root: HTMLElement, options: SetupWizardOptions)
 
   function show(target: number, focus: boolean): void {
     index = target;
-    current = steps[index].view({ doc, answers: answers!, finish: section => { void finish(section); } });
+    current = steps[index].view({ doc, answers: answers!, stored, finish: section => { void finish(section); } });
     shell.step.replaceChildren(stepTitle, current.element);
     welcome.hidden = index !== 0;
     back.hidden = index === 0;
@@ -369,6 +227,7 @@ export function mountSetupWizard(root: HTMLElement, options: SetupWizardOptions)
     // Someone asked for the setup: a synced profile is what they want to change, not a reason to stop.
     pending = !options.start && resolveSetupState(state)?.status === 'pending';
     if (pending && hasSettingsProfile(sync)) return await giveWay();
+    stored = sync;
     answers = structuredClone(options.start?.initial) ?? answersFromSettings(sync);
     initial = JSON.stringify(answers);
     // Chrome can deliver synced settings after the install; they replace the setup, never the reverse.

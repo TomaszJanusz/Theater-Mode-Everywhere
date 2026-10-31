@@ -6,9 +6,9 @@ import { MAX_CAPTION_BYTES } from '../platform/media-url-policy';
 import { bundleModules } from '../test-utils/player-boot';
 
 const bundle = bundleModules(["import './entries/background';"], 'BackgroundTest');
-/** The background once every setup step ships: the registry is the only switch for the install-time setup. */
-const completeSetup = bundleModules([
-  "import { SETUP_STEPS } from './first-run-setup'; for (const step of SETUP_STEPS) step.ready = true;", "import './entries/background';"
+/** The background with a setup step not ready: the registry is the only switch for the install-time setup. */
+const partialSetup = bundleModules([
+  "import { SETUP_STEPS } from './first-run-setup'; SETUP_STEPS[1].ready = false;", "import './entries/background';"
 ], 'BackgroundSetupTest');
 const CURRENT_VERSION = '2.1.0';
 const ignore = { addListener() {} };
@@ -142,7 +142,8 @@ it('announces an update to a newer minor or major version with a NEW badge, and 
     await silent.installed(details);
     assert.equal('pendingUpdate' in silent.local, false, `${version} after ${JSON.stringify(details)}`);
     assert.equal(silent.badge.text, '');
-    assert.deepEqual(silent.opened, []);
+    // An install opens the first-run setup instead (covered below), and writes the default shortcuts.
+    assert.deepEqual(silent.opened, details.reason === 'install' ? ['chrome-extension://extension/options/options.html#setup'] : []);
     if (details.reason === 'install') assert.equal((silent.sync.shortcuts as { toggle: string }).toggle, 'T');
   }
 });
@@ -311,8 +312,8 @@ it('opens one Settings tab for rapid clicks and falls back to a new tab when the
 const SETUP_URL = 'chrome-extension://extension/options/options.html#setup';
 const plain = (value: unknown) => JSON.parse(JSON.stringify(value));
 
-it('on a fresh install opens one Settings tab at the setup and starts AutoTheater off, once the setup is complete', async () => {
-  const fresh = profile('2.1.0', {}, {}, completeSetup);
+it('on a fresh install opens one Settings tab at the setup and starts AutoTheater off', async () => {
+  const fresh = profile('2.1.0');
   await fresh.started;
   await fresh.installed({ reason: 'install' });
   assert.deepEqual(fresh.opened, [SETUP_URL]);
@@ -327,13 +328,13 @@ it('on a fresh install opens one Settings tab at the setup and starts AutoTheate
 });
 
 it('never opens the setup for a synced profile or an update, and leaves their AutoTheater alone', async () => {
-  const synced = profile('2.1.0', {}, { blacklist: ['example.com'], language: 'pl' }, completeSetup);
+  const synced = profile('2.1.0', {}, { blacklist: ['example.com'], language: 'pl' });
   await synced.started;
   await synced.installed({ reason: 'install' });
   assert.deepEqual(synced.opened, []);
   assert.equal('autoEnterTheater' in synced.sync, false);
   assert.deepEqual(plain(synced.local.firstRunSetup), { status: 'profile', version: '2.1.0' });
-  const update = profile('2.1.0', {}, { blacklist: [] }, completeSetup);
+  const update = profile('2.1.0', {}, { blacklist: [] });
   await update.started;
   await update.installed({ reason: 'update', previousVersion: '2.0.8' });
   assert.deepEqual(update.opened, []);
@@ -341,8 +342,8 @@ it('never opens the setup for a synced profile or an update, and leaves their Au
   assert.equal('firstRunSetup' in update.local, false);
 });
 
-it('keeps today\'s install while a setup step is still pending', async () => {
-  const fresh = profile('2.1.0');
+it('keeps the plain install while a setup step is not ready', async () => {
+  const fresh = profile('2.1.0', {}, {}, partialSetup);
   await fresh.started;
   await fresh.installed({ reason: 'install' });
   assert.deepEqual(fresh.opened, []);

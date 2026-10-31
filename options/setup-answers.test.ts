@@ -2,48 +2,87 @@ import assert from 'node:assert/strict';
 import { it } from 'node:test';
 
 import { AUTO_THEATER_STORAGE_KEY } from '../src/auto-theater-preferences';
-import { INSTALL_SHORTCUTS } from '../src/first-run-setup';
+import { FRESH_INSTALL_SETTINGS, INSTALL_SHORTCUTS } from '../src/first-run-setup';
 import {
   MEDIA_PROVIDER_FLAG_KEYS, MEDIA_PROVIDER_IDS, mediaProviderFlagStorageKeys, resolveMediaProviderFlags
 } from '../src/media-features/provider-flags';
+import { PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
 
-import { answersFromSettings, defaultSetupAnswers, setupSettingsPatch } from './setup-answers';
+import { answersFromSettings, autoTheaterAvailable, defaultSetupAnswers, effectiveStart, setupSettingsPatch, type SetupAnswers } from './setup-answers';
 
 /** What sync holds right after a fresh install wrote its defaults. */
-const FRESH = { shortcuts: { ...INSTALL_SHORTCUTS }, blacklist: [], [AUTO_THEATER_STORAGE_KEY]: false };
+const FRESH = { shortcuts: { ...INSTALL_SHORTCUTS }, blacklist: [], ...FRESH_INSTALL_SETTINGS };
+const answers = (change: Partial<SetupAnswers> = {}): SetupAnswers => ({ ...defaultSetupAnswers(), ...change });
+const PROMPT = { videoActivatorPromptAnswer: false };
 
-it('writes nothing for answers that match the stored settings, and every service flag for any service change', () => {
-  for (const stored of [{}, FRESH]) {
-    const answers = answersFromSettings(stored);
-    assert.equal(answers.services, 'all');
-    assert.deepEqual(setupSettingsPatch(answers, stored), {}, 'All on a fresh profile');
-    assert.deepEqual(setupSettingsPatch({ ...answers, services: 'choose' }, stored), {}, 'Choose with every switch on');
-    const none = setupSettingsPatch({ ...answers, services: 'none' }, stored);
-    assert.deepEqual(Object.keys(none).sort(), mediaProviderFlagStorageKeys().sort());
-    assert.ok(Object.values(none).every(value => value === false));
-    assert.ok(MEDIA_PROVIDER_IDS.every(id => !resolveMediaProviderFlags(none)[id]));
-  }
-  // Turning off exactly the five legacy services must not read back as the legacy "everything off".
-  const chosen = { ...answersFromSettings({}).chosen, youtube: false, vimeo: false, patreon: false, twitch: false, disney: false };
-  const patch = setupSettingsPatch({ services: 'choose', chosen }, {});
-  assert.equal(Object.keys(patch).length, MEDIA_PROVIDER_IDS.length);
-  assert.deepEqual(resolveMediaProviderFlags(patch), chosen);
-  // The switches behind "Choose services" do not leak into "All" or "None".
-  assert.deepEqual(setupSettingsPatch({ services: 'all', chosen }, {}), {});
+it('preselects a fresh install: every service, the theater key only, hold for 2x on and no volume boost', () => {
+  assert.deepEqual({ ...defaultSetupAnswers(), chosen: undefined }, {
+    services: 'all', chosen: undefined, start: 'key', skipCountdown: false, seekHold: true, volumeBoost: false
+  });
+  assert.deepEqual(answersFromSettings(FRESH), defaultSetupAnswers());
+  // Finishing the preselection writes only the launcher offer's answer, so it does not come back later.
+  assert.deepEqual(setupSettingsPatch(defaultSetupAnswers(), FRESH), PROMPT);
 });
 
-it('describes saved service flags as the matching answer', () => {
+it('writes nothing for unchanged services, and every service flag for any service change', () => {
+  assert.deepEqual(setupSettingsPatch(answers({ services: 'choose' }), FRESH), PROMPT, 'Choose with every switch on');
+  const none = setupSettingsPatch(answers({ services: 'none' }), FRESH);
+  assert.deepEqual(Object.keys(none).filter(key => key.endsWith('IntegrationEnabled')).sort(), mediaProviderFlagStorageKeys().sort());
+  assert.ok(MEDIA_PROVIDER_IDS.every(id => !resolveMediaProviderFlags(none)[id]));
+  // Turning off exactly the five legacy services must not read back as the legacy "everything off".
+  const chosen = { ...defaultSetupAnswers().chosen, youtube: false, vimeo: false, patreon: false, twitch: false, disney: false };
+  const patch = setupSettingsPatch(answers({ services: 'choose', chosen }), FRESH);
+  assert.deepEqual(resolveMediaProviderFlags(patch), chosen);
+  // The switches behind "Choose services" do not leak into "All".
+  assert.deepEqual(setupSettingsPatch(answers({ chosen }), FRESH), PROMPT);
+});
+
+it('maps how theater mode starts onto AutoTheater, the launcher and its offer', () => {
+  assert.deepEqual(setupSettingsPatch(answers({ start: 'button' }), FRESH), { videoActivator: true, videoActivatorPromptAnswer: true });
+  assert.deepEqual(setupSettingsPatch(answers({ start: 'auto' }), FRESH), { [AUTO_THEATER_STORAGE_KEY]: true });
+  assert.deepEqual(setupSettingsPatch(answers({ start: 'auto', skipCountdown: true }), FRESH),
+    { [AUTO_THEATER_STORAGE_KEY]: true, autoTheaterSkipCountdown: true });
+  // "Skip countdown" belongs to "Start automatically"; another start leaves it as saved.
+  assert.deepEqual(setupSettingsPatch(answers({ skipCountdown: true }), FRESH), PROMPT);
+  // An offer already answered stays answered.
+  assert.deepEqual(setupSettingsPatch(answers(), { ...FRESH, videoActivatorPromptAnswer: true }), {});
+  // A profile with AutoTheater (the code default: no key) and the launcher keeps both when the start stays automatic.
+  const both = { videoActivator: true };
+  assert.equal(answersFromSettings(both).start, 'auto');
+  assert.deepEqual(setupSettingsPatch(answersFromSettings(both), both), {});
+  // Moving such a profile to the key alone turns both off.
+  assert.deepEqual(setupSettingsPatch({ ...answersFromSettings(both), start: 'key' }, both), { [AUTO_THEATER_STORAGE_KEY]: false, videoActivator: false, ...PROMPT });
+});
+
+it('offers AutoTheater only through a chosen service that supports it and has its own switch on', () => {
+  const capable = PROVIDER_CAPABILITIES.filter(provider => provider.capabilities.autoTheater.status !== 'no');
+  const incapable = PROVIDER_CAPABILITIES.filter(provider => provider.capabilities.autoTheater.status === 'no');
+  assert.ok(capable.length > 0 && incapable.length > 0, 'the catalog has both kinds');
+  const only = (ids: string[]) => Object.fromEntries(MEDIA_PROVIDER_IDS.map(id => [id, ids.includes(id)])) as SetupAnswers['chosen'];
+  assert.equal(autoTheaterAvailable(answers(), FRESH), true);
+  assert.equal(autoTheaterAvailable(answers({ services: 'none' }), FRESH), false);
+  assert.equal(autoTheaterAvailable(answers({ services: 'choose', chosen: only(incapable.map(provider => provider.id)) }), FRESH), false);
+  const one = answers({ services: 'choose', chosen: only([capable[0].id]), start: 'auto' });
+  assert.equal(autoTheaterAvailable(one, FRESH), true);
+  // That service's own AutoTheater switch (Settings → Features) is off: nothing could start it.
+  const off = { ...FRESH, providerSettings: { [capable[0].id]: { autoTheater: false } } };
+  assert.equal(autoTheaterAvailable(one, off), false);
+  // "Start automatically" then applies as the key alone, and writes AutoTheater off rather than on.
+  assert.equal(effectiveStart(one, off), 'key');
+  assert.equal(setupSettingsPatch(one, off)[AUTO_THEATER_STORAGE_KEY], undefined, 'already off on a fresh install');
+  assert.equal(setupSettingsPatch(answers({ services: 'none', start: 'auto' }), {})[AUTO_THEATER_STORAGE_KEY], false);
+});
+
+it('maps hold for 2x and volume boost, and describes saved values as the matching answers', () => {
+  assert.deepEqual(setupSettingsPatch(answers({ seekHold: false, volumeBoost: true }), FRESH),
+    { ...PROMPT, seekForwardHold: false, volumeBoostEnabled: true });
+  const saved = { ...FRESH, seekForwardHold: false, volumeBoostEnabled: true, autoTheaterSkipCountdown: true, [MEDIA_PROVIDER_FLAG_KEYS.netflix]: false };
+  const described = answersFromSettings(saved);
+  assert.deepEqual([described.services, described.chosen.netflix, described.seekHold, described.volumeBoost, described.skipCountdown],
+    ['choose', false, false, true, true]);
+  assert.deepEqual(setupSettingsPatch(described, saved), PROMPT);
   const off = Object.fromEntries(MEDIA_PROVIDER_IDS.map(id => [MEDIA_PROVIDER_FLAG_KEYS[id], false]));
   assert.equal(answersFromSettings(off).services, 'none');
   // "None" keeps the switches on, so moving to "Choose services" starts from everything.
   assert.ok(MEDIA_PROVIDER_IDS.every(id => answersFromSettings(off).chosen[id]));
-  const some = answersFromSettings({ [MEDIA_PROVIDER_FLAG_KEYS.netflix]: false });
-  assert.equal(some.services, 'choose');
-  assert.equal(some.chosen.netflix, false);
-  assert.deepEqual(setupSettingsPatch(some, { [MEDIA_PROVIDER_FLAG_KEYS.netflix]: false }), {});
-});
-
-it('preselects every service for a reset profile', () => {
-  assert.deepEqual(defaultSetupAnswers(), answersFromSettings({}));
-  assert.equal(defaultSetupAnswers().services, 'all');
 });

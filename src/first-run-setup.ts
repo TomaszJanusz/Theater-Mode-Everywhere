@@ -14,8 +14,8 @@ export const SETUP_HASH = 'setup';
  */
 export const SETUP_STEPS = [
   { id: 'services', ready: true },
-  { id: 'start', ready: false },
-  { id: 'keys', ready: false },
+  { id: 'start', ready: true },
+  { id: 'keys', ready: true },
   { id: 'summary', ready: true }
 ] as const satisfies readonly { id: string; ready: boolean }[];
 export type SetupStepId = (typeof SETUP_STEPS)[number]['id'];

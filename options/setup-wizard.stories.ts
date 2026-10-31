@@ -29,7 +29,7 @@ export const Services: Story = {
   render: () => renderSetup({ state: { status: 'pending', version: '2.1.0' } }),
   play: async () => {
     await stage().ready;
-    await expect(query('.setup-progress')?.textContent).toBe(setupMessage('setupProgress', ['1', '2']));
+    await expect(query('.setup-progress')?.textContent).toBe(setupMessage('setupProgress', ['1', '4']));
     await expect(query<HTMLInputElement>('input[value="all"]')?.checked).toBe(true);
     await expect(query('#setup-services')?.hasAttribute('hidden')).toBe(true);
     await expect(query('.setup-actions button[hidden]')?.textContent).toBe(setupMessage('setupBack'));
@@ -47,15 +47,60 @@ export const ChooseServices: Story = {
   }
 };
 
-// The last step after choosing "None": its heading takes focus, nothing is saved before Finish.
-export const Summary: Story = {
-  render: () => renderSetup({ state: { status: 'pending', version: '2.1.0' } }),
+/** Next until step `step` (1-based); each new step takes focus. */
+const toStep = (step: number) => {
+  for (let current = 1; current < step; current++) button('setupNext').click();
+};
+const pending = { state: { status: 'pending', version: '2.1.0' } } as const;
+
+// Step 2 with "Start automatically" chosen: its "Skip countdown" switch appears under it.
+export const StartAutomatically: Story = {
+  render: () => renderSetup(pending),
+  play: async () => {
+    await stage().ready;
+    toStep(2);
+    await expect(stage().doc.activeElement?.textContent).toBe(setupMessage('setupStartTitle'));
+    await expect(query<HTMLInputElement>('input[value="key"]')?.checked).toBe(true);
+    query<HTMLInputElement>('input[value="auto"]')!.click();
+    await expect(query('#setup-skip-countdown')?.closest('[hidden]')).toBe(null);
+  }
+};
+
+// Step 2 after choosing "None": "Start automatically" stays visible, unavailable, and says why.
+export const StartUnavailable: Story = {
+  render: () => renderSetup(pending),
   play: async () => {
     await stage().ready;
     query<HTMLInputElement>('input[value="none"]')!.click();
-    button('setupNext').click();
+    toStep(2);
+    await expect(query<HTMLInputElement>('input[value="auto"]')?.disabled).toBe(true);
+    await expect(query('#setup-choice-auto-unavailable')?.textContent).toBe(setupMessage('setupStartAutoUnavailable'));
+  }
+};
+
+// Step 3: hold for 2x on and volume boost off, the fresh-install defaults.
+export const KeysAndSound: Story = {
+  render: () => renderSetup(pending),
+  play: async () => {
+    await stage().ready;
+    toStep(3);
+    await expect(stage().doc.activeElement?.textContent).toBe(setupMessage('setupKeysTitle'));
+    await expect(query<HTMLInputElement>('#setup-seek-hold')?.checked).toBe(true);
+    await expect(query<HTMLInputElement>('#setup-volume-boost')?.checked).toBe(false);
+  }
+};
+
+// The last step after choosing "None": its heading takes focus, nothing is saved before Finish.
+export const Summary: Story = {
+  render: () => renderSetup(pending),
+  play: async () => {
+    await stage().ready;
+    query<HTMLInputElement>('input[value="none"]')!.click();
+    toStep(4);
     await expect(stage().doc.activeElement?.textContent).toBe(setupMessage('setupSummaryTitle'));
-    await expect(query('.setup-summary dd')?.textContent).toBe(setupMessage('setupServicesNone'));
+    await expect([...stage().doc.querySelectorAll('.setup-summary dd')].map(value => value.textContent)).toEqual([
+      setupMessage('setupServicesNone'), setupMessage('setupSummaryStartKey', 'T'), setupMessage('setupSummaryOn'), setupMessage('setupSummaryOff')
+    ]);
     await expect(button('setupFinish')).toBeTruthy();
     await expect(stage().saved).toEqual([]);
   }

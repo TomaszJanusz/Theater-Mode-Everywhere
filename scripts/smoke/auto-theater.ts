@@ -8,7 +8,8 @@ import { shouldOfferVideoActivator } from '../../src/ui/video-activator-settings
 import { waitForPlayer, theaterEntered, ROOT, timeScenario } from './helpers';
 import { declineVideoActivatorPrompt } from './helpers';
 export async function assertAutoTheater(page: Page, context: BrowserContext): Promise<void> {
-  return timeScenario('assertAutoTheater', { syncWrites: 7 }, async () => {
+  // 8: removing a fresh install's stored AutoTheater off (D1) to reach the code default is a change of its own.
+  return timeScenario('assertAutoTheater', { syncWrites: 8 }, async () => {
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     const fixture = readFileSync(path.join(ROOT, 'test/fixtures/youtube-watch.html'), 'utf8');
     await context.route('https://www.youtube.com/**', route => route.fulfill({ contentType: 'text/html', body: fixture }));
@@ -32,7 +33,8 @@ export async function assertAutoTheater(page: Page, context: BrowserContext): Pr
     const waitEntered = () => page.waitForFunction(() => document.documentElement.classList.contains('theater-everywhere-html-active'));
     const waitIdle = () => page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
     try {
-      // A fresh profile has no saved key: AutoTheater defaults to on in the options and the page.
+      // A profile with no saved key, as every install from before the first-run setup has: AutoTheater defaults to on in the
+      // options and the page. A fresh install stores it off (D1); closeInstallSetup and assertFreshInstall prove that.
       await worker.evaluate(() => chrome.storage.sync.remove('autoEnterTheater'));
       const defaults = await context.newPage();
       try {
