@@ -83,8 +83,6 @@ A service preference covers that provider across its hosts; exclusions retain th
 domain scope. Disabling a service cancels pending entry and consumes its current visit without
 exiting an active theater session. Re-enabling waits for a new watch identity. A visit records
 entry so exiting or changing preferences cannot reenter the same content. New content identities reset it.
-
-
 Entry is announced first: once the provider confirms the main video's identity and
 playback has been requested (not paused or ended, no media error, a source loading) —
 even before the stream can play (`ui/auto-theater-intent.ts`) — a corner notice shows for at
