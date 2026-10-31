@@ -1,9 +1,7 @@
 import type { DisposableScope } from '../core/disposable-scope';
-import { isNewFeature, type FeatureHighlights, type NewFeatureId } from '../feature-highlights';
 
 import { renderShortcutCaps } from './kbd-text';
 import { closeMenuPopover, bindMenuPopover, MENU_CLOSE_EVENT } from './menu-popover';
-import { createNewBadge } from './new-badge';
 import type { PlayerChromeContext } from './runtime-context';
 import { shortcutAriaKeyshortcuts, shortcutKeyHint } from './shortcut-display';
 import { shortcutDisplayEnv } from './shortcuts';
@@ -27,13 +25,6 @@ export function createPlayerSettings(
   button.setAttribute('aria-expanded', 'false');
   button.setAttribute('aria-controls', 'theater-player-settings');
   ctx.actions.setIcon(button, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`);
-
-  // Anchor the dot to the icon: the menu's open trigger grows into its notch.
-  const gearIcon = document.createElement('span');
-  gearIcon.className = 'theater-settings-gear-icon';
-  gearIcon.setAttribute('aria-hidden', 'true');
-  gearIcon.append(...button.childNodes);
-  button.append(gearIcon);
 
   const panel = document.createElement('div');
   panel.id = 'theater-player-settings';
@@ -145,52 +136,23 @@ export function createPlayerSettings(
     body.hidden = false;
   });
 
-  const newItems = new Map<HTMLElement, { id: NewFeatureId; target: HTMLElement; label: string; visible: boolean; dot: boolean }>();
-  let lastHighlights: FeatureHighlights | undefined;
-  let gearDot: HTMLElement | null = null;
-  function refreshHighlights(force = false) {
-    const state = ctx.ui().featureHighlights;
-    if (!force && state === lastHighlights) return;
-    lastHighlights = state;
-    for (const [row, item] of newItems) {
-      const visible = isNewFeature(item.id, state);
-      if (visible !== item.visible) {
-        item.visible = visible;
-        item.target.querySelector('.te-new-badge')?.remove();
-        if (visible) item.target.append(createNewBadge(item.dot ? 'dot' : 'pill'));
-      }
-      row.setAttribute('aria-label', item.label + (visible ? `, ${ctx.t('badgeNew')}` : ''));
-    }
-    const anyNew = [...newItems].some(([row, item]) => item.visible && !row.closest('[hidden]'));
-    if (anyNew && !gearDot) { gearDot = createNewBadge('dot'); gearIcon.append(gearDot); }
-    if (!anyNew) { gearDot?.remove(); gearDot = null; }
-    if (anyNew) button.setAttribute('aria-description', ctx.t('badgeNew'));
-    else button.removeAttribute('aria-description');
-  }
-
-  function highlight(element: HTMLElement, target: HTMLElement, label: string, id: NewFeatureId, dot = false) {
-    if (!newItems.size) scope.add(ctx.uiStore.subscribe(() => refreshHighlights()));
-    newItems.set(element, { id, target, label, visible: false, dot });
-    refreshHighlights(true);
-  }
-
   /** Audio rows precede player actions. Shortcuts stay the last action; footer rows close the panel. */
   type RowSection = 'player' | 'audioTracks' | 'audio' | 'footer' | 'shortcuts';
-  function addRow(row: HTMLButtonElement, label: string, section: RowSection = 'player', newItem?: NewFeatureId) {
+  function addRow(row: HTMLButtonElement, label: string, section: RowSection = 'player') {
     row.type = 'button';
-    return mountRow(row, label, section, { newItem });
+    return mountRow(row, label, section, {});
   }
 
   /**
    * A row for a setting with several ordered options: arrows step it down and up without wrapping.
    * Not a button, so the arrows inside it stay valid, focusable controls.
    */
-  function addStepperRow(row: HTMLElement, label: string, section: RowSection, step: { onStep: (direction: 1 | -1) => void; newItem?: NewFeatureId }) {
+  function addStepperRow(row: HTMLElement, label: string, section: RowSection, step: { onStep: (direction: 1 | -1) => void }) {
     row.setAttribute('role', 'group');
     return mountRow(row, label, section, step);
   }
 
-  function mountRow(row: HTMLElement, label: string, section: RowSection, { newItem, onStep }: { newItem?: NewFeatureId; onStep?: (direction: 1 | -1) => void }) {
+  function mountRow(row: HTMLElement, label: string, section: RowSection, { onStep }: { onStep?: (direction: 1 | -1) => void }) {
     row.setAttribute('aria-label', label);
     row.classList.add('theater-settings-row');
     const icon = document.createElement('span');
@@ -222,7 +184,6 @@ export function createPlayerSettings(
     if (section === 'audio' || section === 'audioTracks') {
       (section === 'audio' ? audioBody : audioTrackBody).append(row);
       syncAudioSection();
-      if (!newItems.has(audioHeading)) highlight(audioHeading, audioHeading, ctx.t('settingsSectionAudio'), 'playerAudio');
     } else if (section === 'footer') {
       body.append(row);
       footerStart ??= row;
@@ -232,16 +193,19 @@ export function createPlayerSettings(
     } else {
       body.insertBefore(row, shortcutsAnchor ?? footerStart);
     }
-    if (newItem) highlight(row, icon, label, newItem, true);
     function setShortcut(shortcut: string, name: string) {
-      const item = newItems.get(row);
-      if (item) item.label = name;
-      row.setAttribute('aria-label', name + (item?.visible ? `, ${ctx.t('badgeNew')}` : ''));
+      row.setAttribute('aria-label', name);
       renderShortcutCaps(keys, shortcut);
       if (shortcut) row.setAttribute('aria-keyshortcuts', shortcutAriaKeyshortcuts(shortcut));
       else row.removeAttribute('aria-keyshortcuts');
     }
     return {
+      /** Renames a row that shows no value; the accessible name stays the visible text. */
+      rename(name: string) {
+        text.textContent = name;
+        text.title = name;
+        row.setAttribute('aria-label', name);
+      },
       /** `shortcut` is the cycle key the row advertises; the arrows themselves are the stepper's own controls. */
       updateStepper(shortcut: string, state: StepperState) {
         // A blocked row names its reason, since the arrows alone cannot say why they do nothing.
@@ -279,7 +243,6 @@ export function createPlayerSettings(
     if (audioSection.hidden !== !shown) {
       audioSection.hidden = !shown;
       audioSeparator.hidden = !shown;
-      if (newItems.size) refreshHighlights(true);
     }
   }
 
@@ -291,7 +254,6 @@ export function createPlayerSettings(
     audioBody.hidden = reason !== null;
     audioNote.hidden = reason === null;
     audioNote.textContent = reason;
-    if (newItems.size) refreshHighlights(true);
   }
   /** Shows or hides a row; the audio section follows its rows. */
   function setRowHidden(row: HTMLElement, hidden: boolean) {
@@ -300,8 +262,6 @@ export function createPlayerSettings(
     // A list whose row disappears (an ad started, the item changed) has nothing left to choose from.
     if (hidden && subviewReturn && row.contains(subviewReturn)) closeSubview(false);
     syncAudioSection();
-    // A hidden row does not count towards the gear dot, so its visibility is part of that state.
-    if (newItems.has(row)) refreshHighlights(true);
   }
   return { button, panel, container, close, addRow, addStepperRow, setAudioNote, setRowHidden, subview, openSubview, closeSubview };
 }

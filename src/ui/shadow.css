@@ -3349,9 +3349,7 @@ button.theater-time-end:focus-visible,
   min-width: 3px;
 }
 
-.theater-settings-gear-icon,
 .theater-settings-row-icon {
-  position: relative;
   display: inline-flex;
   /* A 16px icon in the 18px box sat on its top edge, one pixel above the label's centre. */
   align-items: center;
@@ -3359,9 +3357,6 @@ button.theater-time-end:focus-visible,
   flex: 0 0 18px;
   width: 18px;
   height: 18px;
-  --new-badge-inset-block-start: -4px;
-  --new-badge-inset-inline-end: -5px;
-  --new-badge-surrounding-color: var(--bg-color, #09090b);
 }
 
 /* Audio rows: a non-default level (or boost on) takes the accent, as the CC menu's active item does. */

@@ -4,7 +4,6 @@ import path from 'node:path';
 import { type BrowserContext, type Page } from 'playwright';
 
 import { shouldOfferVideoActivator } from '../../src/ui/video-activator-settings';
-import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
 
 import { waitForPlayer, theaterEntered, ROOT, timeScenario } from './helpers';
 import { declineVideoActivatorPrompt } from './helpers';
@@ -35,8 +34,6 @@ export async function assertAutoTheater(page: Page, context: BrowserContext): Pr
     try {
       // A fresh profile has no saved key: AutoTheater defaults to on in the options and the page.
       await worker.evaluate(() => chrome.storage.sync.remove('autoEnterTheater'));
-      await worker.evaluate(({ key, release }) => chrome.storage.local.set({ [key]: release }),
-        { key: WHATS_NEW_ACK_STORAGE_KEY, release: WHATS_NEW_RELEASE.id });
       const defaults = await context.newPage();
       try {
         await defaults.goto(new URL('options/options.html', worker.url()).href);
@@ -64,8 +61,6 @@ export async function assertAutoTheater(page: Page, context: BrowserContext): Pr
       // The actual options toggle persists and live-enables an already playing video.
       const options = await context.newPage();
       try {
-        await worker.evaluate(({ key, release }) => chrome.storage.local.set({ [key]: release }),
-          { key: WHATS_NEW_ACK_STORAGE_KEY, release: WHATS_NEW_RELEASE.id });
         await options.goto(new URL('options/options.html', worker.url()).href);
         await options.locator('#tab-features').click();
         const toggle = options.locator('#auto-enter-theater-toggle');

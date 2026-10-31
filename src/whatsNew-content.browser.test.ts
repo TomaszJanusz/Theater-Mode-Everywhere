@@ -7,10 +7,10 @@ import { sharedEngineBrowsers } from './test-utils/engine-browsers';
 import { bundleModules } from './test-utils/player-boot';
 import { readStylesheet } from './test-utils/styles';
 import { testEngines } from './test-utils/test-engines';
-import { WHATS_NEW_CONTENT } from './whatsNew-content';
+import { WHATS_NEW_RELEASES } from './whatsNew-content';
 
 const bundle = bundleModules([
-  "export { buildWhatsNewContent, WHATS_NEW_CONTENT } from './whatsNew-content';",
+  "export { buildWhatsNewContent, WHATS_NEW_RELEASES } from './whatsNew-content';",
   "export { openWhatsNewDialog } from './whatsNew';",
   "export { languageRuntime } from './i18n-runtime';"
 ], 'Announcement');
@@ -24,7 +24,11 @@ it('renders static English semantic content safely and refreshes localized dialo
   await page.setContent('<html><body><button id="opener">Open</button></body></html>');
   await page.evaluate('window.__name = value => value');
   await page.evaluate(catalogs => {
-    Object.assign(window, { chrome: { runtime: { sendMessage: async ({ locale }: { locale: string }) => catalogs[locale] } } });
+    const sent: string[] = [];
+    Object.assign(window, { sent, chrome: {
+      runtime: { sendMessage: async ({ action, locale }: { action: string; locale: string }) => { sent.push(action); return catalogs[locale]; } },
+      storage: { local: { get: async () => ({ pendingUpdate: { version: '2.1.0', since: '2.0' } }) } }
+    } });
     // Any HTML parsing in the announcement/dialog renderer fails this regression.
     Object.defineProperty(Element.prototype, 'innerHTML', { set() { throw new Error('HTML parsing is forbidden'); } });
   }, catalogs);
@@ -32,10 +36,12 @@ it('renders static English semantic content safely and refreshes localized dialo
   await page.locator('#opener').focus();
   await page.evaluate('void Announcement.openWhatsNewDialog()');
   await page.getByRole('dialog').waitFor();
+  // Opening the highlights acknowledges the announced update; the background owns that write.
+  assert.deepEqual(await page.evaluate('sent'), ['acknowledge-update']);
   const root = page.locator('.whats-new-content');
   assert.equal(await root.getAttribute('lang'), 'en');
   assert.equal(await root.getAttribute('dir'), 'ltr');
-  assert.equal(await root.locator('h3 strong').textContent(), WHATS_NEW_CONTENT.heading);
+  assert.equal(await root.locator('h3 strong').textContent(), WHATS_NEW_RELEASES[0].heading);
   assert.equal(await root.locator(':scope > p').first().textContent(), "I'm delighted to announce that this is the biggest update of this extension so far. The new version brings a more comfortable theater mode, new controls, more supported services within Rich Theater Experience, and performance improvements.");
   assert.equal(await root.locator(':scope > p strong').textContent(), 'biggest update');
   assert.deepEqual(await root.locator('ul > li').allTextContents(), [
@@ -51,7 +57,6 @@ it('renders static English semantic content safely and refreshes localized dialo
     'Video launcher: Off by default; turn it on in Settings → Features → Video launcher to enter theater mode with a small button on the left edge of a paused video. It hides during playback, except for the first five seconds after a page or in-app navigation loads. Its tooltip shows your theater shortcut, such as [T]. With YouTube Rich Theater Experience, a white rhombus with an accent triangle stays in the player toolbar regardless of playback or pointer activity. When you turn AutoTheater off, TME offers to enable it.',
     'Fullscreen in theater mode: Double-click the picture to enter or leave fullscreen without leaving theater mode. A single click now plays or pauses faster, and a quick double-click never pauses the video.',
     'Accessibility: Choose High contrast, Reduce transparency and Reduce motion separately (Auto, On or Off) in Settings → Appearance; Auto follows your system preferences. Settings and the player also work better with screen readers.',
-    'New feature badges: Recently added features are marked with NEW badges until you open these highlights. To silence them until the next version, use Settings → Appearance → Hide until next version.',
     'Hold for 2x speed: Hold the Seek Forward key (→ unless you changed it) to play at 2x until you let go; a tap still skips 5 seconds. You can turn this off in Settings → Keyboard Shortcuts.',
     'Settings warn you about conflicting keyboard shortcuts.',
     'The titles of the videos being played are displayed.',
@@ -62,7 +67,7 @@ it('renders static English semantic content safely and refreshes localized dialo
     'You can change the language, and the translations have been improved; spotted a mistake? Use Report a translation issue next to Language in Settings.',
     'And many smaller visual refinements, behavior fixes and reliability improvements throughout the extension.'
   ]);
-  assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pin controls', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:', 'SponsorBlock support:', 'Automatic theater mode:', 'Video launcher:', 'Fullscreen in theater mode:', 'Accessibility:', 'New feature badges:', 'Hold for 2x speed:']);
+  assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pin controls', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:', 'SponsorBlock support:', 'Automatic theater mode:', 'Video launcher:', 'Fullscreen in theater mode:', 'Accessibility:', 'Hold for 2x speed:']);
   assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to @liango2 for the idea of the always-visible interface, to Denis for the idea of automatically entering theater mode, and to @wesleyel for the playback speed shortcuts and holding Seek Forward for 2x.');
   const profiles = page.locator('.whats-new-thanks a');
   assert.deepEqual(await profiles.evaluateAll(links => links.map(link => ({
@@ -95,9 +100,9 @@ it('renders static English semantic content safely and refreshes localized dialo
   const payload = '<script>throw new Error("injected")</script><img src=x onerror=alert(1)>';
   const safe = await page.evaluate(payload => {
     const api = (window as unknown as { Announcement: {
-      WHATS_NEW_CONTENT: { heading: string }; buildWhatsNewContent(): HTMLElement;
+      WHATS_NEW_RELEASES: Array<{ heading: string }>; buildWhatsNewContent(): HTMLElement;
     } }).Announcement;
-    api.WHATS_NEW_CONTENT.heading = payload;
+    api.WHATS_NEW_RELEASES[0].heading = payload;
     const content = api.buildWhatsNewContent();
     return { heading: content.querySelector('h3')?.textContent, injected: content.querySelectorAll('script, img').length };
   }, payload);
@@ -105,9 +110,9 @@ it('renders static English semantic content safely and refreshes localized dialo
   // A link is only ever an absolute https: address; any other keeps its text without becoming a link.
   const links = await page.evaluate(() => {
     const api = (window as unknown as { Announcement: {
-      WHATS_NEW_CONTENT: { thanks: unknown[] }; buildWhatsNewContent(): HTMLElement;
+      WHATS_NEW_RELEASES: Array<{ thanks: unknown[] }>; buildWhatsNewContent(): HTMLElement;
     } }).Announcement;
-    api.WHATS_NEW_CONTENT.thanks = ['Thanks to ', ...['javascript:alert(1)', 'http://github.com/wesleyel', '//github.com/wesleyel', 'data:text/html,x', 'https://github.com/wesleyel']
+    api.WHATS_NEW_RELEASES[0].thanks = ['Thanks to ', ...['javascript:alert(1)', 'http://github.com/wesleyel', '//github.com/wesleyel', 'data:text/html,x', 'https://github.com/wesleyel']
       .map((href, index) => ({ link: `link${index}`, href }))];
     const thanks = api.buildWhatsNewContent().querySelector('.whats-new-thanks')!;
     return { text: thanks.textContent, hrefs: [...thanks.querySelectorAll('a')].map(link => link.getAttribute('href')) };

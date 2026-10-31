@@ -458,6 +458,28 @@
   "whatsNewDialogTitle": {
     "message": "アップデートの主な変更点"
   },
+  "updatePanelTitle": {
+    "message": "バージョン $VERSION$ に更新しました",
+    "description": "Popup panel heading shown after the extension updated to a new version. $VERSION$ is a major.minor number such as 2.1.",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "updateSeeWhatsNew": {
+    "message": "新機能を見る",
+    "description": "Popup button under the update heading; opens Update highlights in Settings."
+  },
+  "updateMenuLabel": {
+    "message": "バージョン $VERSION$ – 新機能を見る",
+    "description": "Player settings menu row shown after an update, in place of Extension settings; opens Update highlights. $VERSION$ is a major.minor number such as 2.1. Keep it short.",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
   "dialogAcknowledge": {
     "message": "了解"
   },
@@ -1239,22 +1261,6 @@
   },
   "badgeBetaDescription": {
     "message": "ベータ、試験的な機能"
-  },
-  "badgeNew": {
-    "message": "新機能",
-    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
-  },
-  "highlightNewFeaturesTitle": {
-    "message": "新機能を強調表示"
-  },
-  "highlightNewFeaturesDescription": {
-    "message": "最近追加された機能に「新機能」バッジを表示します。"
-  },
-  "highlightNewFeaturesHide": {
-    "message": "次のバージョンまで非表示"
-  },
-  "highlightNewFeaturesRestore": {
-    "message": "バッジを元に戻す"
   },
   "highContrastTitle": {
     "message": "ハイコントラスト"

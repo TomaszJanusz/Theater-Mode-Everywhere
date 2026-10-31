@@ -85,34 +85,6 @@
   },
   {
     "type": "dependency",
-    "from": "options/feature-highlights.ts",
-    "to": "src/core/disposable-scope.ts",
-    "unresolvedTo": "../src/core/disposable-scope",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "settings-ui-uses-public-settings-and-i18n"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "options/feature-highlights.ts",
-    "to": "src/ui/new-badge.ts",
-    "unresolvedTo": "../src/ui/new-badge",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "settings-ui-uses-public-settings-and-i18n"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "options/options.ts",
     "to": "src/accentTheme.ts",
     "unresolvedTo": "../src/accentTheme",

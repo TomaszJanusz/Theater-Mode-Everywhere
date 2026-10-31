@@ -13,13 +13,13 @@ import { assertDisneyProvider } from './disney';
 import { FirefoxRemote } from './firefox-rdp';
 import { assertEmbeddedKeysAndFullscreen } from './frames';
 import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist, useSyncQuota } from './helpers';
-import { assertFeatureHighlights } from './highlights';
 import { assertNetflixAudio } from './netflix-audio';
 import { assertPinStorage } from './pin-storage';
 import { assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, assertTwitchProvider, assertVimeoProvider, assertYoutubeProvider } from './providers';
 import { assertRteSettings, assertPictureLayout } from './settings';
 import type { QuotaClock } from './sync-quota';
 import { installSyncQuota } from './sync-quota-guard';
+import { assertBadgeAfterRestart, assertUpdateNotice } from './update-notice';
 import { assertVikiProvider } from './viki-provider';
 
 interface EntryScenarios {
@@ -50,26 +50,37 @@ async function runProviderScenarios(page: Page, context: BrowserContext): Promis
   }
 }
 
+/** The built extension in a fresh Chromium profile; extra arguments go before the extension's. */
+function launchChromiumExtension(userDataDir: string, unpackedDir: string, args: string[] = []): Promise<BrowserContext> {
+  return chromium.launchPersistentContext(userDataDir, {
+    headless: false,
+    viewport: { width: 1280, height: 720 },
+    args: [
+      '--headless=new',
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      ...args,
+      `--disable-extensions-except=${unpackedDir}`,
+      `--load-extension=${unpackedDir}`
+    ]
+  });
+}
+
 async function smokeChromium(origin: string, unpackedDir: string, scenarios: EntryScenarios, clock: QuotaClock): Promise<void> {
   if (!playwrightExecutable('chromium')) {
     skipLocally('Skipping smoke:chromium. Run: pnpm exec playwright install chromium firefox');
   }
+  // A browser and profile of its own, started once the shared one has closed.
+  if (await smokeSharedChromium(origin, unpackedDir, scenarios, clock)) await assertBadgeAfterRestart(unpackedDir, launchChromiumExtension);
+}
 
+/** Resolves whether the run covers the update notice, so the restart check follows it. */
+async function smokeSharedChromium(origin: string, unpackedDir: string, scenarios: EntryScenarios, clock: QuotaClock): Promise<boolean> {
   const userDataDir = mkdtempSync(path.join(tmpdir(), 'te-smoke-chromium-'));
   let context: BrowserContext | null = null;
   try {
-    context = await chromium.launchPersistentContext(userDataDir, {
-      headless: false,
-      viewport: { width: 1280, height: 720 },
-      args: [
-        '--headless=new',
-        '--no-sandbox',
-        '--disable-dev-shm-usage',
-        `--host-resolver-rules=MAP *.example.localhost 127.0.0.1,MAP example.localhost 127.0.0.1`,
-        `--disable-extensions-except=${unpackedDir}`,
-        `--load-extension=${unpackedDir}`
-      ]
-    });
+    context = await launchChromiumExtension(userDataDir, unpackedDir,
+      ['--host-resolver-rules=MAP *.example.localhost 127.0.0.1,MAP example.localhost 127.0.0.1']);
 
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     useSyncQuota(await installSyncQuota(context, clock));
@@ -79,23 +90,23 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     const page = context.pages()[0] || await context.newPage();
     if (process.env.THEATER_SMOKE_PROVIDERS_ONLY === '1') {
       await runProviderScenarios(page, context);
-      return;
+      return false;
     }
-    if (process.env.THEATER_SMOKE_HIGHLIGHTS_ONLY === '1') {
-      await assertFeatureHighlights(page, origin, context);
-      return;
+    if (process.env.THEATER_SMOKE_UPDATE_ONLY === '1') {
+      await assertUpdateNotice(page, origin, context, 'chromium');
+      return true;
     }
     if (process.env.THEATER_SMOKE_APPEARANCE_ONLY === '1') {
       await assertAppearanceModes(context, origin);
-      return;
+      return false;
     }
     if (process.env.THEATER_SMOKE_LANGUAGE_ONLY === '1') {
       await scenarios.assertLanguageMenu(page, origin, context);
-      return;
+      return false;
     }
     if (process.env.THEATER_SMOKE_AUTO_THEATER_ONLY === '1') {
       await assertAutoTheater(page, context);
-      return;
+      return false;
     }
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
@@ -135,8 +146,9 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     await setBlacklist(context, []);
     console.log('smoke:chromium parent-domain blacklist passed');
     await scenarios.assertLanguageMenu(page, origin, context);
-    await assertFeatureHighlights(page, origin, context);
+    await assertUpdateNotice(page, origin, context, 'chromium');
     await assertAppearanceModes(context, origin);
+    return true;
   } finally {
     useSyncQuota(null);
     await context?.close();
@@ -237,6 +249,10 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
       return;
     }
     page.on('pageerror', (error) => console.warn('Firefox page error:', error.message));
+    if (process.env.THEATER_SMOKE_UPDATE_ONLY === '1') {
+      await assertUpdateNotice(page, origin, context, 'firefox');
+      return;
+    }
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await assertInstalledStartup(page);
@@ -261,6 +277,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
     await scenarios.assertParentBlacklist(page, origin, context);
     await setBlacklist(context, []);
     console.log('smoke:firefox parent-domain blacklist passed');
+    await assertUpdateNotice(page, origin, context, 'firefox');
   } finally {
     installed?.remote.close();
     await installed?.context.close();

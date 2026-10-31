@@ -12,7 +12,6 @@ import { bundleQueryModules } from '../../test-utils/query-bundle';
 import { readStylesheet } from '../../test-utils/styles';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { selectTestEngines } from '../../test-utils/test-engines';
-import { WHATS_NEW_RELEASE } from '../../whatsNew-release';
 
 const ROOT = path.resolve(import.meta.dirname, '../../..');
 const MEDIA = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
@@ -170,7 +169,6 @@ it('Features switch has an accessible name, defaults on and persists through sha
   await page.route('http://settings.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://settings.test/#features');
   await page.addStyleTag({ content: readStylesheet(path.join(ROOT, 'options/options.css')) });
-  await page.evaluate(`localStorage.setItem('whatsNewAcknowledgedId', '${WHATS_NEW_RELEASE.id}')`);
   await installChromeStub(page, { sync: {} });
   await page.evaluate(`Object.assign(chrome.runtime, { getURL: file => file }); chrome.tabs = { query: async () => [] };`);
   await page.addScriptTag({ content: options });

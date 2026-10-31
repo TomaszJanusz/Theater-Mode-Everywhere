@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/html-vite';
 import { expect } from 'storybook/test';
 
-import { renderPlayer, SCENARIOS, type Scenario } from '../../.storybook/player-fixture';
+import { FIXTURE_UPDATE, renderPlayer, SCENARIOS, type Scenario } from '../../.storybook/player-fixture';
+import { announcedGeneration } from '../update-notice';
 
 import { t } from './messages';
 
@@ -53,5 +54,23 @@ export const Ended: StoryObj<Args> = {
     await expect(root.querySelector('.theater-ended-curtain button')?.getAttribute('aria-label')).toBe(t('replay'));
     await expect(root.querySelector('.theater-everywhere-header-hud.visible')).not.toBeNull();
     await expect(root.querySelector('.theater-controls-wrapper.visible')).not.toBeNull();
+  }
+};
+
+/**
+ * An update to a new version is announced: the settings menu's last row names it and leads to Update highlights
+ * instead of Settings, with the visible text as its accessible name. Which page the click opens is the background's
+ * part; update-notice smoke covers it in the installed extension.
+ */
+export const UpdateAnnounced: StoryObj<Args> = {
+  // The Composed story's `update` profiles take its pictures.
+  tags: ['no-shot'],
+  args: { scenario: 'update' },
+  play: async () => {
+    await window.__playerFixture!.ready;
+    const row = window.__playerFixture!.root.querySelector('.extension-settings-btn');
+    const label = t('updateMenuLabel', announcedGeneration(FIXTURE_UPDATE));
+    await expect(row?.querySelector('.theater-settings-label')?.textContent).toBe(label);
+    await expect(row?.getAttribute('aria-label')).toBe(label);
   }
 };

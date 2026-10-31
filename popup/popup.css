@@ -102,6 +102,55 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
+/* After an update to a new version, until Update highlights are opened from anywhere. */
+.update-card {
+  margin-bottom: 10px;
+  padding-block: 10px;
+  padding-inline: 14px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent-color) 45%, var(--border-color));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-color) 12%, var(--card-bg));
+}
+
+.update-card[hidden] {
+  display: none;
+}
+
+.update-title {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--appearance-ink, var(--text-primary));
+}
+
+/* Outlined: the text keeps the panel's contrast under every accent, including the browser's own. */
+.update-btn {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--accent-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--appearance-ink, var(--text-primary));
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.update-btn:hover {
+  background: color-mix(in srgb, var(--accent-color) 20%, var(--card-bg));
+}
+
+.update-btn:focus-visible {
+  outline: 2px solid var(--appearance-ink, var(--text-primary));
+  outline-offset: 2px;
+}
+
 .rte-card {
   margin-top: 10px;
   padding: 12px 14px;

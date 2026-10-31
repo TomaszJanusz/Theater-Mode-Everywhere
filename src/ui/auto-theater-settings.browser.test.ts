@@ -10,7 +10,6 @@ import { bundleQueryModules } from '../test-utils/query-bundle';
 import { readStylesheet } from '../test-utils/styles';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { selectTestEngines } from '../test-utils/test-engines';
-import { WHATS_NEW_RELEASE } from '../whatsNew-release';
 
 const ROOT = path.resolve(__dirname, '../..');
 const bundles = Promise.all([
@@ -28,7 +27,6 @@ const bundles = Promise.all([
 type Saved = Record<string, unknown>;
 async function storage(context: BrowserContext, saved: Saved): Promise<void> {
   await installContextChromeStub(context, saved);
-  await context.addInitScript({ content: `localStorage.setItem('whatsNewAcknowledgedId', ${JSON.stringify(WHATS_NEW_RELEASE.id)});` });
 }
 
 // AutoTheater is only available where a provider declares watch playback.

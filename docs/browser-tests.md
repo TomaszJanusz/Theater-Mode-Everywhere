@@ -53,7 +53,7 @@ therefore declares the most sync changes it makes ([`sync-quota.ts`](../scripts/
   surfacing as a timeout.
 - **Maintaining.** Adding a scenario or a write to one: run `THEATER_SMOKE_TIMING=1 pnpm smoke:chromium`, read the
   `SYNCWRITES <scenario> <measured>/<declared>` rows and set the budget to the measured count. Scenarios that wrap
-  others (`assertFeatureHighlights`) declare the total; a nested one is covered by its parent.
+  others declare the total; a nested one is covered by its parent.
 - **Firefox** has no per-minute sync quota, so its smoke is neither gated nor counted.
 
 ## Deterministic waits
@@ -402,15 +402,15 @@ Firefox, which installs the built add-on (see above) but cannot open extension p
 
 Set `THEATER_SMOKE_TIMING=1` on either smoke command to print seconds for each
 `assert*` scenario and a `TOTAL` wall duration including browser startup/cleanup.
-Rows are inclusive: do not add nested `assertBadgeWorld` to its parent highlights
-row. Repeated startup rows distinguish initial entry from entry after blacklist
+Rows are inclusive: a nested scenario's time is part of its parent's row. Repeated startup rows distinguish initial entry from entry after blacklist
 restoration. The existing `THEATER_SMOKE_*_ONLY` switches select the corresponding
 installed-storage scenario (shortcuts mode retains its existing skip-pin meaning).
 Installed smoke (`scripts/smoke/`) keeps only what needs the real extension:
 startup and the exact/parent blacklists, the isolated-to-MAIN audio graph, RTE,
 shortcut, pin and layout storage written through Settings, AutoTheater defaults and
-live preference changes, the language catalog delivered by the background, feature
-highlights (with the isolated-world badge fallback), appearance modes across Settings,
+live preference changes, the language catalog delivered by the background, the update
+notice (toolbar badge, popup panel, player menu label and acknowledgement from each route,
+then the badge after a browser restart in a profile of its own), appearance modes across Settings,
 popup and player, and the iframe and embedded-fullscreen scenarios. Presentation,
 input and lifecycle checks for those features belong in fixture browser tests.
 

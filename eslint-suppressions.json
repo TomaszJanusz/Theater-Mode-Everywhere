@@ -20,14 +20,6 @@
       "count": 1
     }
   },
-  "options/feature-highlights.ts": {
-    "import/order": {
-      "count": 1
-    },
-    "sonarjs/no-unenclosed-multiline-block": {
-      "count": 1
-    }
-  },
   "options/markdown.test.ts": {
     "import/order": {
       "count": 1
@@ -46,7 +38,7 @@
       "count": 2
     },
     "import/order": {
-      "count": 36
+      "count": 33
     },
     "local/max-symbol-name-length": {
       "count": 6
@@ -228,11 +220,6 @@
     },
     "sonarjs/super-linear-regex": {
       "count": 2
-    }
-  },
-  "scripts/smoke/highlights.ts": {
-    "no-restricted-imports": {
-      "count": 1
     }
   },
   "scripts/smoke/pin-storage.ts": {
@@ -418,34 +405,6 @@
     },
     "sonarjs/cognitive-complexity": {
       "count": 1
-    }
-  },
-  "src/feature-highlights-lifecycle.test.ts": {
-    "import/order": {
-      "count": 3
-    }
-  },
-  "src/feature-highlights-lifecycle.ts": {
-    "local/max-symbol-name-length": {
-      "count": 1
-    }
-  },
-  "src/feature-highlights-storage.ts": {
-    "import/order": {
-      "count": 1
-    },
-    "local/max-symbol-name-length": {
-      "count": 3
-    }
-  },
-  "src/feature-highlights.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
-  "src/feature-highlights.ts": {
-    "local/max-symbol-name-length": {
-      "count": 9
     }
   },
   "src/host-play.test.ts": {
@@ -1758,11 +1717,6 @@
       "count": 1
     }
   },
-  "src/test-utils/release.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/test-utils/test-browser.test.ts": {
     "import/order": {
       "count": 2
@@ -1967,11 +1921,6 @@
       "count": 2
     }
   },
-  "src/ui/new-badge.ts": {
-    "sonarjs/no-nested-conditional": {
-      "count": 2
-    }
-  },
   "src/ui/picture-click.test.ts": {
     "import/order": {
       "count": 1
@@ -1997,7 +1946,7 @@
       "count": 3
     },
     "import/order": {
-      "count": 65
+      "count": 64
     },
     "local/max-symbol-name-length": {
       "count": 16
@@ -2021,12 +1970,6 @@
   "src/ui/player-settings.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "max-params": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
     }
   },
   "src/ui/presentation-lifecycle.test.ts": {
@@ -2036,7 +1979,7 @@
   },
   "src/ui/root.ts": {
     "import/order": {
-      "count": 4
+      "count": 3
     },
     "local/max-symbol-name-length": {
       "count": 2
@@ -2102,7 +2045,7 @@
   },
   "src/ui/store.ts": {
     "import/order": {
-      "count": 11
+      "count": 10
     }
   },
   "src/ui/theater-layout.test.ts": {
@@ -2180,27 +2123,6 @@
     }
   },
   "src/ui/volume-boost-settings.ts": {
-    "local/max-symbol-name-length": {
-      "count": 2
-    }
-  },
-  "src/whatsNew-release.test.ts": {
-    "import/order": {
-      "count": 2
-    }
-  },
-  "src/whatsNew-release.ts": {
-    "local/max-symbol-name-length": {
-      "count": 7
-    }
-  },
-  "src/whatsNew.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 4
-    },
-    "import/order": {
-      "count": 3
-    },
     "local/max-symbol-name-length": {
       "count": 2
     }

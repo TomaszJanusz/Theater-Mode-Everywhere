@@ -27,11 +27,11 @@ The extension saves preferences with the browser's extension storage:
 - Per-site audio language: the language or "original" of the audio track you last chose on that site, keyed by site host name the same way.
 - Audio enhancement and volume-boost choices; video fit, picture alignment, subtitle-dependent layout, automatic theater entry and control visibility.
 - Native chat visibility, width and theme by service; Rich Theater Experience and SponsorBlock-marker switches.
-- Interface language, accent color, accessibility choices (contrast, transparency and motion), and whether to highlight new features.
+- Interface language, accent color and accessibility choices (contrast, transparency and motion).
 
 These use `storage.sync`. If browser sync is enabled, settings — including excluded host names and per-site subtitle and audio language preferences — can sync through your Google, Mozilla or Microsoft browser account. They are not accessible to the developer. They are settings, not a browsing-history log.
 
-`storage.local` holds release-notice acknowledgements, automatic-opening and new-feature flags, plus a one-time settings-migration flag. The development preview uses local browser storage for release acknowledgements when extension storage is unavailable. The extension persistently stores only settings and these housekeeping flags, not captions, images, page content or playback history. You can change settings in the extension and remove its stored data through your browser's extension-data controls; browser sync is controlled by your browser.
+`storage.local` holds the version of an update whose highlights you have not opened yet, plus a one-time settings-migration flag. The extension persistently stores only settings and these housekeeping flags, not captions, images, page content or playback history. You can change settings in the extension and remove its stored data through your browser's extension-data controls; browser sync is controlled by your browser.
 
 ## Permissions
 

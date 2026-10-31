@@ -773,7 +773,7 @@ export function createControls(
     layoutBtn.className = 'picture-layout-btn';
     setIcon(layoutBtn, PICTURE_LAYOUT_ICON);
     const layoutRow = settings.addStepperRow(layoutBtn, t('pictureAlignLabel'), 'player',
-      { onStep: direction => executeCommand({ type: 'STEP_LAYOUT', direction }), newItem: 'playerPictureLayout' });
+      { onStep: direction => executeCommand({ type: 'STEP_LAYOUT', direction }) });
     const updateLayoutRow = () => layoutRow.updateStepper(ui().shortcuts.cycleLayout, {
       value: t(ui().pictureAlign === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'),
       index: PICTURE_ALIGNS.indexOf(ui().pictureAlign),
@@ -881,7 +881,7 @@ export function createControls(
     pinBtn.className = 'controls-visibility-toggle';
     setIcon(pinBtn, CONTROLS_VISIBILITY_ICON);
     const pinRow = settings.addStepperRow(pinBtn, t('keepControlsVisibleTitle'), 'player',
-      { onStep: direction => executeCommand({ type: 'STEP_CONTROLS_PIN', direction }), newItem: 'playerAlwaysShowControls' });
+      { onStep: direction => executeCommand({ type: 'STEP_CONTROLS_PIN', direction }) });
     const updatePinButton = () => {
       const pinned = ui().keepControlsVisible;
       pinBtn.dataset.active = String(pinned);
@@ -955,9 +955,19 @@ export function createControls(
     extensionSettingsBtn.addEventListener('click', (event) => {
       event.stopPropagation();
       settings.close();
-      requestOptionsPage();
+      // While an update is announced the row leads to its highlights, which acknowledge it.
+      requestOptionsPage(ui().pendingUpdate ? 'whats-new' : undefined);
     });
-    settings.addRow(extensionSettingsBtn, t('extensionSettingsLabel'), 'footer');
+    const extensionSettingsRow = settings.addRow(extensionSettingsBtn, t('extensionSettingsLabel'), 'footer');
+    let shownUpdate: string | null = null;
+    const labelSettingsRow = () => {
+      const version = ui().pendingUpdate;
+      if (version === shownUpdate) return;
+      shownUpdate = version;
+      extensionSettingsRow.rename(version ? t('updateMenuLabel', version) : t('extensionSettingsLabel'));
+    };
+    labelSettingsRow();
+    controlsScope.add(ctx.uiStore.subscribe(labelSettingsRow));
 
     rightSec.appendChild(closeBtn);
 

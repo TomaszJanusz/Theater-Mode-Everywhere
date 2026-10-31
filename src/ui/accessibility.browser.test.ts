@@ -11,7 +11,6 @@ import { bundleQueryModules } from '../test-utils/query-bundle';
 import { readStylesheet } from '../test-utils/styles';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { selectTestEngines } from '../test-utils/test-engines';
-import { WHATS_NEW_RELEASE } from '../whatsNew-release';
 
 const ROOT = path.resolve(__dirname, '../..');
 const PLAYER = bundleModules([
@@ -24,7 +23,6 @@ const OPTIONS = bundleQueryModules(["import '../options/options';"], 'OptionsFix
 
 async function mockStorage(page: Page): Promise<void> {
   await page.addInitScript({ content: `
-    localStorage.setItem('whatsNewAcknowledgedId', '${WHATS_NEW_RELEASE.id}');
     const saved = { keepControlsVisible: true, pictureAlign: 'center', blacklist: ['example.com', 'second.com'] };
     const changed = [];
     const storage = {

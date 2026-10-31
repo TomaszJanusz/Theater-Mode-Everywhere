@@ -17,7 +17,7 @@ export const isFullRun = file => /(?:^scripts\/provider-descriptors\.ts$|^src\/p
 const isBuildInput = file => isFullRun(file) && !/^(?:(?:src\/)?test-utils\/|test\/fixtures\/|scripts\/(?:run-tests|ci-changes|test-impact))/.test(file);
 const ENTRIES = ['src/entries/content.ts', 'src/entries/main-world.ts', 'src/entries/background.ts', 'popup/popup.ts', 'options/options.ts'];
 const BUNDLE_ENTRIES = [...ENTRIES, 'src/entries/content-start.ts', 'src/entries/main-world-start.ts', 'scripts/build.ts', 'config/vite.config.ts'];
-const localeTest = file => /(?:locales|localization|i18n|store-listings|safe-dom|rte-settings|whatsNew-(?:content|release)|cc-menu-rows|settings-rows)(?:\.browser)?\.test\./.test(file);
+const localeTest = file => /(?:locales|localization|i18n|store-listings|safe-dom|rte-settings|whatsNew-content|update-notice|cc-menu-rows|settings-rows)(?:\.browser)?\.test\./.test(file);
 const codeFile = file => /\.(?:[cm]?[jt]sx?)$/.test(file) && !file.endsWith('.d.ts');
 
 export function changedFiles(base, head = 'HEAD', root = process.cwd()) {
