@@ -30,6 +30,7 @@ type NetflixReport = {
   postplayAnchor: string | null;
   postplayAction: string | null;
   watchCredits: string | null;
+  hostEnds: string[];
   priority: string | null;
   outside: string | null;
   plain: string | null;
@@ -375,10 +376,14 @@ describe('service action CTA', () => {
         + '<button data-uia="control-play">Play</button><button>Plain</button>'
       );
       const label = readLabel();
+      // Only post-play's next steps hold the ended curtain back; the toolbar Next, skips and Watch credits do not.
+      const hostEnds = source.hostEndsPlayback() ? ['player-skip-intro'] : [];
       document.querySelector('[data-uia="player-skip-intro"]').remove();
       const nextHidden = readLabel();
+      if (source.hostEndsPlayback()) hostEnds.push('control-next');
       const probe = (uia, tag = 'button') => {
         player('<' + tag + ' data-uia="' + uia + '">' + uia + '</' + tag + '><button data-uia="control-back">Back</button>');
+        if (source.hostEndsPlayback()) hostEnds.push(uia);
         return readLabel();
       };
       const report = {
@@ -391,6 +396,7 @@ describe('service action CTA', () => {
         postplayAnchor: probe('next-episode-btn', 'a'),
         postplayAction: probe('postplay-preview-action'),
         watchCredits: probe('watch-credits-seamless-button'),
+        hostEnds,
         priority: null,
         outside: null,
         plain: null,
@@ -521,6 +527,7 @@ describe('service action CTA', () => {
     assert.equal(discovered.postplayAnchor, 'next-episode-btn');
     assert.equal(discovered.postplayAction, 'postplay-preview-action');
     assert.equal(discovered.watchCredits, 'watch-credits-seamless-button');
+    assert.deepEqual(discovered.hostEnds, ['next-episode-seamless-button', 'next-episode-btn', 'next-episode-btn', 'postplay-preview-action']);
     assert.equal(discovered.priority, 'Next episode');
     assert.equal(discovered.outside, null);
     assert.equal(discovered.plain, null);

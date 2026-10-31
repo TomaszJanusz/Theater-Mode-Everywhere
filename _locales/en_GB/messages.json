@@ -1339,8 +1339,8 @@
     "message": "Customise shortcuts"
   },
   "endScreenSuggestions": {
-    "message": "Suggested videos",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "message": "Recommendations",
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "Settings",
@@ -1352,11 +1352,11 @@
   },
   "providerShowRecommendations": {
     "message": "Show recommendations",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
-    "message": "Show suggested videos when playback ends.",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "message": "Show recommended videos when playback ends.",
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater is off globally. Enable it in Features first.",
@@ -1411,8 +1411,8 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Pick the services you want them on.",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "message": "Pick the services where you want the extra features.",
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
     "message": "None",

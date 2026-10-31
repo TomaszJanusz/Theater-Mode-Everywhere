@@ -1339,8 +1339,8 @@
     "message": "Personalizza scorciatoie"
   },
   "endScreenSuggestions": {
-    "message": "Video suggeriti",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "message": "Video consigliati",
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "Impostazioni",
@@ -1351,15 +1351,15 @@
     "description": "Provider settings dialog title. $1 is the service name, e.g. YouTube."
   },
   "providerShowRecommendations": {
-    "message": "Mostra consigli",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "message": "Mostra video consigliati",
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
-    "message": "Mostra i video suggeriti al termine della riproduzione.",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "message": "Mostra i video consigliati al termine della riproduzione.",
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
-    "message": "AutoTheater è disattivato globalmente. Attivalo prima in Funzioni.",
+    "message": "AutoTheater è disattivato globalmente. Attivalo prima in Funzionalità.",
     "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
   },
   "setupTitle": {
@@ -1411,8 +1411,8 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Seleziona i servizi su cui le vuoi.",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "message": "Scegli i servizi in cui attivare le funzionalità aggiuntive.",
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
     "message": "Nessuno",
@@ -1435,7 +1435,7 @@
     "description": "Text on the summary step of the first-run setup."
   },
   "setupSummaryServicesSome": {
-    "message": "$1 servizi su $2",
+    "message": "$1 su $2 servizi",
     "description": "Summary value when some services are chosen. $1 is how many are on, $2 how many there are."
   },
   "setupSummaryFinishAndOpen": {

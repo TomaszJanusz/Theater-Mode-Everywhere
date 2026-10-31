@@ -565,7 +565,7 @@
     "message": "Pause"
   },
   "replay": {
-    "message": "Wiederholen",
+    "message": "Erneut abspielen",
     "description": "Button that plays the video again from the start once it has ended; it replaces Play on the player controls and also sits in the middle of the black end screen."
   },
   "videoEnded": {
@@ -1339,8 +1339,8 @@
     "message": "Tastenkürzel anpassen"
   },
   "endScreenSuggestions": {
-    "message": "Vorgeschlagene Videos",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "message": "Empfehlungen",
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "Einstellungen",
@@ -1352,11 +1352,11 @@
   },
   "providerShowRecommendations": {
     "message": "Empfehlungen anzeigen",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
-    "message": "Vorgeschlagene Videos nach dem Wiedergabeende anzeigen.",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "message": "Empfohlene Videos am Ende der Wiedergabe anzeigen.",
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater ist global deaktiviert. Aktiviere es zuerst unter Funktionen.",
@@ -1411,8 +1411,8 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Wähle die Dienste aus, auf denen du sie möchtest.",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "message": "Wähle die Dienste, auf denen die Zusatzfunktionen aktiv sein sollen.",
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
     "message": "Keine",
@@ -1431,7 +1431,7 @@
     "description": "Title of the last first-run setup step, which summarises the choices."
   },
   "setupSummaryDescription": {
-    "message": "Das hast du gewählt. Deine Auswahl wird gespeichert, wenn du auf Fertig klickst.",
+    "message": "Das hast du gewählt. Deine Auswahl wird beim Abschließen gespeichert.",
     "description": "Text on the summary step of the first-run setup."
   },
   "setupSummaryServicesSome": {

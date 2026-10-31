@@ -468,11 +468,11 @@
     }
   },
   "updateSeeWhatsNew": {
-    "message": "查看新功能",
+    "message": "查看更新内容",
     "description": "Popup button under the update heading; opens Update highlights in Settings."
   },
   "updateMenuLabel": {
-    "message": "版本 $VERSION$ – 查看新功能",
+    "message": "版本 $VERSION$ – 查看更新内容",
     "description": "Player settings menu row shown after an update, in place of Extension settings; opens Update highlights. $VERSION$ is a major.minor number such as 2.1. Keep it short.",
     "placeholders": {
       "version": {
@@ -1340,7 +1340,7 @@
   },
   "endScreenSuggestions": {
     "message": "推荐视频",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "设置",
@@ -1352,14 +1352,14 @@
   },
   "providerShowRecommendations": {
     "message": "显示推荐",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
     "message": "播放结束时显示推荐视频。",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
-    "message": "AutoTheater 已在全局关闭。请先在“功能”中启用。",
+    "message": "AutoTheater 已在全局关闭。请先在「功能」中启用。",
     "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
   },
   "setupTitle": {
@@ -1412,7 +1412,7 @@
   },
   "setupServicesChooseDescription": {
     "message": "挑选要开启额外功能的服务。",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
     "message": "不启用",

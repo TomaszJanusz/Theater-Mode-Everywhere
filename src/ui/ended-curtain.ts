@@ -1,5 +1,6 @@
 import { DisposableScope } from '../core/disposable-scope';
-import type { EndScreenSource } from '../core/end-screen';
+import type { EndScreenSource, PlaybackEndSource } from '../core/end-screen';
+import type { ServiceActionSource } from '../core/service-actions';
 import type { PlaybackSurface } from '../playback-surface';
 
 import { strokeIcon, type HudHost } from './hud';
@@ -19,7 +20,7 @@ export const REPLAY_ICON = strokeIcon('<path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 
 const EVENTS = ['ended', 'seeking', 'emptied', 'loadstart'];
 
 /**
- * Covers the picture in black once the media has really ended. Only `ended` counts: never a pause near the end, a loop
+ * Covers the picture in black once the media or its provider reports a real end: never a pause near the end, a loop
  * (which never ends) or a live stream (infinite duration). It shows after ENDED_CURTAIN_DELAY_MS and leaves on replay,
  * a seek back or new media.
  *
@@ -27,6 +28,9 @@ const EVENTS = ['ended', 'seeking', 'emptied', 'loadstart'];
  * its Next: the same label, icon and action, for pointer and keyboard alike. Hidden controls are left out.
  * `scope` owns it: disposal (rebind, theater exit) removes the node, the timer and the listeners, and reports
  * `changed(false)` when it was showing.
+ *
+ * It yields while `host` offers its own next step: read when the delay ends, so the curtain hides when that step
+ * appears later and shows when it goes (a closed card, a cancelled countdown) while the media stays ended.
  */
 // Positional like createHud: content.js keeps every option name, and its size budget is spent.
 // eslint-disable-next-line max-params -- the alternative options object costs the shared bundle bytes it does not have
@@ -37,10 +41,14 @@ export function mountEndedCurtain(
   controls: readonly [HTMLButtonElement, ...HTMLButtonElement[]],
   changed: (shown: boolean) => void,
   clock: UiClock = systemClock,
-  source?: EndScreenSource
+  source?: EndScreenSource,
+  host?: ServiceActionSource | null,
+  playbackEnd?: PlaybackEndSource
 ): void {
   let curtain: HTMLElement | null = null;
   let timer: number | undefined;
+  let watching = false;
+  let unwatch: (() => void) | undefined;
   let mountScope: DisposableScope | undefined;
   const show = (shown: boolean) => {
     if (shown === Boolean(curtain)) return;
@@ -76,9 +84,16 @@ export function mountEndedCurtain(
     }
     announcePlayerStatus(ctx.t('videoEnded'));
   };
-  const ended = () => media.ended && media.duration < Infinity && !source?.hostEndsPlayback();
+  const over = () => playbackEnd?.ended() ?? (media.ended && media.duration < Infinity);
+  const ended = () => over() && !source?.hostEndsPlayback() && !host?.hostEndsPlayback?.();
   const sync = () => {
     if (scope.isDisposed) return;
+    // The host is watched only while ended; a subscription reads at once, re-entering here with `watching` set.
+    if (watching !== over()) {
+      watching = !watching;
+      if (watching) unwatch = host?.hostEndsPlayback ? host.subscribe?.(sync) : undefined;
+      else unwatch?.();
+    }
     clock.clearTimeout(timer);
     if (!ended()) show(false);
     // The timer re-reads the media: what changed meanwhile without an event still counts.
@@ -86,10 +101,12 @@ export function mountEndedCurtain(
   };
   for (const type of EVENTS) scope.listen(media, type, sync);
   if (source) scope.add(source.subscribe(sync));
+  if (playbackEnd) scope.add(playbackEnd.observe(sync));
   // A rebuild of the controls, or entry, on media that has already ended shows it too.
   sync();
   scope.add(() => {
     clock.clearTimeout(timer);
+    if (watching) unwatch?.();
     show(false);
     source?.dispose();
   });

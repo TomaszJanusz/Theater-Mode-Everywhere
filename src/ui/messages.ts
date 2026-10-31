@@ -3,7 +3,7 @@ import { translateMessage } from '../i18n-runtime';
 
 export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   ...SHARED_I18N_FALLBACKS,
-  endScreenSuggestions: "Suggested videos",
+  endScreenSuggestions: "Recommendations",
   showNativeChat: "Show chat",
   hideNativeChat: "Hide chat",
   settingsSectionChat: "Chat",

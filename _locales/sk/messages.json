@@ -354,7 +354,7 @@
     "message": "Zatiaľ žiadne výnimky"
   },
   "noExclusionsDescription": {
-    "message": "Režim kina sa automaticky spustí v podporovaných službách (pozri AutoTheater). Pridajte sem weby, na ktorých má zostať vypnutý."
+    "message": "Režim kina sa automaticky spustí v podporovaných službách (pozrite AutoTheater). Pridajte sem weby, na ktorých má zostať vypnutý."
   },
   "removeExclusion": {
     "message": "Odstrániť výnimku"
@@ -1339,8 +1339,8 @@
     "message": "Upraviť skratky"
   },
   "endScreenSuggestions": {
-    "message": "Navrhované videá",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "message": "Odporúčania",
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "Nastavenia",
@@ -1352,11 +1352,11 @@
   },
   "providerShowRecommendations": {
     "message": "Zobrazovať odporúčania",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
-    "message": "Zobrazovať navrhované videá po skončení prehrávania.",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "message": "Zobrazovať odporúčané videá po skončení prehrávania.",
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater je globálne vypnutý. Najprv ho zapnite v sekcii Funkcie.",
@@ -1411,8 +1411,8 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Zvoľte služby, v ktorých ich chcete.",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "message": "Vyberte služby, v ktorých chcete funkcie navyše zapnúť.",
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
     "message": "Žiadne",
@@ -1423,7 +1423,7 @@
     "description": "Description of the 'None' choice in the first-run setup."
   },
   "setupServicesFooter": {
-    "message": "Neskôr to môžete zmeniť v Nastavenia → Funkcie → Rich Theater Experience.",
+    "message": "Neskôr to môžete zmeniť v časti Nastavenia → Funkcie → Rich Theater Experience.",
     "description": "Footer of the services step. Settings, Features and Rich Theater Experience are names in the Settings page; keep Rich Theater Experience untranslated."
   },
   "setupSummaryTitle": {

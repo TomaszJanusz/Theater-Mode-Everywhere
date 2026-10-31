@@ -1,12 +1,13 @@
 import type { EndScreenSource } from '../../core/end-screen';
 import { providerOffAttribute } from '../../media-features/provider-flags';
 
+import { readYouTubeAutonav } from './autonav';
 import { readYouTubeSuggestions, type EndScreenSnapshot, type SuggestionSource } from './end-screen-model';
 import { mountEndScreenSettings } from './end-screen-view';
 import { createYouTubeSettings } from './settings';
 import { youtubeWatchPlayback } from './watch-playback';
 
-const SURFACES = '.ytp-fullscreen-grid, .ytp-autonav-toggle-button';
+const SURFACES = '.ytp-fullscreen-grid, .ytp-autonav-endscreen-countdown-overlay';
 
 /** Per-controls lifetime; the player reads no data until its host has actually reached the end. */
 export function createYouTubeEndScreen(element: HTMLElement): EndScreenSource & SuggestionSource {
@@ -26,9 +27,7 @@ export function createYouTubeEndScreen(element: HTMLElement): EndScreenSource & 
     return !disposed && !navigating && !doc.documentElement.hasAttribute(off) && root?.isConnected && root.contains(element)
       && root.closest('ytd-watch-flexy')?.getAttribute('video-id') === id ? id : null;
   };
-  const hostEndsPlayback = () => Boolean(identity() && root?.classList.contains('ended-mode')
-    && (root.querySelector('.ytp-autonav-toggle-button')?.getAttribute('aria-checked') === 'true'
-      || root.classList.contains('ytp-autonav-endscreen-upnext-playing')));
+  const hostEndsPlayback = () => Boolean(identity() && root && readYouTubeAutonav(root));
   const available = () => identity() && root?.classList.contains('ended-mode')
     && !root.matches('.ad-showing, .ad-interrupting') && !hostEndsPlayback();
   const read = (): EndScreenSnapshot | null => {
@@ -56,7 +55,7 @@ export function createYouTubeEndScreen(element: HTMLElement): EndScreenSource & 
       const finish = () => { navigating = false; update(); };
       doc.addEventListener('yt-navigate-start', start);
       doc.addEventListener('yt-navigate-finish', finish);
-      const state = () => ['ended-mode', 'ad-showing', 'ad-interrupting', 'ytp-autonav-endscreen-upnext-playing']
+      const state = () => ['ended-mode', 'ad-showing', 'ad-interrupting', 'countdown-running', 'ytp-autonav-endscreen-cancelled-state']
         .map(flag => root?.classList.contains(flag)).join();
       let playerState = state();
       const observer = new MutationObserver(records => {

@@ -1340,7 +1340,7 @@
   },
   "endScreenSuggestions": {
     "message": "Рекомендовані відео",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "Налаштування",
@@ -1352,11 +1352,11 @@
   },
   "providerShowRecommendations": {
     "message": "Показувати рекомендації",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
-    "message": "Показувати запропоновані відео після завершення відтворення.",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "message": "Показувати рекомендовані відео після завершення відтворення.",
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater вимкнено глобально. Спочатку ввімкніть його в розділі «Функції».",
@@ -1411,15 +1411,15 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Позначте сервіси, на яких вони потрібні.",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "message": "Позначте сервіси, на яких потрібні додаткові функції.",
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
-    "message": "Жодні",
+    "message": "Жодного",
     "description": "First-run setup choice and summary value: no service integrations."
   },
   "setupServicesNoneDescription": {
-    "message": "Лише звичайний режим кінотеатру. Кожне відео й надалі має режим кінотеатру та його керування.",
+    "message": "Лише звичайний режим кінотеатру. Режим кінотеатру та його керування й надалі доступні для кожного відео.",
     "description": "Description of the 'None' choice in the first-run setup."
   },
   "setupServicesFooter": {

@@ -76,7 +76,8 @@ export function createCrunchyrollServiceActions(hooks: CrunchyrollServiceActionH
   };
 
   return {
-    hostEndsPlayback: true,
+    // The next-episode control exists only when another episode does, so a finale gets the curtain.
+    hostEndsPlayback: () => live().some(action => action.id.startsWith('crunchyroll:next')),
     read: () => live().map(({ element: _element, seek: _seek, end: _end, ...action }) => action),
     activate(id: string): boolean {
       const action = live().find(item => item.id === id);

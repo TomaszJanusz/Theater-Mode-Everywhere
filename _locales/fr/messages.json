@@ -1022,7 +1022,7 @@
     "message": "Intégration iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Affiche le titre de la série et l’intitulé de l’épisode, liste et sélectionne les langues de sous-titres de l’épisode (iQIYI continue de les afficher), repère l’intro et le générique de fin et passe à l’épisode précédent ou suivant. AutoTheater fonctionne sur les pages d’épisode. Les pistes audio d’un épisode peuvent aussi être choisies."
+    "message": "Affiche le titre de la série et l’intitulé de l’épisode, liste et sélectionne les langues de sous-titres de l’épisode (affichées par le lecteur d’iQIYI lui-même), repère l’intro et le générique de fin et passe à l’épisode précédent ou suivant. AutoTheater fonctionne sur les pages d’épisode. Les pistes audio d’un épisode peuvent aussi être choisies."
   },
   "soopIntegrationTitle": {
     "message": "Intégration SOOP"
@@ -1239,7 +1239,7 @@
     "message": "Sous-titres, aperçus et passer/suivant si le lecteur les propose."
   },
   "rteNoteNetflix": {
-    "message": "Les aperçus s’affichent une fois que Netflix a chargé ses images d’aperçu ; sous-titres et passer/suivant si disponibles."
+    "message": "Aperçus une fois chargés par Netflix ; sous-titres et passer/suivant si disponibles."
   },
   "rteNoteBilibili": {
     "message": "Certains sous-titres nécessitent une connexion ; les fonctions dépendent de la vidéo."
@@ -1339,8 +1339,8 @@
     "message": "Personnaliser les raccourcis"
   },
   "endScreenSuggestions": {
-    "message": "Vidéos suggérées",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "message": "Recommandations",
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "Paramètres",
@@ -1352,11 +1352,11 @@
   },
   "providerShowRecommendations": {
     "message": "Afficher les recommandations",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
-    "message": "Afficher les vidéos suggérées à la fin de la lecture.",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "message": "Afficher les vidéos recommandées à la fin de la lecture.",
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater est désactivé globalement. Activez-le d’abord dans Fonctionnalités.",
@@ -1411,8 +1411,8 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Sélectionnez les services sur lesquels vous les voulez.",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "message": "Choisissez les services où activer les fonctionnalités supplémentaires.",
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
     "message": "Aucun",
@@ -1435,7 +1435,7 @@
     "description": "Text on the summary step of the first-run setup."
   },
   "setupSummaryServicesSome": {
-    "message": "$1 services sur $2",
+    "message": "$1 sur $2 services",
     "description": "Summary value when some services are chosen. $1 is how many are on, $2 how many there are."
   },
   "setupSummaryFinishAndOpen": {

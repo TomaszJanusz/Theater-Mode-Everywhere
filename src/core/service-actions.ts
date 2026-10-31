@@ -15,8 +15,9 @@ export interface ServiceActionSource {
   /** Revalidate availability and identity before performing the interaction. */
   activate(id: string): boolean;
   /**
-   * The host runs its own end-of-playback sequence (post-play, an end card, a next-episode countdown) and offers its
-   * steps as actions, so the shared ended curtain stays off and its Replay never competes with that sequence.
+   * The host offers its own next step after the end (a next episode, an up-next or end card, a countdown), so the
+   * ended curtain yields and its Replay never competes with it. Read on the end and on changes while ended: a finale
+   * without such a step gets the curtain as everywhere else.
    */
-  readonly hostEndsPlayback?: true;
+  hostEndsPlayback?(): boolean;
 }

@@ -3,7 +3,8 @@ import { userEvent } from 'vitest/browser';
 
 import { manualClock } from '../../.storybook/manual-clock';
 import { DisposableScope } from '../core/disposable-scope';
-import type { EndScreenSource } from '../core/end-screen';
+import type { EndScreenSource, PlaybackEndSource } from '../core/end-screen';
+import type { ServiceActionSource } from '../core/service-actions';
 import { APPEARANCE_MODES, blockingViolations } from '../test-utils/axe';
 
 import { ENDED_CURTAIN_CLASS, ENDED_CURTAIN_DELAY_MS, mountEndedCurtain, REPLAY_ICON } from './ended-curtain';
@@ -33,7 +34,29 @@ function bar(label: string, hidden = false): HTMLButtonElement {
   return button;
 }
 
-function mount({ next = false, duration = 2, source = undefined as EndScreenSource | undefined } = {}) {
+/**
+ * A service-action source whose host may offer its own next step after the end. Like a provider's DOM watch, a
+ * subscription reads at once; `live` counts the subscriptions still open.
+ */
+function hostSource(offers = false) {
+  const host = { offers, live: 0, subscribed: 0, changed: () => {} };
+  const source: ServiceActionSource = {
+    read: () => [], activate: () => false,
+    hostEndsPlayback: () => host.offers,
+    subscribe(changed) {
+      host.live += 1;
+      host.subscribed += 1;
+      host.changed = changed;
+      changed();
+      return () => { host.live -= 1; host.changed = () => {}; };
+    }
+  };
+  const set = (value: boolean) => { host.offers = value; host.changed(); };
+  return { host, source, set };
+}
+
+function mount({ next = false, duration = 2, source = undefined as EndScreenSource | undefined,
+  host = undefined as ServiceActionSource | undefined, playbackEnd = undefined as PlaybackEndSource | undefined } = {}) {
   scope = new DisposableScope();
   const clock = manualClock();
   const media = new FakeMedia();
@@ -53,7 +76,7 @@ function mount({ next = false, duration = 2, source = undefined as EndScreenSour
     reports.push(shown);
     // As the bar does: the play button turns into Replay before the curtain mirrors it.
     play.setAttribute('aria-label', t(shown ? 'replay' : 'play'));
-  }, clock, source);
+  }, clock, source, host, playbackEnd);
   const curtain = () => queryPlayerUi<HTMLElement>(`.${ENDED_CURTAIN_CLASS}`);
   const mirrors = () => [...curtain()?.querySelectorAll('button') ?? []];
   const end = () => { media.emit('ended', true); clock.advance(ENDED_CURTAIN_DELAY_MS); };
@@ -61,6 +84,30 @@ function mount({ next = false, duration = 2, source = undefined as EndScreenSour
 }
 
 describe('ended curtain', () => {
+  test('provider end overrides empty media, false vetoes native ended, null defers and teardown cancels stale callbacks', () => {
+    let value: boolean | null = true;
+    let changed = () => {};
+    let stopped = false;
+    const playbackEnd: PlaybackEndSource = { ended: () => value,
+      observe(fn) { changed = fn; return () => { stopped = true; }; } };
+    const { clock, media, curtain, scope: owner } = mount({ duration: NaN, playbackEnd });
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain()).not.toBeNull();
+    value = false; media.ended = true; changed();
+    expect(curtain()).toBeNull();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain()).toBeNull();
+    value = null; media.duration = 2; changed();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain()).not.toBeNull();
+    value = false; changed();
+    value = true; changed();
+    owner.dispose(); owner.dispose(); changed();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(stopped).toBe(true);
+    expect(curtain()).toBeNull();
+    expect(clock.pending).toBe(0);
+  });
   test('a provider gets a fresh mount epoch, disposed before hide and on controls teardown', () => {
     const mounts: DisposableScope[] = [];
     let disposed = false;
@@ -105,6 +152,76 @@ describe('ended curtain', () => {
     changed();
     expect(curtain()).toBeNull();
   });
+  test('yields to the host only while it offers its own next step, read when the grace ends', () => {
+    const finale = hostSource();
+    const { end, curtain, clock, media } = mount({ host: finale.source });
+    end();
+    expect(curtain(), 'a finale without a host step gets the curtain').not.toBeNull();
+    finale.set(true);
+    expect(curtain(), 'a next step that appears late takes it down').toBeNull();
+    finale.set(false);
+    clock.advance(ENDED_CURTAIN_DELAY_MS - 1);
+    expect(curtain(), 'a cancelled countdown waits out the grace').toBeNull();
+    clock.advance(1);
+    expect(curtain()).not.toBeNull();
+    media.emit('seeking', false);
+    expect(curtain()).toBeNull();
+    scope!.dispose();
+
+    const offered = hostSource(true);
+    const next = mount({ host: offered.source });
+    next.media.emit('ended', true);
+    offered.set(false);
+    offered.set(true);
+    next.clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(next.curtain(), 'evaluated when the grace ends, not when it starts').toBeNull();
+    expect(next.reports).toEqual([]);
+  });
+
+  test('watches the host only while ended, and never one without a next step to offer', () => {
+    const { host, source } = hostSource();
+    const { media, end, scope: owner } = mount({ host: source });
+    expect(host.live, 'no watch during playback').toBe(0);
+    end();
+    media.emit('ended', true);
+    expect([host.live, host.subscribed]).toEqual([1, 1]);
+    for (const leave of ['seeking', 'loadstart', 'emptied']) {
+      media.emit(leave, false);
+      expect(host.live, leave).toBe(0);
+      end();
+      expect(host.live, leave).toBe(1);
+    }
+    owner.dispose();
+    owner.dispose();
+    expect(host.live, 'disposal ends the watch once').toBe(0);
+
+    let subscribed = 0;
+    const plain: ServiceActionSource = { read: () => [], activate: () => false, subscribe: () => { subscribed += 1; return () => {}; } };
+    const other = mount({ host: plain });
+    other.end();
+    expect(other.curtain()).not.toBeNull();
+    expect(subscribed).toBe(0);
+  });
+
+  test('a provider-reported end over empty media also watches and yields to the host step', () => {
+    let value: boolean | null = false;
+    let changed = () => {};
+    const playbackEnd: PlaybackEndSource = { ended: () => value, observe(fn) { changed = fn; return () => {}; } };
+    const offered = hostSource(true);
+    const { host } = offered;
+    const { clock, curtain, scope: owner } = mount({ duration: NaN, host: offered.source, playbackEnd });
+    value = true; changed();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(host.live).toBe(1);
+    expect(curtain(), 'the host countdown keeps the picture after a post-roll').toBeNull();
+    offered.set(false);
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain(), 'cancelling it brings the curtain').not.toBeNull();
+    value = false; changed();
+    expect([curtain(), host.live]).toEqual([null, 0]);
+    owner.dispose();
+  });
+
   test('shows only after the grace on a real end, and announces it once', async () => {
     const { clock, media, curtain, reports } = mount();
     // Paused a moment before the end: not an end.

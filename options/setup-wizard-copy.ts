@@ -14,7 +14,7 @@ const FALLBACKS: Record<string, string> = {
   setupServicesAll: 'All supported services',
   setupServicesAllDescription: 'Turn on extra features wherever they are available.',
   setupServicesChoose: 'Choose services',
-  setupServicesChooseDescription: 'Pick the services you want them on.',
+  setupServicesChooseDescription: 'Pick the services where you want the extra features.',
   setupServicesNone: 'None',
   setupServicesNoneDescription: 'Plain theater mode only. Every video still gets theater mode and its controls.',
   setupServicesFooter: 'You can change this later in Settings → Features → Rich Theater Experience.',

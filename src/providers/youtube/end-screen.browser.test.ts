@@ -31,6 +31,7 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
         const player = document.querySelector('#movie_player')!;
         const video = document.querySelector('video')!;
         player.prepend(video);
+        player.classList.remove('ended-mode');
         // The fixture uses YouTube's native links but supplies a deterministic host SPA handler.
         for (const anchor of player.querySelectorAll<HTMLAnchorElement>('a')) anchor.addEventListener('click', event => {
           event.preventDefault();
@@ -140,16 +141,6 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
         await page.locator('.theater-end-screen').waitFor({ state: 'detached' });
       }
       await end();
-      // Active host autoplay removes even the plain curtain.
-      await page.evaluate(() => {
-        const toggle = document.createElement('div');
-        toggle.className = 'ytp-autonav-toggle-button';
-        toggle.setAttribute('aria-checked', 'true');
-        document.querySelector('#movie_player')!.append(toggle);
-      });
-      await page.locator('.theater-ended-curtain').waitFor({ state: 'detached' });
-      await page.evaluate(() => document.querySelector('.ytp-autonav-toggle-button')!.setAttribute('aria-checked', 'false'));
-      await page.locator('.theater-end-screen-tile').first().waitFor();
       await page.evaluate(() => document.documentElement.setAttribute('data-te-youtube-integration-off', ''));
       await page.locator('.theater-end-screen').waitFor({ state: 'detached' });
       assert.equal(await page.locator('.theater-ended-curtain').count(), 1, 'RTE off keeps the generic curtain');
