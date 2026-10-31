@@ -14,6 +14,7 @@ import { CAPTION_HUD, hud, stage } from '../hud-story';
 // `Components/Language notice`.
 
 const LOADING: CaptionHudView = { kind: 'loading', title: 'Subtitles', detail: 'Loading…' };
+const named = (detail: string): CaptionHudView => ({ kind: 'loading', title: 'Subtitles', detail, announce: `Loading subtitles: ${detail}` });
 const ON: CaptionHudView = { kind: 'status', title: 'Subtitles', detail: 'English' };
 const AUDIO: LanguageChanges = { audio: { kind: 'status', title: 'Audio', detail: 'Français' } };
 
@@ -314,3 +315,140 @@ for (const [name, locale] of [['LTR', 'en'], ['RTL', 'ar']] as const) {
     globals: { locale }
   }));
 }
+
+const announcement = () => getPlayerUiRoot().getElementById('theater-announcements')!;
+const spinnerOf = () => notice()!.querySelector<HTMLElement>('[data-language-line="subtitles"] .language-hud-spinner')!;
+const valueText = () => notice()!.querySelector<HTMLElement>('[data-language-line="subtitles"] .language-hud-value')!;
+
+test('A named load shows its language beside the spinner, reads it aloud, and keeps the text when it resolves', () => runHudCase(hudStory(h => h.triggerCaptionHud(named('Polski')), {
+  play: async () => {
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
+    const spinner = spinnerOf();
+    const name = notice()!.querySelector<HTMLElement>('.language-hud-loading-text')!;
+    await expect(lines()).toEqual([['subtitles', 'SubtitlesPolski']]);
+    await vi.waitFor(() => expect(announcement().textContent).toBe('Loading subtitles: Polski'));
+    await expect(spinner.getAnimations()[0]).toBeInstanceOf(CSSAnimation);
+
+    hud().triggerCaptionHud({ kind: 'status', title: 'Subtitles', detail: 'Polski' });
+    // The name is the same node, untouched by any fade or reveal: only the spinner zooms out.
+    await expect(valueText().contains(name)).toBe(true);
+    await expect(ownMotion(name)).toEqual([]);
+    await expect(ownMotion(spinner).length).toBe(1);
+    ownMotion(spinner)[0].finish();
+    await vi.waitFor(() => expect(spinner.isConnected).toBe(false));
+    await finishMorph(notice()!);
+    await expect(name.isConnected).toBe(true);
+    await expect(name.className).toBe('language-hud-text');
+    await expect(valueText().querySelector('.language-hud-loading')).toBeNull();
+    await expect(lines()).toEqual([['subtitles', 'SubtitlesPolski']]);
+    await vi.waitFor(() => expect(announcement().textContent).toBe('Subtitles: Polski'));
+  }
+})));
+
+test('A resolve that differs from the name takes the usual route: the name fades and the result reveals', () => runHudCase(hudStory(h => h.triggerCaptionHud(named('Polski')), {
+  play: async () => {
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
+    const name = notice()!.querySelector<HTMLElement>('.language-hud-loading-text')!;
+    hud().triggerCaptionHud({ kind: 'status', title: 'Subtitles', detail: "Couldn't load" });
+    await expect(ownMotion(name).length).toBe(1);
+    await expect(valueText().querySelector('.language-hud-text')?.textContent).toBe("Couldn't load");
+  }
+})));
+
+test('A superseded pick names the new language at once and keeps the spinner turning', () => runHudCase(hudStory(h => h.triggerCaptionHud(named('Polski')), {
+  play: async () => {
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
+    const plate = notice()!;
+    const spinner = spinnerOf();
+    const turn = spinner.getAnimations()[0];
+    hud().triggerCaptionHud(named('Deutsch'));
+    await expect(notice()).toBe(plate);
+    await expect(spinnerOf()).toBe(spinner);
+    await expect(spinner.getAnimations()).toEqual([turn]);
+    await expect(lines()).toEqual([['subtitles', 'SubtitlesDeutsch']]);
+    await vi.waitFor(() => expect(announcement().textContent).toBe('Loading subtitles: Deutsch'));
+    // A superseded pick that is turned off again leaves nothing behind.
+    hud().triggerCaptionHud({ kind: 'dismiss' });
+    await expect(plates()).toBe(0);
+    await expect(stage().clock.pending).toBe(0);
+  }
+})));
+
+test('A pick superseded before its spinner shows never names the old language', () => runHudCase(hudStory(h => h.triggerCaptionHud(named('Polski')), {
+  play: async () => {
+    stage().advance(LANGUAGE_LOAD_DELAY_MS - 100);
+    hud().triggerCaptionHud(named('Deutsch'));
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
+    await expect(lines()).toEqual([['subtitles', 'SubtitlesDeutsch']]);
+  }
+})));
+
+test('A load of an unknown language keeps the generic text, and a named one then replaces it in place', () => runHudCase(hudStory(h => h.triggerCaptionHud(LOADING), {
+  play: async () => {
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
+    const spinner = spinnerOf();
+    await expect(lines()).toEqual([['subtitles', 'SubtitlesLoading…']]);
+    await vi.waitFor(() => expect(announcement().textContent).toBe('Subtitles: Loading…'));
+    hud().triggerCaptionHud(named('Polski'));
+    await expect(spinnerOf()).toBe(spinner);
+    await expect(lines()).toEqual([['subtitles', 'SubtitlesPolski']]);
+  }
+})));
+
+for (const [name, locale, detail] of [
+  ['LTR long name', 'fr', 'Português (Brasil), automatic captions generated from the original English audio track'],
+  ['RTL', 'ar', 'العربية (المملكة العربية السعودية)، ترجمة تلقائية منشأة من المسار الصوتي الإنجليزي الأصلي']
+] as const) {
+  test(`${name}: a long name wraps beside the spinner, the label centred on the row, and keeps its text when it resolves`, () => runHudCase({
+    ...hudStory(h => h.triggerCaptionHud(named(detail)), {
+      play: async () => {
+        stage().advance(LANGUAGE_LOAD_DELAY_MS);
+        const plate = notice()!;
+        await finishMorph(plate);
+        const value = valueText();
+        const label = value.previousElementSibling!;
+        const lineHeight = Number.parseFloat(getComputedStyle(value).lineHeight);
+        await expect(value.getBoundingClientRect().height).toBeGreaterThan(lineHeight * 1.5);
+        await expect(value.getBoundingClientRect().width).toBeLessThanOrEqual(22 * 16 + 1);
+        const centre = (node: Element) => node.getBoundingClientRect().top + node.getBoundingClientRect().height / 2;
+        await expect(centre(label)).toBeCloseTo(centre(value), 0);
+        await expect(plate.scrollWidth).toBeLessThanOrEqual(plate.clientWidth + 1);
+
+        hud().triggerCaptionHud({ kind: 'status', title: 'Subtitles', detail });
+        ownMotion(spinnerOf())[0].finish();
+        await vi.waitFor(() => expect(plate.querySelector('.language-hud-spinner')).toBeNull());
+        await finishMorph(plate);
+        await expect(valueText().textContent).toBe(detail);
+        await expect(centre(label)).toBeCloseTo(centre(valueText()), 0);
+      }
+    }),
+    globals: { locale }
+  }));
+}
+
+test('Reduce motion: a named load resolves at once and keeps the name without motion', () => runHudCase({
+  ...hudStory(h => h.triggerCaptionHud(named('Polski')), {
+    play: async () => {
+      stage().advance(LANGUAGE_LOAD_DELAY_MS);
+      const name = notice()!.querySelector<HTMLElement>('.language-hud-loading-text')!;
+      hud().triggerCaptionHud({ kind: 'status', title: 'Subtitles', detail: 'Polski' });
+      await expect(notice()!.querySelector('.language-hud-spinner, .language-hud-loading')).toBeNull();
+      await expect(name.isConnected).toBe(true);
+      await expect(ownMotion(notice()!)).toEqual([]);
+      await expect(lines()).toEqual([['subtitles', 'SubtitlesPolski']]);
+    }
+  }),
+  globals: { reduceMotion: 'on' }
+}));
+
+test('Cleanup during a named resolve leaves no node, animation or timer', () => runHudCase(hudStory(h => h.triggerCaptionHud(named('Polski')), {
+  play: async () => {
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
+    hud().triggerCaptionHud({ kind: 'status', title: 'Subtitles', detail: 'Polski' });
+    hud().removeCaptionHud();
+    hud().removeCaptionHud();
+    await expect(uiNodeCount()).toBe(0);
+    await expect(activeAnimationCount()).toBe(0);
+    await expect(stage().clock.pending).toBe(0);
+  }
+})));

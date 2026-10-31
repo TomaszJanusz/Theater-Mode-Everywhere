@@ -51,6 +51,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   subtitlesHudOn: 'On',
   subtitlesHudNone: 'Not available',
   subtitlesHudFailed: "Couldn't load",
+  subtitlesLoadingNamedHud: "Loading subtitles: $1",
 
 };
 

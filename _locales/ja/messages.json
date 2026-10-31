@@ -610,6 +610,15 @@
   "subtitlesHudFailed": {
     "message": "読み込めませんでした"
   },
+  "subtitlesLoadingNamedHud": {
+    "message": "字幕を読み込み中: $LABEL$",
+    "description": "On-video notice and screen reader announcement while a subtitle track loads. $LABEL$ is the track's name, usually its language (for example \"Polish\"); it stays in the track's own language and is inserted unchanged. Keep \"subtitles\" as the umbrella term and the label last.",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "noSubtitlesAvailable": {
     "message": "字幕はありません"
   },

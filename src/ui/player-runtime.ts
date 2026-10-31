@@ -1108,7 +1108,10 @@ function showCaptionHud(payload: CaptionHudPayload): void {
   }
   const title = t('subtitlesMenuTitle');
   if (payload.result === 'loading') {
-    triggerCaptionHud({ kind: 'loading', title, detail: t('loadingLabel') });
+    // The language is named as soon as it is known, so the viewer sees what loads, not only that something does.
+    triggerCaptionHud(payload.label
+      ? { kind: 'loading', title, detail: payload.label, announce: t('subtitlesLoadingNamedHud', payload.label) }
+      : { kind: 'loading', title, detail: t('loadingLabel') });
     return;
   }
   const detail = payload.result === 'on' && payload.label ? payload.label : t(SUBTITLE_HUD_VALUES[payload.result]);
