@@ -1339,8 +1339,8 @@
     "message": "Dostosuj skróty"
   },
   "endScreenSuggestions": {
-    "message": "Proponowane filmy",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "message": "Rekomendacje",
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "Ustawienia",
@@ -1352,11 +1352,11 @@
   },
   "providerShowRecommendations": {
     "message": "Pokazuj rekomendacje",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
-    "message": "Pokazuj proponowane filmy po zakończeniu odtwarzania.",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "message": "Pokazuj rekomendowane filmy po zakończeniu odtwarzania.",
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater jest wyłączony globalnie. Włącz go najpierw w sekcji Funkcje.",
@@ -1387,7 +1387,7 @@
     "description": "First-run setup button: close the setup without changing any setting."
   },
   "setupWelcome": {
-    "message": "Dziękuję za instalację! Kilka wyborów decyduje o tym, co rozszerzenie robi na odwiedzanych stronach. Nic nie zostanie zapisane, zanim nie zakończysz.",
+    "message": "Dziękuję za instalację! Kilka wyborów decyduje o tym, co rozszerzenie robi na odwiedzanych stronach. Nic nie zostanie zapisane, dopóki nie zakończysz.",
     "description": "Intro on the first step of the first-run setup."
   },
   "setupServicesTitle": {
@@ -1411,8 +1411,8 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Zaznacz serwisy, w których mają działać.",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "message": "Zaznacz serwisy, w których mają działać dodatkowe funkcje.",
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
     "message": "Żaden",

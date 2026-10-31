@@ -1340,7 +1340,7 @@
   },
   "endScreenSuggestions": {
     "message": "Рекомендуемые видео",
-    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+    "description": "Accessible label for the recommended video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   },
   "providerSettingsButton": {
     "message": "Настройки",
@@ -1352,11 +1352,11 @@
   },
   "providerShowRecommendations": {
     "message": "Показывать рекомендации",
-    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+    "description": "Switch label in provider settings and on the end curtain. Controls the recommended videos, not the curtain itself."
   },
   "providerShowRecommendationsDescription": {
-    "message": "Показывать предложенные видео после окончания воспроизведения.",
-    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+    "message": "Показывать рекомендуемые видео после окончания воспроизведения.",
+    "description": "Description of the provider recommendation switch. Recommendations appear only when playback ends."
   },
   "providerAutoTheaterGlobalOff": {
     "message": "AutoTheater отключён глобально. Сначала включите его в разделе «Функции».",
@@ -1411,15 +1411,15 @@
     "description": "First-run setup choice: pick services one by one with switches."
   },
   "setupServicesChooseDescription": {
-    "message": "Отметьте сервисы, на которых они нужны.",
-    "description": "Description of the 'Choose services' choice. 'Them' refers to the extra features."
+    "message": "Отметьте сервисы, на которых нужны дополнительные функции.",
+    "description": "Description of the 'Choose services' choice. The chosen services get the extra features."
   },
   "setupServicesNone": {
-    "message": "Никакие",
+    "message": "Ни одного",
     "description": "First-run setup choice and summary value: no service integrations."
   },
   "setupServicesNoneDescription": {
-    "message": "Только обычный режим кино. Любое видео по-прежнему получает режим кино и его управление.",
+    "message": "Только обычный режим кино. Режим кино и его управление по-прежнему доступны для любого видео.",
     "description": "Description of the 'None' choice in the first-run setup."
   },
   "setupServicesFooter": {
