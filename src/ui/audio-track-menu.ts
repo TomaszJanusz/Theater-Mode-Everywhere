@@ -97,7 +97,7 @@ export function mountAudioTrackMenu(options: {
   scope.listen(button, 'click', (event: MouseEvent) => {
     event.stopPropagation();
     update();
-    settings.openSubview(button, () => menu.firstFocus());
+    settings.openSubview(button, () => menu.firstFocus(), event.detail === 0);
     settings.subview.querySelector('.theater-cc-menu-list .active')?.scrollIntoView({ block: 'nearest' });
   });
   update();
