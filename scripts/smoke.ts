@@ -3,7 +3,6 @@ import path from 'node:path';
 
 import { type BrowserContext, type Page } from 'playwright';
 
-import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 
 import { runBrowsers } from './smoke/browsers';
 import { fail, extensionWorker, waitForPlayer, theaterEntered, THEATER_VIDEO_CLASS, PARENT_HOST, PARENT_BLACKLIST, ROOT, timeScenario, setBlacklist } from './smoke/helpers';
@@ -15,7 +14,6 @@ function delay(ms: number): Promise<void> {
 export async function assertShortcutManagement(page: Page, context: BrowserContext): Promise<void> {
   return timeScenario('assertShortcutManagement', { syncWrites: 10 }, async () => {
     const worker = await extensionWorker(context);
-    await worker.evaluate(async ({ key, id }) => { await chrome.storage.local.set({ [key]: id }); }, { key: WHATS_NEW_ACK_STORAGE_KEY, id: WHATS_NEW_RELEASE.id });
     const options = await context.newPage();
     const second = await context.newPage();
     const screenshot = async (target: Page, suffix: string) => {
@@ -280,8 +278,6 @@ export async function assertLanguageMenu(page: Page, origin: string, context: Br
     const english = catalog('en');
     const polish = catalog('pl');
     const arabic = catalog('ar');
-    await worker.evaluate(({ key, release }) => chrome.storage.local.set({ [key]: release }),
-      { key: WHATS_NEW_ACK_STORAGE_KEY, release: WHATS_NEW_RELEASE.id });
     const options = await context.newPage();
     const otherOptions = await context.newPage();
     const popup = await context.newPage();

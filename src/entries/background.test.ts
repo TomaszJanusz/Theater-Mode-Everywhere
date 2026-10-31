@@ -4,21 +4,24 @@ import { runInNewContext } from 'node:vm';
 
 import { MAX_CAPTION_BYTES } from '../platform/media-url-policy';
 import { bundleModules } from '../test-utils/player-boot';
-import { CURRENT_VERSION, CURRENT_GENERATION, PREVIOUS_GENERATION } from '../test-utils/release';
-import { WHATS_NEW_RELEASE } from '../whatsNew-release';
 
 const bundle = bundleModules(["import './entries/background';"], 'BackgroundTest');
+const CURRENT_VERSION = '2.1.0';
+const ignore = { addListener() {} };
+/** Start-up surface for tests about other messages: no announcement is stored. */
+const quiet = { action: { async setBadgeText() {} } };
+const noAnnouncement = { async get() { return {}; } };
 const url = 'https://captions.twitch.tv/123/en/caption.vtt';
 type Reply = { ok: boolean; body?: string; error?: string };
 
 function broker(fetcher: typeof fetch): () => Promise<Reply> {
   let listener!: (message: { action: string; url: string }, sender: object, reply: (value: Reply) => void) => boolean;
-  const ignore = { addListener() {} };
   runInNewContext(bundle, {
     fetch: fetcher, URL, AbortController, TextDecoder, Uint8Array, setTimeout, clearTimeout, console,
     chrome: {
-      tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore },
-      runtime: { getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore, onMessage: { addListener(fn: typeof listener) { listener = fn; } } }
+      ...quiet,
+      tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore, local: noAnnouncement },
+      runtime: { getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore, onStartup: ignore, onMessage: { addListener(fn: typeof listener) { listener = fn; } } }
     }
   });
   return () => new Promise(resolve => assert.equal(listener({ action: 'theater-fetch-media', url }, {}, resolve), true));
@@ -57,84 +60,146 @@ it('background broker accepts captions after safe redirects and cancels unsafe r
 });
 
 
-it('initializes fresh installs at the installed generation and preserves update acknowledgements', async () => {
-  for (const reason of ['install', 'update']) {
-    let onInstalled!: (details: { reason: string; previousVersion?: string }) => Promise<void>;
-    const local: Record<string, unknown> = { newFeaturesSeenThrough: PREVIOUS_GENERATION, whatsNewAcknowledgedId: WHATS_NEW_RELEASE.id };
-    const ignore = { addListener() {} };
-    runInNewContext(bundle, {
-      console,
-      chrome: {
-        tabs: { onActivated: ignore, onUpdated: ignore },
-        storage: {
-          onChanged: ignore,
-          sync: { async get() { return { shortcuts: {}, blacklist: [] }; } },
-          local: { async get() { return { ...local }; }, async set(values: object) { Object.assign(local, values); }, async remove(keys: string[]) { keys.forEach(key => delete local[key]); } }
-        },
-        runtime: {
-          getManifest: () => ({ version: CURRENT_VERSION }),
-          onInstalled: { addListener(listener: typeof onInstalled) { onInstalled = listener; } },
-          onMessage: ignore
-        }
-      }
-    });
-    await onInstalled({ reason, previousVersion: reason === 'update' ? `${PREVIOUS_GENERATION}.0` : undefined });
-    assert.equal(local.newFeaturesSeenThrough, reason === 'install' ? CURRENT_GENERATION : PREVIOUS_GENERATION);
-  }
-});
+type Details = { reason: string; previousVersion?: string };
+type Listener = (message: unknown, sender: object, reply: (value: unknown) => void) => boolean;
 
-it('routes badge hydration and acknowledgements through the background and rejects foreign/invalid requests', async () => {
-  let listener!: (message: object, sender: object, reply: (value: unknown) => void) => boolean;
-  const values: Record<string, unknown> = { newFeaturesSeenThrough: PREVIOUS_GENERATION };
-  const ignore = { addListener() {} };
+/** The background over an in-memory profile: storage notifies `onChanged` like the browser, the badge records its text. */
+function profile(version: string, local: Record<string, unknown> = {}, sync: Record<string, unknown> = {}) {
+  const storageListeners: Array<(changes: object, area: string) => void> = [];
+  const badge = { text: '', color: '' };
+  const badgeWaiters: Array<() => void> = [];
+  /** The next badge write, such as the one each worker start makes from storage. */
+  const nextBadge = () => new Promise<void>(resolve => { badgeWaiters.push(resolve); });
+  const started = nextBadge();
+  const opened: string[] = [];
+  const handlers: { installed?: (details: Details) => Promise<void>; startup?: () => void; message?: Listener } = {};
+  const area = (name: string, data: Record<string, unknown>) => ({
+    async get(keys: string | string[] | null) {
+      if (keys === null) return { ...data };
+      return Object.fromEntries([keys].flat().filter(key => key in data).map(key => [key, data[key]]));
+    },
+    async set(values: Record<string, unknown>) {
+      const changes = Object.fromEntries(Object.entries(values).map(([key, newValue]) => [key, { oldValue: data[key], newValue }]));
+      Object.assign(data, values);
+      for (const listener of storageListeners) listener(changes, name);
+    },
+    async remove(keys: string | string[]) {
+      const changes: Record<string, object> = {};
+      for (const key of [keys].flat()) if (key in data) { changes[key] = { oldValue: data[key] }; delete data[key]; }
+      if (Object.keys(changes).length) for (const listener of storageListeners) listener(changes, name);
+    }
+  });
   runInNewContext(bundle, {
     console,
     chrome: {
-      tabs: { onActivated: ignore, onUpdated: ignore },
+      action: {
+        async setBadgeText({ text }: { text: string }) { badge.text = text; badgeWaiters.splice(0).forEach(resolve => resolve()); },
+        async setBadgeBackgroundColor({ color }: { color: string }) { badge.color = color; }
+      },
+      tabs: { onActivated: ignore, onUpdated: ignore, async query() { return []; }, async create({ url }: { url: string }) { opened.push(url); } },
       storage: {
-        onChanged: ignore,
-        local: {
-          async get() { return { ...values }; },
-          async set(next: object) { Object.assign(values, next); },
-          async remove(keys: string[]) { keys.forEach(key => delete values[key]); }
-        }
+        onChanged: { addListener(listener: (changes: object, area: string) => void) { storageListeners.push(listener); } },
+        local: area('local', local), sync: area('sync', sync)
       },
       runtime: {
-        id: 'extension', getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore,
-        onMessage: { addListener(fn: typeof listener) { listener = fn; } }
+        id: 'extension', getURL: (file: string) => `chrome-extension://extension/${file}`,
+        getManifest: () => ({ version, options_ui: { page: 'options/options.html' } }),
+        async openOptionsPage() { opened.push('options'); },
+        onInstalled: { addListener(fn: typeof handlers.installed) { handlers.installed = fn; } },
+        onStartup: { addListener(fn: typeof handlers.startup) { handlers.startup = fn; } },
+        onMessage: { addListener(fn: Listener) { handlers.message = fn; } }
       }
     }
   });
-  let replied = false;
-  assert.equal(listener({ action: 'feature-highlights', operation: 'read' }, { id: 'foreign' }, () => { replied = true; }), false);
-  assert.equal(listener({ action: 'feature-highlights', operation: 'erase' }, { id: 'extension' }, () => { replied = true; }), false);
-  assert.equal(listener({ action: 'feature-highlights', operation: 'toString' }, { id: 'extension' }, () => { replied = true; }), false);
-  assert.equal(replied, false);
-  const request = (operation: string) => new Promise<unknown>(resolve => {
-    assert.equal(listener({ action: 'feature-highlights', operation }, { id: 'extension' }, resolve), true);
-  });
-  const snapshot = await request('read') as Record<string, unknown>;
-  assert.equal(snapshot.newFeaturesSeenThrough, PREVIOUS_GENERATION);
-  assert.equal((snapshot.newFeaturesWindow as { generation: string }).generation, CURRENT_GENERATION);
-  await request('acknowledge');
-  assert.equal(values.newFeaturesSeenThrough, CURRENT_GENERATION);
-  await request('hide');
-  assert.equal(values.newFeaturesHiddenThrough, CURRENT_GENERATION);
-  await request('restore');
-  assert.equal('newFeaturesHiddenThrough' in values, false);
+  return {
+    local, sync, badge, opened, started,
+    // Storage notifies synchronously here, so the badge follows before each handler settles.
+    installed: (details: Details) => handlers.installed!(details),
+    startup: async () => { const written = nextBadge(); handlers.startup!(); await written; },
+    send: (message: object, sender: object = { id: 'extension' }) => new Promise<unknown>(resolve => {
+      assert.equal(handlers.message!(message, sender, resolve), true);
+    }),
+    refuse: (message: object, sender: object) => handlers.message!(message, sender, () => assert.fail('replied'))
+  };
+}
+
+it('announces an update to a newer minor or major version with a NEW badge, and never opens Settings', async () => {
+  const update = profile('2.1.0');
+  await update.started;
+  await update.installed({ reason: 'update', previousVersion: '2.0.8' });
+  assert.deepEqual(JSON.parse(JSON.stringify(update.local.pendingUpdate)), { version: '2.1.0', since: '2.0' });
+  assert.deepEqual({ ...update.badge }, { text: 'NEW', color: '#facc15' });
+  assert.deepEqual(update.opened, []);
+  // Patch updates, reloads of the same build and installs stay silent; install still writes the default shortcuts.
+  for (const [version, details] of [['2.1.1', { reason: 'update', previousVersion: '2.1.0' }], ['2.1.0', { reason: 'update', previousVersion: '2.1.0' }],
+    ['2.1.0', { reason: 'install' }], ['0.26.1231.2359', { reason: 'update', previousVersion: '2.0.8' }]] as const) {
+    const silent = profile(version);
+    await silent.started;
+    await silent.installed(details);
+    assert.equal('pendingUpdate' in silent.local, false, `${version} after ${JSON.stringify(details)}`);
+    assert.equal(silent.badge.text, '');
+    assert.deepEqual(silent.opened, []);
+    if (details.reason === 'install') assert.equal((silent.sync.shortcuts as { toggle: string }).toggle, 'T');
+  }
+});
+
+it('restores the badge from the stored announcement when the worker starts and at browser start-up', async () => {
+  const pending = { version: '2.1.0', since: '2.0' };
+  const woken = profile('2.1.0', { pendingUpdate: pending });
+  await woken.started;
+  assert.equal(woken.badge.text, 'NEW');
+  // Browsers drop badge text on restart; onStartup applies it again.
+  woken.badge.text = '';
+  await woken.startup();
+  assert.equal(woken.badge.text, 'NEW');
+  const idle = profile('2.1.0', { pendingUpdate: { version: 'corrupt' } });
+  await idle.startup();
+  assert.equal(idle.badge.text, '');
+});
+
+it('clears the announcement and the badge for an acknowledgement from this extension only', async () => {
+  const update = profile('2.1.0', { pendingUpdate: { version: '2.1.0', since: '2.0' } });
+  await update.started;
+  assert.equal(update.refuse({ action: 'acknowledge-update' }, { id: 'foreign' }), false);
+  assert.equal(update.refuse({ action: 'acknowledge-update' }, {}), false);
+  assert.equal(update.badge.text, 'NEW');
+  assert.equal((await update.send({ action: 'acknowledge-update' }) as { ok: boolean }).ok, true);
+  assert.equal('pendingUpdate' in update.local, false);
+  assert.equal(update.badge.text, '');
+});
+
+it('keeps the oldest unacknowledged version across updates, so skipped highlights add up', async () => {
+  const update = profile('2.3.0', { pendingUpdate: { version: '2.1.0', since: '2.0' } });
+  await update.started;
+  await update.installed({ reason: 'update', previousVersion: '2.1.0' });
+  assert.deepEqual(JSON.parse(JSON.stringify(update.local.pendingUpdate)), { version: '2.3.0', since: '2.0' });
+});
+
+it('removes the NEW badge and automatic prompt storage on update, leaving other keys', async () => {
+  const local = {
+    newFeaturesSeenThrough: '2.0', newFeaturesSeenItems: [], newFeaturesWindow: {}, newFeaturesHiddenThrough: '2.0',
+    whatsNewAcknowledgedId: '2.0', whatsNewAutoOpened: {}, 'migration:bound-whats-new-auto-open:v1': true,
+    'whatsNewAutoOpenedRelease:2.0:2.0.0': true, unrelated: 1
+  };
+  const sync = { highlightNewFeatures: false, blacklist: [] };
+  const update = profile('2.0.9', local, sync);
+  await update.started;
+  await update.installed({ reason: 'update', previousVersion: '2.0.8' });
+  assert.deepEqual(Object.keys(update.local), ['unrelated', 'migration:remove-legacy-youtube-exclusion:v1']);
+  assert.deepEqual(Object.keys(update.sync), ['blacklist']);
 });
 
 it('opens only the manifest options page for valid requests from this extension', async () => {
   let listener!: (message: unknown, sender: object, reply: (value: unknown) => void) => boolean;
   let opened = 0;
   let fail = false;
-  const ignore = { addListener() {} };
   runInNewContext(bundle, {
     console: { error() {} },
     chrome: {
-      tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore },
+      ...quiet,
+      tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore, local: noAnnouncement },
       runtime: {
-        id: 'extension', getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore,
+        id: 'extension', getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore, onStartup: ignore,
         onMessage: { addListener(fn: typeof listener) { listener = fn; } },
         async openOptionsPage() { opened++; if (fail) throw new Error('unavailable'); }
       }
@@ -168,10 +233,10 @@ it('opens Settings at the Shortcuts tab, reusing an open Settings tab', async ()
   const page = 'chrome-extension://extension/options/options.html';
   const tabs = [{ id: 3, windowId: 1, url: 'https://player.test/' }];
   const calls: unknown[] = [];
-  const ignore = { addListener() {} };
   runInNewContext(bundle, {
     console: { error() {} },
     chrome: {
+      ...quiet,
       tabs: {
         onActivated: ignore, onUpdated: ignore,
         async query() { return tabs; },
@@ -179,9 +244,9 @@ it('opens Settings at the Shortcuts tab, reusing an open Settings tab', async ()
         async update(id: number, options: object) { calls.push(['update', id, options]); }
       },
       windows: { async update(id: number, options: object) { calls.push(['focus', id, options]); } },
-      storage: { onChanged: ignore },
+      storage: { onChanged: ignore, local: noAnnouncement },
       runtime: {
-        id: 'extension', onInstalled: ignore, getURL: (file: string) => `chrome-extension://extension/${file}`,
+        id: 'extension', onInstalled: ignore, onStartup: ignore, getURL: (file: string) => `chrome-extension://extension/${file}`,
         getManifest: () => ({ version: CURRENT_VERSION, options_ui: { page: 'options/options.html' } }),
         onMessage: { addListener(fn: typeof listener) { listener = fn; } },
         async openOptionsPage() { calls.push(['openOptionsPage']); }
@@ -206,10 +271,10 @@ it('opens one Settings tab for rapid clicks and falls back to a new tab when the
   const tabs: Array<{ id: number; windowId: number; url: string }> = [];
   const calls: unknown[] = [];
   let closedSincePing = false;
-  const ignore = { addListener() {} };
   runInNewContext(bundle, {
     console: { error() {} },
     chrome: {
+      ...quiet,
       tabs: {
         onActivated: ignore, onUpdated: ignore,
         async query() { await Promise.resolve(); return tabs.slice(); },
@@ -217,9 +282,9 @@ it('opens one Settings tab for rapid clicks and falls back to a new tab when the
         async update(id: number, options: object) { calls.push(['update', id, options]); if (closedSincePing) throw new Error('No tab with id'); }
       },
       windows: { async update(id: number, options: object) { calls.push(['focus', id, options]); } },
-      storage: { onChanged: ignore },
+      storage: { onChanged: ignore, local: noAnnouncement },
       runtime: {
-        id: 'extension', onInstalled: ignore, getURL: (file: string) => `chrome-extension://extension/${file}`,
+        id: 'extension', onInstalled: ignore, onStartup: ignore, getURL: (file: string) => `chrome-extension://extension/${file}`,
         getManifest: () => ({ version: CURRENT_VERSION, options_ui: { page: 'options/options.html' } }),
         onMessage: { addListener(fn: typeof listener) { listener = fn; } }
       }

@@ -458,6 +458,28 @@
   "whatsNewDialogTitle": {
     "message": "Les points forts de la mise à jour"
   },
+  "updatePanelTitle": {
+    "message": "Mis à jour vers la version $VERSION$",
+    "description": "Popup panel heading shown after the extension updated to a new version. $VERSION$ is a major.minor number such as 2.1.",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "updateSeeWhatsNew": {
+    "message": "Voir les nouveautés",
+    "description": "Popup button under the update heading; opens Update highlights in Settings."
+  },
+  "updateMenuLabel": {
+    "message": "Version $VERSION$ – voir les nouveautés",
+    "description": "Player settings menu row shown after an update, in place of Extension settings; opens Update highlights. $VERSION$ is a major.minor number such as 2.1. Keep it short.",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
   "dialogAcknowledge": {
     "message": "Compris"
   },
@@ -1248,22 +1270,6 @@
   },
   "badgeBetaDescription": {
     "message": "Bêta, fonctionnalité expérimentale"
-  },
-  "badgeNew": {
-    "message": "Nouveauté",
-    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
-  },
-  "highlightNewFeaturesTitle": {
-    "message": "Mettre en évidence les nouvelles fonctionnalités"
-  },
-  "highlightNewFeaturesDescription": {
-    "message": "Afficher la mention « Nouveauté » pour les fonctionnalités récemment ajoutées."
-  },
-  "highlightNewFeaturesHide": {
-    "message": "Masquer jusqu’à la prochaine version"
-  },
-  "highlightNewFeaturesRestore": {
-    "message": "Rétablir les badges"
   },
   "highContrastTitle": {
     "message": "Contraste élevé"

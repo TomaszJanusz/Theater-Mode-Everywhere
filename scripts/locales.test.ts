@@ -71,9 +71,15 @@ describe('locale catalogs', () => {
   });
 
   it('keeps language setting fallbacks identical to English', () => {
-    for (const key of ['languageTitle', 'languageDescription', 'languageAutomatic', 'highlightNewFeaturesHide', 'highlightNewFeaturesRestore']) {
+    for (const key of ['languageTitle', 'languageDescription', 'languageAutomatic']) {
       assert.equal(FALLBACK_MESSAGES[key], canonical[key].message);
     }
+  });
+
+  it('keeps the update notice fallbacks identical to English', () => {
+    const english = (key: string) => canonical[key].message.replace('$VERSION$', '$1');
+    for (const key of ['updatePanelTitle', 'updateSeeWhatsNew']) assert.equal(FALLBACK_MESSAGES[key], english(key), key);
+    assert.equal(PLAYER_I18N_FALLBACKS.updateMenuLabel, english('updateMenuLabel'));
   });
 
   it('uses valid message structures', () => {

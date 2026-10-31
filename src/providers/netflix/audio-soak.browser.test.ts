@@ -15,8 +15,7 @@ const bundle = bundleModules([
   "export { AudioTrackController } from './media-features/audio-tracks';",
   "export { mountAudioTrackMenu } from './ui/audio-track-menu';",
   "export { createPlayerSettings } from './ui/player-settings';",
-  "export { DisposableScope } from './core/disposable-scope';",
-  "export { resolveFeatureHighlights } from './feature-highlights';"
+  "export { DisposableScope } from './core/disposable-scope';"
 ], 'Soak');
 
 // Injected recovery clock: assertions observe the UI, never call list() to cause recovery.
@@ -43,9 +42,8 @@ const setup = `window.now = 0; window.nextTimer = 0; window.tasks = new Map(); w
   window.composite = new Soak.CompositeMediaAdapter([adapter]);
   window.scope = new Soak.DisposableScope();
   const noop = () => {}; const t = key => key;
-  const highlights = Soak.resolveFeatureHighlights('2.1.0');
   window.settings = Soak.createPlayerSettings({ t, actions: { setIcon: noop, updateCaptionDock: noop, showToolbar: noop },
-    paintOverlay: noop, ui: () => ({ featureHighlights: highlights, shortcuts: {} }), uiStore: { subscribe: () => noop } }, scope);
+    paintOverlay: noop, ui: () => ({ shortcuts: {} }), uiStore: { subscribe: () => noop } }, scope);
   document.body.append(settings.container);
   window.reports = []; window.saves = []; window.menu = null;
   window.controller = new Soak.AudioTrackController({ preference: () => null, locales: () => ['en'],

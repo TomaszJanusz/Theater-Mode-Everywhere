@@ -1,5 +1,4 @@
-import { isOpenOptionsRequest, type OptionsSection } from '../protocol/options-page';
-import { createFeatureHighlightsLifecycle } from '../feature-highlights-lifecycle';
+import { ACK_UPDATE_ACTION, isOpenOptionsRequest, type OptionsSection } from '../protocol/options-page';
 import { loadLanguageCatalog } from '../platform/locale-catalog';
 import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
 import { resolveDomainPolicy } from '../platform/domain-policy';
@@ -10,6 +9,10 @@ import {
   removeLegacyYoutubeExclusion
 } from '../platform/legacy-youtube-exclusion';
 import { isAllowedBrokerFetchUrl, MAX_CAPTION_BYTES } from '../platform/media-url-policy';
+import {
+  OBSOLETE_LOCAL_KEYS, OBSOLETE_LOCAL_PREFIX, OBSOLETE_SYNC_KEYS, PENDING_UPDATE_KEY,
+  pendingAfterInstall, resolvePendingUpdate
+} from '../update-notice';
 
 declare const browser: any;
 
@@ -58,7 +61,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-chrome.storage.onChanged.addListener(async (changes) => {
+chrome.storage.onChanged.addListener(async (changes, area) => {
+  if (area === 'local' && changes[PENDING_UPDATE_KEY]) showUpdateBadge(changes[PENDING_UPDATE_KEY].newValue);
   if (!changes.blacklist) return;
   const tabs = await chrome.tabs.query({});
   for (const tab of tabs) {
@@ -111,7 +115,46 @@ const shortcutUpdates = createShortcutUpdateQueue({
   write: async shortcuts => { await chrome.storage.sync.set({ shortcuts }); }
 });
 
-const highlights = createFeatureHighlightsLifecycle(chrome.storage.local, chrome.runtime.getManifest().version, Date.now);
+/**
+ * The toolbar badge follows the stored announcement, so every writer (an update, opening Update highlights) and
+ * every reader agree. Browsers drop badge text on restart; each start of this worker applies it again.
+ */
+function showUpdateBadge(value: unknown): void {
+  const pending = resolvePendingUpdate(value) !== undefined;
+  void chrome.action.setBadgeText({ text: pending ? 'NEW' : '' });
+  if (!pending) return;
+  void chrome.action.setBadgeBackgroundColor({ color: '#facc15' });
+  // Dark text keeps NEW legible on yellow; older engines keep their automatic contrast.
+  if (chrome.action.setBadgeTextColor) void chrome.action.setBadgeTextColor({ color: '#18181b' });
+}
+
+async function restoreUpdateBadge(): Promise<void> {
+  showUpdateBadge((await chrome.storage.local.get(PENDING_UPDATE_KEY))[PENDING_UPDATE_KEY]);
+}
+
+// The background is the announcement's only writer; one queue keeps an update and an acknowledgement apart.
+let updateNotices: Promise<unknown> = Promise.resolve();
+function updateNotice(operation: () => Promise<void>): Promise<void> {
+  const result = updateNotices.then(operation);
+  updateNotices = result.catch(() => {});
+  return result;
+}
+
+async function announceUpdate(details: chrome.runtime.InstalledDetails): Promise<void> {
+  const stored = await chrome.storage.local.get(PENDING_UPDATE_KEY);
+  const pending = pendingAfterInstall(details, chrome.runtime.getManifest().version,
+    resolvePendingUpdate(stored[PENDING_UPDATE_KEY]));
+  if (pending) await chrome.storage.local.set({ [PENDING_UPDATE_KEY]: pending });
+}
+
+/** Removes what the NEW badges and the automatic Settings prompt left behind; a no-op once they are gone. */
+async function removeObsoleteHighlights(): Promise<void> {
+  const local = Object.keys(await chrome.storage.local.get(null))
+    .filter(key => OBSOLETE_LOCAL_KEYS.includes(key) || key.startsWith(OBSOLETE_LOCAL_PREFIX));
+  if (local.length) await chrome.storage.local.remove(local);
+  const sync = Object.keys(await chrome.storage.sync.get(OBSOLETE_SYNC_KEYS));
+  if (sync.length) await chrome.storage.sync.remove(sync);
+}
 
 /**
  * Settings, optionally at one tab. An open Settings tab is reused and moved to the section (the page follows
@@ -144,17 +187,14 @@ async function openOptionsPageNow(section?: OptionsSection): Promise<void> {
 }
 
 chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.MessageSender, sendResponse: any) => {
-  if (message?.action === 'feature-highlights') {
-    const operations: Record<string, () => Promise<unknown>> = {
-      read: highlights.read, acknowledge: highlights.acknowledge,
-      hide: highlights.hideUntilNextVersion, restore: highlights.restoreHidden
-    };
-    if (_sender.id !== chrome.runtime.id || !Object.hasOwn(operations, message.operation)) return false;
-    const operation = operations[message.operation]();
-    operation.then(value => sendResponse(value ?? {})).catch(error => {
-      console.error('[Theater Everywhere] Feature highlights storage failed:', error);
-      sendResponse(null);
-    });
+  if (message?.action === ACK_UPDATE_ACTION) {
+    if (_sender.id !== chrome.runtime.id) return false;
+    updateNotice(() => chrome.storage.local.remove(PENDING_UPDATE_KEY))
+      .then(() => sendResponse({ ok: true }))
+      .catch((error: unknown) => {
+        console.error('[Theater Everywhere] Could not acknowledge the update:', error);
+        sendResponse({ ok: false });
+      });
     return true;
   }
   if (message?.action === 'get-language-catalog') {
@@ -217,15 +257,23 @@ async function migrateLegacyYoutubeExclusion(): Promise<void> {
   await chrome.storage.local.set({ [LEGACY_YOUTUBE_EXCLUSION_MIGRATION_KEY]: true });
 }
 
+restoreUpdateBadge().catch(error => console.error('[Theater Everywhere] Could not restore the update badge:', error));
+chrome.runtime.onStartup.addListener(() => {
+  restoreUpdateBadge().catch(error => console.error('[Theater Everywhere] Could not restore the update badge:', error));
+});
+
 chrome.runtime.onInstalled.addListener(async (details) => {
-  if (details.reason === 'install' || details.reason === 'update') {
-    try {
-      await highlights.installed(details, () => chrome.runtime.openOptionsPage());
-    } catch (err) {
-      console.error('[Theater Everywhere] Error updating feature highlights:', err);
-    }
-  }
   if (details.reason === 'update') {
+    try {
+      await updateNotice(() => announceUpdate(details));
+    } catch (err) {
+      console.error('[Theater Everywhere] Error announcing the update:', err);
+    }
+    try {
+      await removeObsoleteHighlights();
+    } catch (err) {
+      console.error('[Theater Everywhere] Error removing obsolete feature highlights:', err);
+    }
     try {
       await migrateLegacyYoutubeExclusion();
     } catch (err) {

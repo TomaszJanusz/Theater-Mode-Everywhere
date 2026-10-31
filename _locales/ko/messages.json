@@ -458,6 +458,28 @@
   "whatsNewDialogTitle": {
     "message": "업데이트 주요 변경 사항"
   },
+  "updatePanelTitle": {
+    "message": "버전 $VERSION$(으)로 업데이트됨",
+    "description": "Popup panel heading shown after the extension updated to a new version. $VERSION$ is a major.minor number such as 2.1.",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "updateSeeWhatsNew": {
+    "message": "새로운 기능 보기",
+    "description": "Popup button under the update heading; opens Update highlights in Settings."
+  },
+  "updateMenuLabel": {
+    "message": "버전 $VERSION$ – 새로운 기능 보기",
+    "description": "Player settings menu row shown after an update, in place of Extension settings; opens Update highlights. $VERSION$ is a major.minor number such as 2.1. Keep it short.",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
   "dialogAcknowledge": {
     "message": "확인"
   },
@@ -1248,22 +1270,6 @@
   },
   "badgeBetaDescription": {
     "message": "베타, 실험적 기능"
-  },
-  "badgeNew": {
-    "message": "신규",
-    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
-  },
-  "highlightNewFeaturesTitle": {
-    "message": "새 기능 강조 표시"
-  },
-  "highlightNewFeaturesDescription": {
-    "message": "최근 추가된 기능에 “신규” 배지를 표시합니다."
-  },
-  "highlightNewFeaturesHide": {
-    "message": "다음 버전까지 숨기기"
-  },
-  "highlightNewFeaturesRestore": {
-    "message": "배지 복원"
   },
   "highContrastTitle": {
     "message": "고대비"

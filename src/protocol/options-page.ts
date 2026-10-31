@@ -1,5 +1,8 @@
-/** Settings tabs a caller may land on; their ids are the Options panel ids (`options.html#shortcuts`). */
-export const OPTIONS_SECTIONS = ['shortcuts'] as const;
+/**
+ * Where a caller may land in Settings: an Options panel id (`options.html#shortcuts`), or `whats-new`, which
+ * opens Update highlights over the current tab.
+ */
+export const OPTIONS_SECTIONS = ['shortcuts', 'whats-new'] as const;
 export type OptionsSection = (typeof OPTIONS_SECTIONS)[number];
 
 export interface OpenOptionsRequest { action: 'open-options-page'; section?: OptionsSection }
@@ -23,4 +26,11 @@ export function requestOptionsPage(section?: OptionsSection): void {
   } catch {
     // Extension context invalidated or absent (fixtures, a reloaded extension).
   }
+}
+
+export const ACK_UPDATE_ACTION = 'acknowledge-update';
+
+/** Opening Update highlights clears the announcement; the background owns that write and the badge. */
+export async function acknowledgeUpdate(): Promise<void> {
+  await chrome.runtime.sendMessage({ action: ACK_UPDATE_ACTION });
 }

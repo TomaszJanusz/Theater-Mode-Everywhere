@@ -17,7 +17,7 @@ Forced colors retains browser ownership: appearance overrides apply only when it
 
 | Surface | Treatment and reason |
 | --- | --- |
-| Settings: all five tabs, Language and appearance comboboxes/listboxes, Highlight new features, SponsorBlock row, exclusions, shortcuts and About | Shared text, panel, border, selected and focus tokens; solid hover/tint surfaces in either accessibility mode. Disabled content is readable; high contrast uses a dashed boundary. |
+| Settings: all five tabs, Language and appearance comboboxes/listboxes, SponsorBlock row, exclusions, shortcuts and About | Shared text, panel, border, selected and focus tokens; solid hover/tint surfaces in either accessibility mode. Disabled content is readable; high contrast uses a dashed boundary. |
 | RTE tiles, switches, capability/filter badges and expanded details | Both modes remove the single `te-animated-border::before` layer, including its orbit, boost and gradient interior. Resting tiles and switches retain their meaning. Current main uses `--te-*`; there are no remaining `--rte-*` decoration layers. Capability badge fills become solid. |
 | New pill/dot, Settings gear marker | Pill uses shared solid tint and high-contrast text/border; dot keeps the checked accent and separating ring. Dropdown selection has a checkmark. High contrast underlines selected options/tiles and outlines tiles; focus has a separate 3px ring. |
 | Settings dialogs, including Update highlights and shortcut conflicts | Opaque panels/backdrop without blur in both modes; high-contrast text, buttons and boundaries. |

@@ -1,6 +1,5 @@
 import { resolveSponsorBlockMarkers } from './sponsorblock-settings';
-import { pendingFeatureHighlights, type FeatureHighlights } from '../feature-highlights';
-import { installedVersion } from '../feature-highlights-storage';
+import type { Generation } from '../update-notice';
 import { resolveCaptionStyle, type CaptionStyle } from '../media-features/caption-style';
 import {
   DEFAULT_ACCENT_COLOR,
@@ -18,7 +17,8 @@ import { DEFAULT_AUTO_ENTER_THEATER, resolveAutoTheaterSkipCountdown } from './a
 import { DEFAULT_VIDEO_ACTIVATOR } from './video-activator-settings';
 
 export type PlayerUiState = {
-  featureHighlights: FeatureHighlights;
+  /** The release a pending update announces, until Update highlights are opened. */
+  pendingUpdate: Generation | null;
   theaterActive: boolean;
   helpOpen: boolean;
   toolbarVisible: boolean;
@@ -55,7 +55,7 @@ export type PlayerUiAction =
   | { type: 'SET_SHORTCUTS'; value: Shortcuts };
 
 const defaultState = (): PlayerUiState => ({
-  featureHighlights: pendingFeatureHighlights(installedVersion()),
+  pendingUpdate: null,
   theaterActive: false,
   helpOpen: false,
   toolbarVisible: false,
@@ -77,7 +77,7 @@ const defaultState = (): PlayerUiState => ({
 
 function sameState(left: PlayerUiState, right: PlayerUiState): boolean {
   return (
-    left.featureHighlights === right.featureHighlights
+    left.pendingUpdate === right.pendingUpdate
     && left.theaterActive === right.theaterActive
     && left.helpOpen === right.helpOpen
     && left.toolbarVisible === right.toolbarVisible

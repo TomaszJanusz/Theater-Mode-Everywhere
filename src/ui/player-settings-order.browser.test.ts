@@ -3,6 +3,7 @@ import { describe, it, type TestContext } from 'node:test';
 
 import type { Page } from 'playwright';
 
+import { emitStorageChange } from '../test-utils/chrome-stub';
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { bootPlayer, bundleModules, bundlePlayer, enterTheater, playerStylesheets } from '../test-utils/player-boot';
 import { testEngines } from '../test-utils/test-engines';
@@ -123,7 +124,7 @@ async function withBrowser(test: TestContext, engine: 'chromium' | 'firefox', ru
 
 describe('player settings action order', () => {
   for (const engine of testEngines()) {
-    it(`opens Extension settings through the background in ${engine}`, { timeout: 60_000 }, async test => {
+    it(`opens Extension settings, or Update highlights while an update is announced, through the background in ${engine}`, { timeout: 60_000 }, async test => {
       await withBrowser(test, engine, async page => {
         await boot(page, fixture({ secondVideo: false, playlist: false }));
         await page.evaluate(`(() => {
@@ -131,13 +132,16 @@ describe('player settings action order', () => {
           const ignore = { addListener() {} };
           const calls = [];
           const runtime = {
-            id: 'extension', getManifest: () => ({ version: '2.0.0' }), onInstalled: ignore,
+            id: 'extension', getManifest: () => ({ version: '2.0.0', options_ui: { page: 'options/options.html' } }),
+            getURL: file => 'chrome-extension://extension/' + file, onInstalled: ignore, onStartup: ignore,
             onMessage: { addListener(fn) { listener = fn; } },
             async openOptionsPage() { calls.push('openOptionsPage'); }
           };
           // Background APIs live in a separate scope; content scripts only get messaging.
           new Function('chrome', ${JSON.stringify(BACKGROUND_BUNDLE)})({
-            runtime, tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore }
+            runtime, action: { async setBadgeText() {} },
+            tabs: { onActivated: ignore, onUpdated: ignore, async query() { return []; }, async create({ url }) { calls.push(url); } },
+            storage: { onChanged: ignore, local: { async get() { return {}; } } }
           });
           Object.assign(chrome, { runtime: {
             sendMessage(message, reply) {
@@ -164,6 +168,20 @@ describe('player settings action order', () => {
           { action: 'open-options-page' }, 'openOptionsPage',
           { action: 'open-options-page' }, 'openOptionsPage'
         ]);
+        // The background stores an update; the open menu renames the row live and it leads to the highlights.
+        await emitStorageChange(page, { pendingUpdate: { newValue: { version: '2.1.0', since: '2.0' } } }, 'local');
+        const announced = page.locator('.extension-settings-btn');
+        await announced.getByText('Version 2.1 – see what’s new', { exact: true }).waitFor();
+        assert.equal(await announced.getAttribute('aria-label'), 'Version 2.1 – see what’s new');
+        await announced.click();
+        await page.locator('.theater-settings-menu').waitFor({ state: 'hidden' });
+        assert.deepEqual((await page.evaluate('window.optionsCalls') as unknown[]).slice(4), [
+          { action: 'open-options-page', section: 'whats-new' }, 'chrome-extension://extension/options/options.html#whats-new'
+        ]);
+        // Opening the highlights clears the announcement; the row reads Extension settings again.
+        await emitStorageChange(page, { pendingUpdate: { oldValue: { version: '2.1.0', since: '2.0' } } }, 'local');
+        await page.locator('.player-settings-btn').click();
+        await announced.getByText('Extension settings', { exact: true }).waitFor();
       });
     });
 

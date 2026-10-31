@@ -30,6 +30,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   helpNavigationHint: "$1 opens the controls bar at the settings button. On a menu button, $1 opens its menu and $2 from its bottom row closes it. $3 ends navigation.",
   helpSeekHoldHint: "Hold $1 to play at 2x until you let go.",
   helpCustomizeShortcuts: "Customize shortcuts",
+  updateMenuLabel: "Version $1 – see what’s new",
   replay: 'Replay',
   videoEnded: 'Video ended',
   skipIntro: 'Skip intro',
