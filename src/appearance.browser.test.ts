@@ -14,7 +14,6 @@ const bundle = bundleModules([`
   import { observeAppearance, observeDocumentAppearance, applyAppearanceModes } from './appearance-runtime';
   import { applyAccentColorPreset } from './accentTheme';
   import { setupRteSettings } from '../options/rte-settings';
-  import { createNewBadge, ensureNewBadgeStyles } from './ui/new-badge';
   import { setupAppearanceChoices } from '../options/appearance-choices';
   import { getPlayerUiRoot, destroyPlayerUi, setPlayerUiCss } from './ui/root';
   window.startDocument = observeDocumentAppearance;
@@ -31,8 +30,6 @@ const bundle = bundleModules([`
     const root = getPlayerUiRoot();
     root.innerHTML += '<div class="theater-controls-wrapper visible"><button>Play</button><div class="theater-settings-menu"><span class="theater-settings-label">Player settings</span></div></div>';
     root.innerHTML += '<div class="theater-everywhere-caption-hud" style="--theater-caption-color:#010203">Caption feedback</div><div class="theater-service-action-progress"></div><div class="theater-caption-overlay-text" style="--theater-caption-color:rgb(250,217,0);--theater-caption-bg:rgba(1,2,3,0.4)">Captions</div>';
-    ensureNewBadgeStyles(document);
-    document.body.append(createNewBadge());
     if (document.getElementById('rte-tiles')) window.stopRte = await setupRteSettings(async () => {});
     window.destroyPlayer = destroyPlayerUi;
   };`]);
@@ -156,7 +153,6 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
           selected: style('#highContrast-combobox-listbox [aria-selected=true]').backgroundColor,
           accent: tokenColor('--accent-color'), foreground: tokenColor('--accent-text'), hover: tokenColor('--accent-hover'),
           border: tokenColor('--border-color'),
-          badgeText: style('.te-new-badge').color, badge: style('.te-new-badge').backgroundColor,
           ring: getComputedStyle(document.querySelector('.te-animated-border')!, '::before').content,
           ringAnimation: getComputedStyle(document.querySelector('.te-animated-border')!, '::before').animationName,
           notification: getComputedStyle(document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-everywhere-caption-hud')!).color,
@@ -189,7 +185,6 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
         assert.equal(colors.ringAnimation, 'none', `${label} RTE decoration stops animating`);
       } else assert.notEqual(colors.ring, 'none', `${label} keeps the RTE ring`);
       if (high || reduced) {
-        assert.ok(ratio(colors.badgeText, colors.badge) >= 4.5, `${label} New badge`);
         hexColor(colors.player); // Opaque independently of the underlying video.
       }
       ratios.push({ preset, high, reduced, text: ratio(colors.text, colors.background), secondary: ratio(colors.secondary, colors.panel),

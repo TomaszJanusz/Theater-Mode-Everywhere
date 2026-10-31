@@ -9,21 +9,26 @@ import pageCss from '../src/content.css?inline';
 import { createChromeStub, type ChromeStub } from '../src/test-utils/page-chrome-stub';
 import { ENTRY_SHORTCUT_ATTRIBUTE } from '../src/ui/entry-shortcuts';
 import uiCss from '../src/ui/shadow.css?inline';
-import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
+import { PENDING_UPDATE_KEY, type PendingUpdate } from '../src/update-notice';
 import vod from '../test/fixtures/vod.webm?url';
 
 import { waitForFonts } from './fonts';
 import { beginStage } from './stage-owner';
 
 // Menus that the production bar pins open on click. Volume and speed open on hover or focus, which tests drive with real input.
-export const SCENARIOS = ['watching', 'settings', 'captions', 'help', 'ended'] as const;
+// `update` is the settings menu while an update is announced.
+export const SCENARIOS = ['watching', 'settings', 'update', 'captions', 'help', 'ended'] as const;
 export type Scenario = typeof SCENARIOS[number];
 
 export interface PlayerEnvironment { locale: string; backdrop: string; reduceMotion: string }
 
 /** Fixed position in the two-second clip, so every capture shows the same decoded frame. */
 const MEDIA_TIME = 1;
-const MENU_TRIGGER: Record<Exclude<Scenario, 'watching' | 'help' | 'ended'>, string> = { settings: '.player-settings-btn', captions: '.cc-btn' };
+const MENU_TRIGGER: Record<Exclude<Scenario, 'watching' | 'help' | 'ended'>, string> = {
+  settings: '.player-settings-btn', update: '.player-settings-btn', captions: '.cc-btn'
+};
+/** A fixed announcement, so the menu label does not follow the manifest's version. */
+export const FIXTURE_UPDATE: PendingUpdate = { version: '2.1.0', since: '2.0' };
 
 type FixtureWindow = Window & typeof globalThis;
 /** The global the fixture bundle defines (see player-runtime-entry.ts). */
@@ -88,10 +93,8 @@ export class PlayerFixture {
 
   constructor(environment: PlayerEnvironment, private scenario: Scenario) {
     this.stub = createChromeStub({
-      // Controls stay up for captures. New-feature badges follow the release's version, so they stay off
-      // and a version bump does not change what the Player shows.
-      sync: { keepControlsVisible: true, pictureAlign: 'center', highlightNewFeatures: false, ...this.preferences(environment) },
-      local: { [WHATS_NEW_ACK_STORAGE_KEY]: WHATS_NEW_RELEASE.id }
+      // Controls stay up for captures.
+      sync: { keepControlsVisible: true, pictureAlign: 'center', ...this.preferences(environment) }
     });
     this.view.style.cssText = 'position:fixed;inset:0';
     this.frame.title = 'Fixture document';
@@ -172,6 +175,8 @@ export class PlayerFixture {
     if (revision !== this.revision || this.disposed) return;
     await this.showPlayback(this.scenario === 'ended');
     if (revision !== this.revision || this.disposed) return;
+    // The background's write as the runtime sees it: a storage change it follows live.
+    void this.stub.chrome.storage.local.set({ [PENDING_UPDATE_KEY]: this.scenario === 'update' ? FIXTURE_UPDATE : undefined });
     this.showScenario(this.scenario);
     // Finite transitions (menu fade, bar reveal) end before anything is read or captured.
     await Promise.all([...doc.getAnimations(), ...this.root.getAnimations()].filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)

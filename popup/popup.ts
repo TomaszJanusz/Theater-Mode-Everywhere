@@ -9,6 +9,7 @@ import { renderShortcutCaps } from '../src/ui/kbd-text';
 import { withShortcutDefaults } from '../src/ui/shortcuts';
 
 import { setupPopupRte } from './rte-settings';
+import { setupPopupUpdateNotice } from './update-notice';
 
 // Apply browser theme colors immediately
 fetchAndApplyTheme();
@@ -25,6 +26,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await languageRuntime.set(data[LANGUAGE_STORAGE_KEY], revision);
   } catch (error) { console.error('Error loading popup preferences:', error); }
   localizeDocument();
+  const updateNotice = setupPopupUpdateNotice();
+  window.addEventListener('unload', updateNotice.dispose, { once: true });
 
   const domainNameEl = document.getElementById('domain-name') as HTMLElement;
   const toggleEl = document.getElementById('extension-toggle') as HTMLInputElement;
@@ -50,6 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (domainMessage) domainNameEl.textContent = t(domainMessage);
     setUIState(status.active, status.key, status.substitution);
     renderShortcut();
+    updateNotice.render();
   });
   window.addEventListener('unload', stopLanguageRendering, { once: true });
   renderShortcut();

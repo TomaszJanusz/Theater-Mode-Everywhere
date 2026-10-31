@@ -3,7 +3,6 @@ import path from 'node:path';
 
 import type { BrowserContext } from 'playwright';
 
-import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
 
 import { extensionWorker, waitForPlayer, timeScenario } from './helpers';
 
@@ -26,7 +25,6 @@ export async function assertAppearanceModes(context: BrowserContext, origin: str
       }, { contrast, transparency });
     };
     try {
-      await worker.evaluate(({ key, id }) => chrome.storage.local.set({ [key]: id }), { key: WHATS_NEW_ACK_STORAGE_KEY, id: WHATS_NEW_RELEASE.id });
       await worker.evaluate(() => chrome.storage.sync.set({ highContrast: 'off', reduceTransparency: 'off', keepControlsVisible: true }));
       await options.setViewportSize({ width: 1440, height: 1100 });
       await options.goto(new URL('options/options.html#appearance', worker.url()).href);

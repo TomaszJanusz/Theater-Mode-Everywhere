@@ -134,7 +134,7 @@ describe('audio track menu and per-service preference', () => {
       const page = await open(t, engine, {});
       await page.locator('.player-settings-btn').click();
       await assert.doesNotReject(row(page).waitFor());
-      assert.equal(await row(page).getAttribute('aria-label'), 'Audio track: English, New', 'the row carries the 2.1 marker');
+      assert.equal(await row(page).getAttribute('aria-label'), 'Audio track: English');
       await row(page).click();
       assert.deepEqual(await rows(page).evaluateAll(items => items.map(item => [item.textContent?.replace('✓', ''), item.getAttribute('aria-pressed')])),
         [['English', 'true'], ['Français', 'false'], ['Deutsch', 'false'], ['English AD', 'false']]);
@@ -200,9 +200,8 @@ describe('audio track menu and per-service preference', () => {
       assert.equal(await row(page).evaluate(element => element.matches(':focus')), true, 'Escape returns to the Audio track row');
     });
 
-    it(`shows the settings button's New dot only while the hidden Audio track row is available in ${engine}`, async t => {
+    it(`shows the Audio track row only while the video offers other tracks in ${engine}`, async t => {
       const page = await open(t, engine, {}, DUBBED.slice(0, 1));
-      const dot = page.locator('.player-settings-btn .te-new-badge');
       // Replaces the fixture's track list contents the way an adapter does when a video offers other tracks.
       const offer = (count: number) => page.evaluate(count => {
         const list = (document.querySelector('video') as unknown as { audioTracks: EventTarget & Record<number, unknown> & { length: number } }).audioTracks;
@@ -213,13 +212,15 @@ describe('audio track menu and per-service preference', () => {
         list.length = count;
         list.dispatchEvent(new Event(count > 1 ? 'addtrack' : 'removetrack'));
       }, count);
+      // The menu is closed, so the row's own `hidden` is the state; visibility would be false either way.
+      const rowHidden = (hidden: boolean) => page.waitForFunction(hidden => document.getElementById('theater-everywhere-ui')!
+        .shadowRoot!.querySelector<HTMLElement>('.audio-track-btn')?.hidden === hidden, hidden);
       await page.locator('.player-settings-btn').waitFor();
-      assert.equal(await dot.count(), 0, 'a hidden row marks nothing');
+      await rowHidden(true);
       await offer(3);
-      await dot.waitFor();
-      assert.equal(await page.locator('.audio-track-btn .te-new-badge').count(), 1);
+      await rowHidden(false);
       await offer(1);
-      await dot.waitFor({ state: 'detached' });
+      await rowHidden(true);
     });
 
     for (const count of [0, 1]) it(`hides the row with ${count} tracks in ${engine}`, async t => {

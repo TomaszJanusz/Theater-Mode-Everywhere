@@ -1,8 +1,5 @@
 import { type BrowserContext, type Page } from 'playwright';
 
-import { SEEN_ITEMS_STORAGE_KEY } from '../../src/feature-highlights';
-import { WHATS_NEW_ACK_STORAGE_KEY } from '../../src/whatsNew-release';
-
 import { fail, extensionWorker, waitForPlayer, timeScenario } from './helpers';
 export async function assertPinStorage(page: Page, context: BrowserContext): Promise<void> {
   return timeScenario('assertPinStorage', { syncWrites: 7 }, async () => {
@@ -34,16 +31,10 @@ export async function assertPinStorage(page: Page, context: BrowserContext): Pro
     await page.locator('video#player').click();
     await page.keyboard.press('t');
     await waitForPin(true);
-    // Release installs start seen, while date-version builds have unseen development items.
-    // Seed the same unacknowledged state in both builds so this page must auto-open highlights.
-    const highlightKeys = [WHATS_NEW_ACK_STORAGE_KEY, 'newFeaturesSeenThrough', SEEN_ITEMS_STORAGE_KEY];
-    const originalHighlights = await worker.evaluate(keys => chrome.storage.local.get(keys), highlightKeys);
-    await worker.evaluate(key => chrome.storage.local.set({
-      [key]: 'smoke:unacknowledged', newFeaturesSeenThrough: '0.0', newFeaturesSeenItems: []
-    }), WHATS_NEW_ACK_STORAGE_KEY);
     const options = await context.newPage();
     try {
-      await options.goto(new URL('options/options.html', worker.url()).href);
+      // Settings opened on Update highlights, as the popup and player menu open it, stay usable after the dialog.
+      await options.goto(new URL('options/options.html#whats-new', worker.url()).href);
       const highlights = options.getByRole('dialog', { name: 'Update highlights', exact: true });
       await highlights.waitFor();
       await highlights.locator('.te-dialog-btn-primary').click();
@@ -77,10 +68,6 @@ export async function assertPinStorage(page: Page, context: BrowserContext): Pro
       // Removing the saved map restores canonical defaults in the live runtime.
     } finally {
       await options.close();
-      await worker.evaluate(async ({ keys, original }) => {
-        await chrome.storage.local.remove(keys.filter(key => !(key in original)));
-        await chrome.storage.local.set(original);
-      }, { keys: highlightKeys, original: originalHighlights });
     }
     await page.keyboard.press('Escape');
     await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });

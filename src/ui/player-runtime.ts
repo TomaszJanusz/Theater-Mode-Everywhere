@@ -10,8 +10,7 @@ import { formatRate, holdPlaybackRate, stepPlaybackRate } from './speed-control'
 
 import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
-import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, resolveHighlightNewFeatures, withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS } from '../feature-highlights';
-import { readFeatureHighlightsLocal } from '../feature-highlights-storage';
+import { announcedGeneration, PENDING_UPDATE_KEY, resolvePendingUpdate } from '../update-notice';
 import { LANGUAGE_STORAGE_KEY } from '../language';
 import { languageRuntime } from '../i18n-runtime';
 import { subscribePlaylistNavigation as subscribeNavigation } from '../providers/navigation/watch';
@@ -1324,13 +1323,22 @@ function changeAutoTheater(change: (current: boolean) => boolean): void {
   }
 }
 
-let highlightSyncRevision = 0;
-// Keep per-key live values until hydration settles: one key changing must not discard the other's snapshot.
-const highlightLocalOverrides: Record<string, unknown> = {};
+let pendingUpdateRevision = 0;
 
-async function hydrateSeenThrough(): Promise<void> {
-  const local = await readFeatureHighlightsLocal();
-  uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: withFeatureHighlightsLocal(ui().featureHighlights, { ...local, ...highlightLocalOverrides }, Date.now()) } });
+function hydratePendingUpdate(value: unknown): void {
+  const pending = resolvePendingUpdate(value);
+  uiStore.dispatch({ type: 'HYDRATE', value: { pendingUpdate: pending ? announcedGeneration(pending) : null } });
+}
+
+/** The extension menu row names a pending update; a storage change after the read wins over the snapshot. */
+async function readPendingUpdate(): Promise<void> {
+  const revision = pendingUpdateRevision;
+  try {
+    const data = await chrome.storage.local.get(PENDING_UPDATE_KEY);
+    if (revision === pendingUpdateRevision) hydratePendingUpdate(data[PENDING_UPDATE_KEY]);
+  } catch {
+    // An invalidated extension context leaves the row as plain Extension settings.
+  }
 }
 
 async function checkBlacklistAndInit(): Promise<void> {
@@ -1346,9 +1354,7 @@ async function checkBlacklistAndInit(): Promise<void> {
   }
 
   try {
-    const syncRevision = highlightSyncRevision;
     const data = await chrome.storage.sync.get([
-      HIGHLIGHT_NEW_FEATURES_STORAGE_KEY,
       'blacklist',
       'shortcuts',
       LANGUAGE_STORAGE_KEY,
@@ -1382,10 +1388,6 @@ async function checkBlacklistAndInit(): Promise<void> {
     uiStore.dispatch({
       type: 'HYDRATE',
       value: {
-        featureHighlights: { ...ui().featureHighlights, now: Date.now(),
-          enabled: syncRevision === highlightSyncRevision
-            ? resolveHighlightNewFeatures(data[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY])
-            : ui().featureHighlights.enabled },
         autoEnterTheater: resolveAutoEnterTheater(data[AUTO_THEATER_STORAGE_KEY]),
         autoTheaterSkipCountdown: resolveAutoTheaterSkipCountdown(data[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY]),
         videoActivator: resolveVideoActivator(data[VIDEO_ACTIVATOR_STORAGE_KEY]),
@@ -2827,25 +2829,17 @@ export function bootstrapPlayerRuntime(): void {
     });
   }
 
-  // The acknowledged generation never gates the policy/settings read above; until it arrives badges stay hidden.
-  void hydrateSeenThrough();
+  // The announcement never gates the policy/settings read; until it arrives the row reads Extension settings.
+  if (typeof chrome !== 'undefined' && chrome.storage?.local) void readPendingUpdate();
   checkBlacklistAndInit();
 
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     const onStorageChanged = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
-      if (areaName === 'local' && FEATURE_HIGHLIGHTS_LOCAL_KEYS.some(key => changes[key])) {
-        for (const key of FEATURE_HIGHLIGHTS_LOCAL_KEYS) {
-          if (changes[key]) highlightLocalOverrides[key] = changes[key].newValue;
-        }
-        uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: withFeatureHighlightsLocal(ui().featureHighlights,
-          highlightLocalOverrides, Date.now()) } });
+      if (areaName === 'local' && changes[PENDING_UPDATE_KEY]) {
+        pendingUpdateRevision++;
+        hydratePendingUpdate(changes[PENDING_UPDATE_KEY].newValue);
       }
       if (areaName !== 'sync') return;
-      if (changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]) {
-        highlightSyncRevision++;
-        uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: { ...ui().featureHighlights, now: Date.now(),
-          enabled: resolveHighlightNewFeatures(changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY].newValue) } } });
-      }
       if (changes[LANGUAGE_STORAGE_KEY]) void languageRuntime.set(changes[LANGUAGE_STORAGE_KEY].newValue);
 
       if (changes[SPONSORBLOCK_STORAGE_KEY]) {

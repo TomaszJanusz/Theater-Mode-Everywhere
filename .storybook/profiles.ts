@@ -70,16 +70,18 @@ function momentsFor(id: string): readonly Moment[] | undefined {
 }
 
 export const PLAYER_STORY = 'extension-player-ui--composed';
-export const PLAYER_SHOT_SCENARIOS = ['watching', 'settings', 'captions'] as const;
+export const PLAYER_SHOT_SCENARIOS = ['watching', 'settings', 'update', 'captions'] as const;
 
 /**
- * Three scenarios on two backdrops. Reduce motion is on: the title marquee and menu transitions
+ * Four scenarios on two backdrops. Reduce motion is on: the title marquee and menu transitions
  * are real time, and a capture of them would differ from run to run.
  */
 function playerProfiles(): Profile[] {
   const menus = PLAYER_SHOT_SCENARIOS.flatMap(scenario => BACKDROPS.map(backdrop => {
     const profile = environment('en', backdrop);
-    return { ...profile, name: `${scenario}-${backdrop}`, globals: { ...profile.globals, reduceMotion: 'on' as const }, args: { scenario } };
+    // The update row is the menu's last; a 720px window shows the whole menu down to it.
+    const viewport = scenario === 'update' ? { viewport: { width: 1280, height: 720 } } : {};
+    return { ...profile, ...viewport, name: `${scenario}-${backdrop}`, globals: { ...profile.globals, reduceMotion: 'on' as const }, args: { scenario } };
   }));
   // The shortcuts help: wide (two columns) in left-to-right, right-to-left and a long locale, and a narrow window (one column).
   const help = ([['en', 1280], ['ar', 1280], ['de', 1280], ['pl', 1280], ['de', 420]] as const).map(([locale, width]): Profile => {

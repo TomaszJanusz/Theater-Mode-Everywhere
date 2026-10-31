@@ -73,7 +73,7 @@
     </a>
 
     <div id="settings-tabs" class="settings-tabs" role="tablist" data-i18n-aria-label="settingsPageTitle">
-      <button type="button" role="tab" id="tab-appearance" data-new-feature-tab class="settings-tab" aria-selected="true" aria-controls="appearance" data-i18n="appearanceTitle">Appearance</button>
+      <button type="button" role="tab" id="tab-appearance" class="settings-tab" aria-selected="true" aria-controls="appearance" data-i18n="appearanceTitle">Appearance</button>
       <button type="button" role="tab" id="tab-features" class="settings-tab" aria-selected="false" tabindex="-1" aria-controls="features" data-i18n="featuresTitle">Features</button>
       <button type="button" role="tab" id="tab-exclusions" class="settings-tab" aria-selected="false" tabindex="-1" aria-controls="exclusions" data-i18n="websiteExclusionsTitle">Website Exclusions</button>
       <button type="button" role="tab" id="tab-shortcuts" class="settings-tab" aria-selected="false" tabindex="-1" aria-controls="shortcuts" data-i18n="keyboardShortcutsTitle">Keyboard Shortcuts</button>
@@ -87,7 +87,7 @@
             <p class="card-desc" data-i18n="appearanceDescription">Choose where the picture sits, and the accent for controls, sliders, shortcuts, and highlights.</p>
           </div></div>
           <div class="card-body options-body">
-            <div class="appearance-block" data-new-feature="settingsPictureLayout">
+            <div class="appearance-block">
               <p id="picture-align-label" class="appearance-block-label" data-i18n="pictureAlignLabel">Layout</p>
               <div id="picture-align-grid" class="picture-align-grid" role="radiogroup" aria-labelledby="picture-align-label"></div>
               <div
@@ -126,21 +126,21 @@
             </div>
             <div class="options-group" role="group" aria-labelledby="accessibility-title">
               <h3 id="accessibility-title" data-i18n="accessibilityTitle">Accessibility</h3>
-              <div class="options-row" data-new-feature="settingsHighContrast">
+              <div class="options-row">
                 <div class="options-info">
                   <label id="highContrast-label" for="highContrast-combobox" class="options-label" data-i18n="highContrastTitle">High contrast</label>
                   <p id="highContrast-description" class="options-desc" data-i18n="appearanceAutoDescription">Auto follows your system setting.</p>
                 </div>
                 <button type="button" id="highContrast-combobox" class="choice-combobox" aria-labelledby="highContrast-label" aria-describedby="highContrast-description"></button>
               </div>
-              <div class="options-row" data-new-feature="settingsReduceTransparency">
+              <div class="options-row">
                 <div class="options-info">
                   <label id="reduceTransparency-label" for="reduceTransparency-combobox" class="options-label" data-i18n="reduceTransparencyTitle">Reduce transparency</label>
                   <p id="reduceTransparency-description" class="options-desc" data-i18n="appearanceAutoDescription">Auto follows your system setting.</p>
                 </div>
                 <button type="button" id="reduceTransparency-combobox" class="choice-combobox" aria-labelledby="reduceTransparency-label" aria-describedby="reduceTransparency-description"></button>
               </div>
-              <div class="options-row" data-new-feature="settingsReduceMotion">
+              <div class="options-row">
                 <div class="options-info">
                   <label id="reduceMotion-label" for="reduceMotion-combobox" class="options-label" data-i18n="reduceMotionTitle">Reduce motion</label>
                   <p id="reduceMotion-description" class="options-desc" data-i18n="appearanceAutoDescription">Auto follows your system setting.</p>
@@ -150,7 +150,7 @@
             </div>
             <div class="options-row">
               <div class="options-info">
-                <label data-new-feature="settingsAlwaysShowControls" for="keep-controls-visible-toggle" class="options-label" data-i18n="keepControlsVisibleTitle">Pin controls</label>
+                <label for="keep-controls-visible-toggle" class="options-label" data-i18n="keepControlsVisibleTitle">Pin controls</label>
                 <p class="options-desc" data-i18n="keepControlsVisibleDescription">Pin the playback controls and progress bar in theater mode to keep them visible. The title and cursor still hide when idle.</p>
               </div>
               <label class="toggle-switch">
@@ -158,7 +158,7 @@
                 <span class="toggle-slider"></span>
               </label>
             </div>
-            <div class="options-row" data-new-feature="settingsLanguage">
+            <div class="options-row">
               <div class="options-info">
                 <div class="options-label-line">
                   <label id="language-label" for="language-combobox" class="options-label" data-i18n="languageTitle">Language</label>
@@ -167,19 +167,6 @@
                 <p id="language-description" class="options-desc" data-i18n="languageDescription">Choose the language for Settings, the popup, and player controls.</p>
               </div>
               <button type="button" id="language-combobox" class="choice-combobox" aria-labelledby="language-label" aria-describedby="language-description"></button>
-            </div>
-            <div class="options-row">
-              <div class="options-info">
-                <label id="highlight-new-features-label" for="highlight-new-features-toggle" class="options-label" data-i18n="highlightNewFeaturesTitle">Highlight new features</label>
-                <p id="highlight-new-features-description" class="options-desc" data-i18n="highlightNewFeaturesDescription">Show New badges for recently added features.</p>
-              </div>
-              <div class="options-row-actions">
-              <button type="button" id="highlight-new-features-hide" class="secondary-btn ghost-btn" aria-describedby="highlight-new-features-description">Hide until next version</button>
-              <label class="toggle-switch">
-                <input type="checkbox" id="highlight-new-features-toggle" role="switch" aria-labelledby="highlight-new-features-label" aria-describedby="highlight-new-features-description" checked>
-                <span class="toggle-slider" aria-hidden="true"></span>
-              </label>
-              </div>
             </div>
           </div>
         </section>
@@ -191,9 +178,9 @@
           <p class="card-desc" data-i18n="featuresDescription">Turn optional theater mode behavior on or off.</p>
         </div></div>
         <div class="card-body options-body">
-          <div class="options-row" data-new-feature="settingsVideoActivator">
+          <div class="options-row">
             <div class="options-info">
-              <label id="video-activator-label" for="video-activator-toggle" class="options-label"><span data-i18n="videoActivatorTitle">Video launcher</span> <te-new-badge data-variant="beta" role="img" data-i18n-aria-label="badgeBetaDescription" data-i18n-title="badgeBetaDescription" aria-label="Beta, experimental feature" title="Beta, experimental feature">BETA</te-new-badge></label>
+              <label id="video-activator-label" for="video-activator-toggle" class="options-label"><span data-i18n="videoActivatorTitle">Video launcher</span> <span class="te-beta-badge" role="img" data-i18n-aria-label="badgeBetaDescription" data-i18n-title="badgeBetaDescription" aria-label="Beta, experimental feature" title="Beta, experimental feature">BETA</span></label>
               <p id="video-activator-description" class="options-desc" data-i18n="videoActivatorDescription">Show a small button on the left edge of a video when you point at it. Click it to enter theater mode. On some services with Rich Theater Experience, the button is built into the service’s interface.</p>
             </div>
             <label class="toggle-switch">
@@ -238,7 +225,7 @@
           <div class="card-body">
             <div class="options-group" role="group" aria-labelledby="auto-theater-title">
               <h3 id="auto-theater-title" data-i18n="autoEnterTheaterTitle">AutoTheater</h3>
-              <div class="options-row" data-new-feature="settingsAutoEnterTheater">
+              <div class="options-row">
                 <div class="options-info">
                   <label id="auto-enter-theater-label" for="auto-enter-theater-toggle" class="options-label" data-i18n="autoEnterTheaterTitle">AutoTheater</label>
                   <p id="auto-enter-theater-description" class="options-desc" data-i18n="autoEnterTheaterDescription">Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.</p>

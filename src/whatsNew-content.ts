@@ -1,13 +1,17 @@
+import { compareGenerations, type Generation } from './update-notice';
+
 type InlineText = string | { readonly strong: string } | { readonly link: string; readonly href: string };
 type AnnouncementContent = {
+  /** The major.minor release that introduced these highlights. */
+  readonly generation: Generation;
   readonly heading: string;
   readonly paragraph: readonly InlineText[];
   readonly items: readonly (readonly InlineText[])[];
-  readonly thanks: readonly InlineText[];
+  readonly thanks?: readonly InlineText[];
 };
 
-// Release copy is deliberately English-only, independent of the interface language.
-export const WHATS_NEW_CONTENT: AnnouncementContent = {
+const RELEASE_2_0: AnnouncementContent = {
+  generation: '2.0',
   heading: 'Here is Theater Mode Everywhere 2.0!',
   paragraph: ["I'm delighted to announce that this is the ", { strong: 'biggest update' }, ' of this extension so far. The new version brings a more comfortable theater mode, new controls, more supported services within Rich Theater Experience, and performance improvements.'],
   items: [
@@ -23,7 +27,6 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
     [{ strong: 'Video launcher:' }, ' Off by default; turn it on in Settings → Features → Video launcher to enter theater mode with a small button on the left edge of a paused video. It hides during playback, except for the first five seconds after a page or in-app navigation loads. Its tooltip shows your theater shortcut, such as [T]. With YouTube Rich Theater Experience, a white rhombus with an accent triangle stays in the player toolbar regardless of playback or pointer activity. When you turn AutoTheater off, TME offers to enable it.'],
     [{ strong: 'Fullscreen in theater mode:' }, ' Double-click the picture to enter or leave fullscreen without leaving theater mode. A single click now plays or pauses faster, and a quick double-click never pauses the video.'],
     [{ strong: 'Accessibility:' }, ' Choose High contrast, Reduce transparency and Reduce motion separately (Auto, On or Off) in Settings → Appearance; Auto follows your system preferences. Settings and the player also work better with screen readers.'],
-    [{ strong: 'New feature badges:' }, ' Recently added features are marked with NEW badges until you open these highlights. To silence them until the next version, use Settings → Appearance → Hide until next version.'],
     [{ strong: 'Hold for 2x speed:' }, ' Hold the Seek Forward key (→ unless you changed it) to play at 2x until you let go; a tap still skips 5 seconds. You can turn this off in Settings → Keyboard Shortcuts.'],
     ['Settings warn you about conflicting keyboard shortcuts.'],
     ['The titles of the videos being played are displayed.'],
@@ -40,6 +43,18 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
     { link: '@wesleyel', href: 'https://github.com/wesleyel' }, ' for the playback speed shortcuts and holding Seek Forward for 2x.'
   ]
 };
+
+/**
+ * Every release's highlights, newest first. Release copy is deliberately English-only, independent of the
+ * interface language. Add a release's entry at the top when it has highlights to announce.
+ */
+export const WHATS_NEW_RELEASES: readonly AnnouncementContent[] = [RELEASE_2_0];
+
+/** Everything released after `since` (the generation last announced), or the latest release when nothing is newer. */
+export function releasesSince(since?: Generation, releases = WHATS_NEW_RELEASES): readonly AnnouncementContent[] {
+  const newer = since ? releases.filter(release => compareGenerations(release.generation, since) > 0) : [];
+  return newer.length ? newer : releases.slice(0, 1);
+}
 
 /** Only an absolute https: address becomes a link; anything else keeps its text and loses the link. */
 function httpsHref(href: string): string | null {
@@ -74,7 +89,7 @@ function appendInline(parent: HTMLElement, segments: readonly InlineText[]): voi
   }
 }
 
-export function buildWhatsNewContent(): HTMLElement {
+export function buildWhatsNewContent(since?: Generation): HTMLElement {
   const announcement = document.createElement('div');
   announcement.className = 'whats-new-announcement';
   announcement.lang = 'en';
@@ -84,27 +99,32 @@ export function buildWhatsNewContent(): HTMLElement {
   root.lang = 'en';
   root.dir = 'ltr';
 
-  const heading = document.createElement('h3');
-  heading.className = 'whats-new-lead';
-  appendInline(heading, [{ strong: WHATS_NEW_CONTENT.heading }]);
-  const paragraph = document.createElement('p');
-  appendInline(paragraph, WHATS_NEW_CONTENT.paragraph);
-  const list = document.createElement('ul');
-  list.className = 'whats-new-list';
-  for (const segments of WHATS_NEW_CONTENT.items) {
-    const item = document.createElement('li');
-    appendInline(item, segments);
-    list.append(item);
-  }
   const thanks = document.createElement('p');
   thanks.className = 'whats-new-thanks';
   // The modal may place this note outside the announcement's scrolling content.
   thanks.lang = 'en';
   thanks.dir = 'ltr';
-  const emphasis = document.createElement('em');
-  appendInline(emphasis, WHATS_NEW_CONTENT.thanks);
-  thanks.append(emphasis);
-  root.append(heading, paragraph, list);
-  announcement.append(root, thanks);
+  for (const release of releasesSince(since)) {
+    const heading = document.createElement('h3');
+    heading.className = 'whats-new-lead';
+    appendInline(heading, [{ strong: release.heading }]);
+    const paragraph = document.createElement('p');
+    appendInline(paragraph, release.paragraph);
+    const list = document.createElement('ul');
+    list.className = 'whats-new-list';
+    for (const segments of release.items) {
+      const item = document.createElement('li');
+      appendInline(item, segments);
+      list.append(item);
+    }
+    root.append(heading, paragraph, list);
+    if (!release.thanks) continue;
+    if (thanks.childNodes.length) thanks.append(document.createElement('br'));
+    const emphasis = document.createElement('em');
+    appendInline(emphasis, release.thanks);
+    thanks.append(emphasis);
+  }
+  announcement.append(root);
+  if (thanks.childNodes.length) announcement.append(thanks);
   return announcement;
 }

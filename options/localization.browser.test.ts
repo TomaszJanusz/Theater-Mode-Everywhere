@@ -11,14 +11,12 @@ import { assertLocalized, readCatalog } from '../src/test-utils/language-audit';
 import { bundleQueryModules } from '../src/test-utils/query-bundle';
 import { readStylesheet } from '../src/test-utils/styles';
 import { selectTestEngines } from '../src/test-utils/test-engines';
-import { WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 
 const root = path.resolve(__dirname, '..');
 const bundles = Promise.all(["import '../options/options';", "import '../popup/popup';"].map(entry => bundleQueryModules([entry])));
 
 async function open(page: Page, surface: 'options' | 'popup', blacklist: string[], url = 'chrome://extensions'): Promise<void> {
-  const initialize = ({ catalogs, blacklist, url, release }: { catalogs: Record<string, ReturnType<typeof readCatalog>>; blacklist: string[]; url: string; release: string }) => {
-    localStorage.setItem('whatsNewAcknowledgedId', release);
+  const initialize = ({ catalogs, blacklist, url }: { catalogs: Record<string, ReturnType<typeof readCatalog>>; blacklist: string[]; url: string }) => {
     const saved: Record<string, unknown> = { blacklist, shortcuts: { toggle: '', cycle: 'T', playPause: 'T' } };
     const listeners = new Set<(changes: Record<string, { newValue: unknown }>, area: string) => void>();
     const storage = {
@@ -31,15 +29,14 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
     };
     Object.defineProperty(window, 'chrome', { configurable: true, value: {
       runtime: { getURL: (file: string) => file, sendMessage: async (request: { locale: keyof typeof catalogs; action: string }) =>
-        request.action === 'get-language-catalog' ? catalogs[request.locale]
-          // An upgrade from before the first item generation, so every registered item counts as new.
-          : request.action === 'feature-highlights' ? { newFeaturesSeenThrough: '1.5' } : { status: 'conflict', owners: ['cycle'] } },
-      storage: { sync: storage, local: {}, onChanged: { addListener: listeners.add.bind(listeners), removeListener: listeners.delete.bind(listeners) } },
+        request.action === 'get-language-catalog' ? catalogs[request.locale] : { status: 'conflict', owners: ['cycle'] } },
+      // An announced update: the popup shows its panel, which follows the language like the rest.
+      storage: { sync: storage, local: { get: async () => ({ pendingUpdate: { version: '2.1.0', since: '2.0' } }) }, onChanged: { addListener: listeners.add.bind(listeners), removeListener: listeners.delete.bind(listeners) } },
       tabs: { query: async () => url ? [{ id: 1, url }] : [] }
     } });
   };
   // tsx names nested callbacks with __name; keep that helper inside the fixture.
-  await page.addInitScript({ content: `window.__name = fn => fn; (${initialize.toString()})(${JSON.stringify({ catalogs: Object.fromEntries(LANGUAGES.map(({ locale }) => [locale, readCatalog(locale)])), blacklist, url, release: WHATS_NEW_RELEASE.id })});` });
+  await page.addInitScript({ content: `window.__name = fn => fn; (${initialize.toString()})(${JSON.stringify({ catalogs: Object.fromEntries(LANGUAGES.map(({ locale }) => [locale, readCatalog(locale)])), blacklist, url })});` });
   const html = readFileSync(path.join(root, surface, `${surface}.html`), 'utf8').replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
   await page.route('http://localization.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://localization.test/');
@@ -273,13 +270,13 @@ for (const url of ['chrome://extensions', '', 'https://example.com/watch', 'http
 
 for (const [engine] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
   const shared = browsers[engine as keyof typeof browsers];
-  it(`${engine}: Video launcher keeps its localized BETA badge beside NEW across appearance and language changes`, { timeout: 30_000 }, async t => {
+  it(`${engine}: Video launcher keeps its localized BETA badge across appearance and language changes`, { timeout: 30_000 }, async t => {
     const context = await shared.newContext(t);
     try {
       const page = await context.newPage();
       await open(page, 'options', []);
       await page.locator('#tab-features').click();
-      const row = page.locator('[data-new-feature=settingsVideoActivator]');
+      const row = page.locator('.options-row').filter({ has: page.locator('#video-activator-toggle') });
       const beta = row.getByRole('img');
       for (const { locale } of LANGUAGES) {
         await switchTo(page, locale);
@@ -287,23 +284,11 @@ for (const [engine] of selectTestEngines(Object.entries({ chromium, firefox }), 
         assert.equal(await beta.getAttribute('aria-label'), name);
         assert.equal(await beta.getAttribute('title'), name);
         assert.equal(await beta.textContent(), 'BETA');
-        assert.equal(await row.locator('.te-new-badge').textContent(), readCatalog(locale).badgeNew.message);
-        assert.equal(await row.locator('.options-label').evaluate(label => {
-          const beta = label.querySelector('.te-beta-badge')!;
-          const recent = label.querySelector('.te-new-badge')!;
-          return !!(beta.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING);
-        }), true, 'BETA precedes NEW in reading order');
         await page.setViewportSize({ width: 390, height: 900 });
         await page.evaluate(() => chrome.storage.sync.set({ highContrast: 'on', reduceMotion: 'on' }));
         await page.waitForFunction(() => document.documentElement.dataset.contrast === 'high' && document.documentElement.dataset.motion === 'reduced');
         assert.equal(await row.evaluate(row => row.scrollWidth <= row.clientWidth + 1), true);
-        const boxes = await row.locator('.te-beta-badge, .te-new-badge').evaluateAll(badges => badges.map(badge => {
-          const { x, y, width, height } = badge.getBoundingClientRect();
-          return { x, y, width, height };
-        }));
-        const [a, b] = boxes;
-        assert.ok(a.width > 0 && b.width > 0);
-        assert.ok(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y, 'badges do not overlap');
+        assert.ok((await beta.boundingBox())!.width > 0);
       }
       await switchTo(page, 'en');
       await page.evaluate(() => chrome.storage.sync.set({ highContrast: 'auto', reduceMotion: 'auto' }));
@@ -311,9 +296,6 @@ for (const [engine] of selectTestEngines(Object.entries({ chromium, firefox }), 
       if (engine === 'chromium' && process.env.TE_BETA_SCREENSHOT) {
         await row.screenshot({ path: process.env.TE_BETA_SCREENSHOT });
       }
-      await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: false }));
-      await row.locator('.te-new-badge').waitFor({ state: 'detached' });
-      assert.equal(await beta.isVisible(), true, 'experimental status persists when NEW highlights are hidden');
     } finally { await context.close(); }
   });
 }

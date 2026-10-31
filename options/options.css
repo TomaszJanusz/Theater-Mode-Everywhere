@@ -103,18 +103,6 @@ body {
   font-weight: 500;
 }
 
-.icon-btn.has-unseen::after {
-  content: '';
-  position: absolute;
-  top: 5px;
-  inset-inline-end: 5px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent-color);
-  box-shadow: 0 0 0 2px var(--bg-color);
-}
-
 .icon-btn:hover,
 .icon-btn:focus-visible {
   color: var(--accent-color);
@@ -1327,40 +1315,6 @@ section h2 {
   gap: 16px;
 }
 
-.options-row-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-/* Quiet companion to a row's primary control; same shape as the RTE filter's clear button. */
-.ghost-btn {
-  height: 28px;
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 400;
-  white-space: nowrap;
-  background: transparent;
-  color: var(--text-secondary);
-  border-radius: 6px;
-}
-
-.ghost-btn:hover:not(:disabled) {
-  background: var(--border-color);
-  color: var(--text-primary);
-}
-
-.ghost-btn:disabled {
-  opacity: var(--appearance-content-opacity, 0.45);
-  cursor: default;
-}
-
-.ghost-btn:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 3px;
-}
-
 .options-group > .options-row {
   grid-column: 2;
 }
@@ -1465,6 +1419,24 @@ section h2 {
   font-weight: 500;
   color: var(--appearance-ink, var(--text-primary));
   cursor: pointer;
+}
+
+/* Experimental status beside a setting's name. */
+.te-beta-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  vertical-align: middle;
+  font: 800 9.5px/1 system-ui, sans-serif;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--appearance-muted, var(--text-secondary, #b3b3b3));
+  background: var(--appearance-surface, transparent);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 3px 7px;
+  margin-inline-start: 8px;
 }
 
 .options-desc {

@@ -6,8 +6,6 @@ import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from '../src/ui/
 import { createCombobox } from './combobox';
 import { createChoiceGrid } from './choice-grid';
 import { DEFAULT_LANGUAGE, LANGUAGES, LANGUAGE_STORAGE_KEY, type Language } from '../src/language';
-import { setupFeatureHighlights } from './feature-highlights';
-import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY } from '../src/feature-highlights';
 import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown } from '../src/ui/auto-theater';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
@@ -42,8 +40,8 @@ import {
   type PrivacyThingLogoElement
 } from '@privacy-thing/brand';
 import { localizeDocument, t } from '../src/i18n';
-import { installedVersion } from '../src/feature-highlights-storage';
-import { hasUnseenWhatsNew, openWhatsNewDialog } from '../src/whatsNew';
+import { installedVersion } from '../src/installed-version';
+import { openWhatsNewDialog } from '../src/whatsNew';
 import { setupRteSettings } from './rte-settings';
 import { translationIssueUrl } from '../src/translation-issue';
 
@@ -116,15 +114,11 @@ async function init() {
   const stopLanguageStorage = observeLanguageStorage();
   window.addEventListener('unload', stopLanguageStorage, { once: true });
   const languageRevision = languageRuntime.revision;
-  const initialSettingsPromise = safeGetStorage(['blacklist', LANGUAGE_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]);
-  const highlights = setupFeatureHighlights(initialSettingsPromise);
-  const initialSettings = await initialSettingsPromise;
+  const initialSettings = await safeGetStorage(['blacklist', LANGUAGE_STORAGE_KEY]);
   await languageRuntime.set(initialSettings[LANGUAGE_STORAGE_KEY], languageRevision);
   localizeDocument();
   const stopAppearanceChoices = setupAppearanceChoices();
   window.addEventListener('unload', stopAppearanceChoices, { once: true });
-  await highlights.ready;
-  highlights.render();
   setupSettingsTabs(document.getElementById('settings-tabs') as HTMLElement);
   document.getElementById('license-text')!.textContent = licenseText.trim();
   document.getElementById('privacy-policy-btn')!.addEventListener('click', openPrivacyPolicy);
@@ -184,7 +178,6 @@ async function init() {
 
   const disposeRte = await setupRteSettings(notifyAllTabs);
   window.addEventListener('unload', disposeRte, { once: true });
-  highlights.render(); // Service tiles exist only now.
 
   // Load and bind features toggles
   await loadAndRenderFeatures();
@@ -681,20 +674,18 @@ async function init() {
     }
   }
 
-  async function setupWhatsNew(): Promise<void> {
-    const button = document.getElementById('whats-new-btn');
-    if (!button) return;
-
-    highlights.render();
-    button.addEventListener('click', async () => {
-      await openWhatsNewDialog();
-      highlights.render();
-    });
-
-    if (await hasUnseenWhatsNew()) {
-      await openWhatsNewDialog();
-      highlights.render();
-    }
+  function setupWhatsNew(): void {
+    document.getElementById('whats-new-btn')?.addEventListener('click', () => { void openWhatsNewDialog(); });
+    // The popup and the player menu land on `#whats-new` (OPTIONS_SECTIONS); a reused Settings tab gets a hashchange.
+    // Returning the hash to the shown tab keeps a reload there and lets the next request change the hash again.
+    const openFromHash = () => {
+      if (location.hash !== '#whats-new') return;
+      const tab = document.querySelector('#settings-tabs [role="tab"][aria-selected="true"]')?.getAttribute('aria-controls');
+      history.replaceState(null, '', tab ? `#${tab}` : location.pathname + location.search);
+      void openWhatsNewDialog();
+    };
+    window.addEventListener('hashchange', openFromHash);
+    openFromHash();
   }
 
   function setupFeatureListeners() {
@@ -715,7 +706,7 @@ async function init() {
 
   }
 
-  await setupWhatsNew();
+  setupWhatsNew();
 }
 
 if (document.readyState === 'loading') {

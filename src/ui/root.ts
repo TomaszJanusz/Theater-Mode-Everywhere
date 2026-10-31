@@ -1,6 +1,5 @@
 import { disposeModalIn } from './modal';
 import { observeAppearance, PAGE_MOTION_ATTRIBUTE, type AppearanceModes } from '../appearance-runtime';
-import { ensureNewBadgeStyles } from './new-badge';
 import { applyUiDirection } from './messages';
 import { bindTopLayer, type TopLayerBinding } from './top-layer';
 
@@ -64,7 +63,6 @@ export function getPlayerUiRoot(): ShadowRoot {
   stopAppearance = observeAppearance(hostEl, mirrorMotion);
   shadow = hostEl.shadowRoot || hostEl.attachShadow({ mode: 'open' });
   ensureShadowStyles(shadow);
-  ensureNewBadgeStyles(shadow);
   topLayer = bindTopLayer(hostEl);
   if (!shadow.getElementById('theater-announcements')) {
     const status = document.createElement('div');

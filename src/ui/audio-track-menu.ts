@@ -61,7 +61,7 @@ export function mountAudioTrackMenu(options: {
   button.className = 'theater-control-btn audio-track-btn';
   button.setAttribute('aria-haspopup', 'true');
   options.setIcon(button, AUDIO_TRACK_ICON);
-  const row = settings.addRow(button, t('audioTrackLabel'), 'audioTracks', 'playerAudioTrack');
+  const row = settings.addRow(button, t('audioTrackLabel'), 'audioTracks');
   settings.setRowHidden(button, true);
   const menu = new ChoiceMenu(settings.subview, settings.button, {
     title: t('audioTrackLabel'),

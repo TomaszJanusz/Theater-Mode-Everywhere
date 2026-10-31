@@ -4,7 +4,6 @@ import path from 'node:path';
 import { type BrowserContext, type Page } from 'playwright';
 
 import { defaultMediaProviderFlags, mediaProviderFlagStorageKeys, mediaProviderFlagStorageUpdate } from '../../src/media-features/provider-flags';
-import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../../src/whatsNew-release';
 
 import { fail, extensionWorker, timeScenario } from './helpers';
 export async function assertRteSettings(context: BrowserContext): Promise<void> {
@@ -25,7 +24,6 @@ export async function assertRteSettings(context: BrowserContext): Promise<void> 
       }
     };
     try {
-      await worker.evaluate(async ({ key, id }) => { await chrome.storage.local.set({ [key]: id }); }, { key: WHATS_NEW_ACK_STORAGE_KEY, id: WHATS_NEW_RELEASE.id });
       await worker.evaluate(update => chrome.storage.sync.set(update), { ...mediaProviderFlagStorageUpdate(defaultMediaProviderFlags()), language: 'en' });
       await page.setViewportSize({ width: 1440, height: 1000 });
       await page.goto(new URL('options/options.html#features', worker.url()).href);

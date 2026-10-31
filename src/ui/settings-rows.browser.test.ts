@@ -10,10 +10,8 @@ import { bundleModules } from '../test-utils/player-boot';
 import { readStylesheet } from '../test-utils/styles';
 import { testEngines } from '../test-utils/test-engines';
 
-import { NEW_BADGE_CSS } from './new-badge';
-
 const SRC = new URL('../', import.meta.url).pathname;
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css')) + NEW_BADGE_CSS;
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 const BUNDLE = bundleModules([
   "export { createPlayerSettings } from './ui/player-settings';",
   "export { createControls } from './ui/controls';",
@@ -30,17 +28,19 @@ const catalog = (locale: string): Record<string, string> => Object.fromEntries(
     .map(([key, entry]) => [key, entry.message]));
 const english = catalog('en');
 
-// Rows as controls.ts adds them, with the longest realistic chrome: icon dots, a
-// two-chip shortcut and the longest value the row can show.
+// Rows as controls.ts adds them, with the longest realistic chrome: a two-chip shortcut
+// and the longest value the row can show.
 const ROWS = [
   { label: 'volumeBoostLabel', values: ['volumeBoostOn', 'volumeBoostOff'], shortcut: 'Shift+B', stepper: true, section: 'audio' },
   { label: 'videoFitLabel', values: ['videoFitContain', 'videoFitCover', 'videoFitFill'], shortcut: 'Shift+Z', stepper: true },
-  { label: 'pictureAlignLabel', values: ['pictureAlignTop', 'pictureAlignCenter'], shortcut: 'Shift+L', isNew: 'playerPictureLayout', stepper: true },
-  { label: 'keepControlsVisibleTitle', values: ['controlsVisibilityOn', 'controlsVisibilityOff'], shortcut: 'Shift+H', isNew: 'playerAlwaysShowControls', stepper: true },
+  { label: 'pictureAlignLabel', values: ['pictureAlignTop', 'pictureAlignCenter'], shortcut: 'Shift+L', stepper: true },
+  { label: 'keepControlsVisibleTitle', values: ['controlsVisibilityOn', 'controlsVisibilityOff'], shortcut: 'Shift+H', stepper: true },
   { label: 'cycleSwitchVideo', values: [], shortcut: 'Shift+V' },
   { label: 'autoEnterTheaterTitle', values: ['autoEnterTheaterOn', 'autoEnterTheaterOff', 'statusUnavailable'], shortcut: 'Shift+A', stepper: true },
   { label: 'keyboardShortcutsTitle', values: [], shortcut: 'H', section: 'shortcuts' },
-  { label: 'extensionSettingsLabel', values: [], shortcut: '', section: 'footer' }
+  { label: 'extensionSettingsLabel', values: [], shortcut: '', section: 'footer' },
+  // The same row while an update is announced, with a two-digit minor.
+  { label: 'updateMenuLabel', values: [], shortcut: '', section: 'footer', version: '2.10' }
 ];
 
 const browsers = sharedEngineBrowsers();
@@ -67,7 +67,7 @@ describe('settings menu rows stay on one line', () => {
           for (const locale of LOCALES) {
             const messages = { ...english, ...catalog(locale) };
             const rows = ROWS.map(row => ({ ...row,
-              text: messages[row.label],
+              text: messages[row.label].replace('$VERSION$', row.version ?? ''),
               value: row.values.map(key => messages[key]).sort((a, b) => b.length - a.length)[0] ?? '' }));
             const audio = await page.evaluate(`SettingsRows.AUDIO_SETTING_NAMES.map(name => SettingsRows.AUDIO_LABEL_KEYS[name])`) as string[];
             const result = await page.evaluate(({ rows, audio, messages, dir }) => {
@@ -80,30 +80,30 @@ describe('settings menu rows stay on one line', () => {
               const scope = new api.DisposableScope();
               const settings = api.createPlayerSettings({
                 t: (key: string) => messages[key] ?? key,
-                ui: () => ({ featureHighlights: { installed: '2.0', seenThrough: '1.0', enabled: true, now: 0 }, shortcuts: { navigateLeft: 'A', navigateRight: 'D' } }),
+                ui: () => ({ shortcuts: { navigateLeft: 'A', navigateRight: 'D' } }),
                 uiStore: { subscribe: () => () => {} },
                 actions: { setIcon(element: HTMLElement, svg: string) { element.innerHTML = svg; }, showToolbar() {}, updateCaptionDock() {} },
                 paintOverlay() {}
               }, scope);
               mount.append(settings.container);
-              const add = (label: string, section: string, shortcut: string, value: string, isNew?: string, stepper = false) => {
+              const add = (label: string, section: string, shortcut: string, value: string, stepper = false) => {
                 const icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"></svg>';
                 if (stepper) {
                   // The stepper's own fixed column, as the rows controls.ts mounts as steppers.
                   const row = document.createElement('div');
                   row.innerHTML = icon;
-                  settings.addStepperRow(row, label, section, { onStep() {}, newItem: isNew }).updateStepper(shortcut, { value, index: 0, count: 2 });
+                  settings.addStepperRow(row, label, section, { onStep() {} }).updateStepper(shortcut, { value, index: 0, count: 2 });
                   return;
                 }
                 const button = document.createElement('button');
                 button.className = 'theater-control-btn';
                 button.innerHTML = icon;
-                settings.addRow(button, label, section, isNew).update(shortcut, value);
+                settings.addRow(button, label, section).update(shortcut, value);
               };
               // The Bass row shows one of four levels; reserve room for the longest.
             const bassValue = ['bassLess', 'bassOriginal', 'bassMore', 'bassMoar', 'bassMoaaarr'].map(key => messages[key]).sort((a, b) => b.length - a.length)[0];
-            for (const key of audio) add(messages[key] ?? key, 'audio', 'Shift+A', key === 'bassLabel' ? bassValue : messages.badgeNew);
-              for (const row of rows) add(row.text, row.section ?? 'player', row.shortcut, row.value, row.isNew, row.stepper);
+            for (const key of audio) add(messages[key] ?? key, 'audio', 'Shift+A', key === 'bassLabel' ? bassValue : messages.volumeBoostOn);
+              for (const row of rows) add(row.text, row.section ?? 'player', row.shortcut, row.value, row.stepper);
               settings.button.click();
               const menu = settings.panel as HTMLElement;
               const bounds = menu.getBoundingClientRect();

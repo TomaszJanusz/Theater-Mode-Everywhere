@@ -51,8 +51,6 @@
     --appearance-progress: #71717a;
     --appearance-surface: var(--appearance-high-panel);
     --appearance-tint: var(--appearance-high-panel);
-    --appearance-badge-text: var(--appearance-high-text);
-    --appearance-badge-border: var(--accent-color);
   }
   :root[data-contrast="high"], :root[data-contrast="high"] *,
   :host([data-contrast="high"]), :host([data-contrast="high"]) * {

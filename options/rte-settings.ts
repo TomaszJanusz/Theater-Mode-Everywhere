@@ -44,9 +44,7 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
     label.className = 'rte-control';
     tile.className = 'rte-tile te-animated-border';
     tile.dataset.provider = provider.id;
-    tile.dataset.newFeature = `rte${provider.id[0].toUpperCase()}${provider.id.slice(1)}`;
     for (const [key, value] of Object.entries(serviceColorProperties(provider))) tile.style.setProperty(key, value);
-    // The NEW badge joins the title row but stays out of the switch's accessible name.
     const title = document.createElement('span');
     title.className = 'rte-name';
     const name = document.createElement('bdi');
