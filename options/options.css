@@ -1829,7 +1829,7 @@ html { scrollbar-gutter: stable; }
 }
 
 .rte-card-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 16px 16px; }
-.rte-card-actions .rte-details-toggle { margin: 0; }
+.rte-card-actions .rte-details-toggle { align-self: center; margin: 0; }
 .rte-settings-button {
   padding: 5px 10px; border: 1px solid var(--border-color); border-radius: 6px;
   background: var(--card-bg); color: var(--text-primary); font: inherit; font-size: 12px; cursor: pointer;
