@@ -17,5 +17,14 @@
       "file": "main.ts",
       "runAt": "document_start"
     }
-  }
+  },
+  "settings": [
+    {
+      "id": "autoTheater",
+      "type": "boolean",
+      "default": true,
+      "label": "autoEnterTheaterTitle",
+      "description": "autoEnterTheaterDescription"
+    }
+  ]
 }

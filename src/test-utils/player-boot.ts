@@ -27,6 +27,8 @@ export function bundleModules(exports: readonly string[], globalName = 'TheaterT
   if (cached !== undefined) return cached;
   const text = esbuild.buildSync({
     stdin: { contents, resolveDir: SRC, loader: 'ts' },
+    // Host-only UI styles are text, injected by that provider inside the player's shadow root (Vite ?inline).
+    loader: { '.css': 'text' },
     bundle: true, write: false, format: 'iife', globalName, platform: 'browser', target: 'es2022', logLevel: 'silent'
   }).outputFiles[0].text;
   bundles.set(key, text);

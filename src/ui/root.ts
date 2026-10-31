@@ -6,7 +6,7 @@ import { bindTopLayer, type TopLayerBinding } from './top-layer';
 
 // Both script worlds must leave native button activation to the focused UI control.
 export const PLAYER_NATIVE_ACTIVATION_SELECTOR = '.theater-menu, .theater-service-action-host, '
-  + '.theater-time-end, .theater-controls-row button, .te-dialog-overlay';
+  + '.theater-time-end, .theater-controls-row button, .theater-ended-curtain, .te-dialog-overlay';
 
 const HOST_ID = 'theater-everywhere-ui';
 const STYLE_ID = 'theater-everywhere-ui-styles';

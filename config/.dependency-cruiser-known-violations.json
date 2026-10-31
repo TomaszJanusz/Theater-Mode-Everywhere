@@ -267,34 +267,6 @@
   },
   {
     "type": "dependency",
-    "from": "options/privacy-policy.ts",
-    "to": "src/dialog.ts",
-    "unresolvedTo": "../src/dialog",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "settings-ui-uses-public-settings-and-i18n"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "options/shortcut-editor.ts",
-    "to": "src/dialog.ts",
-    "unresolvedTo": "../src/dialog",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "settings-ui-uses-public-settings-and-i18n"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/core/frame-coordinator.ts",
     "to": "src/providers/tencent/wasm-player.ts",
     "unresolvedTo": "../providers/tencent/wasm-player",

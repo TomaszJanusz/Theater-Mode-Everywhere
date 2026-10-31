@@ -186,3 +186,35 @@ it('keeps staged extraction exemptions exact and entry implementation host-only'
     assert.throws(() => parseDescriptor({ ...descriptor, legacySharedFiles: files }));
   }
 });
+
+it('validates boolean setting declarations, rejects ambiguous ids and keeps every locale complete', async () => {
+  const { PROVIDER_SETTINGS } = await import('../src/providers/catalog');
+  const original = descriptors.find(provider => provider.settings)!;
+  const setting = original.settings![0];
+  assert.deepEqual(PROVIDER_SETTINGS, descriptors.filter(provider => provider.settings).map(({ id, settings }) => ({ id, settings })));
+  for (const settings of [null, [], {}, [setting, setting],
+    [{ ...setting, id: '../setting' }], [{ ...setting, id: 'constructor' }],
+    [{ ...setting, type: 'string' }], [{ ...setting, default: 'true' }],
+    [{ ...setting, label: '' }], [{ ...setting, description: '<html>' }]]) {
+    assert.throws(() => parseDescriptor({ ...original, settings }));
+  }
+  const { LANGUAGES } = await import('../src/language');
+  for (const { locale } of LANGUAGES) {
+    const catalog = JSON.parse(readFileSync(path.join(root, '_locales', locale, 'messages.json'), 'utf8'));
+    for (const provider of descriptors) for (const setting of provider.settings ?? []) {
+      for (const key of [setting.label, setting.description]) {
+        assert.ok(catalog[key]?.message, `${locale}/${key}`);
+        if (key.startsWith('provider')) assert.ok(catalog[key]?.description, `${locale}/${key}: translator context`);
+      }
+    }
+  }
+});
+
+
+it('declares AutoTheater settings exactly for the advertised capabilities, with existing-user defaults on', async () => {
+  const { PROVIDER_CAPABILITIES } = await import('../src/providers/capabilities');
+  const supported = PROVIDER_CAPABILITIES.filter(provider => provider.capabilities.autoTheater.status !== 'no').map(provider => provider.id).sort();
+  const settings = descriptors.filter(provider => provider.settings?.some(setting => setting.id === 'autoTheater'));
+  assert.deepEqual(settings.map(provider => provider.id).sort(), supported);
+  for (const provider of settings) assert.equal(provider.settings!.find(setting => setting.id === 'autoTheater')!.default, true);
+});

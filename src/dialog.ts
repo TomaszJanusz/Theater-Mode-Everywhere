@@ -2,6 +2,9 @@ import { t } from './i18n';
 import { languageRuntime } from './i18n-runtime';
 import { createModal, type ModalAction, type ModalOptions, type ModalContent } from './ui/modal';
 
+export { createModal };
+export type { ModalOptions } from './ui/modal';
+
 export type DialogActionSet =
   | { type: 'acknowledge'; label?: string }
   | { type: 'choice'; trueLabel?: string; falseLabel?: string; initialFocus?: 'confirm' | 'cancel' };

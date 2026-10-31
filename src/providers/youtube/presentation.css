@@ -17,6 +17,7 @@ html.theater-everywhere-html-active .ytp-gradient-bottom,
 html.theater-everywhere-html-active .ytp-pause-overlay,
 html.theater-everywhere-html-active .ytp-cued-thumbnail-overlay,
 html.theater-everywhere-html-active .ytp-endscreen-content,
+html.theater-everywhere-html-active .ytp-fullscreen-grid,
 html.theater-everywhere-html-active .ytp-ce-element,
 html.theater-everywhere-html-active .ytp-player-content {
   visibility: hidden !important;

@@ -3,6 +3,7 @@ import { userEvent } from 'vitest/browser';
 
 import { manualClock } from '../../.storybook/manual-clock';
 import { DisposableScope } from '../core/disposable-scope';
+import type { EndScreenSource } from '../core/end-screen';
 import { APPEARANCE_MODES, blockingViolations } from '../test-utils/axe';
 
 import { ENDED_CURTAIN_CLASS, ENDED_CURTAIN_DELAY_MS, mountEndedCurtain, REPLAY_ICON } from './ended-curtain';
@@ -32,7 +33,7 @@ function bar(label: string, hidden = false): HTMLButtonElement {
   return button;
 }
 
-function mount({ next = false, duration = 2 } = {}) {
+function mount({ next = false, duration = 2, source = undefined as EndScreenSource | undefined } = {}) {
   scope = new DisposableScope();
   const clock = manualClock();
   const media = new FakeMedia();
@@ -52,7 +53,7 @@ function mount({ next = false, duration = 2 } = {}) {
     reports.push(shown);
     // As the bar does: the play button turns into Replay before the curtain mirrors it.
     play.setAttribute('aria-label', t(shown ? 'replay' : 'play'));
-  }, clock);
+  }, clock, source);
   const curtain = () => queryPlayerUi<HTMLElement>(`.${ENDED_CURTAIN_CLASS}`);
   const mirrors = () => [...curtain()?.querySelectorAll('button') ?? []];
   const end = () => { media.emit('ended', true); clock.advance(ENDED_CURTAIN_DELAY_MS); };
@@ -60,6 +61,50 @@ function mount({ next = false, duration = 2 } = {}) {
 }
 
 describe('ended curtain', () => {
+  test('a provider gets a fresh mount epoch, disposed before hide and on controls teardown', () => {
+    const mounts: DisposableScope[] = [];
+    let disposed = false;
+    const source: EndScreenSource = {
+      mount(container, owner, label) {
+        mounts.push(owner);
+        const node = document.createElement('div');
+        node.textContent = label;
+        container.append(node);
+        owner.add(() => node.remove());
+      },
+      hostEndsPlayback: () => false, subscribe: () => () => {}, dispose: () => { disposed = true; }
+    };
+    const { end, media, curtain, scope: owner } = mount({ source });
+    end();
+    expect(curtain()!.textContent).toContain(t('endScreenSuggestions'));
+    media.emit('seeking', false);
+    expect(mounts[0]!.isDisposed).toBe(true);
+    end();
+    expect(mounts[1]).not.toBe(mounts[0]);
+    expect(mounts[1]!.isDisposed).toBe(false);
+    owner.dispose();
+    owner.dispose();
+    expect(mounts[1]!.isDisposed).toBe(true);
+    expect(disposed).toBe(true);
+    expect(curtain()).toBeNull();
+  });
+  test('yields the entire curtain to a host countdown and restores the plain fallback', () => {
+    let owned = true;
+    let changed = () => {};
+    const source: EndScreenSource = { mount() {}, hostEndsPlayback: () => owned,
+      subscribe: fn => { changed = fn; return () => {}; }, dispose() {} };
+    const { end, curtain, clock } = mount({ source });
+    end();
+    expect(curtain()).toBeNull();
+    owned = false;
+    changed();
+    clock.advance(ENDED_CURTAIN_DELAY_MS);
+    expect(curtain()).not.toBeNull();
+    expect(curtain()!.querySelector('.theater-end-screen')).toBeNull();
+    owned = true;
+    changed();
+    expect(curtain()).toBeNull();
+  });
   test('shows only after the grace on a real end, and announces it once', async () => {
     const { clock, media, curtain, reports } = mount();
     // Paused a moment before the end: not an end.

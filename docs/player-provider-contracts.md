@@ -75,9 +75,15 @@ completion need not emit another playing event. A provider may also declare
 video is found, for host reveals with no event of their own: YouTube's expanding the
 miniplayer un-hides the watch page with attribute flips shortly after its last publication
 and moves the player into the watch page's container later still, which can land after the
-countdown has run out. The opt-in preference defaults
-off; a visit records entry so exiting or changing preferences cannot reenter the
-same content. New content identities reset
+countdown has run out. The global preference defaults on. A provider's descriptor declares an `autoTheater`
+boolean setting, also on by default, only when it advertises the AutoTheater capability.
+`providers/settings-values.ts` resolves global AND provider enablement; domain exclusions,
+RTE enablement and top-frame/watch-player qualification remain independent vetoes.
+A service preference covers that provider across its hosts; exclusions retain their existing
+domain scope. Disabling a service cancels pending entry and consumes its current visit without
+exiting an active theater session. Re-enabling waits for a new watch identity. The global
+preference, like the other gates, only blocks while off and does not consume the visit. A visit records
+entry so exiting or changing preferences cannot reenter the same content. New content identities reset it.
 Entry is announced first: once the provider confirms the main video's identity and
 playback has been requested (not paused or ended, no media error, a source loading) —
 even before the stream can play (`ui/auto-theater-intent.ts`) — a corner notice shows for at
@@ -254,6 +260,20 @@ SOOP's chat is in the same document as its player (`#chatting_area`, with the pa
 
 ## Adding a feature
 
+`ProviderHooks.endScreen` (isolated world) supplies `EndScreenSource` from
+`src/core/end-screen.ts`. The source belongs to one controls scope and bound media
+element. The shared curtain passes its container, translated region label and a
+fresh `DisposableScope` to `mount` on each appearance. That scope is the mount's
+epoch: the provider rejects callbacks/clicks after `scope.isDisposed`, and adds
+all nodes, observers and subscriptions to its cleanup. Hiding the curtain disposes
+the mount before removing its container; controls teardown also disposes the source.
+Providers own rendering, styles, extraction and native navigation. The source's
+subscription invalidates host availability; `hostEndsPlayback` lets a native
+countdown keep the picture instead of showing even the plain curtain. This
+complements the static opt-out on `ServiceActionSource` for hosts that always own
+postplay. The curtain is triggered only by a real media end, never a pause. Empty
+provider content leaves the existing Replay/Next screen unchanged.
+
 1. Define a small shared contract for the feature, including availability and cleanup where needed.
 2. Implement the interface once in the player using only that contract.
 3. Implement each host's data and commands inside its provider (see below), exposed through a hook on that contract.
@@ -264,6 +284,7 @@ SOOP's chat is in the same document as its player (`#chatting_area`, with the pa
 Every new RTE integration is a per-host provider that loads asynchronously with its host and registers itself; none is added to the shared bundles. [SOOP](../src/providers/soop/) and [YouTube](../src/providers/youtube/) are the references; start from `soop/provider.json`, `soop/isolated.ts` and `soop/main.ts`. Netflix, Disney+, Crunchyroll, Tencent Video and the other services still wired into the shared scripts are legacy and migrate one by one. A change may edit their code in place but must not add shared-code coupling.
 
 - **Descriptor.** `src/providers/<id>/provider.json` is the single source of truth for the provider's id, hosts, entry files and injection time; the parser in [`scripts/provider-descriptors.ts`](../scripts/provider-descriptors.ts) defines the fields. The id is one of `MEDIA_PROVIDER_IDS`. After editing it, run `pnpm exec tsx scripts/provider-descriptors.ts` to regenerate the host catalog (`providers/catalog.ts`) and the manifest `content_scripts`. Never hand-edit those. Build and packaging details are in [building.md](building.md).
+- **Settings.** Optional `settings` contains boolean declarations (`id`, `type`, `default`, `label`, `description` message keys). The generator emits a separate settings export so modal metadata stays out of shared bundles. `providers/settings.ts` supplies the shared normalizer/store; options and isolated providers use the single `providerSettings` sync namespace. Loading never writes; changed preferences merge into the latest namespace and are observed live with owned listeners. Declare `autoTheater` for every provider advertising that capability; its default must agree across descriptors and the generator derives the runtime default from them.
 - **Broker admission.** Optional `mediaFetch` rules declare a media kind, exact HTTPS host and anchored pathname expression. The generated catalog admits these URLs in both the page runtime and the registry-free background broker; credentials, custom ports, other kinds and unmatched paths remain rejected. Keep rules limited to caption/preview metadata; never admit playback streams or license endpoints. Runtime-only admission can still use `allowsMediaFetch`.
 - **Home pill.** Optional `home` declares the canonical HTTPS destination on a descriptor host. The generated catalog supplies it to `serviceHomeUrl` independently of runtime registration and RTE enablement; without it, legacy mappings and the page-origin fallback remain.
 - **Loading.** The generator emits static `matches` for the descriptor's hosts (both dotted DNS spellings) and excludes them from the generic rules, so the provider's isolated and MAIN scripts load at `document_start` only on its hosts, in every frame of those hosts, and nowhere else. Never gate loading on `t`, theater entry or `document_idle`.

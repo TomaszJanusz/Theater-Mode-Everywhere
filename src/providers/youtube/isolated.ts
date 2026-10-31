@@ -3,6 +3,7 @@ import { providerRuntime } from '../provider-api';
 
 import { youtubeChat } from './chat';
 import { youtubeChatTheme } from './chat-theme';
+import { createYouTubeEndScreen } from './end-screen';
 import { youtubeEvents } from './events';
 import { youtubeLauncherPlacement } from './launcher-placement';
 import { findYouTubeQueueNavigation, readYouTubeControls, YOUTUBE_PLAYER_SELECTOR } from './navigation';
@@ -16,6 +17,7 @@ const services = api?.services;
 if (services) api?.register({
   id: 'youtube', contractVersion: 1,
   watchPlayback: youtubeWatchPlayback,
+  endScreen: createYouTubeEndScreen,
   createAdapter: video => new YouTubeAdapter(video, services),
   launcherPlacement: youtubeLauncherPlacement,
   timeline: youtubeTimeline,
