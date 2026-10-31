@@ -9,5 +9,14 @@
   "entries": {
     "isolated": { "file": "isolated.ts", "runAt": "document_start" },
     "main": { "file": "audio-main-entry.ts", "runAt": "document_start" }
-  }
+  },
+  "settings": [
+    {
+      "id": "autoTheater",
+      "type": "boolean",
+      "default": true,
+      "label": "autoEnterTheaterTitle",
+      "description": "autoEnterTheaterDescription"
+    }
+  ]
 }

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html-vite';
-import { expect } from 'storybook/test';
+import { expect, waitFor } from 'storybook/test';
 
 import { mountHudStage } from '../../../.storybook/hud-stage';
 import { DisposableScope } from '../../core/disposable-scope';
@@ -10,9 +10,10 @@ import { queryPlayerUi } from '../../ui/root';
 import { setSvgIcon } from '../../ui/svg-icon';
 
 import type { EndScreenItem } from './end-screen-model';
-import { renderEndScreen } from './end-screen-view';
+import { mountEndScreenSettings } from './end-screen-view';
+import { createYouTubeSettings } from './settings';
 
-interface Args { count: number; missingThumbnail: boolean }
+interface Args { count: number; missingThumbnail: boolean; recommendations: boolean }
 
 /** Illustrative story content; the renderer, stylesheet, curtain and shadow root are production code. */
 const items: readonly EndScreenItem[] = [
@@ -22,7 +23,7 @@ const items: readonly EndScreenItem[] = [
 ];
 const image = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="480" height="270"><rect width="480" height="270" fill="#263845"/><path d="M0 240L150 65L270 200L350 120L480 270H0" fill="#557064"/></svg>');
 
-function render({ count, missingThumbnail }: Args): HTMLElement {
+function render({ count, missingThumbnail, recommendations }: Args): HTMLElement {
   const stage = mountHudStage({ progress: 0.5, frames: [0, 0.5, 1] });
   const scope = new DisposableScope();
   stage.onDispose(() => scope.dispose());
@@ -30,13 +31,14 @@ function render({ count, missingThumbnail }: Args): HTMLElement {
   const replay = document.createElement('button');
   replay.setAttribute('aria-label', t('replay'));
   setSvgIcon(replay, REPLAY_ICON);
+  const settings = createYouTubeSettings();
+  void settings.ready.then(() => settings.set('youtube', 'showRecommendations', recommendations));
+  scope.add(() => settings.dispose());
   const source: EndScreenSource = {
     mount(container, owner, label) {
-      const grid = renderEndScreen({ read: () => ({ mediaId: 'story',
+      mountEndScreenSettings(container, { read: () => ({ mediaId: 'story',
         items: items.slice(0, count).map(item => ({ ...item, thumbnailUrl: missingThumbnail ? undefined : image })) }),
-      activate: () => true }, label, owner);
-      if (grid) container.append(grid);
-      owner.add(() => grid?.remove());
+      activate: () => true }, { label, scope: owner, settings });
     },
     hostEndsPlayback: () => false, subscribe: () => () => {}, dispose() {}
   };
@@ -47,15 +49,21 @@ function render({ count, missingThumbnail }: Args): HTMLElement {
 }
 
 const meta: Meta<Args> = {
-  title: 'Components/YouTube end screen', tags: ['frames'], args: { count: 3, missingThumbnail: false }, render
+  title: 'Components/YouTube end screen', tags: ['frames'], args: { count: 3, missingThumbnail: false, recommendations: true }, render
 };
 export default meta;
 
 export const ThreeSuggestions: StoryObj<Args> = { play: async () => {
-  await expect(queryPlayerUi('.theater-end-screen')?.querySelectorAll('button').length).toBe(3);
+  await waitFor(() => expect(queryPlayerUi('.theater-end-screen')?.querySelectorAll('button').length).toBe(3));
 } };
 export const TwoSuggestions: StoryObj<Args> = { args: { count: 2 } };
 export const OneSuggestion: StoryObj<Args> = { args: { count: 1 } };
 export const MissingThumbnails: StoryObj<Args> = { args: { missingThumbnail: true }, play: async () => {
+  await waitFor(() => expect(queryPlayerUi('.theater-end-screen')?.querySelectorAll('button').length).toBe(3));
   await expect(queryPlayerUi('.theater-end-screen')?.querySelector('img')).toBeNull();
+} };
+
+export const RecommendationsOff: StoryObj<Args> = { args: { recommendations: false }, play: async () => {
+  await waitFor(() => expect(queryPlayerUi<HTMLInputElement>('.theater-recommendations-setting input')?.checked).toBe(false));
+  await expect(queryPlayerUi('.theater-end-screen')).toBeNull();
 } };

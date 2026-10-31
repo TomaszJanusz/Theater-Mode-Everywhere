@@ -62,6 +62,7 @@ for (const engine of testEngines()) {
         window.autoTheaterProbe = probe;
         window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
           visit: { current: { identity: null, entered: false } },
+          serviceEnabled: () => true,
           enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
           editableFocused: () => false, theaterActive: () => probe.active,
           transitioning: () => false, findBestVideo: () => document.querySelector('video'),
@@ -129,6 +130,7 @@ for (const engine of testEngines()) {
         window.autoTheaterRuntime?.dispose();
         window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
           visit: { current: { identity: null, entered: false } },
+          serviceEnabled: () => true,
           enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
           editableFocused: () => false, theaterActive: () => probe.active,
           transitioning: () => false, findBestVideo: () => document.querySelector('video'),
@@ -200,6 +202,7 @@ for (const engine of testEngines()) {
         window.autoTheaterRuntime?.dispose();
         window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
           visit: { current: { identity: null, entered: false } },
+          serviceEnabled: () => true,
           enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
           editableFocused: () => false, theaterActive: () => probe.active,
           transitioning: () => false, findBestVideo: () => document.querySelector('video'),
@@ -297,6 +300,7 @@ for (const engine of testEngines()) {
         window.autoTheaterRuntime?.dispose();
         window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
           visit: { current: { identity: null, entered: false } },
+          serviceEnabled: () => true,
           enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
           editableFocused: () => false, theaterActive: () => probe.active,
           transitioning: () => false, findBestVideo: () => document.querySelector('video'),
@@ -450,6 +454,7 @@ for (const engine of testEngines()) {
         window.autoTheaterProbe = probe;
         window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
           visit: { current: { identity: null, entered: false } },
+          serviceEnabled: () => true,
           enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
           editableFocused: () => false, theaterActive: () => probe.active,
           transitioning: () => false, findBestVideo: () => document.querySelector('video'),
@@ -511,6 +516,7 @@ for (const engine of testEngines()) {
           const probe = window.autoTheaterProbe;
           window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
             visit: { current: { identity: null, entered: false } },
+            serviceEnabled: () => true,
             enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
             editableFocused: () => false, theaterActive: () => probe.active,
             transitioning: () => false, findBestVideo: () => document.querySelector('video'),
@@ -628,6 +634,7 @@ for (const engine of testEngines()) {
           window.autoTheaterProbe = probe;
           window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
             visit: { current: { identity: null, entered: false } },
+            serviceEnabled: () => true,
             enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
             editableFocused: () => false, theaterActive: () => probe.active,
             transitioning: () => false,
@@ -707,6 +714,7 @@ for (const engine of testEngines()) {
           }
           window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
             visit: { current: { identity: null, entered: false } },
+            serviceEnabled: () => true,
             enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
             editableFocused: () => {
               probe.focusChecks = (probe.focusChecks ?? 0) + 1;
@@ -819,6 +827,7 @@ for (const engine of testEngines()) {
           window.watchPageProbe = probe;
           window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
             visit: { current: { identity: null, entered: false } },
+            serviceEnabled: () => true,
             enabled: () => probe.enabled, policyAllowed: () => probe.policyAllowed,
             providerFlags: () => probe.flags, editableFocused: () => probe.editable,
             theaterActive: () => probe.active, transitioning: () => probe.transitioning,

@@ -1,15 +1,5 @@
-export const AUTO_THEATER_STORAGE_KEY = 'autoEnterTheater';
-export const DEFAULT_AUTO_ENTER_THEATER = true;
-export const AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY = 'autoTheaterSkipCountdown';
-
-export function resolveAutoTheaterSkipCountdown(value: unknown): boolean {
-  return value === true;
-}
-
-/** An absent or malformed value means the default; only an explicit boolean overrides it. */
-export function resolveAutoEnterTheater(value: unknown): boolean {
-  return typeof value === 'boolean' ? value : DEFAULT_AUTO_ENTER_THEATER;
-}
+export { AUTO_THEATER_STORAGE_KEY, DEFAULT_AUTO_THEATER as DEFAULT_AUTO_ENTER_THEATER, AUTO_SKIP_COUNTDOWN_KEY as AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY,
+  resolveSkipCountdown as resolveAutoTheaterSkipCountdown, resolveAutoEnterTheater } from '../auto-theater-preferences';
 
 export type AutoTheaterVisit = { identity: string | null; entered: boolean };
 

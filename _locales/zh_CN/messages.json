@@ -1326,5 +1326,25 @@
   "endScreenSuggestions": {
     "message": "推荐视频",
     "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+  },
+  "providerSettingsButton": {
+    "message": "设置",
+    "description": "Button on a Rich Theater Experience service card that opens its settings dialog."
+  },
+  "providerSettingsTitle": {
+    "message": "$1 设置",
+    "description": "Provider settings dialog title. $1 is the service name, e.g. YouTube."
+  },
+  "providerShowRecommendations": {
+    "message": "显示推荐",
+    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+  },
+  "providerShowRecommendationsDescription": {
+    "message": "播放结束时显示推荐视频。",
+    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+  },
+  "providerAutoTheaterGlobalOff": {
+    "message": "AutoTheater 已在全局关闭。请先在“功能”中启用。",
+    "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
   }
 }

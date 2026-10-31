@@ -1326,5 +1326,25 @@
   "endScreenSuggestions": {
     "message": "추천 동영상",
     "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
+  },
+  "providerSettingsButton": {
+    "message": "설정",
+    "description": "Button on a Rich Theater Experience service card that opens its settings dialog."
+  },
+  "providerSettingsTitle": {
+    "message": "$1 설정",
+    "description": "Provider settings dialog title. $1 is the service name, e.g. YouTube."
+  },
+  "providerShowRecommendations": {
+    "message": "추천 표시",
+    "description": "Switch label in provider settings and on the end curtain. Controls suggested videos, not the curtain itself."
+  },
+  "providerShowRecommendationsDescription": {
+    "message": "재생이 끝나면 추천 동영상을 표시합니다.",
+    "description": "Description of the provider recommendation switch. Suggestions appear only when playback ends."
+  },
+  "providerAutoTheaterGlobalOff": {
+    "message": "AutoTheater가 전체 설정에서 꺼져 있습니다. 먼저 기능에서 켜세요.",
+    "description": "Note below a disabled per-service AutoTheater switch when the global AutoTheater preference is off. Features is an options-page section."
   }
 }
