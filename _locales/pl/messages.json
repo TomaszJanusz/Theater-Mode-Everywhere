@@ -815,7 +815,7 @@
     "message": "Sterowanie przypięte"
   },
   "controlsUnpinnedHud": {
-    "message": "Kontrolki chowają się automatycznie"
+    "message": "Sterowanie chowa się samo"
   },
   "showNativeChat": {
     "message": "Pokaż czat"

@@ -65,7 +65,7 @@
     "message": "Non disponible"
   },
   "toggleTheaterModeLower": {
-    "message": "activer/désactiver le mode cinéma"
+    "message": "Activer/désactiver le mode cinéma"
   },
   "createdBy": {
     "message": "Créé par Tomasz Janusz"
@@ -783,10 +783,10 @@
     "message": "Activer le mode cinéma"
   },
   "autoEnterTheaterOn": {
-    "message": "Oui"
+    "message": "Activé"
   },
   "autoEnterTheaterOff": {
-    "message": "Non"
+    "message": "Désactivé"
   },
   "autoEnterTheaterDescription": {
     "message": "Active le mode cinéma lorsque la vidéo principale démarre sur les pages de lecture des services pris en charge avec Rich Theater Experience activé."
@@ -879,10 +879,10 @@
     }
   },
   "controlsVisibilityOn": {
-    "message": "Oui"
+    "message": "Activé"
   },
   "controlsVisibilityOff": {
-    "message": "Non"
+    "message": "Désactivé"
   },
   "extensionSettingsLabel": {
     "message": "Paramètres de l'extension"

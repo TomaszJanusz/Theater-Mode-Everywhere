@@ -558,10 +558,10 @@
     "message": "Další"
   },
   "muteHud": {
-    "message": "Ztlumit"
+    "message": "Ztlumeno"
   },
   "unmuteHud": {
-    "message": "Zapnout zvuk"
+    "message": "Zvuk zapnut"
   },
   "pictureInPictureTooltip": {
     "message": "Obraz v obraze $KEY$",

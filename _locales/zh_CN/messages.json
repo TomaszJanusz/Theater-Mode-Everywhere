@@ -270,19 +270,19 @@
     "message": "YouTube 集成"
   },
   "youtubeIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 字幕, 章节, 热度图, 缩略图。 快捷操作：跳过广告和播放队列中的下一个视频。启用 YouTube 的 Rich Theater Experience 和视频启动按钮后，按钮位于播放器工具栏中，紧挨自动播放开关的左侧。"
+    "message": "视频或播放器提供时可用：标题、字幕、章节、热度图、缩略图。快捷操作：跳过广告和播放队列中的下一个视频。启用 YouTube 的 Rich Theater Experience 和视频启动按钮后，按钮位于播放器工具栏中，紧挨自动播放开关的左侧。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 集成"
   },
   "vimeoIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 章节, 缩略图。 快捷操作：播放合集中的下一个视频。"
+    "message": "视频或播放器提供时可用：标题、章节、缩略图。快捷操作：播放合集中的下一个视频。"
   },
   "patreonIntegrationTitle": {
     "message": "Patreon 集成"
   },
   "patreonIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 字幕, 章节, 缩略图。"
+    "message": "视频或播放器提供时可用：标题、字幕、章节、缩略图。"
   },
   "twitchIntegrationTitle": {
     "message": "Twitch 集成"
@@ -294,25 +294,25 @@
     "message": "Disney+ 集成"
   },
   "disneyIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 字幕, 缩略图。 快捷操作：跳过片头、回顾或片尾字幕，以及播放下一集。"
+    "message": "视频或播放器提供时可用：标题、字幕、缩略图。快捷操作：跳过片头、回顾或片尾字幕，以及播放下一集。"
   },
   "netflixIntegrationTitle": {
     "message": "Netflix 集成"
   },
   "netflixIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 字幕, 缩略图。 快捷操作：跳过片头、回顾或片尾字幕，以及播放下一集。"
+    "message": "视频或播放器提供时可用：标题、字幕、缩略图。快捷操作：跳过片头、回顾或片尾字幕，以及播放下一集。"
   },
   "bilibiliIntegrationTitle": {
     "message": "Bilibili（bilibili.com）集成"
   },
   "bilibiliIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 字幕, 章节, 热度图, 缩略图。 快捷操作：播放器原生跳过确认和下一个视频。"
+    "message": "视频或播放器提供时可用：标题、字幕、章节、热度图、缩略图。快捷操作：播放器原生跳过确认和下一个视频。"
   },
   "tencentIntegrationTitle": {
     "message": "腾讯视频 / WeTV 集成"
   },
   "tencentIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 字幕, 缩略图。 快捷操作：通过播放器播放下一集。"
+    "message": "视频或播放器提供时可用：标题、字幕、缩略图。快捷操作：通过播放器播放下一集。"
   },
   "liveBadge": {
     "message": "直播"
@@ -971,13 +971,13 @@
     "message": "Bilibili.tv 集成"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 字幕, 片头/片尾标记, 缩略图。 快捷操作：跳过片头/片尾和下一集（仅限剧集）。"
+    "message": "视频或播放器提供时可用：标题、字幕、片头/片尾标记、缩略图。快捷操作：跳过片头/片尾和下一集（仅限剧集）。"
   },
   "crunchyrollIntegrationTitle": {
     "message": "Crunchyroll 集成"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 字幕, 片头/片尾字幕标记, 缩略图。 快捷操作：跳过片头/片尾字幕和下一集。"
+    "message": "视频或播放器提供时可用：标题、字幕、片头/片尾字幕标记、缩略图。快捷操作：跳过片头/片尾字幕和下一集。"
   },
   "iqiyiIntegrationTitle": {
     "message": "iQIYI 集成"
@@ -995,7 +995,7 @@
     "message": "Rakuten Viki 集成"
   },
   "vikiIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 字幕, 片头/片尾字幕标记, 缩略图。 快捷操作：跳过片头和下一集。"
+    "message": "视频或播放器提供时可用：标题、字幕、片头/片尾字幕标记、缩略图。快捷操作：跳过片头和下一集。"
   },
   "aboutTitle": {
     "message": "关于"

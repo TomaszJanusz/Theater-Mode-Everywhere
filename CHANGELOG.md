@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On Bilibili.tv, the video's own subtitles no longer stay on screen in theater mode while the subtitle menu says Off. Once the menu lists the episode's languages, theater hides Bilibili.tv's subtitles until you pick one (theater then shows yours, or Bilibili.tv's again if it cannot load it), and they come back when you leave theater, open another episode or switch Bilibili.tv off in Settings. Bilibili.tv's own subtitle choice is left as it was.
 - AutoTheater now enters on Vimeo video pages (vimeo.com/<id>): Vimeo's current page no longer exposes the player details the check relied on, so it never started there.
 - AutoTheater now enters on Bilibili video pages under a language route, such as bilibili.com/zh-Hans/video/BV…, as it does on bilibili.com/video/BV….
+- Corrected translations in Arabic, Chinese (Simplified), French, German, Italian, Japanese, Polish, Portuguese (Brazil), Russian, Spanish and Ukrainian: AutoTheater and Pin controls now read On/Off instead of Yes/No in French, Italian, Portuguese and Spanish, the confirmation shown when controls are set to auto-hide is shorter, and list punctuation, key names and capitalisation are fixed in several places.
 - On Disney+, the subtitles and the elapsed time in theater mode no longer stop on one line while the film plays on after its video reloads, such as when you change the audio track in theater or in Disney+'s own menu. They keep following the dialogue.
 
 ## [2.0.8] - 2026-10-28

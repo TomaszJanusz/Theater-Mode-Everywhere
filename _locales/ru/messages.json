@@ -65,7 +65,7 @@
     "message": "Недоступно"
   },
   "toggleTheaterModeLower": {
-    "message": "переключить режим кино"
+    "message": "Переключить режим кино"
   },
   "createdBy": {
     "message": "Автор: Tomasz Janusz"
@@ -815,7 +815,7 @@
     "message": "Управление закреплено"
   },
   "controlsUnpinnedHud": {
-    "message": "Элементы управления скрываются автоматически"
+    "message": "Автоскрытие управления"
   },
   "showNativeChat": {
     "message": "Показать чат"

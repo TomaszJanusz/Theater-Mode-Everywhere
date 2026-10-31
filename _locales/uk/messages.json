@@ -65,7 +65,7 @@
     "message": "Недоступно"
   },
   "toggleTheaterModeLower": {
-    "message": "увімкнути/вимкнути режим кінотеатру"
+    "message": "Увімкнути/вимкнути режим кінотеатру"
   },
   "createdBy": {
     "message": "Автор: Tomasz Janusz"
@@ -815,7 +815,7 @@
     "message": "Керування закріплено"
   },
   "controlsUnpinnedHud": {
-    "message": "Елементи керування ховаються автоматично"
+    "message": "Автоприховування керування"
   },
   "showNativeChat": {
     "message": "Показати чат"

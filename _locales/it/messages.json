@@ -65,7 +65,7 @@
     "message": "Non disponibile"
   },
   "toggleTheaterModeLower": {
-    "message": "attiva/disattiva modalità cinema"
+    "message": "Attiva/disattiva modalità cinema"
   },
   "createdBy": {
     "message": "Creato da Tomasz Janusz"
@@ -783,10 +783,10 @@
     "message": "Attiva la modalità cinema"
   },
   "autoEnterTheaterOn": {
-    "message": "Sì"
+    "message": "Attivato"
   },
   "autoEnterTheaterOff": {
-    "message": "No"
+    "message": "Disattivato"
   },
   "autoEnterTheaterDescription": {
     "message": "Attiva la modalità cinema quando il video principale inizia la riproduzione nelle pagine di visione dei servizi supportati con Rich Theater Experience attivo."
@@ -815,7 +815,7 @@
     "message": "Controlli fissati"
   },
   "controlsUnpinnedHud": {
-    "message": "I controlli si nascondono automaticamente"
+    "message": "Controlli a scomparsa"
   },
   "showNativeChat": {
     "message": "Mostra chat"
@@ -879,10 +879,10 @@
     }
   },
   "controlsVisibilityOn": {
-    "message": "Sì"
+    "message": "Attivato"
   },
   "controlsVisibilityOff": {
-    "message": "No"
+    "message": "Disattivato"
   },
   "extensionSettingsLabel": {
     "message": "Impostazioni dell'estensione"
