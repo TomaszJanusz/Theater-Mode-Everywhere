@@ -67,7 +67,8 @@ const labels = () => [...curtain()?.querySelectorAll('button') ?? []].map(button
 const meta: Meta<Args> = {
   title: 'Components/Ended curtain', tags: ['frames'], args: { next: false },
   argTypes: { next: { control: 'boolean' } },
-  render: args => render(args, { progress: 1 })
+  // Held mid-fade: the fade has no fill, so pinned at its end it would leave getAnimations() and no frame could find it.
+  render: args => render(args, { progress: 0.5 })
 };
 export default meta;
 
