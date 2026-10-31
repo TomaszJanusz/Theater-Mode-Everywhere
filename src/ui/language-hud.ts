@@ -54,15 +54,18 @@ function buildRow(source: LanguageSource, line: LanguageLine): HTMLElement {
   return row;
 }
 
+/** Where a cell's content is: both columns end-align, so a cell that grows or shrinks keeps its end edge. */
+function placeOf(cell: HTMLElement): Place {
+  const box = cell.getBoundingClientRect();
+  return { x: box[getComputedStyle(cell).direction === 'rtl' ? 'left' : 'right'], y: box.top };
+}
+
 /** Where the plate and its rows are now, running motion included, so an update can ease from there. */
 function measurePlate(plate: HTMLElement): PlateBox {
   const places = new Map<LanguageSource, Place[]>();
   for (const row of plate.querySelectorAll<HTMLElement>(`.${ROWS_CLASS} > [data-language-line]`)) {
     // Per cell: the label holds the plate's end edge while its value moves with the column's width.
-    places.set(row.dataset.languageLine as LanguageSource, cellsOf(row).map(cell => {
-      const { left, top } = cell.getBoundingClientRect();
-      return { x: left, y: top };
-    }));
+    places.set(row.dataset.languageLine as LanguageSource, cellsOf(row).map(cell => placeOf(cell)));
   }
   return { box: plate.getBoundingClientRect(), places };
 }
@@ -171,15 +174,17 @@ class LanguagePlate implements LanguageNoticeView {
     const kept = line.detail && name?.textContent === line.detail ? name : null;
     const text = kept ?? span(TEXT_CLASS, line.detail);
     const reduced = isElementMotionReduced(row.parentElement!);
-    if (kept) kept.className = TEXT_CLASS;
-    else value.append(text);
+    if (kept) {
+      kept.className = TEXT_CLASS;
+      // The text keeps its width, so with the spinner gone it neither rewraps nor shifts.
+      kept.style.width = `${kept.getBoundingClientRect().width}px`;
+    } else value.append(text);
     if (loading) {
-      // The value takes the spinner's place; the slot keeps the spinner's width until it has gone, so
-      // "Loading..." is never cut, and then the plate eases to the value's own width.
-      if (!kept) {
-        value.style.minWidth = `${loading.offsetWidth}px`;
-        loading.classList.add('leaving');
-      }
+      // The value takes the spinner's place; the slot keeps the loading width until the spinner has gone
+      // (it leaves the flow only when it is removed, which would snap the plate), so "Loading..." is never
+      // cut, and then the plate eases to the value's own width.
+      value.style.minWidth = `${loading.offsetWidth}px`;
+      if (!kept) loading.classList.add('leaving');
       const fade = reduced || kept ? null : name!.animate(
         [{ opacity: 1 }, { opacity: 0 }], { duration: LOADING_TEXT_FADE_MS, easing: 'ease-out', fill: 'both' });
       // An exit cut short by this update ends here too: the spinner goes at once.
@@ -278,9 +283,9 @@ class LanguagePlate implements LanguageNoticeView {
       const row = rowOf(plate, source);
       if (!row) continue;
       cellsOf(row).forEach((cell, index) => {
-        const now = cell.getBoundingClientRect();
-        const dx = place[index].x - now.left;
-        const dy = place[index].y - now.top;
+        const now = placeOf(cell);
+        const dx = place[index].x - now.x;
+        const dy = place[index].y - now.y;
         if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) this.play(cell, [{ translate: `${dx}px ${dy}px` }, { translate: '0 0' }]);
       });
     }

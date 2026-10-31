@@ -61,9 +61,6 @@ export const LoadingToResult = caption({ view: 'loading-to-result', detail: 'Deu
 
 /** The language is known when the load starts: the spinner turns beside its name. */
 export const LoadingNamed = caption({ view: 'loading', detail: 'Polski', named: true });
-/** The same name stays put; only the spinner leaves and the plate closes over its place. */
-export const LoadingNamedToResult = caption({ view: 'loading-to-result', detail: 'Polski', named: true });
 const LONG_NAME = 'Português (Brasil), automatic captions generated from the original English audio track';
 /** A long name wraps onto a second line beside the spinner, and the label stays on the row's middle. */
 export const LoadingNamedLong = caption({ view: 'loading', detail: LONG_NAME, named: true });
-export const LoadingNamedLongToResult = caption({ view: 'loading-to-result', detail: LONG_NAME, named: true });

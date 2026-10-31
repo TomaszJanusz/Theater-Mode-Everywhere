@@ -316,6 +316,38 @@ for (const [name, locale] of [['LTR', 'en'], ['RTL', 'ar']] as const) {
   }));
 }
 
+/** The plate's width ease, once it runs. */
+const widthEase = (plate: Element) => morph(plate).find(animation => animation.effect instanceof KeyframeEffect
+  && animation.effect.target === plate && animation.effect.getKeyframes().some(frame => frame.width !== undefined));
+/** Holds the whole morph half way, as a held frame does, and reports the plate's width there. */
+function halfway(plate: Element): number {
+  for (const animation of morph(plate)) {
+    animation.pause();
+    animation.currentTime = Number(animation.effect!.getComputedTiming().duration) / 2;
+  }
+  return plate.getBoundingClientRect().width;
+}
+/**
+ * The spinner of a named load leaves and the result keeps the name: the plate eases from the loading width
+ * to the settled one, strictly between them half way, while the name never moves. No time is asserted.
+ */
+async function resolvesWithoutJump(plate: HTMLElement, name: HTMLElement, detail: string): Promise<void> {
+  await finishMorph(plate);
+  const loadingWidth = plate.getBoundingClientRect().width;
+  const place = endEdge(name);
+  hud().triggerCaptionHud({ kind: 'status', title: 'Subtitles', detail });
+  ownMotion(spinnerOf())[0].finish();
+  await vi.waitFor(() => expect(widthEase(plate)).toBeDefined(), { interval: 5 });
+  const middle = halfway(plate);
+  await expect(endEdge(name)).toBeCloseTo(place, 0);
+  await finishMorph(plate);
+  const settled = plate.getBoundingClientRect().width;
+  await expect(settled).toBeLessThan(loadingWidth);
+  await expect(middle).toBeGreaterThan(settled);
+  await expect(middle).toBeLessThan(loadingWidth);
+  await expect(endEdge(name)).toBeCloseTo(place, 0);
+}
+
 const announcement = () => getPlayerUiRoot().getElementById('theater-announcements')!;
 const spinnerOf = () => notice()!.querySelector<HTMLElement>('[data-language-line="subtitles"] .language-hud-spinner')!;
 const valueText = () => notice()!.querySelector<HTMLElement>('[data-language-line="subtitles"] .language-hud-value')!;
@@ -413,18 +445,42 @@ for (const [name, locale, detail] of [
         const centre = (node: Element) => node.getBoundingClientRect().top + node.getBoundingClientRect().height / 2;
         await expect(centre(label)).toBeCloseTo(centre(value), 0);
         await expect(plate.scrollWidth).toBeLessThanOrEqual(plate.clientWidth + 1);
+        const lineCount = Math.round(value.getBoundingClientRect().height / lineHeight);
 
-        hud().triggerCaptionHud({ kind: 'status', title: 'Subtitles', detail });
-        ownMotion(spinnerOf())[0].finish();
-        await vi.waitFor(() => expect(plate.querySelector('.language-hud-spinner')).toBeNull());
-        await finishMorph(plate);
+        await resolvesWithoutJump(plate, plate.querySelector<HTMLElement>('.language-hud-loading-text')!, detail);
         await expect(valueText().textContent).toBe(detail);
+        await expect(Math.round(valueText().getBoundingClientRect().height / lineHeight)).toBe(lineCount);
         await expect(centre(label)).toBeCloseTo(centre(valueText()), 0);
       }
     }),
     globals: { locale }
   }));
 }
+
+test('A named load of a short name resolves without a width jump', () => runHudCase(hudStory(h => h.triggerCaptionHud(named('Polski')), {
+  play: async () => {
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
+    await resolvesWithoutJump(notice()!, notice()!.querySelector<HTMLElement>('.language-hud-loading-text')!, 'Polski');
+  }
+})));
+
+test('A superseded pick eases the plate to the new name instead of snapping, and the spinner keeps turning', () => runHudCase(hudStory(h => h.triggerCaptionHud(named('Polski')), {
+  play: async () => {
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
+    const plate = notice()!;
+    await finishMorph(plate);
+    const before = plate.getBoundingClientRect().width;
+    const spinner = spinnerOf();
+    hud().triggerCaptionHud(named('Português (Brasil), automatic captions from the original track'));
+    await expect(spinnerOf()).toBe(spinner);
+    const middle = halfway(plate);
+    await finishMorph(plate);
+    const after = plate.getBoundingClientRect().width;
+    await expect(after).toBeGreaterThan(before);
+    await expect(middle).toBeGreaterThan(before);
+    await expect(middle).toBeLessThan(after);
+  }
+})));
 
 test('Reduce motion: a named load resolves at once and keeps the name without motion', () => runHudCase({
   ...hudStory(h => h.triggerCaptionHud(named('Polski')), {
