@@ -254,6 +254,20 @@ SOOP's chat is in the same document as its player (`#chatting_area`, with the pa
 
 ## Adding a feature
 
+`ProviderHooks.endScreen` (isolated world) supplies `EndScreenSource` from
+`src/core/end-screen.ts`. The source belongs to one controls scope and bound media
+element. The shared curtain passes its container, translated region label and a
+fresh `DisposableScope` to `mount` on each appearance. That scope is the mount's
+epoch: the provider rejects callbacks/clicks after `scope.isDisposed`, and adds
+all nodes, observers and subscriptions to its cleanup. Hiding the curtain disposes
+the mount before removing its container; controls teardown also disposes the source.
+Providers own rendering, styles, extraction and native navigation. The source's
+subscription invalidates host availability; `hostEndsPlayback` lets a native
+countdown keep the picture instead of showing even the plain curtain. This
+complements the static opt-out on `ServiceActionSource` for hosts that always own
+postplay. The curtain is triggered only by a real media end, never a pause. Empty
+provider content leaves the existing Replay/Next screen unchanged.
+
 1. Define a small shared contract for the feature, including availability and cleanup where needed.
 2. Implement the interface once in the player using only that contract.
 3. Implement each host's data and commands inside its provider (see below), exposed through a hook on that contract.

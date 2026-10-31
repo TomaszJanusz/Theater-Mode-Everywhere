@@ -1,6 +1,7 @@
 import type { ChatThemeAdapter } from '../chat/adapters/types';
 import type { ChatActivation, ChatSurface } from '../chat/types';
 import type { ParsedChatLocation } from '../chat/url';
+import type { EndScreenSource } from '../core/end-screen';
 import type { ProviderStage } from '../core/provider-presentation';
 import type { ServiceActionSource } from '../core/service-actions';
 import type { MediaFetchRequest } from '../media-features/fetch-allowlist';
@@ -84,6 +85,7 @@ type SharedProviderHooks = {
 
 /** Hooks the isolated-world runtime reads. */
 type IsolatedOnlyHooks = {
+  endScreen?: (element: HTMLElement) => EndScreenSource;
   createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
   /** Native presentation remains active with the data integration disabled. */
   stage?: ProviderStage;

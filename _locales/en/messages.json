@@ -1333,5 +1333,9 @@
   },
   "helpCustomizeShortcuts": {
     "message": "Customize shortcuts"
+  },
+  "endScreenSuggestions": {
+    "message": "Suggested videos",
+    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   }
 }

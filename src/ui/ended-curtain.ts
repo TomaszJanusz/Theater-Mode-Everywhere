@@ -1,4 +1,5 @@
-import type { DisposableScope } from '../core/disposable-scope';
+import { DisposableScope } from '../core/disposable-scope';
+import type { EndScreenSource } from '../core/end-screen';
 import type { PlaybackSurface } from '../playback-surface';
 
 import { strokeIcon, type HudHost } from './hud';
@@ -35,15 +36,18 @@ export function mountEndedCurtain(
   media: Pick<PlaybackSurface, 'ended' | 'duration' | 'addEventListener' | 'removeEventListener'>,
   controls: readonly [HTMLButtonElement, ...HTMLButtonElement[]],
   changed: (shown: boolean) => void,
-  clock: UiClock = systemClock
+  clock: UiClock = systemClock,
+  source?: EndScreenSource
 ): void {
   let curtain: HTMLElement | null = null;
   let timer: number | undefined;
+  let mountScope: DisposableScope | undefined;
   const show = (shown: boolean) => {
     if (shown === Boolean(curtain)) return;
     if (curtain) {
       // Focus that leaves with the curtain goes back to the bar, not to the host page.
       const focused = curtain.matches(':focus-within');
+      mountScope?.dispose();
       curtain.remove();
       curtain = null;
       changed(false);
@@ -66,20 +70,27 @@ export function mountEndedCurtain(
       curtain.append(mirror);
     }
     ctx.mountPlayerUi(curtain);
+    if (source) {
+      mountScope = new DisposableScope();
+      source.mount(curtain, mountScope, ctx.t('endScreenSuggestions'));
+    }
     announcePlayerStatus(ctx.t('videoEnded'));
   };
-  const ended = () => media.ended && media.duration < Infinity;
+  const ended = () => media.ended && media.duration < Infinity && !source?.hostEndsPlayback();
   const sync = () => {
+    if (scope.isDisposed) return;
     clock.clearTimeout(timer);
     if (!ended()) show(false);
     // The timer re-reads the media: what changed meanwhile without an event still counts.
-    else if (!curtain) timer = clock.setTimeout(() => { if (ended()) show(true); }, ENDED_CURTAIN_DELAY_MS);
+    else if (!curtain) timer = clock.setTimeout(() => { if (!scope.isDisposed && ended()) show(true); }, ENDED_CURTAIN_DELAY_MS);
   };
   for (const type of EVENTS) scope.listen(media, type, sync);
+  if (source) scope.add(source.subscribe(sync));
   // A rebuild of the controls, or entry, on media that has already ended shows it too.
   sync();
   scope.add(() => {
     clock.clearTimeout(timer);
     show(false);
+    source?.dispose();
   });
 }

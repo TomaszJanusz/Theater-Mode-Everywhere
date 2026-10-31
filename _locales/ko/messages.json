@@ -1322,5 +1322,9 @@
   },
   "helpCustomizeShortcuts": {
     "message": "단축키 사용자 지정"
+  },
+  "endScreenSuggestions": {
+    "message": "추천 동영상",
+    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   }
 }

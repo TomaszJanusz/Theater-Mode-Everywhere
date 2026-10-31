@@ -1322,5 +1322,9 @@
   },
   "helpCustomizeShortcuts": {
     "message": "Настроить горячие клавиши"
+  },
+  "endScreenSuggestions": {
+    "message": "Рекомендуемые видео",
+    "description": "Accessible label for the suggested video tiles on the screen shown after playback ends. Titles and video details come from the video service."
   }
 }

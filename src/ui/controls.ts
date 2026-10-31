@@ -1,25 +1,12 @@
-import { requestOptionsPage } from '../protocol/options-page';
-
-import { PICTURE_ALIGNS, VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
-import { audioTrackHudReport, mountAudioTrackMenu } from './audio-track-menu';
-import { mountEndedCurtain, REPLAY_ICON } from './ended-curtain';
-import { shortcutMarkup } from './shortcut-display';
-import { exitSpinner } from './spinner-exit';
-import { languageRuntime } from '../i18n-runtime';
-import { observeChromeVisibility } from './chrome-visibility';
-import { emptyPlaylistNav, type PlaylistNavState } from '../playlist-nav';
-import { observeProviderClock, readProviderClock } from '../providers/timeline';
-import { captionPreferenceHost } from '../media-features/caption-preference';
-import { MediaFeaturesController } from '../media-features/controller';
-import { observeProviderMediaChanges, refreshProviderAfterElementReset } from '../providers/media-events';
-import { autoTheaterAvailability } from '../providers/watch-playback';
-import { createServiceActions } from '../providers/service-actions';
-import { PREVIEW_DISPLAY_WIDTH } from '../media-features/preview-display';
+import type { AudioSettings } from '../audio-settings';
+import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
 import { DisposableScope } from '../core/disposable-scope';
 import type { PlayerCommand } from '../core/player-session';
-import { togglePictureInPicture } from './picture-in-picture';
-import { createFullscreenRecovery } from './fullscreen-recovery';
-import { waitForSeekCompletion } from './seek-completion';
+import { languageRuntime } from '../i18n-runtime';
+import { captionPreferenceHost } from '../media-features/caption-preference';
+import { MediaFeaturesController } from '../media-features/controller';
+import { PREVIEW_DISPLAY_WIDTH } from '../media-features/preview-display';
+import { coercePlaybackSurface, nativeVideoOf, volumeCeiling, type PlaybackSurface } from '../playback-surface';
 import {
   isAtLiveEdge,
   isVideoAtLiveEdge,
@@ -33,24 +20,38 @@ import {
   observeMediaSeekRequests,
   clearPendingMediaSeek
 } from '../playback-window';
+import { emptyPlaylistNav, type PlaylistNavState } from '../playlist-nav';
+import { requestOptionsPage } from '../protocol/options-page';
+import { createEndScreen } from '../providers/end-screen';
+import { observeProviderMediaChanges, refreshProviderAfterElementReset } from '../providers/media-events';
+import { createServiceActions } from '../providers/service-actions';
+import { observeProviderClock, readProviderClock } from '../providers/timeline';
+import { autoTheaterAvailability } from '../providers/watch-playback';
 import { selectSwitchableVideos } from '../switchable-videos';
-import { observePicture, viewportPictureInsets } from './picture-insets';
+
+import { PICTURE_ALIGNS, VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
+import { audioTrackHudReport, mountAudioTrackMenu } from './audio-track-menu';
+import type { ButtonTooltipBinder } from './button-tooltip';
+import { mountNativeChatControls, nativeChatState } from './chat';
+import { observeChromeVisibility } from './chrome-visibility';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
+import { mountEndedCurtain, REPLAY_ICON } from './ended-curtain';
+import { createFullscreenRecovery } from './fullscreen-recovery';
 import { AUDIO_SETTING_ICONS, createLoadingPlate, ensureLoadingRing, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
-import { AUDIO_SHORTCUTS, shortcutDisplayEnv } from './shortcuts';
-import type { AudioSettings } from '../audio-settings';
-import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
 import { bindMenuPopover, playerChromeExpanded } from './menu-popover';
 import { beginPicturePress, clearPictureDismiss } from './picture-dismiss';
-import { mountServiceActionCta } from './service-actions';
+import { togglePictureInPicture } from './picture-in-picture';
+import { observePicture, viewportPictureInsets } from './picture-insets';
 import { createPlayerSettings } from './player-settings';
-import { createSpeedControl } from './speed-control';
-import { createVolumeControl } from './volume-control';
-import { mountNativeChatControls, nativeChatState } from './chat';
-import { clockLabels, renderLiveBadge, renderTimeReadout } from './time-readout';
-import type { ButtonTooltipBinder } from './button-tooltip';
 import type { PlayerChromeContext } from './runtime-context';
-import { coercePlaybackSurface, nativeVideoOf, volumeCeiling, type PlaybackSurface } from '../playback-surface';
+import { waitForSeekCompletion } from './seek-completion';
+import { mountServiceActionCta } from './service-actions';
+import { shortcutMarkup } from './shortcut-display';
+import { AUDIO_SHORTCUTS, shortcutDisplayEnv } from './shortcuts';
+import { createSpeedControl } from './speed-control';
+import { exitSpinner } from './spinner-exit';
+import { clockLabels, renderLiveBadge, renderTimeReadout } from './time-readout';
+import { createVolumeControl } from './volume-control';
 
 export interface ExtendedHTMLDivElement extends HTMLDivElement {
   _videoListenersCleanup?: () => void;
@@ -1560,7 +1561,7 @@ export function createControls(
       ended = refs.playbackEnded = shown;
       paintPlayButton();
       if (shown) showToolbar();
-    });
+    }, undefined, createEndScreen(video.element));
     controlsScope.add(languageRuntime.subscribe(() => {
       // Rebuild only the current chrome; teardown retires caption/provider work.
       // Reuse the bound surface so language changes never seek, pause or exit theater.

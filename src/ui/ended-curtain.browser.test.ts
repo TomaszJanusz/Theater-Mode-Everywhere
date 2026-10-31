@@ -28,8 +28,9 @@ async function playToEnd(page: Page): Promise<void> {
  * clock. Only page.evaluate reads while held: Playwright's waits poll on frames, which the held clock stops too.
  */
 async function runTimers(page: Page, ms: number): Promise<void> {
-  // A little ahead of the page's now, which keeps moving until the hold lands.
-  await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
+  // Wall time is fixed at zero while timer ticks flow. A Date.now() read followed by pauseAt(now + 100)
+  // races the protocol round trip (especially in Firefox under load); freezing Date removes that race.
+  await page.clock.pauseAt(0);
   await page.clock.runFor(ms);
 }
 
@@ -45,6 +46,7 @@ describe('ended curtain on a generic HTML5 player', () => {
       page.setDefaultTimeout(8000);
       // The clock flows in real time until a check holds it.
       await page.clock.install();
+      await page.clock.setFixedTime(0);
       await serveFixture(page, FIXTURE);
       await bootPlayer(page, { settings: { keepControlsVisible: false } });
       await page.waitForFunction(() => Boolean(document.querySelector('video')?.readyState && document.querySelector('video')!.readyState >= 2));

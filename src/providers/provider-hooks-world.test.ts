@@ -16,11 +16,14 @@ it('provider hooks are typed per world', () => {
     // Hooks both worlds share register in either.
     main.register({ ...base, chat: undefined, events: { media: [] } });
     isolated.register({ ...base, events: { media: [] } });
+    isolated.register({ ...base, endScreen: () => { throw new Error('type only'); } });
 
     // @ts-expect-error an isolated-world hook is silently ignored in MAIN
     main.register({ ...base, stage: {} as NonNullable<IsolatedProviderHooks['stage']> });
     // @ts-expect-error likewise for host captions
     main.register({ ...base, hostCaptions: () => { throw new Error('type only'); } });
+    // @ts-expect-error end-screen rendering and its mount scope belong to the isolated world
+    main.register({ ...base, endScreen: () => { throw new Error('type only'); } });
     // @ts-expect-error a MAIN-world hook is silently ignored in the isolated world
     isolated.register({ ...base, install() {} });
     // @ts-expect-error likewise for the asynchronous probe, which MAIN answers from its own registry
