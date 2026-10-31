@@ -1449,5 +1449,85 @@
   "setupOpenSettings": {
     "message": "Открыть настройки",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
+  },
+  "setupStartTitle": {
+    "message": "Запуск режима кино",
+    "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."
+  },
+  "setupStartDescription": {
+    "message": "Режим кино растягивает видео на всё окно. Клавиша $1 всегда его включает. Выберите, должно ли его включать что-то ещё.",
+    "description": "First-run setup step text. $1 is the user's theater mode key as Settings shows it, usually T."
+  },
+  "setupStartKey": {
+    "message": "Только когда я нажимаю $1",
+    "description": "First-run setup choice: theater mode starts only with the key. $1 is that key, usually T."
+  },
+  "setupStartKeyDescription": {
+    "message": "На посещаемые страницы ничего не добавляется.",
+    "description": "Description of the 'Only when I press $1' choice: the extension adds nothing to web pages."
+  },
+  "setupStartButton": {
+    "message": "$1 или кнопка на видео",
+    "description": "First-run setup choice: the key or the video launcher button. $1 is the theater mode key, usually T."
+  },
+  "setupStartButtonDescription": {
+    "message": "Когда вы наводите указатель на видео, у его левого края появляется небольшая кнопка.",
+    "description": "Description of the video launcher choice in the first-run setup."
+  },
+  "setupStartAuto": {
+    "message": "Включать автоматически",
+    "description": "First-run setup choice: AutoTheater, theater mode starts by itself on supported services."
+  },
+  "setupStartAutoDescription": {
+    "message": "На страницах просмотра поддерживаемых сервисов режим кино включается, когда видео начинает воспроизводиться, после короткого отсчёта.",
+    "description": "Description of the AutoTheater choice. Do not write a number of seconds for the countdown."
+  },
+  "setupStartAutoUnavailable": {
+    "message": "Чтобы использовать это, включите на первом шаге сервис, который это поддерживает.",
+    "description": "Shown under the disabled 'Start automatically' choice when no service chosen in the first step supports it."
+  },
+  "setupStartFooter": {
+    "message": "Это можно изменить позже в меню «Настройки → Функции».",
+    "description": "Footer of the start step. Settings and Features are names in the Settings page."
+  },
+  "setupKeysTitle": {
+    "message": "Клавиши и звук",
+    "description": "First-run setup step title: hold for 2x speed and volume boost."
+  },
+  "setupKeysDescription": {
+    "message": "В режиме кино некоторые клавиши умеют больше, чем плеер страницы. $1 и $2 работают и на любой странице с видео, кроме ввода текста в поле.",
+    "description": "First-run setup step text. $1 is the theater mode key (usually T), $2 the fullscreen key (usually F)."
+  },
+  "setupVolumeBoostDescription": {
+    "message": "Повышает громкость до 300%. Звук проходит через обработку звука в браузере, и при первом включении режима кино может ненадолго появиться индикатор загрузки.",
+    "description": "Description of the Volume Boost switch in the first-run setup."
+  },
+  "setupKeysFooter": {
+    "message": "Все клавиши можно посмотреть и изменить в меню «Настройки → Горячие клавиши».",
+    "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
+  },
+  "setupSummaryStartKey": {
+    "message": "Только при нажатии $1",
+    "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."
+  },
+  "setupSummaryStartButton": {
+    "message": "$1 или кнопка на видео",
+    "description": "Summary value: the key or the video launcher button. $1 is the theater mode key, usually T."
+  },
+  "setupSummaryStartAuto": {
+    "message": "Автоматически, после отсчёта",
+    "description": "Summary value: AutoTheater with its countdown notice."
+  },
+  "setupSummaryStartAutoNow": {
+    "message": "Автоматически, без отсчёта",
+    "description": "Summary value: AutoTheater without the countdown notice."
+  },
+  "setupSummaryOn": {
+    "message": "Вкл.",
+    "description": "Summary value of a switch that is on."
+  },
+  "setupSummaryOff": {
+    "message": "Выкл.",
+    "description": "Summary value of a switch that is off."
   }
 }

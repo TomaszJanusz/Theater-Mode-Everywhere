@@ -1883,6 +1883,24 @@ html { scrollbar-gutter: stable; }
 .setup-choice-copy { display: grid; gap: 2px; }
 .setup-choice-name { font-weight: 600; color: var(--appearance-ink, var(--text-primary)); }
 .setup-choice-desc { font-size: 13px; color: var(--appearance-muted, var(--text-secondary)); }
+.setup-choice.is-unavailable { cursor: default; opacity: 0.6; }
+.setup-choice.is-unavailable:hover { border-color: var(--border-color); }
+.setup-choice-note { font-size: 13px; color: var(--appearance-ink, var(--text-primary)); }
+.setup-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background-color: var(--appearance-surface, #09090b);
+  cursor: pointer;
+}
+.setup-switch[hidden] { display: none; }
+.setup-switch .toggle-switch { flex-shrink: 0; }
+/* Belongs to the choice above it, as "Choose services" switches do. */
+.setup-nested { margin-inline-start: 28px; }
 .setup-services {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

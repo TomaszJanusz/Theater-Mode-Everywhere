@@ -1449,5 +1449,85 @@
   "setupOpenSettings": {
     "message": "Otevřít nastavení",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
+  },
+  "setupStartTitle": {
+    "message": "Spouštění režimu kina",
+    "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."
+  },
+  "setupStartDescription": {
+    "message": "Režim kina roztáhne video na celé okno. Klávesa $1 ho spustí vždy. Zvolte, jestli ho má spouštět i něco jiného.",
+    "description": "First-run setup step text. $1 is the user's theater mode key as Settings shows it, usually T."
+  },
+  "setupStartKey": {
+    "message": "Jen když stisknu $1",
+    "description": "First-run setup choice: theater mode starts only with the key. $1 is that key, usually T."
+  },
+  "setupStartKeyDescription": {
+    "message": "Na navštívené stránky se nic nepřidá.",
+    "description": "Description of the 'Only when I press $1' choice: the extension adds nothing to web pages."
+  },
+  "setupStartButton": {
+    "message": "$1 nebo tlačítko na videích",
+    "description": "First-run setup choice: the key or the video launcher button. $1 is the theater mode key, usually T."
+  },
+  "setupStartButtonDescription": {
+    "message": "Když na video ukážete, u jeho levého okraje se objeví malé tlačítko.",
+    "description": "Description of the video launcher choice in the first-run setup."
+  },
+  "setupStartAuto": {
+    "message": "Spouštět automaticky",
+    "description": "First-run setup choice: AutoTheater, theater mode starts by itself on supported services."
+  },
+  "setupStartAutoDescription": {
+    "message": "Na stránkách přehrávání podporovaných služeb se režim kina spustí, když se video přehrává, po krátkém odpočtu.",
+    "description": "Description of the AutoTheater choice. Do not write a number of seconds for the countdown."
+  },
+  "setupStartAutoUnavailable": {
+    "message": "Abyste to mohli použít, zapněte v prvním kroku službu, která to podporuje.",
+    "description": "Shown under the disabled 'Start automatically' choice when no service chosen in the first step supports it."
+  },
+  "setupStartFooter": {
+    "message": "Později to můžete změnit v Nastavení → Funkce.",
+    "description": "Footer of the start step. Settings and Features are names in the Settings page."
+  },
+  "setupKeysTitle": {
+    "message": "Klávesy a zvuk",
+    "description": "First-run setup step title: hold for 2x speed and volume boost."
+  },
+  "setupKeysDescription": {
+    "message": "V režimu kina umí některé klávesy víc než přehrávač stránky. $1 a $2 fungují i na každé stránce s videem, kromě psaní do pole.",
+    "description": "First-run setup step text. $1 is the theater mode key (usually T), $2 the fullscreen key (usually F)."
+  },
+  "setupVolumeBoostDescription": {
+    "message": "Zvýší hlasitost až na 300 %. Zvuk prochází zvukovým zpracováním prohlížeče a při prvním spuštění režimu kina se může krátce zobrazit indikátor načítání.",
+    "description": "Description of the Volume Boost switch in the first-run setup."
+  },
+  "setupKeysFooter": {
+    "message": "Všechny klávesy najdete a změníte v Nastavení → Klávesové zkratky.",
+    "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
+  },
+  "setupSummaryStartKey": {
+    "message": "Jen když stisknete $1",
+    "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."
+  },
+  "setupSummaryStartButton": {
+    "message": "$1 nebo tlačítko na videích",
+    "description": "Summary value: the key or the video launcher button. $1 is the theater mode key, usually T."
+  },
+  "setupSummaryStartAuto": {
+    "message": "Automaticky, po odpočtu",
+    "description": "Summary value: AutoTheater with its countdown notice."
+  },
+  "setupSummaryStartAutoNow": {
+    "message": "Automaticky, bez odpočtu",
+    "description": "Summary value: AutoTheater without the countdown notice."
+  },
+  "setupSummaryOn": {
+    "message": "Zapnuto",
+    "description": "Summary value of a switch that is on."
+  },
+  "setupSummaryOff": {
+    "message": "Vypnuto",
+    "description": "Summary value of a switch that is off."
   }
 }

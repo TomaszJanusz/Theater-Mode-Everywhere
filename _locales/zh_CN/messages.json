@@ -1449,5 +1449,85 @@
   "setupOpenSettings": {
     "message": "打开设置",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
+  },
+  "setupStartTitle": {
+    "message": "如何开启剧场模式",
+    "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."
+  },
+  "setupStartDescription": {
+    "message": "剧场模式会让视频填满窗口。按 $1 始终可以开启。请选择是否还要用其他方式开启。",
+    "description": "First-run setup step text. $1 is the user's theater mode key as Settings shows it, usually T."
+  },
+  "setupStartKey": {
+    "message": "仅在我按 $1 时",
+    "description": "First-run setup choice: theater mode starts only with the key. $1 is that key, usually T."
+  },
+  "setupStartKeyDescription": {
+    "message": "不会向你访问的页面添加任何内容。",
+    "description": "Description of the 'Only when I press $1' choice: the extension adds nothing to web pages."
+  },
+  "setupStartButton": {
+    "message": "$1 或视频上的按钮",
+    "description": "First-run setup choice: the key or the video launcher button. $1 is the theater mode key, usually T."
+  },
+  "setupStartButtonDescription": {
+    "message": "指向视频时，其左边缘会出现一个小按钮。",
+    "description": "Description of the video launcher choice in the first-run setup."
+  },
+  "setupStartAuto": {
+    "message": "自动开启",
+    "description": "First-run setup choice: AutoTheater, theater mode starts by itself on supported services."
+  },
+  "setupStartAutoDescription": {
+    "message": "在支持的服务的播放页面上，视频开始播放并短暂倒计时后，剧场模式会自动开启。",
+    "description": "Description of the AutoTheater choice. Do not write a number of seconds for the countdown."
+  },
+  "setupStartAutoUnavailable": {
+    "message": "要使用此功能，请在第一步中开启支持它的服务。",
+    "description": "Shown under the disabled 'Start automatically' choice when no service chosen in the first step supports it."
+  },
+  "setupStartFooter": {
+    "message": "之后可以在「设置 → 功能」中更改。",
+    "description": "Footer of the start step. Settings and Features are names in the Settings page."
+  },
+  "setupKeysTitle": {
+    "message": "按键和声音",
+    "description": "First-run setup step title: hold for 2x speed and volume boost."
+  },
+  "setupKeysDescription": {
+    "message": "在剧场模式中，一些按键比页面自带的播放器功能更多。除了在输入框中打字时，$1 和 $2 在任何有视频的页面上也可使用。",
+    "description": "First-run setup step text. $1 is the theater mode key (usually T), $2 the fullscreen key (usually F)."
+  },
+  "setupVolumeBoostDescription": {
+    "message": "将音量提高到最高 300%。音频会经过浏览器的音频处理，首次进入剧场模式时可能会短暂显示加载图标。",
+    "description": "Description of the Volume Boost switch in the first-run setup."
+  },
+  "setupKeysFooter": {
+    "message": "可在「设置 → 键盘快捷键」中查看和更改所有按键。",
+    "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
+  },
+  "setupSummaryStartKey": {
+    "message": "仅在按 $1 时",
+    "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."
+  },
+  "setupSummaryStartButton": {
+    "message": "$1 或视频上的按钮",
+    "description": "Summary value: the key or the video launcher button. $1 is the theater mode key, usually T."
+  },
+  "setupSummaryStartAuto": {
+    "message": "自动，有倒计时",
+    "description": "Summary value: AutoTheater with its countdown notice."
+  },
+  "setupSummaryStartAutoNow": {
+    "message": "自动，无倒计时",
+    "description": "Summary value: AutoTheater without the countdown notice."
+  },
+  "setupSummaryOn": {
+    "message": "开启",
+    "description": "Summary value of a switch that is on."
+  },
+  "setupSummaryOff": {
+    "message": "关闭",
+    "description": "Summary value of a switch that is off."
   }
 }

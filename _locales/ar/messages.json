@@ -1449,5 +1449,85 @@
   "setupOpenSettings": {
     "message": "فتح الإعدادات",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
+  },
+  "setupStartTitle": {
+    "message": "بدء وضع المسرح",
+    "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."
+  },
+  "setupStartDescription": {
+    "message": "يجعل وضع المسرح الفيديو يملأ النافذة. الضغط على $1 يبدؤه دائمًا. اختر ما إذا كان يجب أن يبدأه شيء آخر.",
+    "description": "First-run setup step text. $1 is the user's theater mode key as Settings shows it, usually T."
+  },
+  "setupStartKey": {
+    "message": "فقط عندما أضغط $1",
+    "description": "First-run setup choice: theater mode starts only with the key. $1 is that key, usually T."
+  },
+  "setupStartKeyDescription": {
+    "message": "لا يُضاف شيء إلى الصفحات التي تزورها.",
+    "description": "Description of the 'Only when I press $1' choice: the extension adds nothing to web pages."
+  },
+  "setupStartButton": {
+    "message": "$1 أو زر على الفيديوهات",
+    "description": "First-run setup choice: the key or the video launcher button. $1 is the theater mode key, usually T."
+  },
+  "setupStartButtonDescription": {
+    "message": "يظهر زر صغير على الحافة اليسرى للفيديو عند الإشارة إليه.",
+    "description": "Description of the video launcher choice in the first-run setup."
+  },
+  "setupStartAuto": {
+    "message": "البدء تلقائيًا",
+    "description": "First-run setup choice: AutoTheater, theater mode starts by itself on supported services."
+  },
+  "setupStartAutoDescription": {
+    "message": "في صفحات المشاهدة للخدمات المدعومة، يبدأ وضع المسرح عند تشغيل الفيديو، بعد عدّ تنازلي قصير.",
+    "description": "Description of the AutoTheater choice. Do not write a number of seconds for the countdown."
+  },
+  "setupStartAutoUnavailable": {
+    "message": "لاستخدام هذا، شغّل في الخطوة الأولى خدمة تدعمه.",
+    "description": "Shown under the disabled 'Start automatically' choice when no service chosen in the first step supports it."
+  },
+  "setupStartFooter": {
+    "message": "يمكنك تغيير ذلك لاحقًا من الإعدادات ← الميزات.",
+    "description": "Footer of the start step. Settings and Features are names in the Settings page."
+  },
+  "setupKeysTitle": {
+    "message": "المفاتيح والصوت",
+    "description": "First-run setup step title: hold for 2x speed and volume boost."
+  },
+  "setupKeysDescription": {
+    "message": "في وضع المسرح، تفعل بعض المفاتيح أكثر من مشغل الصفحة. يعمل $1 و$2 أيضًا في أي صفحة بها فيديو، إلا أثناء الكتابة في حقل.",
+    "description": "First-run setup step text. $1 is the theater mode key (usually T), $2 the fullscreen key (usually F)."
+  },
+  "setupVolumeBoostDescription": {
+    "message": "يرفع مستوى الصوت حتى 300%. يمر الصوت عبر معالجة الصوت في المتصفح، وقد يظهر مؤشر تحميل قصير في أول مرة تدخل فيها وضع المسرح.",
+    "description": "Description of the Volume Boost switch in the first-run setup."
+  },
+  "setupKeysFooter": {
+    "message": "اطّلع على كل المفاتيح وغيّرها من الإعدادات ← اختصارات لوحة المفاتيح.",
+    "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
+  },
+  "setupSummaryStartKey": {
+    "message": "فقط عند الضغط على $1",
+    "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."
+  },
+  "setupSummaryStartButton": {
+    "message": "$1 أو زر على الفيديوهات",
+    "description": "Summary value: the key or the video launcher button. $1 is the theater mode key, usually T."
+  },
+  "setupSummaryStartAuto": {
+    "message": "تلقائيًا، بعد عدّ تنازلي",
+    "description": "Summary value: AutoTheater with its countdown notice."
+  },
+  "setupSummaryStartAutoNow": {
+    "message": "تلقائيًا، بدون عدّ تنازلي",
+    "description": "Summary value: AutoTheater without the countdown notice."
+  },
+  "setupSummaryOn": {
+    "message": "تشغيل",
+    "description": "Summary value of a switch that is on."
+  },
+  "setupSummaryOff": {
+    "message": "إيقاف",
+    "description": "Summary value of a switch that is off."
   }
 }

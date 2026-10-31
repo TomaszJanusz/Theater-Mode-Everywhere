@@ -198,34 +198,6 @@
   {
     "type": "dependency",
     "from": "options/options.ts",
-    "to": "src/ui/video-activator-settings.ts",
-    "unresolvedTo": "../src/ui/video-activator-settings",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "settings-ui-uses-public-settings-and-i18n"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "options/options.ts",
-    "to": "src/ui/volume-boost-settings.ts",
-    "unresolvedTo": "../src/ui/volume-boost-settings",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "settings-ui-uses-public-settings-and-i18n"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "options/options.ts",
     "to": "src/whatsNew.ts",
     "unresolvedTo": "../src/whatsNew",
     "dependencyTypes": [

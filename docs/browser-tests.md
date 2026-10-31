@@ -410,7 +410,7 @@ startup and the exact/parent blacklists, the isolated-to-MAIN audio graph, RTE,
 shortcut, pin and layout storage written through Settings, AutoTheater defaults and
 live preference changes, the language catalog delivered by the background, the update
 notice (toolbar badge, popup panel, player menu label and acknowledgement from each route,
-then the badge after a browser restart in a profile of its own), a fresh install in a profile of its own (the first-run setup tab and AutoTheater default follow the setup's step registry, and the installed Settings page finishes the setup over real storage), appearance modes across Settings,
+then the badge after a browser restart in a profile of its own), a fresh install in a profile of its own (one first-run setup tab, AutoTheater stored off, the installed Settings page finishing every setup step over real storage, and no tab on a relaunch; the shared Chromium and Firefox profiles are fresh installs too, so they first assert and close that tab), appearance modes across Settings,
 popup and player, and the iframe and embedded-fullscreen scenarios. Presentation,
 input and lifecycle checks for those features belong in fixture browser tests.
 

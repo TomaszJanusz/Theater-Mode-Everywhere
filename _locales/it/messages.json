@@ -1449,5 +1449,85 @@
   "setupOpenSettings": {
     "message": "Apri le impostazioni",
     "description": "Button under the 'settings arrived from another device' notice: open the Settings page."
+  },
+  "setupStartTitle": {
+    "message": "Avvio della modalità cinema",
+    "description": "First-run setup step title and summary label: how theater mode starts (key, button on videos, or automatically)."
+  },
+  "setupStartDescription": {
+    "message": "La modalità cinema fa riempire la finestra al video. Premere $1 la avvia sempre. Scegli se deve avviarla anche altro.",
+    "description": "First-run setup step text. $1 is the user's theater mode key as Settings shows it, usually T."
+  },
+  "setupStartKey": {
+    "message": "Solo quando premo $1",
+    "description": "First-run setup choice: theater mode starts only with the key. $1 is that key, usually T."
+  },
+  "setupStartKeyDescription": {
+    "message": "Non viene aggiunto nulla alle pagine che visiti.",
+    "description": "Description of the 'Only when I press $1' choice: the extension adds nothing to web pages."
+  },
+  "setupStartButton": {
+    "message": "$1 o un pulsante sui video",
+    "description": "First-run setup choice: the key or the video launcher button. $1 is the theater mode key, usually T."
+  },
+  "setupStartButtonDescription": {
+    "message": "Un piccolo pulsante appare sul bordo sinistro di un video quando ci passi sopra.",
+    "description": "Description of the video launcher choice in the first-run setup."
+  },
+  "setupStartAuto": {
+    "message": "Avvia automaticamente",
+    "description": "First-run setup choice: AutoTheater, theater mode starts by itself on supported services."
+  },
+  "setupStartAutoDescription": {
+    "message": "Nelle pagine di riproduzione dei servizi supportati, la modalità cinema si avvia quando il video parte, dopo un breve conto alla rovescia.",
+    "description": "Description of the AutoTheater choice. Do not write a number of seconds for the countdown."
+  },
+  "setupStartAutoUnavailable": {
+    "message": "Attiva nel primo passaggio un servizio che la supporta per usare questa opzione.",
+    "description": "Shown under the disabled 'Start automatically' choice when no service chosen in the first step supports it."
+  },
+  "setupStartFooter": {
+    "message": "Puoi cambiarlo in seguito in Impostazioni → Funzionalità.",
+    "description": "Footer of the start step. Settings and Features are names in the Settings page."
+  },
+  "setupKeysTitle": {
+    "message": "Tasti e audio",
+    "description": "First-run setup step title: hold for 2x speed and volume boost."
+  },
+  "setupKeysDescription": {
+    "message": "In modalità cinema alcuni tasti fanno più del lettore della pagina. $1 e $2 funzionano anche su qualsiasi pagina con un video, tranne mentre scrivi in un campo.",
+    "description": "First-run setup step text. $1 is the theater mode key (usually T), $2 the fullscreen key (usually F)."
+  },
+  "setupVolumeBoostDescription": {
+    "message": "Alza il volume fino al 300%. L’audio passa per l’elaborazione audio del browser e la prima volta che entri in modalità cinema può comparire brevemente un indicatore di caricamento.",
+    "description": "Description of the Volume Boost switch in the first-run setup."
+  },
+  "setupKeysFooter": {
+    "message": "Vedi e cambia tutti i tasti in Impostazioni → Scorciatoie da tastiera.",
+    "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
+  },
+  "setupSummaryStartKey": {
+    "message": "Solo quando premi $1",
+    "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."
+  },
+  "setupSummaryStartButton": {
+    "message": "$1 o un pulsante sui video",
+    "description": "Summary value: the key or the video launcher button. $1 is the theater mode key, usually T."
+  },
+  "setupSummaryStartAuto": {
+    "message": "Automaticamente, dopo un conto alla rovescia",
+    "description": "Summary value: AutoTheater with its countdown notice."
+  },
+  "setupSummaryStartAutoNow": {
+    "message": "Automaticamente, senza conto alla rovescia",
+    "description": "Summary value: AutoTheater without the countdown notice."
+  },
+  "setupSummaryOn": {
+    "message": "Attivato",
+    "description": "Summary value of a switch that is on."
+  },
+  "setupSummaryOff": {
+    "message": "Disattivato",
+    "description": "Summary value of a switch that is off."
   }
 }
