@@ -4,6 +4,7 @@ import { runInNewContext } from 'node:vm';
 
 import { MAX_CAPTION_BYTES } from '../platform/media-url-policy';
 import { bundleModules } from '../test-utils/player-boot';
+import { RECORDED_208 } from '../test-utils/recorded-208-profile';
 
 const bundle = bundleModules(["import './entries/background';"], 'BackgroundTest');
 /** The background with a setup step not ready: the registry is the only switch for the install-time setup. */
@@ -340,6 +341,19 @@ it('never opens the setup for a synced profile or an update, and leaves their Au
   assert.deepEqual(update.opened, []);
   assert.equal('autoEnterTheater' in update.sync, false);
   assert.equal('firstRunSetup' in update.local, false);
+});
+
+it('treats a default-only 2.0.8 profile reaching the install path as an existing profile', async () => {
+  // A Chromium relaunch or reinstall over the same profile reports `install`, not `update`.
+  for (const [name, recorded] of Object.entries(RECORDED_208)) {
+    const existing = profile('2.1.0', plain(recorded.local), plain(recorded.sync));
+    await existing.started;
+    await existing.installed({ reason: 'install' });
+    assert.deepEqual(existing.opened, [], name);
+    assert.equal('autoEnterTheater' in existing.sync, false, name);
+    assert.deepEqual(plain(existing.local.firstRunSetup), { status: 'profile', version: '2.1.0' }, name);
+    assert.equal(existing.sync.shortcuts !== undefined && existing.sync.blacklist !== undefined, true, name);
+  }
 });
 
 it('keeps the plain install while a setup step is not ready', async () => {

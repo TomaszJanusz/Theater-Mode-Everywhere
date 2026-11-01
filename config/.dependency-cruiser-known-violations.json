@@ -44,36 +44,8 @@
   {
     "type": "dependency",
     "from": "options/options.ts",
-    "to": "src/accentTheme.ts",
-    "unresolvedTo": "../src/accentTheme",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "settings-ui-uses-public-settings-and-i18n"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "options/options.ts",
     "to": "src/translation-issue.ts",
     "unresolvedTo": "../src/translation-issue",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "settings-ui-uses-public-settings-and-i18n"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "options/options.ts",
-    "to": "src/ui/appearance.ts",
-    "unresolvedTo": "../src/ui/appearance",
     "dependencyTypes": [
       "local",
       "import"
@@ -102,20 +74,6 @@
     "from": "options/options.ts",
     "to": "src/ui/auto-theater.ts",
     "unresolvedTo": "../src/ui/auto-theater",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "settings-ui-uses-public-settings-and-i18n"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "options/options.ts",
-    "to": "src/ui/controls-visibility.ts",
-    "unresolvedTo": "../src/ui/controls-visibility",
     "dependencyTypes": [
       "local",
       "import"

@@ -43,13 +43,7 @@
     "local/max-symbol-name-length": {
       "count": 6
     },
-    "max-lines": {
-      "count": 1
-    },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
       "count": 1
     },
     "sonarjs/no-clear-text-protocols": {
@@ -1716,9 +1710,6 @@
   "src/ui/appearance.ts": {
     "import/order": {
       "count": 1
-    },
-    "local/max-symbol-name-length": {
-      "count": 4
     }
   },
   "src/ui/auto-theater-intent.test.ts": {
@@ -1801,11 +1792,6 @@
       "count": 1
     }
   },
-  "src/ui/controls-visibility.ts": {
-    "local/max-symbol-name-length": {
-      "count": 2
-    }
-  },
   "src/ui/controls.ts": {
     "local/max-symbol-name-length": {
       "count": 2
@@ -1864,6 +1850,11 @@
       "count": 1
     }
   },
+  "src/ui/keep-controls-visible-settings.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
   "src/ui/menu-popover.ts": {
     "import/order": {
       "count": 1
@@ -1880,6 +1871,11 @@
   "src/ui/native-chat.browser.test.ts": {
     "max-lines": {
       "count": 1
+    }
+  },
+  "src/ui/picture-align-settings.ts": {
+    "local/max-symbol-name-length": {
+      "count": 4
     }
   },
   "src/ui/picture-click.test.ts": {

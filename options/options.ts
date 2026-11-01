@@ -5,22 +5,22 @@ import { observeDocumentAppearance } from '../src/appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from '../src/ui/sponsorblock-settings';
 import { createCombobox } from './combobox';
 import { createChoiceGrid } from './choice-grid';
-import { DEFAULT_LANGUAGE, LANGUAGES, LANGUAGE_STORAGE_KEY, type Language } from '../src/language';
+import { DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY, type Language } from '../src/language';
 import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown } from '../src/ui/auto-theater';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
 /* Options script for Theater Everywhere */
+import { accentChoices, languageChoices, PICTURE_ALIGN_COPY, pictureAlignIcon } from './settings-choices';
 import { chromeResetStorage, mountSetupActions } from './setup-reset';
 import { chromeSetupStorage, routeSetupWizard } from './setup-wizard';
 import { createShortcutEditor, SEEK_HOLD_TOGGLE } from './shortcut-editor';
 import { setupSettingsTabs } from './tabs';
 import licenseText from '../LICENSE?raw';
 import { openPrivacyPolicy } from './privacy-policy';
-import { KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from '../src/ui/controls-visibility';
+import { KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from '../src/ui/keep-controls-visible-settings';
 import { resolveVideoActivator, VIDEO_ACTIVATOR_STORAGE_KEY } from '../src/ui/video-activator-settings';
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import {
-  ACCENT_COLOR_OPTIONS,
   ACCENT_COLOR_STORAGE_KEY,
   DEFAULT_ACCENT_COLOR,
   applyAccentColorPreset,
@@ -36,7 +36,7 @@ import {
   resolvePictureAlign,
   resolveRaiseOnlyWithSubtitles,
   type PictureAlign
-} from '../src/ui/appearance';
+} from '../src/ui/picture-align-settings';
 import {
   definePrivacyThingLogo,
   type PrivacyThingLogoElement
@@ -154,19 +154,8 @@ async function init() {
   const countBadge = document.getElementById('blacklist-count') as HTMLElement;
 
   const shortcutEditor = createShortcutEditor(notifyAllTabs);
-  const accentName = (preset: AccentColorPreset) => t(`accentColor${preset[0].toUpperCase()}${preset.slice(1)}`);
-  const accentGrid = createChoiceGrid(document.getElementById('accent-color-grid')!, ACCENT_COLOR_OPTIONS.map(option => ({
-    value: option.preset,
-    label: () => accentName(option.preset),
-    ariaLabel: () => t('useAccentColor', accentName(option.preset)),
-    swatch: { color: option.swatch, system: option.preset === 'system' }
-  })), preset => { void saveAccentColor(preset); });
-  const languageMenu = createCombobox<Language>(document.getElementById('language-combobox') as HTMLButtonElement, [
-    { value: DEFAULT_LANGUAGE, label: () => t('languageAutomatic') },
-    ...LANGUAGES.map(({ locale, name }) => ({
-      value: locale, label: () => name, lang: locale.replace('_', '-'), dir: locale === 'ar' ? 'rtl' as const : 'ltr' as const
-    }))
-  ], async language => {
+  const accentGrid = createChoiceGrid(document.getElementById('accent-color-grid')!, accentChoices(), preset => { void saveAccentColor(preset); });
+  const languageMenu = createCombobox<Language>(document.getElementById('language-combobox') as HTMLButtonElement, languageChoices(), async language => {
     // Same promise form as every other settings write here; try/catch also covers a synchronous throw.
     try {
       await chrome.storage.sync.set({ [LANGUAGE_STORAGE_KEY]: language });
@@ -460,58 +449,6 @@ async function init() {
     }
   }
 
-  function pictureAlignIcon(align: PictureAlign): SVGSVGElement {
-    const svgNs = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(svgNs, 'svg');
-    svg.setAttribute('viewBox', '0 0 160 132');
-    svg.setAttribute('aria-hidden', 'true');
-    svg.classList.add('picture-align-icon');
-
-    const bezel = document.createElementNS(svgNs, 'rect');
-    bezel.setAttribute('x', '10');
-    bezel.setAttribute('y', '10');
-    bezel.setAttribute('width', '140');
-    bezel.setAttribute('height', '112');
-    bezel.setAttribute('rx', '10');
-    bezel.setAttribute('fill', 'none');
-    bezel.setAttribute('stroke', 'currentColor');
-    bezel.setAttribute('stroke-width', '2');
-
-    const stage = document.createElementNS(svgNs, 'rect');
-    stage.setAttribute('x', '14');
-    stage.setAttribute('y', '14');
-    stage.setAttribute('width', '132');
-    stage.setAttribute('height', '104');
-    stage.setAttribute('rx', '6');
-    stage.setAttribute('fill', '#09090b');
-
-    const picture = document.createElementNS(svgNs, 'rect');
-    picture.setAttribute('x', '22');
-    picture.setAttribute('y', align === 'top' ? '18' : '34');
-    picture.setAttribute('width', '116');
-    picture.setAttribute('height', '64');
-    picture.setAttribute('rx', '4');
-    picture.setAttribute('fill', 'currentColor');
-    picture.setAttribute('fill-opacity', '0.14');
-    picture.setAttribute('stroke', 'currentColor');
-    picture.setAttribute('stroke-width', '2');
-
-    svg.append(bezel, stage, picture);
-
-    if (align === 'top') {
-      const bar = document.createElementNS(svgNs, 'rect');
-      bar.setAttribute('x', '40');
-      bar.setAttribute('y', '98');
-      bar.setAttribute('width', '80');
-      bar.setAttribute('height', '7');
-      bar.setAttribute('rx', '3.5');
-      bar.setAttribute('fill', 'currentColor');
-      svg.append(bar);
-    }
-
-    return svg;
-  }
-
   function pictureAlignButtons(grid: HTMLElement): HTMLButtonElement[] {
     return Array.from(grid.querySelectorAll<HTMLButtonElement>('.picture-align-btn'));
   }
@@ -527,8 +464,8 @@ async function init() {
       button.tabIndex = on ? 0 : -1;
       const name = button.querySelector('.picture-align-name');
       const description = button.querySelector('.picture-align-desc');
-      if (name) name.textContent = t(align === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter');
-      if (description) description.textContent = t(align === 'top' ? 'pictureAlignTopDescription' : 'pictureAlignCenterDescription');
+      if (name) name.textContent = t(PICTURE_ALIGN_COPY[align].name);
+      if (description) description.textContent = t(PICTURE_ALIGN_COPY[align].description);
     }
     // Keep roving focus on the selected radio when the player changes this preference.
     const focused = buttons.find((button) => button === document.activeElement);
@@ -606,16 +543,16 @@ async function init() {
       button.tabIndex = align === selected ? 0 : -1;
       const name = document.createElement('span');
       name.className = 'picture-align-name';
-      name.textContent = t(align === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter');
+      name.textContent = t(PICTURE_ALIGN_COPY[align].name);
       const description = document.createElement('span');
       description.className = 'picture-align-desc';
-      description.textContent = t(align === 'top' ? 'pictureAlignTopDescription' : 'pictureAlignCenterDescription');
+      description.textContent = t(PICTURE_ALIGN_COPY[align].description);
       const copy = document.createElement('span');
       copy.className = 'picture-align-copy';
       copy.append(name, description);
       button.setAttribute('aria-checked', align === selected ? 'true' : 'false');
       if (align === selected) button.classList.add('selected');
-      button.append(pictureAlignIcon(align), copy);
+      button.append(pictureAlignIcon(document, align), copy);
       button.addEventListener('click', () => {
         void savePictureAlign(align);
       });

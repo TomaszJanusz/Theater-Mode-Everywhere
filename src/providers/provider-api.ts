@@ -229,9 +229,13 @@ export type ProviderRuntimeApi<W extends ProviderWorld = ProviderWorld> = {
 };
 const apiKey = (world: ProviderWorld) => Symbol.for(`theater-everywhere.provider-runtime.${world}`);
 
-export function exposeProviderRuntime<W extends ProviderWorld>(world: W, api: ProviderRuntimeApi<W>): void {
-  Object.defineProperty(window, apiKey(world), { value: api });
-}
+/**
+ * Whether this runtime is the one exposed. The property is not configurable and a page outlives the build that injected
+ * it (an update reinjects the scripts into open pages), so a second injection must not throw: `Reflect.defineProperty`
+ * reports the refusal and the first runtime stays.
+ */
+export const exposeProviderRuntime = <W extends ProviderWorld>(world: W, api: ProviderRuntimeApi<W>) =>
+  Reflect.defineProperty(window, apiKey(world), { value: api });
 
 /** Each world has its own API; nothing is passed through DOM or across the world boundary. */
 export function providerRuntime<W extends ProviderWorld>(world: W): ProviderRuntimeApi<W> | undefined {

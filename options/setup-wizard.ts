@@ -1,8 +1,10 @@
+import { ACCENT_COLOR_STORAGE_KEY, applyAccentColorPreset, resolveAccentColorPreset } from '../src/accentTheme';
 import {
   hasSettingsProfile, resolveSetupState, SETUP_HASH, SETUP_STATE_KEY, shownSetupSteps, type SetupState
 } from '../src/first-run-setup';
 import { t } from '../src/i18n';
 import { languageRuntime } from '../src/i18n-runtime';
+import { LANGUAGE_STORAGE_KEY } from '../src/language';
 
 import { answersFromSettings, setupSettingsPatch, type SetupAnswers } from './setup-answers';
 import { element, STEP_TITLES, STEP_VIEWS, type StepView } from './setup-steps';
@@ -75,12 +77,57 @@ function setupShell(doc: Document, stepCount: number) {
   actions.append(skip, back, next);
   return {
     header, title, progress, welcome, step, stepTitle, error, actions, skip, back, next,
+    /** Labels the frame for step `index` (0-based) of `count`, headed by message `stepKey`. */
+    localize(index: number, count: number, stepKey: string) {
+      title.textContent = copy('setupTitle');
+      progress.textContent = copy('setupProgress', [String(index + 1), String(count)]);
+      welcome.textContent = copy('setupWelcome');
+      stepTitle.textContent = copy(stepKey);
+      skip.textContent = copy('setupSkip');
+      back.textContent = copy('setupBack');
+      next.textContent = copy(index === count - 1 ? 'setupFinish' : 'setupNext');
+      if (!error.hidden) error.textContent = t('errorSavingSettings');
+    },
+    showError() {
+      error.textContent = t('errorSavingSettings');
+      error.hidden = false;
+      title.textContent = copy('setupTitle');
+    },
     /** Marks the steps before `index` done and `index` current. */
     progressTo(index: number) {
       segments.forEach((segment, position) => {
         segment.dataset.state = position === index ? 'current' : 'next';
         if (position < index) segment.dataset.state = 'done';
       });
+    }
+  };
+}
+
+/** The setup whose answers the page shows; a setup that started later owns the page's language and accent. */
+let previewOwner: object | undefined;
+
+/**
+ * Shows an answered language or accent on the whole page before it is saved. `restore` puts the saved ones back
+ * unless `saved` was called or a later setup previewed since.
+ */
+function pagePreview(doc: Document, storage: SetupStorage) {
+  const token = {};
+  let saved = false;
+  return {
+    show(answers: SetupAnswers, setting: 'language' | 'accent'): void {
+      previewOwner = token;
+      if (setting === 'language') void languageRuntime.set(answers.language);
+      else applyAccentColorPreset(doc.documentElement, answers.accent);
+    },
+    saved(): void { saved = true; },
+    restore(): void {
+      if (previewOwner !== token || saved) return;
+      void storage.read().then(({ sync }) => {
+        if (previewOwner !== token) return;
+        previewOwner = undefined;
+        void languageRuntime.set(sync[LANGUAGE_STORAGE_KEY]);
+        applyAccentColorPreset(doc.documentElement, resolveAccentColorPreset(sync[ACCENT_COLOR_STORAGE_KEY]));
+      }).catch(() => {});
     }
   };
 }
@@ -130,11 +177,12 @@ export function mountSetupWizard(root: HTMLElement, options: SetupWizardOptions)
   let stored: Record<string, unknown> = {};
   let current: StepView | undefined;
   let stopSync = () => {};
+  const preview = pagePreview(doc, options.storage);
 
   root.classList.add('setup-wizard');
   root.setAttribute('aria-labelledby', 'setup-title');
   const shell = setupShell(doc, steps.length);
-  const { header, title, progress, welcome, stepTitle, error, actions, skip, back, next } = shell;
+  const { header, title, welcome, stepTitle, error, actions, skip, back, next, showError } = shell;
   root.replaceChildren(header);
 
   // Closing the tab with changed answers asks first; unchanged answers leave quietly, like Skip.
@@ -144,26 +192,15 @@ export function mountSetupWizard(root: HTMLElement, options: SetupWizardOptions)
   win.addEventListener('beforeunload', onBeforeUnload);
 
   function localize(): void {
-    title.textContent = copy('setupTitle');
-    progress.textContent = copy('setupProgress', [String(index + 1), String(steps.length)]);
-    welcome.textContent = copy('setupWelcome');
-    stepTitle.textContent = copy(steps[index].title);
-    skip.textContent = copy('setupSkip');
-    back.textContent = copy('setupBack');
-    next.textContent = copy(index === steps.length - 1 ? 'setupFinish' : 'setupNext');
-    if (!error.hidden) error.textContent = t('errorSavingSettings');
+    shell.localize(index, steps.length, steps[index].title);
     current?.localize();
-  }
-
-  function showError(): void {
-    error.textContent = t('errorSavingSettings');
-    error.hidden = false;
-    title.textContent = copy('setupTitle');
   }
 
   function show(target: number, focus: boolean): void {
     index = target;
-    current = steps[index].view({ doc, answers: answers!, stored, finish: section => { void finish(section); } });
+    current?.dispose?.();
+    const context = { doc, answers: answers!, stored, finish: (section: string) => { void finish(section); } };
+    current = steps[index].view({ ...context, preview: setting => preview.show(context.answers, setting) });
     shell.step.replaceChildren(stepTitle, current.element);
     welcome.hidden = index !== 0;
     back.hidden = index === 0;
@@ -173,9 +210,17 @@ export function mountSetupWizard(root: HTMLElement, options: SetupWizardOptions)
     if (focus) stepTitle.focus();
   }
 
+  /** Ends what the shown setup holds beyond `root`: the sync watch, the step's extras and an unsaved preview. */
+  function release(): void {
+    stopSync();
+    current?.dispose?.();
+    current = undefined;
+    preview.restore();
+  }
+
   async function giveWay(): Promise<void> {
     settled = true;
-    stopSync();
+    release();
     await options.storage.saveState({ status: 'profile', version: options.version });
     if (!disposed) showProfileNotice(root, title, () => options.leave('features'));
   }
@@ -192,6 +237,8 @@ export function mountSetupWizard(root: HTMLElement, options: SetupWizardOptions)
       settled = true;
       const patch = setupSettingsPatch(answers, sync);
       await options.storage.save(patch, { status: 'completed', version: options.version });
+      // Saved: Settings follows the stored language and accent from here.
+      preview.saved();
       if (Object.keys(patch).length) await options.notify?.();
       if (!disposed) options.leave(section);
     } catch (reason) {
@@ -247,7 +294,7 @@ export function mountSetupWizard(root: HTMLElement, options: SetupWizardOptions)
     dispose() {
       if (disposed) return;
       disposed = true;
-      stopSync();
+      release();
       stopLanguage();
       win.removeEventListener('beforeunload', onBeforeUnload);
       root.replaceChildren();

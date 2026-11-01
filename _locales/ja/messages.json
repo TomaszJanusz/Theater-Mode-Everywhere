@@ -1538,6 +1538,26 @@
     "message": "すべてのキーは「設定 → キーボードショートカット」で確認・変更できます。",
     "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
   },
+  "setupAccentDescription": {
+    "message": "プレーヤーのコントロール、スライダー、ハイライト、そしてこの設定画面に使われます。選ぶとすぐにこのページに反映されます。",
+    "description": "First-run setup, accent colour step: what the accent colour is used for. The Settings page recolours as soon as one is picked."
+  },
+  "setupLayoutDescription": {
+    "message": "シアターモードで映像を表示する位置です。",
+    "description": "First-run setup, layout step: one line above the Centered and Raised choices."
+  },
+  "setupControlsTitle": {
+    "message": "プレーヤーのコントロール",
+    "description": "First-run setup step heading: the step about pinning the playback controls."
+  },
+  "setupControlsDescription": {
+    "message": "シアターモードでは、視聴中はコントロールが隠れ、マウスを動かすと再び表示されます。",
+    "description": "First-run setup, player controls step: how the controls behave unless they are pinned."
+  },
+  "setupAppearanceFooter": {
+    "message": "後から「設定 → 外観」で変更できます。",
+    "description": "Footer of the first-run setup steps for language, accent colour, layout and pinned controls. \"Settings → Appearance\" names the Settings page and its tab."
+  },
   "setupSummaryStartKey": {
     "message": "$1 キーを押したときだけ",
     "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."

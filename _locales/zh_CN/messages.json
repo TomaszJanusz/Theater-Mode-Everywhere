@@ -1538,6 +1538,26 @@
     "message": "可在「设置 → 键盘快捷键」中查看和更改所有按键。",
     "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
   },
+  "setupAccentDescription": {
+    "message": "用于播放器的控件、滑块和高亮，以及这里的设置页面。选择后本页会立即显示效果。",
+    "description": "First-run setup, accent colour step: what the accent colour is used for. The Settings page recolours as soon as one is picked."
+  },
+  "setupLayoutDescription": {
+    "message": "剧场模式下画面所在的位置。",
+    "description": "First-run setup, layout step: one line above the Centered and Raised choices."
+  },
+  "setupControlsTitle": {
+    "message": "播放器控件",
+    "description": "First-run setup step heading: the step about pinning the playback controls."
+  },
+  "setupControlsDescription": {
+    "message": "在剧场模式下，观看时控件会隐藏，移动鼠标后会重新出现。",
+    "description": "First-run setup, player controls step: how the controls behave unless they are pinned."
+  },
+  "setupAppearanceFooter": {
+    "message": "之后可以在「设置 → 外观」中更改。",
+    "description": "Footer of the first-run setup steps for language, accent colour, layout and pinned controls. \"Settings → Appearance\" names the Settings page and its tab."
+  },
   "setupSummaryStartKey": {
     "message": "仅在按 $1 时",
     "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."
