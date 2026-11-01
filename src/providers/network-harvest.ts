@@ -2,16 +2,7 @@ import { crunchyrollCdnFile } from '../media-features/crunchyroll-cdn';
 import { crunchyrollMetadataRef, classifyCrunchyrollManifest } from '../media-features/parsers/crunchyroll';
 import type { MediaProviderFlags } from '../media-features/provider-flags';
 
-import { isCrunchyrollHost, isDisneyHost, isTencentHost } from './hosts';
-
-export function isTencentMetadataUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' && !url.username && !url.password && !url.port
-      && ['h5vv.video.qq.com', 'h5vv6.video.qq.com', 'play.wetv.vip'].includes(url.hostname)
-      && url.pathname === '/getvinfo';
-  } catch { return false; }
-}
+import { isCrunchyrollHost, isDisneyHost } from './hosts';
 
 export function shouldHarvestDisneyUrl(url: string): boolean {
   if (!url) return false;
@@ -27,11 +18,11 @@ export function shouldHarvestDisneyUrl(url: string): boolean {
 }
 
 export type NetworkHarvestTarget = 'disney' | 'disney-bif'
-  | 'tencent' | 'crunchyroll' | 'crunchyroll-bif' | 'crunchyroll-url';
+  | 'crunchyroll' | 'crunchyroll-bif' | 'crunchyroll-url';
 
 export type NetworkHarvestContext = {
   hostname: string;
-  flags: Pick<MediaProviderFlags, 'disney' | 'tencent' | 'crunchyroll'>;
+  flags: Pick<MediaProviderFlags, 'disney' | 'crunchyroll'>;
 };
 
 export function isDisneyBifUrl(value: string): boolean {
@@ -50,7 +41,6 @@ export function qualifyNetworkHarvest(context: NetworkHarvestContext, url: strin
     // URL-less Response observers support host-created metadata Responses.
     if (!url || shouldHarvestDisneyUrl(url)) return 'disney';
   }
-  if (isTencentHost(hostname) && flags.tencent && isTencentMetadataUrl(url)) return 'tencent';
   if (isCrunchyrollHost(hostname) && flags.crunchyroll) {
     const file = crunchyrollCdnFile(url);
     if (file?.kind === 'bif' && file.query === 't') return 'crunchyroll-bif';

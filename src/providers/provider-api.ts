@@ -10,6 +10,7 @@ import type { MediaProbeSnapshot } from '../media-features/probe';
 import type { MediaProviderId } from '../media-features/provider-flags';
 import type { HostCaptionLayoutSource, MediaFeaturesAdapter, TimelineMarkerSource } from '../media-features/types';
 import type { NavigationObserver } from '../platform/navigation-visit';
+import type { PlaybackSurface } from '../playback-surface';
 import type { PlaylistAction, PlaylistDirection } from '../playlist-nav';
 import type { MediaSeekDetail } from '../protocol/media-seek';
 
@@ -65,7 +66,8 @@ export type ProviderChat = {
 type SharedProviderHooks = {
   id: MediaProviderId;
   contractVersion: 1;
-  watchPlayback: WatchPlayback;
+  /** Watch identity and main-video checks; a provider without AutoTheater registers none. */
+  watchPlayback?: WatchPlayback;
   /**
    * Fetch admission for this provider's media URLs. Optional: a rule the background broker must also apply
    * (it has no provider registry), such as YouTube's timedtext, stays in the shared allowlist.
@@ -93,7 +95,13 @@ type IsolatedOnlyHooks = {
   /** Video discovery rules, active with the data integration disabled like `stage`. */
   discovery?: {
     /** A still-connected video the host has emptied for good, which a loaded replacement may supersede. */
-    abandonedVideo(video: HTMLVideoElement): boolean;
+    abandonedVideo?(video: HTMLVideoElement): boolean;
+    /** Prepares an open shadow root discovery walks into, such as sizing a player's inner frame. */
+    prepareShadowRoot?(shadowRoot: ShadowRoot): void;
+    /** Containers whose hidden videos are standby elements, excluded from discovery and switching. */
+    standbySelector?: string;
+    /** False when a replacement video belongs to another player container than the current one. */
+    sharesPlaybackHost?(current: HTMLVideoElement, replacement: HTMLVideoElement): boolean;
   };
   /** A fresh source per composite adapter; the source owns caption measurements and cleanup. */
   hostCaptions?: () => HostCaptionLayoutSource;
@@ -110,6 +118,8 @@ type IsolatedOnlyHooks = {
   timelineMarkers?: (video: HTMLElement) => TimelineMarkerSource | null;
   /** `options` binds the source to the theater session's document, surface, chapters and seek. */
   serviceActions?: (options: ServiceActionOptions) => ServiceActionSource;
+  /** A host player that is not a `<video>`: its target, session and frame. */
+  playback?: ProviderPlayback;
   navigation?: {
     /** Scopes the host's controls to the player holding the video; without it every control on the page counts. */
     playerSelector?: string;
@@ -140,6 +150,33 @@ type MainOnlyHooks = {
   probeAsync?(signal: AbortSignal): Promise<unknown>;
   /** Called once at startup, after registration closed and the harvest observers are installed. */
   install?: () => void;
+  /** A theater element that is a host player rather than a video and plays through its own `paused`/`play`/`pause`. */
+  playbackElement?(element: Element): boolean;
+};
+
+/** The playback session a provider opens for a non-video host player; the theater drives `surface`. */
+export type ProviderPlaybackSession = {
+  surface: PlaybackSurface;
+  needsPointerCatcher: boolean;
+  dispose(): void;
+};
+
+export type ProviderPlayback = {
+  /**
+   * This document is the provider's player frame, embedded by its host page: discovery stays out of it and the
+   * theater keys ask the parent to toggle (`FRAME_HOST_TOGGLE`). Registered from the frame's own document.
+   */
+  frameDocument?: boolean;
+  /** The theater target among the page's videos and host players; undefined leaves the generic choice. */
+  theaterTarget?(discovery: { best: HTMLVideoElement | null; switchable: HTMLVideoElement[] }): HTMLElement | null | undefined;
+  /** Fullscreen follows the current theater target instead of the active video. */
+  fullscreenFollowsTarget?: boolean;
+  openSession?(element: HTMLElement, options: { isCurrent(): boolean; onReplacement(element: HTMLElement): void }): ProviderPlaybackSession | null;
+  /** A `FRAME_HOST_TOGGLE` from the provider's own player frame on this page, validated against its frame and origin. */
+  hostToggle?(event: { source: unknown; origin: string; data: unknown }, page: { hostname: string; href: string; root: ParentNode }):
+    { action: 'toggle' | 'fullscreen'; host: HTMLElement } | null;
+  /** Player frames on the page that are not ordinary child frames: frame messages skip them. */
+  playerFrameWindows?(root: ParentNode): unknown[];
 };
 
 type Forbidden<T> = { [K in keyof T]?: never };
@@ -199,6 +236,8 @@ export type ProviderServices = {
     // Stateless, but large and used by most providers: lent rather than bundled into each provider script.
     observeProviderDom: typeof observeProviderDom;
     parseCaptionPayload: typeof parseCaptionPayload;
+    /** Discovery helpers also bundled by providers read the document runtime's registered standby containers. */
+    standbyVideoSelector?(): string;
   };
   main: {
     /** Page-owned media download, marked as the extension's own so the harvest observers skip it. */

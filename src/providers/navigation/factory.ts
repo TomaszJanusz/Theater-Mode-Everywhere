@@ -5,13 +5,11 @@ import { providerRegistry } from '../runtime-registration';
 import { DAILYMOTION_PLAYER_SELECTOR, readDailymotionControls } from './dailymotion';
 import { findDisneyPlaylistActions } from './disney';
 import { findNetflixPlaylistActions } from './netflix';
-import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
 import { readVideoJsControls, peerTubeNeighborPreviews, VIDEOJS_PLAYER_SELECTOR } from './videojs';
 
 export const HOST_PLAYER_SCOPE = [
   VIDEOJS_PLAYER_SELECTOR,
-  DAILYMOTION_PLAYER_SELECTOR,
-  TENCENT_PLAYER_SELECTOR
+  DAILYMOTION_PLAYER_SELECTOR
 ].join(', ');
 
 export function findProviderPlaylistActions(
@@ -61,7 +59,6 @@ function readHostControls(root: ParentNode) {
   return [
     ...readVideoJsControls(root),
     ...readDailymotionControls(root),
-    ...readTencentControls(root),
     ...providerRegistry.all().flatMap(hooks => hooks.navigation?.readControls(root) ?? [])
   ];
 }

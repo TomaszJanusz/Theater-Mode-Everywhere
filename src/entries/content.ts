@@ -11,7 +11,8 @@ import playerUiCss from '../ui/shadow.css?inline';
 
 exposeProviderRuntime('isolated', {
   contractVersion: 1, register: providerRegistry.register, services: {
-    requestPageFetch, requestMediaProbe: (timeoutMs?: number) => requestMediaProbe(timeoutMs), requestProviderProbe, serviceElementToken, observeProviderDom, parseCaptionPayload
+    requestPageFetch, requestMediaProbe: (timeoutMs?: number) => requestMediaProbe(timeoutMs), requestProviderProbe, serviceElementToken, observeProviderDom, parseCaptionPayload,
+    standbyVideoSelector: () => providerRegistry.all().flatMap(hooks => hooks.discovery?.standbySelector ?? []).join(', ')
   },
   start() {
     if (!providerRegistry.start()) return;

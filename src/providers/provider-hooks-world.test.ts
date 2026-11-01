@@ -17,6 +17,12 @@ it('provider hooks are typed per world', () => {
     main.register({ ...base, chat: undefined, events: { media: [] } });
     isolated.register({ ...base, events: { media: [] } });
     isolated.register({ ...base, endScreen: () => { throw new Error('type only'); } });
+    isolated.register({ id: 'tencent', contractVersion: 1, playback: { frameDocument: true }, discovery: { standbySelector: '.host-container' } });
+    main.register({ id: 'tencent', contractVersion: 1, playbackElement: () => true });
+    // @ts-expect-error playback sessions belong to the isolated world
+    main.register({ ...base, playback: { frameDocument: true } });
+    // @ts-expect-error MAIN alone owns keyboard routing for non-video elements
+    isolated.register({ ...base, playbackElement: () => true });
 
     // @ts-expect-error an isolated-world hook is silently ignored in MAIN
     main.register({ ...base, stage: {} as NonNullable<IsolatedProviderHooks['stage']> });

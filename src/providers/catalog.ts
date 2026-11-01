@@ -67,6 +67,45 @@ export const PROVIDER_CATALOG = [
     ]
   },
   {
+    "id": "tencent",
+    "hosts": [
+      {
+        "domain": "v.qq.com",
+        "includeSubdomains": true
+      },
+      {
+        "domain": "wetv.vip",
+        "includeSubdomains": true
+      },
+      {
+        "domain": "vm.gtimg.cn",
+        "includeSubdomains": false
+      }
+    ],
+    "mediaFetch": [
+      {
+        "kind": "caption-track",
+        "host": "cffaws.wetvinfo.com",
+        "pathname": "^/.*\\.(?:[vV][tT][tT]|[sS][rR][tT])$"
+      },
+      {
+        "kind": "caption-track",
+        "host": "subtitle.wetvinfo.com",
+        "pathname": "^/.*\\.(?:[vV][tT][tT]|[sS][rR][tT])$"
+      },
+      {
+        "kind": "caption-track",
+        "host": "subtitle.tc.qq.com",
+        "pathname": "^/.*\\.(?:[vV][tT][tT]|[sS][rR][tT])$"
+      },
+      {
+        "kind": "caption-track",
+        "host": "subtitlebk.apdcdn.tc.qq.com",
+        "pathname": "^/.*\\.(?:[vV][tT][tT]|[sS][rR][tT])$"
+      }
+    ]
+  },
+  {
     "id": "twitch",
     "hosts": [
       {
