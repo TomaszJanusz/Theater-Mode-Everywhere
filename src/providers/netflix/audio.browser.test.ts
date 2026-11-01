@@ -210,7 +210,7 @@ describe('Netflix audio recorded-shape fixtures', { timeout: 60_000 }, () => {
     it(`auto-applies once per title, saves only confirmed ordinary/original choices, and leaves native choices alone in ${engine}`, async t => {
       const page = await open(t, engine, browsers);
       await page.evaluate(`window.preference = 'fr-CA'; window.saves = []; window.reports = [];
-        window.controller = new AudioTest.AudioTrackController({ preference: () => preference, locales: () => ['en'], onChange() {}, onPreferenceChange: value => saves.push(value), onResult: value => reports.push(value) });
+        window.controller = new AudioTest.AudioTrackController({ preference: () => preference, locales: () => ['en'], atVideoStart: () => true, onChange() {}, onPreferenceChange: value => saves.push(value), onResult: value => reports.push(value) });
         stopAudio(); controller.bind(adapter);`);
       await page.waitForFunction('reports.length === 1');
       assert.deepEqual(await sets(page), [FR]);
@@ -225,6 +225,19 @@ describe('Netflix audio recorded-shape fixtures', { timeout: 60_000 }, () => {
       assert.deepEqual(await page.evaluate('saves'), ['original']);
       await page.evaluate(`history.pushState(null, '', '/watch/54321'); nf.movieId = '54321'; nf.emit('loadedtracks');`);
       await page.waitForFunction('nf.sets.filter(id => id === "A:fr-CA").length === 2');
+      await page.evaluate('controller.dispose(); adapter.dispose(); stopMain();');
+    });
+
+    it(`leaves the audio track alone when theater is entered mid-playback, and applies the saved one to the next title in ${engine}`, async t => {
+      const page = await open(t, engine, browsers);
+      await page.evaluate(`window.reports = [];
+        window.controller = new AudioTest.AudioTrackController({ preference: () => 'fr-CA', locales: () => ['en'], atVideoStart: () => false, onChange() {}, onResult: value => reports.push(value) });
+        stopAudio(); controller.bind(adapter);`);
+      assert.equal(await page.evaluate('controller.tracks().length > 1'), true, 'the title already lists its tracks at entry');
+      assert.deepEqual(await sets(page), [], 'the viewer\'s native choice is not overridden on entry');
+      assert.deepEqual(await page.evaluate('reports'), []);
+      await page.evaluate(`history.pushState(null, '', '/watch/54321'); nf.movieId = '54321'; nf.emit('loadedtracks');`);
+      await page.waitForFunction('nf.sets.filter(id => id === "A:fr-CA").length === 1');
       await page.evaluate('controller.dispose(); adapter.dispose(); stopMain();');
     });
   }

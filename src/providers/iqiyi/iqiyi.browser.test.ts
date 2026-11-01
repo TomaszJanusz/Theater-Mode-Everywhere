@@ -477,7 +477,7 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
         item.addEventListener('click', () => clicks.push(item.getAttribute('data-player-hook')!));
       }
       let changed = () => {};
-      const controller = new AudioTrackController({ preference: () => 'pt', locales: () => ['en'], onChange: () => changed() });
+      const controller = new AudioTrackController({ preference: () => 'pt', locales: () => ['en'], atVideoStart: () => true, onChange: () => changed() });
       const adapter = new IqiyiAdapter(null, window.IqiyiTest);
       // Automatic selection presses the host item as soon as the list is read.
       controller.bind(adapter);

@@ -20,6 +20,21 @@ import type { AudioTrack, CaptionActivationResult, CaptionCueRefresh, CaptionTra
 import type { MediaSnapshot } from '../core/media-snapshot';
 import { providerError } from '../core/errors';
 
+/** Entering theater after this much playback means the viewer has been watching, so the audio track is theirs. */
+const AUDIO_LOAD_SECONDS = 2;
+
+/** Time actually played, so a video resumed at 40 minutes still counts as just loaded; the clock where the surface has no media element. */
+function playedSeconds(surface: PlaybackSurface): number {
+  try {
+    const ranges = surface.nativeMedia!.played;
+    let total = 0;
+    for (let index = 0; index < ranges.length; index += 1) total += ranges.end(index) - ranges.start(index);
+    return total;
+  } catch {
+    return surface.currentTime;
+  }
+}
+
 export type CaptionToggleResult = 'on' | 'off' | 'none' | 'failed';
 
 export type CaptionHudPayload = {
@@ -150,6 +165,7 @@ export class MediaFeaturesController {
       preference: bindings.audioPreference ?? (() => null),
       locales: bindings.audioLocales ?? (() => []),
       onPreferenceChange: bindings.onAudioPreferenceChange,
+      atVideoStart: () => playedSeconds(this.video) <= AUDIO_LOAD_SECONDS,
       onChange: () => bindings.onAudioTracksChange?.(),
       onResult: (result) => bindings.onAudioTrackResult?.(result)
     });

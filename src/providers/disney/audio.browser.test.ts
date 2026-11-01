@@ -303,6 +303,31 @@ describe('Disney+ audio tracks', () => {
       assert.deepEqual(await offered(page), [], 'another title drops the retained list');
     });
 
+    it(`does not re-apply the saved track, nor reload the media, when theater is entered after a pick in Disney's own menu, in ${engine}`, async t => {
+      const page = await open(t, engine);
+      // The viewer chose German in Disney's menu; the saved preference is Polish. Theater binds a controller afterwards.
+      await page.evaluate(`controller.dispose();
+        window.__setTracks();
+        window.__hive.selected = window.__hive.all[4];
+        window.controller = new DisneyAudioTest.AudioTrackController({ preference: () => 'pl', locales: () => ['en'], atVideoStart: () => video.currentTime <= 3,
+          onChange() {}, onResult(result) { window.results.push(result.playing && result.playing.track.id); } });
+        controller.bind(adapter);`);
+      await advance(page, 3_000);
+      assert.equal(await page.evaluate('controller.tracks().find(track => track.selected).id'), '30');
+      assert.deepEqual(await hive(page, '[hive.sets.length, hive.reloads, hive.selected.id]'), [0, 0, 30], 'no setTrack, no reload');
+      assert.deepEqual(await page.evaluate('window.results'), []);
+
+      // The same preference does apply to a video that is still at its start (AutoTheater on load).
+      const start = await open(t, engine);
+      await start.evaluate(`controller.dispose();
+        window.__setTracks();
+        window.__hive.currentTime = 0;
+        window.controller = new DisneyAudioTest.AudioTrackController({ preference: () => 'pl', locales: () => ['en'], atVideoStart: () => video.currentTime <= 3, onChange() {} });
+        controller.bind(adapter);`);
+      await advance(start, 3_000);
+      assert.deepEqual(await hive(start, 'hive.sets.map(track => track.id)'), [14]);
+    });
+
     it(`drops pending work on exit, RTE-off and a new title without undoing Hive's switch, in ${engine}`, async t => {
       const exit = await open(t, engine);
       await exit.evaluate('window.__setTracks()');
