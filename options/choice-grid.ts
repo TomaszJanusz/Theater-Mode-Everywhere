@@ -18,22 +18,24 @@ export function createChoiceGrid<Value extends string>(
   onSelect: (value: Value) => void
 ): ChoiceGrid<Value> {
   let selected: Value | undefined;
+  // The grid's own document: Storybook renders Settings in a frame.
+  const doc = grid.ownerDocument;
   const items = options.map(option => {
-    const button = document.createElement('button');
+    const button = doc.createElement('button');
     button.type = 'button';
     button.className = 'choice-btn';
     button.dataset.choice = option.value;
     button.setAttribute('role', 'radio');
     if (option.swatch) {
       button.classList.add('has-swatch');
-      const swatch = document.createElement('span');
+      const swatch = doc.createElement('span');
       swatch.className = 'choice-swatch';
       swatch.setAttribute('aria-hidden', 'true');
       if (option.swatch.system) swatch.classList.add('system-swatch');
       else swatch.style.backgroundColor = option.swatch.color;
       button.append(swatch);
     }
-    const label = document.createElement('span');
+    const label = doc.createElement('span');
     label.className = 'choice-label';
     button.append(label);
     // Native buttons turn Enter/Space into this click, so keys and pointer share one path.
@@ -49,9 +51,9 @@ export function createChoiceGrid<Value extends string>(
 
   grid.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
-    const index = items.findIndex(({ button }) => button === document.activeElement);
+    const index = items.findIndex(({ button }) => button === doc.activeElement);
     if (index < 0) return;
-    const rtl = getComputedStyle(grid).direction === 'rtl';
+    const rtl = doc.defaultView!.getComputedStyle(grid).direction === 'rtl';
     let next: number;
     if (event.key === 'Home') next = 0;
     else if (event.key === 'End') next = items.length - 1;
@@ -68,7 +70,7 @@ export function createChoiceGrid<Value extends string>(
   return {
     render(value = selected) {
       selected = value;
-      const focused = items.find(({ button }) => button === document.activeElement)?.button;
+      const focused = items.find(({ button }) => button === doc.activeElement)?.button;
       for (const { button, label, option } of items) {
         const text = option.label();
         label.textContent = text;

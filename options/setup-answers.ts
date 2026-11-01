@@ -1,14 +1,20 @@
 /** How the setup's answers map to and from the existing settings, through their own resolvers. */
+import { ACCENT_COLOR_STORAGE_KEY, resolveAccentColorPreset, type AccentColorPreset } from '../src/accentTheme';
 import {
   AUTO_SKIP_COUNTDOWN_KEY, AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater, resolveSkipCountdown
 } from '../src/auto-theater-preferences';
 import { FRESH_INSTALL_SETTINGS, INSTALL_SHORTCUTS } from '../src/first-run-setup';
+import { LANGUAGE_STORAGE_KEY, resolveLanguage, type Language } from '../src/language';
 import {
   MEDIA_PROVIDER_IDS, mediaProviderFlagStorageUpdate, mediaProviderFlagsEqual, mediaProviderFlagsForRichTheaterExperience,
   resolveMediaProviderFlags, type MediaProviderFlags
 } from '../src/media-features/provider-flags';
 import { PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
 import { serviceAutoEnabled } from '../src/providers/settings-values';
+import { KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from '../src/ui/keep-controls-visible-settings';
+import {
+  PICTURE_ALIGN_STORAGE_KEY, RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY, resolvePictureAlign, resolveRaiseOnlyWithSubtitles, type PictureAlign
+} from '../src/ui/picture-align-settings';
 import { resolveSeekHold, SEEK_HOLD_STORAGE_KEY } from '../src/ui/shortcuts';
 import {
   resolveVideoActivator, VIDEO_ACTIVATOR_PROMPT_ANSWER_STORAGE_KEY, VIDEO_ACTIVATOR_STORAGE_KEY
@@ -27,6 +33,12 @@ export interface SetupAnswers {
   skipCountdown: boolean;
   seekHold: boolean;
   volumeBoost: boolean;
+  language: Language;
+  accent: AccentColorPreset;
+  layout: PictureAlign;
+  /** "Raised only with subtitles"; kept while Centered is selected. */
+  raiseOnlyWithSubtitles: boolean;
+  pinControls: boolean;
 }
 
 function servicesFrom(stored: Record<string, unknown>): Pick<SetupAnswers, 'services' | 'chosen'> {
@@ -50,7 +62,12 @@ export function answersFromSettings(stored: Record<string, unknown>): SetupAnswe
     start: startFrom(stored),
     skipCountdown: resolveSkipCountdown(stored[AUTO_SKIP_COUNTDOWN_KEY]),
     seekHold: resolveSeekHold(stored[SEEK_HOLD_STORAGE_KEY]),
-    volumeBoost: resolveVolumeBoostEnabled(stored[VOLUME_BOOST_STORAGE_KEY])
+    volumeBoost: resolveVolumeBoostEnabled(stored[VOLUME_BOOST_STORAGE_KEY]),
+    language: resolveLanguage(stored[LANGUAGE_STORAGE_KEY]),
+    accent: resolveAccentColorPreset(stored[ACCENT_COLOR_STORAGE_KEY]),
+    layout: resolvePictureAlign(stored[PICTURE_ALIGN_STORAGE_KEY]),
+    raiseOnlyWithSubtitles: resolveRaiseOnlyWithSubtitles(stored[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]),
+    pinControls: resolveKeepControlsVisible(stored[KEEP_CONTROLS_VISIBLE_STORAGE_KEY])
   };
 }
 
@@ -85,7 +102,7 @@ export function effectiveStart(answers: SetupAnswers, stored: Record<string, unk
 export function setupSettingsPatch(answers: SetupAnswers, stored: Record<string, unknown>): Record<string, unknown> {
   const flags = serviceFlags(answers);
   const patch: Record<string, unknown> = mediaProviderFlagsEqual(flags, resolveMediaProviderFlags(stored)) ? {} : mediaProviderFlagStorageUpdate(flags);
-  const set = (key: string, value: boolean, resolve: (stored: unknown) => boolean) => {
+  const set = <Value>(key: string, value: Value, resolve: (stored: unknown) => Value) => {
     if (resolve(stored[key]) !== value) patch[key] = value;
   };
   const start = effectiveStart(answers, stored);
@@ -100,6 +117,12 @@ export function setupSettingsPatch(answers: SetupAnswers, stored: Record<string,
   }
   set(SEEK_HOLD_STORAGE_KEY, answers.seekHold, resolveSeekHold);
   set(VOLUME_BOOST_STORAGE_KEY, answers.volumeBoost, resolveVolumeBoostEnabled);
+  set(LANGUAGE_STORAGE_KEY, answers.language, resolveLanguage);
+  set(ACCENT_COLOR_STORAGE_KEY, answers.accent, resolveAccentColorPreset);
+  set(PICTURE_ALIGN_STORAGE_KEY, answers.layout, resolvePictureAlign);
+  // Settings offers "Raised only with subtitles" under Raised only; so does the setup.
+  if (answers.layout === 'top') set(RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY, answers.raiseOnlyWithSubtitles, resolveRaiseOnlyWithSubtitles);
+  set(KEEP_CONTROLS_VISIBLE_STORAGE_KEY, answers.pinControls, resolveKeepControlsVisible);
   return patch;
 }
 

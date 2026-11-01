@@ -1538,6 +1538,26 @@
     "message": "Všetky klávesy nájdete a zmeníte v Nastavenia → Klávesové skratky.",
     "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
   },
+  "setupAccentDescription": {
+    "message": "Používa sa pre ovládacie prvky prehrávača, posúvače a zvýraznenia a aj tu v Nastaveniach. Táto stránka vašu voľbu hneď ukáže.",
+    "description": "First-run setup, accent colour step: what the accent colour is used for. The Settings page recolours as soon as one is picked."
+  },
+  "setupLayoutDescription": {
+    "message": "Kde je obraz v režime kina.",
+    "description": "First-run setup, layout step: one line above the Centered and Raised choices."
+  },
+  "setupControlsTitle": {
+    "message": "Ovládanie prehrávača",
+    "description": "First-run setup step heading: the step about pinning the playback controls."
+  },
+  "setupControlsDescription": {
+    "message": "V režime kina sa ovládanie pri sledovaní skryje a vráti sa, keď pohnete myšou.",
+    "description": "First-run setup, player controls step: how the controls behave unless they are pinned."
+  },
+  "setupAppearanceFooter": {
+    "message": "Neskôr to môžete zmeniť v Nastavenia → Vzhľad.",
+    "description": "Footer of the first-run setup steps for language, accent colour, layout and pinned controls. \"Settings → Appearance\" names the Settings page and its tab."
+  },
   "setupSummaryStartKey": {
     "message": "Len keď stlačíte $1",
     "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."

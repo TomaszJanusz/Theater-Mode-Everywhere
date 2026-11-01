@@ -4,6 +4,7 @@ import { expect, waitFor } from 'storybook/test';
 import { FRESH_SYNC, renderSetup, renderSetupActions } from '../.storybook/settings-page';
 import { INSTALL_SHORTCUTS } from '../src/first-run-setup';
 import { t } from '../src/i18n';
+import { LANGUAGES } from '../src/language';
 import { MEDIA_PROVIDER_FLAG_KEYS } from '../src/media-features/provider-flags';
 import { PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
 
@@ -26,16 +27,43 @@ const stage = () => window.__setupStage!;
 const query = <T extends Element>(selector: string) => stage().doc.querySelector<T>(selector);
 const button = (key: string) => [...stage().doc.querySelectorAll<HTMLButtonElement>('.setup-actions button')]
   .find(candidate => candidate.textContent === setupMessage(key))!;
+/** Next until the step headed by message `title`; each new step takes focus. */
+const toStep = (title: string) => {
+  while (query('.setup-step-title')?.textContent !== setupMessage(title)) button('setupNext').click();
+};
+const pending = { state: { status: 'pending', version: '2.1.0' } } as const;
 
-// A fresh install: the first step, "All supported services" preselected.
-export const Services: Story = {
-  render: () => renderSetup({ state: { status: 'pending', version: '2.1.0' } }),
+// A fresh install: the first step, Settings' language menu at Automatic.
+export const Language: Story = {
+  render: () => renderSetup(pending),
   play: async () => {
     await stage().ready;
-    await expect(query('.setup-progress')?.textContent).toBe(setupMessage('setupProgress', ['1', '4']));
+    await expect(query('.setup-progress')?.textContent).toBe(setupMessage('setupProgress', ['1', '8']));
+    await expect(query('.setup-language')?.textContent).toBe(t('languageAutomatic'));
+    await expect(query('.setup-actions button[hidden]')?.textContent).toBe(setupMessage('setupBack'));
+  }
+};
+
+// The language menu open: every language in its own name, as in Settings.
+export const LanguageMenu: Story = {
+  render: () => renderSetup(pending),
+  play: async () => {
+    await stage().ready;
+    query<HTMLButtonElement>('.setup-language')!.click();
+    await expect(query('#setup-language-listbox')?.hasAttribute('hidden')).toBe(false);
+    await expect(stage().doc.querySelectorAll('#setup-language-listbox [role="option"]').length).toBe(LANGUAGES.length + 1);
+  }
+};
+
+// Step 2: "All supported services" preselected.
+export const Services: Story = {
+  render: () => renderSetup(pending),
+  play: async () => {
+    await stage().ready;
+    toStep('setupServicesTitle');
+    await expect(query('.setup-progress')?.textContent).toBe(setupMessage('setupProgress', ['2', '8']));
     await expect(query<HTMLInputElement>('input[value="all"]')?.checked).toBe(true);
     await expect(query('#setup-services')?.hasAttribute('hidden')).toBe(true);
-    await expect(query('.setup-actions button[hidden]')?.textContent).toBe(setupMessage('setupBack'));
   }
 };
 
@@ -44,24 +72,20 @@ export const ChooseServices: Story = {
   render: () => renderSetup({ sync: { ...FRESH_SYNC, [MEDIA_PROVIDER_FLAG_KEYS.netflix]: false }, start: {} }),
   play: async () => {
     await stage().ready;
+    toStep('setupServicesTitle');
     await expect(query<HTMLInputElement>('input[value="choose"]')?.checked).toBe(true);
     await expect(stage().doc.querySelectorAll('#setup-services [role="switch"]').length).toBe(PROVIDER_CAPABILITIES.length);
     await expect(stage().doc.querySelectorAll('#setup-services [role="switch"]:checked').length).toBe(PROVIDER_CAPABILITIES.length - 1);
   }
 };
 
-/** Next until step `step` (1-based); each new step takes focus. */
-const toStep = (step: number) => {
-  for (let current = 1; current < step; current++) button('setupNext').click();
-};
-const pending = { state: { status: 'pending', version: '2.1.0' } } as const;
 
 // Step 2 with "Start automatically" chosen: its "Skip countdown" switch appears under it.
 export const StartAutomatically: Story = {
   render: () => renderSetup(pending),
   play: async () => {
     await stage().ready;
-    toStep(2);
+    toStep('setupStartTitle');
     await expect(stage().doc.activeElement?.textContent).toBe(setupMessage('setupStartTitle'));
     await expect(query<HTMLInputElement>('input[value="key"]')?.checked).toBe(true);
     query<HTMLInputElement>('input[value="auto"]')!.click();
@@ -74,22 +98,58 @@ export const StartUnavailable: Story = {
   render: () => renderSetup(pending),
   play: async () => {
     await stage().ready;
+    toStep('setupServicesTitle');
     query<HTMLInputElement>('input[value="none"]')!.click();
-    toStep(2);
+    toStep('setupStartTitle');
     await expect(query<HTMLInputElement>('input[value="auto"]')?.disabled).toBe(true);
     await expect(query('#setup-choice-auto-unavailable')?.textContent).toBe(setupMessage('setupStartAutoUnavailable'));
   }
 };
 
-// Step 3: hold for 2x on and volume boost off, the fresh-install defaults.
+// Step 4: hold for 2x on and volume boost off, the fresh-install defaults.
 export const KeysAndSound: Story = {
   render: () => renderSetup(pending),
   play: async () => {
     await stage().ready;
-    toStep(3);
+    toStep('setupKeysTitle');
     await expect(stage().doc.activeElement?.textContent).toBe(setupMessage('setupKeysTitle'));
     await expect(query<HTMLInputElement>('#setup-seek-hold')?.checked).toBe(true);
     await expect(query<HTMLInputElement>('#setup-volume-boost')?.checked).toBe(false);
+  }
+};
+
+// Step 5 after choosing Green: the fixture page takes the accent at once.
+export const AccentColor: Story = {
+  render: () => renderSetup(pending),
+  play: async () => {
+    await stage().ready;
+    toStep('accentColorLabel');
+    const before = stage().doc.documentElement.style.getPropertyValue('--accent-color');
+    query<HTMLButtonElement>('.setup-accent [data-choice="green"]')!.click();
+    await expect(query('.setup-accent [data-choice="green"]')?.getAttribute('aria-checked')).toBe('true');
+    await expect(stage().doc.documentElement.style.getPropertyValue('--accent-color')).not.toBe(before);
+  }
+};
+
+// Step 6: Settings' layouts with their pictures; Raised and its subtitles switch are the defaults.
+export const Layout: Story = {
+  render: () => renderSetup(pending),
+  play: async () => {
+    await stage().ready;
+    toStep('pictureAlignLabel');
+    await expect(stage().doc.querySelectorAll('.setup-choice.has-picture svg').length).toBe(2);
+    await expect(query<HTMLInputElement>('input[value="top"]')?.checked).toBe(true);
+    await expect(query<HTMLInputElement>('#setup-raise-subtitles')?.checked).toBe(true);
+  }
+};
+
+// Step 7: pinned controls, off as on a fresh install.
+export const PinControls: Story = {
+  render: () => renderSetup(pending),
+  play: async () => {
+    await stage().ready;
+    toStep('setupControlsTitle');
+    await expect(query<HTMLInputElement>('#setup-pin-controls')?.checked).toBe(false);
   }
 };
 
@@ -98,11 +158,13 @@ export const Summary: Story = {
   render: () => renderSetup(pending),
   play: async () => {
     await stage().ready;
+    toStep('setupServicesTitle');
     query<HTMLInputElement>('input[value="none"]')!.click();
-    toStep(4);
+    toStep('setupSummaryTitle');
     await expect(stage().doc.activeElement?.textContent).toBe(setupMessage('setupSummaryTitle'));
     await expect([...stage().doc.querySelectorAll('.setup-summary dd')].map(value => value.textContent)).toEqual([
-      setupMessage('setupServicesNone'), setupMessage('setupSummaryStartKey', 'T'), setupMessage('setupSummaryOn'), setupMessage('setupSummaryOff')
+      t('languageAutomatic'), setupMessage('setupServicesNone'), setupMessage('setupSummaryStartKey', 'T'), setupMessage('setupSummaryOn'),
+      setupMessage('setupSummaryOff'), t('accentColorSystem'), t('pictureAlignSubtitlesOnlyTitle'), setupMessage('setupSummaryOff')
     ]);
     await expect(button('setupFinish')).toBeTruthy();
     await expect(stage().saved).toEqual([]);

@@ -1,8 +1,4 @@
-export const KEEP_CONTROLS_VISIBLE_STORAGE_KEY = 'keepControlsVisible';
-
-export function resolveKeepControlsVisible(value: unknown): boolean {
-  return value === true;
-}
+export { KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './keep-controls-visible-settings';
 
 export type ChromeActivity = {
   active: boolean;

@@ -1538,6 +1538,26 @@
     "message": "모든 키는 설정 → 키보드 단축키에서 확인하고 변경할 수 있습니다.",
     "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
   },
+  "setupAccentDescription": {
+    "message": "플레이어의 컨트롤, 슬라이더, 강조 표시와 이 설정 화면에 사용됩니다. 선택하면 이 페이지에 바로 반영됩니다.",
+    "description": "First-run setup, accent colour step: what the accent colour is used for. The Settings page recolours as soon as one is picked."
+  },
+  "setupLayoutDescription": {
+    "message": "영화관 모드에서 화면이 놓이는 위치입니다.",
+    "description": "First-run setup, layout step: one line above the Centered and Raised choices."
+  },
+  "setupControlsTitle": {
+    "message": "플레이어 컨트롤",
+    "description": "First-run setup step heading: the step about pinning the playback controls."
+  },
+  "setupControlsDescription": {
+    "message": "영화관 모드에서는 시청하는 동안 컨트롤이 숨겨지고 마우스를 움직이면 다시 나타납니다.",
+    "description": "First-run setup, player controls step: how the controls behave unless they are pinned."
+  },
+  "setupAppearanceFooter": {
+    "message": "나중에 설정 → 외관에서 변경할 수 있습니다.",
+    "description": "Footer of the first-run setup steps for language, accent colour, layout and pinned controls. \"Settings → Appearance\" names the Settings page and its tab."
+  },
   "setupSummaryStartKey": {
     "message": "$1 키를 누를 때만",
     "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."

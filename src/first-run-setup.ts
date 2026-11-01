@@ -13,9 +13,13 @@ export const SETUP_HASH = 'setup';
  * on install only when none is pending, so a partial setup never reaches a fresh install.
  */
 export const SETUP_STEPS = [
+  { id: 'language', ready: true },
   { id: 'services', ready: true },
   { id: 'start', ready: true },
   { id: 'keys', ready: true },
+  { id: 'accent', ready: true },
+  { id: 'layout', ready: true },
+  { id: 'controls', ready: true },
   { id: 'summary', ready: true }
 ] as const satisfies readonly { id: string; ready: boolean }[];
 export type SetupStepId = (typeof SETUP_STEPS)[number]['id'];
