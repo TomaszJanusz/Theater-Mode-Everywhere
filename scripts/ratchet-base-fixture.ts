@@ -23,7 +23,7 @@ export function repoWithBase(path: string, baseSource: string, branchSource: str
   };
   git('init', '--quiet');
   write(baseSource);
-  git('update-ref', `refs/remotes/${baseRef()}`, 'HEAD');
+  git('update-ref', `refs/remotes/${baseRef(process.env, directory)}`, 'HEAD');
   write(branchSource);
   return directory;
 }
