@@ -113,10 +113,6 @@ async function toStep(page: Page, title: string): Promise<void> {
 const focusedText = (page: Page) => page.evaluate(() => document.activeElement?.textContent ?? '');
 
 async function blockingViolations(page: Page): Promise<string[]> {
-  // Contrast is meaningful after the step's opacity animation, not during its fade-in.
-  await page.locator('#setup-wizard').evaluate(async wizard => {
-    await Promise.all((wizard.querySelector('.setup-step')?.getAnimations() ?? []).map(animation => animation.finished));
-  });
   if (!await page.evaluate(() => 'axe' in window)) await page.addScriptTag({ content: axeSource });
   return page.evaluate(async () => {
     const results = await (window as unknown as { axe: { run(scope: Element): Promise<{ violations: Array<{ id: string; impact: string; nodes: Array<{ target: string[] }> }> }> } })
