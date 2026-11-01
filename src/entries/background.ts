@@ -263,8 +263,8 @@ async function migrateLegacyYoutubeExclusion(): Promise<void> {
  * the install's own defaults must not look like a synced profile.
  */
 async function initializeInstall(): Promise<void> {
-  const [sync, local] = await Promise.all([chrome.storage.sync.get(null), chrome.storage.local.get(SETUP_STATE_KEY)]);
-  const plan = installPlan(sync, local[SETUP_STATE_KEY], chrome.runtime.getManifest().version);
+  const [sync, local] = await Promise.all([chrome.storage.sync.get(null), chrome.storage.local.get(null)]);
+  const plan = installPlan(sync, local, chrome.runtime.getManifest().version);
   if (Object.keys(plan.sync).length) await chrome.storage.sync.set(plan.sync);
   if (plan.state) await chrome.storage.local.set({ [SETUP_STATE_KEY]: plan.state });
   if (plan.openSetup) await openOptionsPage(SETUP_HASH);
