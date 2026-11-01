@@ -3,12 +3,12 @@ import { describe, it } from 'node:test';
 
 import { chromium } from 'playwright';
 
-import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
-import { sharedTestBrowser } from '../test-utils/test-browser';
+import { bundleModules, playerStylesheets } from '../../test-utils/player-boot';
+import { sharedTestBrowser } from '../../test-utils/test-browser';
 
 /** The module under `src/` as an IIFE global; MAIN runtime and startup retain manifest order. */
 const compile = (module: string, globalName: string) => bundleModules([`export * from './${module}';`], globalName);
-const esbuildBundle = () => bundleModules(["import './entries/main-world';", "import './entries/main-world-start';"], 'NetflixMainWorld');
+const esbuildBundle = () => bundleModules(["import './entries/main-world';", "import './providers/netflix/main-entry';", "import './entries/main-world-start';"], 'NetflixMainWorld');
 
 describe('netflix runtime browser regressions', () => {
   const shared = sharedTestBrowser(chromium);

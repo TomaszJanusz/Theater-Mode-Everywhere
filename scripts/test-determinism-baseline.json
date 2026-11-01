@@ -7,7 +7,7 @@
     "sleep": 3,
     "frame": 1
   },
-  "src/media-features/netflix-adapter.test.ts": {
+  "src/providers/netflix/adapter.test.ts": {
     "timer": 2
   },
   "src/media-features/twitch-adapter.test.ts": {
@@ -51,7 +51,7 @@
     "timer": 1,
     "frame": 1
   },
-  "src/ui/netflix-runtime.browser.test.ts": {
+  "src/providers/netflix/runtime.browser.test.ts": {
     "frame": 2
   },
   "src/ui/service-actions.browser.test.ts": {

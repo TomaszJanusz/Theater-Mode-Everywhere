@@ -1,18 +1,17 @@
 import { providerRegistry } from '../runtime-registration';
 
 import { disneyTimeline } from './disney';
-import { netflixTimeline } from './netflix';
 import type { HostSeekDispatch, HostSeekInput, ProviderTimeline, TimelineBounds } from './types';
 
 export { LIVE_EDGE_SECONDS, MAX_LIVE_DVR_SECONDS, MIN_LIVE_DVR_SECONDS } from '../timeline-limits';
 export type { HostSeekDispatch, HostSeekInput, MediaSeekDetail, TimelineBounds } from './types';
 
 // Isolated dispatch order: registered providers (YouTube, whose live timeline does not read its
-// integration flag), then Disney, which seeks and reads its clock on the host with the flag ignored,
-// then Netflix, which seeks only while its flag is on. MAIN still routes Netflix, then Disney, then YouTube.
+// integration flag, and Netflix, which seeks only while its flag is on), then Disney, which seeks and
+// reads its clock on the host with the flag ignored. MAIN routes Disney, then the registered seeks.
 // Read per call: registration closes before the runtime starts.
 function providers(): ProviderTimeline[] {
-  return [...providerRegistry.all().flatMap(hooks => hooks.timeline ?? []), disneyTimeline, netflixTimeline];
+  return [...providerRegistry.all().flatMap(hooks => hooks.timeline ?? []), disneyTimeline];
 }
 
 export function hostLiveHint(video: HTMLVideoElement): boolean {

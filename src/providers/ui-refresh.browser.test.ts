@@ -141,7 +141,7 @@ for (const engine of testEngines()) describe(`${engine} UI refresh ownership`, (
           const pending = [...frames.values()]; frames.clear(); pending.forEach(fn => fn(now));
         }
       };
-      const source = api.createNetflixServiceActions({ host: () => true, href: () => 'https://www.netflix.com/watch/123' });
+      const source = api.createNetflixServiceActions({ observe: api.observeProviderDom, host: () => true, href: () => 'https://www.netflix.com/watch/123' });
       const read = source.read; source.read = () => { reads++; return read(); };
       const scope = new api.DisposableScope();
       api.mountServiceActionCta(scope, { source, mount: el => document.body.append(el), toolbarVisible: () => false,

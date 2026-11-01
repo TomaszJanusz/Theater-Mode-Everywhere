@@ -3,7 +3,6 @@ import { CrunchyrollAdapter } from '../providers/crunchyroll/adapter';
 import { DisneyAdapter } from '../providers/disney/adapter';
 import { createHostCaptionLayoutSource } from '../providers/host-captions';
 import { NativeTextTrackAdapter } from '../providers/native/adapter';
-import { NetflixAdapter } from '../providers/netflix/adapter';
 import { PROVIDER_DEFINITIONS, shouldAttachProvider } from '../providers/registry';
 
 import { CompositeMediaAdapter } from './composite-adapter';
@@ -17,10 +16,6 @@ export function shouldAttachYouTubeAdapter(flags: MediaProviderFlags, hostname?:
 
 export function shouldAttachDisneyAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
   return shouldAttachProvider('disney', flags, hostname);
-}
-
-export function shouldAttachNetflixAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
-  return shouldAttachProvider('netflix', flags, hostname);
 }
 
 /** Attached providers whose adapter leaves the title to the page's metadata. */
@@ -40,7 +35,6 @@ export function createMediaFeaturesAdapter(
   const surface = coercePlaybackSurface(media);
   const adapters: MediaFeaturesAdapter[] = [];
   if (shouldAttachDisneyAdapter(flags)) adapters.push(new DisneyAdapter());
-  if (shouldAttachNetflixAdapter(flags)) adapters.push(new NetflixAdapter());
   if (shouldAttachProvider('crunchyroll', flags)) adapters.push(new CrunchyrollAdapter());
   adapters.push(...registeredAdapters(flags, surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null));
   if (surface.nativeMedia instanceof HTMLVideoElement) {

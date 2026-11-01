@@ -37,7 +37,7 @@ import {
   resolveMediaProviderFlags,
   richTheaterExperienceEnabled
 } from './provider-flags';
-import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
+import { shouldAttachDisneyAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { YouTubeAdapter } from './youtube-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls } from './youtube-snapshot';
@@ -1529,9 +1529,9 @@ describe('provider integration flags', () => {
     assert.equal(shouldAttachDisneyAdapter(allOn, 'www.disneyplus.com'), true);
     assert.equal(shouldAttachDisneyAdapter({ ...allOn, disney: false }, 'www.disneyplus.com'), false);
     assert.equal(shouldAttachDisneyAdapter(allOn, 'example.com'), false);
-    assert.equal(shouldAttachNetflixAdapter(allOn, 'www.netflix.com'), true);
-    assert.equal(shouldAttachNetflixAdapter({ ...allOn, netflix: false }, 'www.netflix.com'), false);
-    assert.equal(shouldAttachNetflixAdapter(allOn, 'example.com'), false);
+    assert.equal(shouldAttachProvider('netflix', allOn, 'www.netflix.com'), true);
+    assert.equal(shouldAttachProvider('netflix', { ...allOn, netflix: false }, 'www.netflix.com'), false);
+    assert.equal(shouldAttachProvider('netflix', allOn, 'example.com'), false);
   });
 
   it('maps the global Rich Theater Experience switch onto every provider flag', () => {

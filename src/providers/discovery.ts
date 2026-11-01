@@ -1,5 +1,4 @@
 import { DISNEY_SHADOW_PARENT_CSS } from './disney/stage';
-import { rankNetflixTheaterVideos } from './netflix/playback';
 import { providerRegistry } from './runtime-registration';
 
 export type ProviderDiscovery = {
@@ -11,15 +10,12 @@ export type ProviderDiscovery = {
 
 const providerDiscovery: ProviderDiscovery[] = [
   {
-    rankBest: rankNetflixTheaterVideos
-  },
-  {
     extraShadowCss: () => DISNEY_SHADOW_PARENT_CSS
   }
 ];
 
 export function providerRankedVideo(videos: HTMLVideoElement[]): HTMLVideoElement | null {
-  for (const hook of providerDiscovery) {
+  for (const hook of [...providerRegistry.all().flatMap(hooks => hooks.discovery ?? []), ...providerDiscovery]) {
     const picked = hook.rankBest?.(videos);
     if (picked) return picked;
   }

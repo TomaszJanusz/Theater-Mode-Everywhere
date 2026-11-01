@@ -177,10 +177,10 @@ it('validates broker URL declarations and carries them into the registry-free ca
 });
 
 it('keeps staged extraction exemptions exact and entry implementation host-only', () => {
-  const descriptor = descriptors.find(item => item.id === 'netflix')!;
-  assert.equal(isHostOnlySource(`${root}/src/providers/netflix/main.ts`, descriptor), false);
-  for (const name of ['audio-main.ts', 'audio-adapter.ts', 'audio-client.ts', 'audio-bridge.ts', 'nested/main.ts']) {
-    assert.equal(isHostOnlySource(`${root}/src/providers/netflix/${name}`, descriptor), true, name);
+  const descriptor = descriptors.find(item => item.id === 'disney')!;
+  assert.equal(isHostOnlySource(`${root}/src/providers/disney/main.ts`, descriptor), false);
+  for (const name of ['audio-main.ts', 'audio-adapter.ts', 'audio-bridge.ts', 'nested/main.ts']) {
+    assert.equal(isHostOnlySource(`${root}/src/providers/disney/${name}`, descriptor), true, name);
   }
   for (const files of [[], [descriptor.entries.isolated.file], [descriptor.entries.main.file], ['../main.ts'], ['nested/main.ts'], ['main.ts', 'main.ts'], [42]]) {
     assert.throws(() => parseDescriptor({ ...descriptor, legacySharedFiles: files }));

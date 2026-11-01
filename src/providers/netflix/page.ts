@@ -1,4 +1,4 @@
-import { sanitizeContentTitle } from '../content-title';
+import { sanitizeContentTitle } from '../../media-features/content-title';
 
 export const NETFLIX_SNAPSHOT_ID = 'theater-everywhere-netflix-snapshot';
 export const NETFLIX_CAPTION_EVENT = 'theater-everywhere-netflix-caption';

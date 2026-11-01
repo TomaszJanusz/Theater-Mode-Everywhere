@@ -546,22 +546,6 @@
       "count": 1
     }
   },
-  "src/media-features/netflix-adapter.ts": {
-    "import/order": {
-      "count": 4
-    },
-    "local/max-symbol-name-length": {
-      "count": 2
-    },
-    "sonarjs/pseudo-random": {
-      "count": 1
-    }
-  },
-  "src/media-features/netflix-page.test.ts": {
-    "import/order": {
-      "count": 3
-    }
-  },
   "src/media-features/page-title.test.ts": {
     "import/order": {
       "count": 1
@@ -642,31 +626,6 @@
       "count": 1
     }
   },
-  "src/media-features/parsers/netflix-page.ts": {
-    "no-useless-escape": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 2
-    },
-    "sonarjs/regex-complexity": {
-      "count": 1
-    },
-    "sonarjs/super-linear-regex": {
-      "count": 1
-    }
-  },
-  "src/media-features/parsers/netflix-preview.ts": {
-    "import/order": {
-      "count": 1
-    },
-    "local/max-symbol-name-length": {
-      "count": 2
-    }
-  },
   "src/media-features/parsers/youtube-chapters.ts": {
     "local/max-symbol-name-length": {
       "count": 3
@@ -726,7 +685,7 @@
   },
   "src/media-features/resolve-adapter.ts": {
     "local/max-symbol-name-length": {
-      "count": 4
+      "count": 3
     }
   },
   "src/media-features/sanitize.ts": {
@@ -1153,9 +1112,6 @@
     }
   },
   "src/providers/media-events.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 2
     }
@@ -1199,14 +1155,6 @@
       "count": 1
     }
   },
-  "src/providers/navigation/netflix.ts": {
-    "import/order": {
-      "count": 2
-    },
-    "local/max-symbol-name-length": {
-      "count": 1
-    }
-  },
   "src/providers/navigation/watch.ts": {
     "local/max-symbol-name-length": {
       "count": 1
@@ -1215,6 +1163,14 @@
   "src/providers/netflix/action-bridge.ts": {
     "local/max-symbol-name-length": {
       "count": 3
+    }
+  },
+  "src/providers/netflix/adapter.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/pseudo-random": {
+      "count": 1
     }
   },
   "src/providers/netflix/host-captions.ts": {
@@ -1226,9 +1182,6 @@
     }
   },
   "src/providers/netflix/main.ts": {
-    "import/order": {
-      "count": 5
-    },
     "local/max-symbol-name-length": {
       "count": 3
     },
@@ -1237,6 +1190,11 @@
     },
     "sonarjs/no-nested-conditional": {
       "count": 3
+    }
+  },
+  "src/providers/netflix/navigation.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
     }
   },
   "src/providers/netflix/next-episode.ts": {
@@ -1254,18 +1212,34 @@
       "count": 1
     }
   },
-  "src/providers/netflix/playback.ts": {
-    "import/order": {
+  "src/providers/netflix/page.ts": {
+    "no-useless-escape": {
       "count": 1
     },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    },
+    "sonarjs/regex-complexity": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "src/providers/netflix/playback.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/providers/netflix/preview.ts": {
     "local/max-symbol-name-length": {
       "count": 2
     }
   },
   "src/providers/netflix/service-actions.ts": {
-    "import/order": {
-      "count": 3
-    },
     "local/max-symbol-name-length": {
       "count": 3
     },
@@ -1282,9 +1256,6 @@
     }
   },
   "src/providers/netflix/timed-action.ts": {
-    "import/order": {
-      "count": 2
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }
@@ -1398,11 +1369,6 @@
   },
   "src/providers/timeline/markers.ts": {
     "local/max-symbol-name-length": {
-      "count": 1
-    }
-  },
-  "src/providers/timeline/netflix.ts": {
-    "import/order": {
       "count": 1
     }
   },
@@ -1854,11 +1820,6 @@
   "src/ui/native-chat.browser.test.ts": {
     "max-lines": {
       "count": 1
-    }
-  },
-  "src/ui/netflix-stage.test.ts": {
-    "import/order": {
-      "count": 2
     }
   },
   "src/ui/picture-align-settings.ts": {

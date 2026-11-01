@@ -1,4 +1,3 @@
-import { NETFLIX_HARVEST_EVENT, netflixVideoId } from '../../media-features/parsers/netflix-page';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import type { AudioTrackList } from '../../media-features/types';
 import { publishHiddenJson } from '../../platform/hidden-json';
@@ -8,6 +7,7 @@ import {
   AUDIO_ACK, AUDIO_CHANGE, AUDIO_EVENTS, AUDIO_QUERY, AUDIO_SELECT, AUDIO_SNAPSHOT, AUDIO_STOP, AUDIO_TIMEOUT,
   netflixAudioTrack, parseAudioQuery, parseAudioSelect, type AudioQuery, type AudioSelect
 } from './audio-bridge';
+import { NETFLIX_HARVEST_EVENT, netflixVideoId } from './page';
 import { findNetflixPlayerRoot, netflixWatchId, readNetflixPlayerAppApi, type NetflixSessionPlayer } from './session';
 
 export type NetflixAudioPlayer = NetflixSessionPlayer & {

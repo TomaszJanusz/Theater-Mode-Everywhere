@@ -1,11 +1,11 @@
 import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
+
 import { CRUNCHYROLL_HARVEST_EVENT } from './crunchyroll/main';
 import { providerRegistry, registeredEvents } from './runtime-registration';
 
 /** Provider publication events consumed uniformly by the media controller. */
 const PROVIDER_MEDIA_EVENTS = [
   'theater-everywhere-disney-harvest',
-  'theater-everywhere-netflix-harvest',
   CRUNCHYROLL_HARVEST_EVENT
 ] as const;
 

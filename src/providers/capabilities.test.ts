@@ -7,16 +7,16 @@ import { buildSync, transformSync } from 'esbuild';
 import { parseAst } from 'vite';
 
 import { brightestStop, hexRgb, luminance, over } from '../../options/rte-colors';
-import { NetflixAdapter } from '../media-features/netflix-adapter';
 import { MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
 
 import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from './capabilities';
 import { PROVIDER_CATALOG } from './catalog';
+import { NetflixAdapter } from './netflix/adapter';
 import { providerDefinition } from './registry';
 import { VimeoAdapter } from './vimeo/adapter';
 
 const read = (path: string) => readFileSync(resolve(__dirname, path), 'utf8');
-const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'patreon', 'viki', 'vimeo', 'twitch']);
+const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'netflix', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'patreon', 'viki', 'vimeo', 'twitch']);
 
 /** Static method/source checks deliberately complement the existing behavioral
  * adapter and service-action suites without reproducing their host fixtures.
@@ -125,7 +125,7 @@ describe('provider capability declarations', () => {
       // Follow imports that are actually called, so adding a registered source
       // to a previously unsupported provider also trips the declaration guard.
       // A provider migrating hook by hook may still register a feature through the shared factory.
-      const entryNavigation = extracted && /readControls:/.test(entry);
+      const entryNavigation = extracted && /(?:readControls|fallback):/.test(entry);
       const hasActions = (extracted && registeredFrom(entry, './service-actions')) || registeredFrom(actions, `./${provider.id}/service-actions`);
       const hasNavigation = entryNavigation || registeredFrom(navigation, `./${provider.id}`);
       // Playlists use the registered PlaylistAction contract, not caption HLS

@@ -1,37 +1,11 @@
 import type { ProviderPlaybackBindOptions, ProviderStage, ProviderStructuralHelpers } from '../core/provider-presentation';
 
 import { disneyTheaterStage } from './disney/stage';
-import { bindNetflixTheaterPlayback } from './netflix/playback';
 export type { ProviderPlaybackBindOptions, ProviderStage, ProviderStructuralHelpers } from '../core/provider-presentation';
-import {
-  mountNetflixTheaterStage,
-  onNetflixStructuralMutation,
-  pinNetflixTheaterViewport,
-  unmountNetflixTheaterStage
-} from './netflix/stage';
 import { providerRegistry, registeredEvents } from './runtime-registration';
 
-const netflixTheaterStage: ProviderStage = {
-  mount(hostname: string) {
-    mountNetflixTheaterStage(hostname);
-  },
-  unmount() {
-    unmountNetflixTheaterStage();
-  },
-  afterViewportPin(element: HTMLElement, pinGeneric: (element: HTMLElement) => void) {
-    pinNetflixTheaterViewport(element, pinGeneric);
-  },
-  onStructuralMutation(element: HTMLElement, helpers: ProviderStructuralHelpers) {
-    onNetflixStructuralMutation(element, helpers);
-  },
-  bindPlayback(options) {
-    return bindNetflixTheaterPlayback(options);
-  }
-};
-
 const legacyStages: ProviderStage[] = [
-  disneyTheaterStage,
-  netflixTheaterStage,
+  disneyTheaterStage
 ];
 
 // Read after registration closes, never cache the empty document-start registry.

@@ -96,6 +96,8 @@ type IsolatedOnlyHooks = {
   discovery?: {
     /** A still-connected video the host has emptied for good, which a loaded replacement may supersede. */
     abandonedVideo?(video: HTMLVideoElement): boolean;
+    /** The best theater candidate among the page's videos, such as the on-screen player over a blurred hero; null leaves the generic choice. */
+    rankBest?(videos: HTMLVideoElement[]): HTMLVideoElement | null;
     /** Prepares an open shadow root discovery walks into, such as sizing a player's inner frame. */
     prepareShadowRoot?(shadowRoot: ShadowRoot): void;
     /** Containers whose hidden videos are standby elements, excluded from discovery and switching. */
@@ -123,9 +125,18 @@ type IsolatedOnlyHooks = {
   navigation?: {
     /** Scopes the host's controls to the player holding the video; without it every control on the page counts. */
     playerSelector?: string;
-    readControls(root: ParentNode): CollectedControl[];
+    readControls?(root: ParentNode): CollectedControl[];
     /** Host surfaces whose changes can alter navigation; any mutation inside them counts. */
     surfaces?: string;
+    /**
+     * Host players whose own structure, class or `data-videoid` changes can alter navigation; mutations inside them
+     * count only for controls (buttons, links, added elements), as on any other page.
+     */
+    players?: string;
+    /** Clock or countdown paint inside a player that never alters navigation. */
+    paints?: string;
+    /** Host steps for directions no host control or queue offers, such as a native Next the player unmounts with its chrome. */
+    fallback?(root: ParentNode, video: HTMLVideoElement | null | undefined, href: () => string): PlaylistAction[];
     /** Host queue actions; each claimed direction (including a confirmed end) hides host controls for it. */
     queue?(root: ParentNode, video: HTMLVideoElement | null | undefined, helpers: PlaylistHelpers): { actions: PlaylistAction[]; claimed: Set<PlaylistDirection> };
   };

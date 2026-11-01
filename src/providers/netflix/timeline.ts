@@ -1,12 +1,12 @@
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { isNetflixHost } from '../hosts';
-import { providerHostname } from './page-host';
-import type { HostSeekDispatch, HostSeekInput, ProviderTimeline } from './types';
+import type { HostSeekDispatch, HostSeekInput, ProviderTimeline } from '../timeline/types';
+
+import { isNetflixHost } from './hosts';
 
 function onNetflixHost(): boolean {
-  const hostname = providerHostname();
-  if (hostname == null) return false;
-  return isNetflixHost(hostname);
+  // Event-target stubs carry no location and are no Netflix page; reading their hostname would throw.
+  const hostname = (globalThis as { window?: { location?: { hostname?: unknown } } }).window?.location?.hostname;
+  return typeof hostname === 'string' && isNetflixHost(hostname);
 }
 
 function netflixSeekEnabled(): boolean {

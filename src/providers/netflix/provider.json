@@ -1,15 +1,21 @@
 {
   "schemaVersion": 1,
   "id": "netflix",
-  "hosts": [{ "domain": "netflix.com", "includeSubdomains": true }],
-  "legacySharedFiles": [
-    "adapter.ts", "action-bridge.ts", "host-captions.ts", "main.ts", "next-episode.ts",
-    "next-preview.ts", "playback.ts", "service-actions.ts", "session.ts", "shadow-click.ts",
-    "stage.ts", "timed-action.ts", "watch-playback.ts"
+  "hosts": [
+    {
+      "domain": "netflix.com",
+      "includeSubdomains": true
+    }
   ],
   "entries": {
-    "isolated": { "file": "isolated.ts", "runAt": "document_start" },
-    "main": { "file": "audio-main-entry.ts", "runAt": "document_start" }
+    "isolated": {
+      "file": "isolated.ts",
+      "runAt": "document_start"
+    },
+    "main": {
+      "file": "main-entry.ts",
+      "runAt": "document_start"
+    }
   },
   "settings": [
     {

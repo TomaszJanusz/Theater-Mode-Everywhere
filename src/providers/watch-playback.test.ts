@@ -7,6 +7,7 @@ import { bilibiliVideoIdentity, bilibiliWatchPlayback } from './bilibili/watch-p
 import { bilibiliIntlVideoIdentity, bilibiliIntlWatchPlayback } from './bilibiliIntl/watch-playback';
 import { disneyWatchPlayback } from './disney/watch-playback';
 import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
+import { netflixWatchPlayback } from './netflix/watch-playback';
 import { patreonWatchPlayback } from './patreon/watch-playback';
 import { providerDefinition, shouldAttachProvider } from './registry';
 import { providerRegistry } from './runtime-registration';
@@ -19,6 +20,12 @@ import { youtubeWatchPlayback } from './youtube/watch-playback';
 /** Twitch's watch hook as its host script registers it; the shared registry has no static Twitch row. */
 const registerTwitch = (t: TestContext) => t.mock.method(providerRegistry, 'get',
   (id: string) => id === 'twitch' ? { id: 'twitch', contractVersion: 1, watchPlayback: twitchWatchPlayback } : undefined);
+
+/** Netflix's watch hook as its host script registers it, alongside Twitch's for cases that need both. */
+const registerNetflix = (t: TestContext) => t.mock.method(providerRegistry, 'get', (id: string) => {
+  if (id === 'netflix') return { id: 'netflix', contractVersion: 1, watchPlayback: netflixWatchPlayback };
+  return id === 'twitch' ? { id: 'twitch', contractVersion: 1, watchPlayback: twitchWatchPlayback } : undefined;
+});
 
 function read(href: string) {
   const page = readProviderWatchPage(new URL(href));
@@ -36,7 +43,7 @@ describe('positive provider watch declarations', () => {
   });
 
   it('keeps extracted providers unavailable until their host script registers', () => {
-    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['vimeo', 'https://vimeo.com/123456'], ['iqiyi', 'https://www.iq.com/play/spring-of-the-blade-episode-2-1w9dte7osf8'], ['bilibili', 'https://www.bilibili.com/video/BV1xx411c7mu'], ['bilibiliIntl', 'https://www.bilibili.tv/en/video/4801285774384128'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk'], ['twitch', 'https://www.twitch.tv/videos/2345678901'], ['disney', 'https://www.disneyplus.com/play/560861a0-55c9-4552-a181-64c498e01b62']] as const) {
+    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['vimeo', 'https://vimeo.com/123456'], ['iqiyi', 'https://www.iq.com/play/spring-of-the-blade-episode-2-1w9dte7osf8'], ['bilibili', 'https://www.bilibili.com/video/BV1xx411c7mu'], ['bilibiliIntl', 'https://www.bilibili.tv/en/video/4801285774384128'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk'], ['twitch', 'https://www.twitch.tv/videos/2345678901'], ['netflix', 'https://www.netflix.com/watch/70248299'], ['disney', 'https://www.disneyplus.com/play/560861a0-55c9-4552-a181-64c498e01b62']] as const) {
       assert.equal(providerDefinition(id).watchPlayback, undefined);
       assert.equal(read(href), null);
     }
@@ -89,15 +96,17 @@ describe('positive provider watch declarations', () => {
     }
   });
 
-  it('never declares arbitrary sites, spoofed hosts, or unqualified providers', () => {
+  it('never declares arbitrary sites, spoofed hosts, or unqualified providers', t => {
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), [], 'no static watch hook remains');
+    registerNetflix(t);
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://twitch.tv.evil.test/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['netflix']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
-  it('qualifies Netflix watch routes independently of tracking, excluding catalog and malformed paths', () => {
+  it('qualifies Netflix watch routes independently of tracking, excluding catalog and malformed paths', t => {
+    registerNetflix(t);
     const expected = { provider: 'netflix', identity: '70248299' };
     for (const path of ['/watch/70248299', '/watch/70248299/', '/watch/70248299?trackId=264293154&tctx=Video%3A70178217']) {
       assert.deepEqual(read(`https://www.netflix.com${path}`), expected);
@@ -157,7 +166,7 @@ describe('AutoTheater availability', () => {
 
 describe('navigation off a watch page', () => {
   it('ends only a session that began on a provider watch page and landed elsewhere', t => {
-    registerTwitch(t);
+    registerNetflix(t);
     const watch = 'https://www.twitch.tv/videos/123456';
     assert.equal(leftProviderWatchPage(true, 'https://www.twitch.tv/search?term=x'), true);
     assert.equal(leftProviderWatchPage(true, 'https://www.twitch.tv/'), true);

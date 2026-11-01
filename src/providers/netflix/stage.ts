@@ -1,4 +1,7 @@
-import { isNetflixHost } from '../hosts';
+import type { ProviderStage } from '../../core/provider-presentation';
+
+import { isNetflixHost } from './hosts';
+import { bindNetflixTheaterPlayback } from './playback';
 
 /**
  * Netflix's title dialog computes `transform: matrix(1, 0, 0, 1, 0, 0)` from
@@ -177,3 +180,11 @@ export function onNetflixStructuralMutation(
   helpers.refreshAncestors(element);
   holdNetflixViewport(element);
 }
+
+export const netflixTheaterStage: ProviderStage = {
+  mount: hostname => mountNetflixTheaterStage(hostname),
+  unmount: unmountNetflixTheaterStage,
+  afterViewportPin: pinNetflixTheaterViewport,
+  onStructuralMutation: onNetflixStructuralMutation,
+  bindPlayback: bindNetflixTheaterPlayback
+};

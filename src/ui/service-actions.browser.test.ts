@@ -17,7 +17,11 @@ const uiBundle = bundleModules([
   "export { mountServiceActionCta } from './ui/service-actions.ts';",
   "export { observePicture, viewportPictureInsets } from './ui/picture-insets.ts';"
 ], 'TeServiceActions');
-const netflixBundle = bundleModules(["export * from './providers/netflix/service-actions.ts';"], 'TeNetflixServiceActions');
+// The provider entry lends the runtime's DOM watcher; the fixture lends the same module.
+const netflixBundle = bundleModules(["export * from './providers/netflix/service-actions.ts';",
+  "import { observeProviderDom } from './providers/dom-watch.ts';",
+  "import { createNetflixServiceActions as create } from './providers/netflix/service-actions.ts';",
+  "export const createNetflixServiceActions = (hooks = {}) => create({ observe: observeProviderDom, ...hooks });"], 'TeNetflixServiceActions');
 const shadowBundle = bundleModules(["export * from './providers/netflix/shadow-click.ts';"], 'TeShadow');
 
 type NetflixReport = {

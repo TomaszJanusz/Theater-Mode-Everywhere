@@ -21,12 +21,6 @@ import {
   readDisneySnapshot
 } from '../providers/disney/main';
 import { } from '../providers/hosts';
-import {
-  installNetflixMain,
-  handleNetflixMediaSeek,
-  netflixIntegrationEnabled,
-  readNetflixSnapshot
-} from '../providers/netflix/main';
 import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
 import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
 import type { ProviderHarvest } from '../providers/provider-api';
@@ -270,7 +264,6 @@ export function installMainWorldRuntime(): void {
   installProviders();
   if (harvestHost) {
     installDisneyMain();
-    installNetflixMain();
     installCrunchyrollMain();
   }
 
@@ -469,19 +462,13 @@ export function installMainWorldRuntime(): void {
     const requestId = parseProbeRequest((event as CustomEvent<unknown>).detail);
     if (requestId === null) return;
     let disney: Record<string, unknown> | null = null;
-    let netflix: Record<string, unknown> | null = null;
     try {
       disney = disneyIntegrationEnabled() ? readDisneySnapshot() : null;
     } catch {
       disney = null;
     }
-    try {
-      netflix = netflixIntegrationEnabled() ? readNetflixSnapshot() : null;
-    } catch {
-      netflix = null;
-    }
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, providers: probeProviders(), disney, netflix, crunchyroll: readCrunchyrollSnapshot() }
+      detail: { requestId, providers: probeProviders(), disney, crunchyroll: readCrunchyrollSnapshot() }
     }));
   });
 
@@ -559,7 +546,6 @@ export function installMainWorldRuntime(): void {
     const detail = parseMediaSeekDetail((event as CustomEvent<unknown>).detail);
     if (!detail) return;
     const video = findActiveVideo(document) || document.querySelector('video');
-    if (handleNetflixMediaSeek(detail, video)) return;
     if (handleDisneyMediaSeek(detail, video)) return;
     if (providerRegistry.all().some(hooks => hooks.seek?.(detail, video))) return;
     if (video instanceof HTMLVideoElement && typeof detail.time === 'number' && Number.isFinite(detail.time)) {

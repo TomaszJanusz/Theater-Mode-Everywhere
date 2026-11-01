@@ -3,17 +3,17 @@ import { describe, it, type TestContext } from 'node:test';
 
 import type { Page } from 'playwright';
 
-import { NETFLIX_HARVEST_EVENT } from '../../media-features/parsers/netflix-page';
 import type { AudioTrackList } from '../../media-features/types';
 import { sharedEngineBrowsers } from '../../test-utils/engine-browsers';
 import { bundleModules } from '../../test-utils/player-boot';
 import { testEngines } from '../../test-utils/test-engines';
 
 import { AUDIO_ACK, AUDIO_QUERY, AUDIO_SELECT, AUDIO_TIMEOUT } from './audio-bridge';
+import { NETFLIX_HARVEST_EVENT } from './page';
 import { netflixAudioHtml } from './test-utils/audio-fixture';
 
 const bundle = bundleModules([
-  "export { NetflixAudioAdapter } from './providers/netflix/audio-adapter';",
+  "export { NetflixAdapter } from './providers/netflix/adapter';",
   "export { installNetflixAudio } from './providers/netflix/audio-main';",
   "export { navigationObserver } from './platform/navigation-visit';",
   "export { AudioTrackController } from './media-features/audio-tracks';"
@@ -34,7 +34,7 @@ async function open(t: TestContext, engine: 'chromium' | 'firefox', browsers: Re
       navigationCount++; const stop = navigation.subscribe(listener);
       return () => { navigationCount--; stop(); };
     } });
-    window.adapter = new AudioTest.NetflixAudioAdapter(document.querySelector('video'));
+    window.adapter = new AudioTest.NetflixAdapter(document.querySelector('video'));
     window.changes = 0; window.observed = null;
     window.stopAudio = adapter.observeAudioTracks(() => { changes++; observed = adapter.listAudioTracks(); });`);
   return page;
@@ -92,7 +92,7 @@ describe('Netflix audio recorded-shape fixtures', { timeout: 60_000 }, () => {
       assert.equal(await page.evaluate('changes'), 0);
       assert.equal(await page.evaluate('nf.listenerCount()'), 0);
       await page.evaluate(`window.netflix = undefined; window.stopOld = adapter.observeAudioTracks(() => { changes++; });
-        window.replacement = new AudioTest.NetflixAudioAdapter(document.querySelector('video'));
+        window.replacement = new AudioTest.NetflixAdapter(document.querySelector('video'));
         window.stopReplacement = replacement.observeAudioTracks(() => { observed = replacement.listAudioTracks(); });
         stopOld(); window.netflix = savedNetflix; document.querySelector('video').dispatchEvent(new Event('loadedmetadata'));`);
       await page.waitForFunction('observed?.tracks.length === 13');

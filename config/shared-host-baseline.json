@@ -81,31 +81,11 @@
   },
   "netflix": {
     "src/media-features": {
-      "serviceId": 6,
-      "identifier": 113,
-      "file": 3
-    },
-    "src/platform": {
-      "identifier": 12
+      "serviceId": 3,
+      "identifier": 4
     },
     "src/providers": {
-      "hostCheck": 7,
-      "serviceId": 1,
-      "domain": 2,
-      "identifier": 22
-    },
-    "src/providers/navigation": {
-      "hostCheck": 2,
-      "serviceId": 1,
-      "domain": 1,
-      "identifier": 17,
-      "file": 1
-    },
-    "src/providers/timeline": {
-      "hostCheck": 2,
-      "serviceId": 1,
-      "identifier": 9,
-      "file": 1
+      "identifier": 2
     }
   },
   "patreon": {

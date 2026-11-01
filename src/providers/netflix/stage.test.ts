@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
 import {
   CAPTION_DOCK_GAP,
   CAPTION_DOCK_RAISED_CENTER_GAP,
@@ -8,17 +9,18 @@ import {
   computeCaptionDockBottom,
   raisedCaptionRestBottom,
   raisedCaptionRowCount
-} from '../media-features/caption-dock';
-import { netflixPlaybackRank, shouldFollowNetflixVideo, type NetflixVideoFacts } from '../providers/netflix/playback';
-import {
-  NETFLIX_CONTAINMENT_VALUES,
-  computedStyleCreatesFixedContainingBlock
-} from '../providers/netflix/stage';
+} from '../../media-features/caption-dock';
+
 import {
   netflixPaintedCaptionBox,
   nextNetflixCaptionBox,
   type NetflixSpanBox
-} from '../providers/netflix/host-captions';
+} from './host-captions';
+import { netflixPlaybackRank, shouldFollowNetflixVideo, type NetflixVideoFacts } from './playback';
+import {
+  NETFLIX_CONTAINMENT_VALUES,
+  computedStyleCreatesFixedContainingBlock
+} from './stage';
 
 const sharpHero: NetflixVideoFacts = {
   inPlayer: false,

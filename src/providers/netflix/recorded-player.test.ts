@@ -2,9 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { netflixCaptionList, netflixLiveTrackId, parseNetflixTextTracks } from '../../media-features/parsers/netflix-page';
-
 import { netflixAudioBlocked, readNetflixAudio, type NetflixAudioPlayer } from './audio-main';
+import { netflixCaptionList, netflixLiveTrackId, parseNetflixTextTracks } from './page';
 
 // Recorded signed-in Netflix watch page, 2026-11-01 (see the fixture's notes). Fixture evidence, not an installed-extension pass.
 type Track = Record<string, unknown> & { trackId: string };
