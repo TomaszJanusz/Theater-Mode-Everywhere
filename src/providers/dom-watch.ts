@@ -1,7 +1,6 @@
 import type { FrameMeasure } from '../core/frame-batch';
 import { createVisibleRefresh } from '../core/visible-refresh';
 
-const FLAGS = ['data-te-disney-integration-off'];
 const EVENTS = ['DOMContentLoaded', 'readystatechange', 'popstate', 'resize', 'loadedmetadata', 'emptied', 'durationchange', 'play', 'pause', 'seeked', 'ended'];
 
 /** Providers choose observed surfaces; discovery only examines changed subtrees. */
@@ -74,7 +73,7 @@ export function observeProviderDom(options: {
   const discover = () => {
     if (doc.documentElement && flagsRoot !== doc.documentElement) {
       flagsRoot = doc.documentElement;
-      flags.observe(flagsRoot, { attributes: true, attributeFilter: [...FLAGS, ...options.flags ?? []] });
+      flags.observe(flagsRoot, { attributes: true, attributeFilter: [...options.flags ?? []] });
     }
     if (!dirty && [...roots].every(root => root.isConnected)) {
       for (const host of shadowHosts) {

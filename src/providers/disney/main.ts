@@ -1,18 +1,9 @@
-import {
-  findDisneyContentTitle,
-  readDisneyPlayerHeader,
-  resolveDisneyTitle,
-  stripDisneySiteTitle,
-  type DisneyPlayerHeader,
-  type DisneyTitleSource
-} from '../../media-features/content-title';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { findActiveVideo } from '../../platform/active-video';
+import { MAX_BINARY_HARVEST_BYTES, MAX_CAPTION_BYTES } from '../../platform/bounded-body';
 import { publishHiddenJson } from '../../platform/hidden-json';
-import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { readPageResponseBytes } from '../../platform/page-body';
-import { isDisneyHost } from '../hosts';
-import { shouldHarvestDisneyUrl, isDisneyBifUrl as isAllowedDisneyBifUrl } from '../network-harvest';
+import type { ProviderServices } from '../provider-api';
 
 import {
   DISNEY_CLOCK_MOUNT_MS,
@@ -24,10 +15,20 @@ import {
   type DisneyClockScheduler,
   type DisneyClockTick
 } from './clock-policy';
+import { isDisneyBifUrl as isAllowedDisneyBifUrl, shouldHarvestDisneyUrl } from './harvest';
+import { isDisneyHost } from './hosts';
 import { installDisneyPlayNext } from './play-next';
+import {
+  findDisneyContentTitle,
+  readDisneyPlayerHeader,
+  resolveDisneyTitle,
+  stripDisneySiteTitle,
+  type DisneyPlayerHeader,
+  type DisneyTitleSource
+} from './title';
 import { disneyContentVideo, disneyMediaElement, isDisneyContentVideo, isUsableDisneyMediaVideo } from './watch-playback';
 
-export const MAX_BIF_BYTES = 16 * 1024 * 1024;
+const MAX_BIF_BYTES = MAX_BINARY_HARVEST_BYTES;
 
 export function disneyIntegrationEnabled(): boolean {
   return mediaProviderIntegrationEnabled('disney');
@@ -131,8 +132,6 @@ function isAllowedDisneyMasterUrl(url: string): boolean {
     return false;
   }
 }
-
-export { isDisneyBifUrl as isAllowedDisneyBifUrl } from '../network-harvest';
 
 function disneyBifFrameCount(buffer: ArrayBuffer): number {
   if (buffer.byteLength < 80) return 0;
@@ -344,7 +343,8 @@ function resetDisneyHarvest(mediaId?: string): void {
   disneyTitlePlayId = mediaId || null;
 }
 
-function rememberDisneyBif(buffer: ArrayBuffer, url?: string): void {
+/** A harvested BIF body (the core's binary target `disney-bif`), kept when it holds more frames than the last. */
+export function rememberDisneyBif(buffer: ArrayBuffer, url?: string): void {
   if (!disneyIntegrationEnabled()) return;
   if (url && /DUB_CARD/i.test(url)) return;
   if (buffer.byteLength < 80 || buffer.byteLength > MAX_BIF_BYTES) return;
@@ -361,23 +361,6 @@ function rememberDisneyBif(buffer: ArrayBuffer, url?: string): void {
   disneyHarvest.bifBlobUrl = URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }));
   disneyHarvest.bifFrameCount = count;
   notifyDisneyHarvest();
-}
-
-export function harvestDisneyBifFromXhr(xhr: XMLHttpRequest): void {
-  try {
-    const url = xhr.responseURL || '';
-    if (xhr.response instanceof ArrayBuffer) {
-      rememberDisneyBif(xhr.response, url);
-      return;
-    }
-    if (xhr.response instanceof Blob) {
-      if (xhr.response.size > MAX_BIF_BYTES) return;
-      readPageResponseBytes({ body: xhr.response.stream() }, MAX_BIF_BYTES, undefined, { isCurrent: disneyIntegrationEnabled })
-        .then((buffer) => { if (buffer) rememberDisneyBif(buffer, url); }).catch(() => {});
-    }
-  } catch {
-    // Ignore binary harvest failures from host XHR.
-  }
 }
 
 function publishDisneyHarvest(): void {
@@ -495,15 +478,33 @@ export function captureDisneyNetworkResponse(url: string, response: Response): v
   if (!disneyIntegrationEnabled()) return;
   const finalUrl = (response && response.url) || url;
   if (!response || !response.ok) return;
-  if (isAllowedDisneyBifUrl(url) || isAllowedDisneyBifUrl(finalUrl)) {
-    readPageResponseBytes(response, MAX_BIF_BYTES, undefined, { isCurrent: disneyIntegrationEnabled })
-      .then((buffer) => { if (buffer) rememberDisneyBif(buffer, finalUrl || url); }).catch(() => {});
-    return;
-  }
   if (/\.(m3u8|mp4|m4s|ts|cmfa|cmfv|m4t|jpe?g|png|webp|vtt|bif)(\?|$)/i.test(finalUrl)) return;
   if (!shouldHarvestDisneyUrl(url) && !shouldHarvestDisneyUrl(finalUrl)) return;
   readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined, { isCurrent: disneyIntegrationEnabled })
     .then((buffer) => { if (buffer) harvestDisneyBody(finalUrl, new TextDecoder().decode(buffer)); }).catch(() => {});
+}
+
+/**
+ * The page fetch of a BIF URL (the adapter's fallback when the extension cannot read it): the bytes stay in MAIN as a
+ * blob URL the adapter loads, since the text reply has no room for them. Other URLs use the shared text loader.
+ */
+export function fetchDisneyBifPage(url: string, fetchPageMedia: ProviderServices['main']['fetchPageMedia']): Promise<string | null> | null {
+  if (!isAllowedDisneyBifUrl(url)) return null;
+  const href = window.location.href;
+  return (async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    try {
+      const response = await fetchPageMedia(url, { credentials: 'omit', signal: controller.signal });
+      if (!response) return null;
+      const buffer = await readPageResponseBytes(response, MAX_BIF_BYTES, controller.signal, {
+        isCurrent: () => window.location.href === href && disneyIntegrationEnabled()
+      });
+      return buffer ? URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' })) : null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  })();
 }
 
 export function readDisneySnapshot(): Record<string, unknown> | null {

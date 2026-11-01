@@ -2,8 +2,7 @@ import { isInactiveStandbyVideo, isTransientVideo, selectSwitchableVideos } from
 import { isProviderPlaybackFrameDocument } from '../providers/playback-session';
 import {
   prepareProviderShadowRoot,
-  providerRankedVideo,
-  providerShadowCss
+  providerRankedVideo
 } from '../providers/discovery';
 import { STATUS_HUD_SWITCH_ICON } from './hud';
 import type { PlayerChromeContext } from './runtime-context';
@@ -100,7 +99,7 @@ export function createDiscovery(ctx: PlayerChromeContext) {
       mask: none !important;
       will-change: auto !important;
       z-index: 2147483647 !important;
-    }${providerShadowCss()}
+    }
   `;
     shadowRoot.appendChild(styleEl);
   }

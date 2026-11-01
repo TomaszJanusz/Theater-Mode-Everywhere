@@ -4,10 +4,7 @@ import { CRUNCHYROLL_HARVEST_EVENT } from './crunchyroll/main';
 import { providerRegistry, registeredEvents } from './runtime-registration';
 
 /** Provider publication events consumed uniformly by the media controller. */
-const PROVIDER_MEDIA_EVENTS = [
-  'theater-everywhere-disney-harvest',
-  CRUNCHYROLL_HARVEST_EVENT
-] as const;
+const PROVIDER_MEDIA_EVENTS = [CRUNCHYROLL_HARVEST_EVENT] as const;
 
 export function observeProviderMediaChanges(onChange: () => void): () => void {
   // Registered events may target the document or the window; capture at the window sees both.

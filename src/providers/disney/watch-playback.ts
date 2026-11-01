@@ -1,6 +1,7 @@
-import { disneyPlayId } from '../../media-features/parsers/disney-page';
 import { isSwitchableTheaterVideo } from '../../switchable-videos';
 import type { WatchPlayback } from '../watch-playback';
+
+import { disneyPlayId } from './page';
 
 /**
  * How a video relates to Disney's player. `content` is the video Hive plays the title in; `dummy` is the hidden btm

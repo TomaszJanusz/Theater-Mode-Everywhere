@@ -1,4 +1,6 @@
-import { isDisneyHost } from '../hosts';
+import type { ProviderStage } from '../../core/provider-presentation';
+
+import { isDisneyHost } from './hosts';
 
 export const DISNEY_THEATER_STAGE_ID = 'theater-everywhere-disney-stage';
 export const DISNEY_THEATER_STAGE_CLASS = 'theater-everywhere-disney-stage';
@@ -12,6 +14,17 @@ export const DISNEY_SHADOW_PARENT_CSS = `
       overflow: visible !important;
       background: #000000 !important;
     }`;
+
+const DISNEY_SHADOW_STYLE_ID = 'theater-everywhere-disney-shadow-styles';
+
+/** Discovery's `prepareShadowRoot`: the stage sizes the theater parent inside the player's shadow root too. */
+export function prepareDisneyShadowRoot(shadowRoot: ShadowRoot): void {
+  if (shadowRoot.getElementById(DISNEY_SHADOW_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = DISNEY_SHADOW_STYLE_ID;
+  style.textContent = DISNEY_SHADOW_PARENT_CSS;
+  shadowRoot.appendChild(style);
+}
 
 export const DISNEY_CAPTION_STYLE_ID = 'theater-everywhere-disney-captions';
 
@@ -70,7 +83,7 @@ export function unmountDisneyTheaterStage(): void {
   clearDisneyCaptions();
 }
 
-export const disneyTheaterStage = {
+export const disneyTheaterStage: ProviderStage = {
   mount(hostname: string) {
     mountDisneyTheaterStage(hostname);
   },

@@ -12,7 +12,9 @@ const shared = sharedTestBrowser(chromium);
 
 const BUNDLE = bundlePlayer([
   "export { createHud } from './ui/hud';",
-  "export { DisneyAdapter } from './media-features/disney-adapter';",
+  "export { DisneyAdapter } from './providers/disney/adapter';",
+  "export { requestMediaProbe, requestPageFetch } from './media-features/probe';",
+  "export { parseCaptionPayload } from './media-features/parsers/captions';",
   "export { CompositeMediaAdapter } from './media-features/composite-adapter';"
 ]);
 
@@ -166,7 +168,7 @@ describe('caption loading browser regressions', () => {
       await page.goto(`https://www.disneyplus.com/play/${mediaId}`);
       await page.addScriptTag({ content: BUNDLE });
       await page.evaluate(`(async () => {
-        window.adapter = new TheaterTest.CompositeMediaAdapter([new TheaterTest.DisneyAdapter()]);
+        window.adapter = new TheaterTest.CompositeMediaAdapter([new TheaterTest.DisneyAdapter(TheaterTest)]);
         const tracks = await adapter.listCaptionTracks();
         window.trackId = tracks[0].id;
         window.activation = await adapter.activateCaptionTrack(trackId);

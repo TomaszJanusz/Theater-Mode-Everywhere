@@ -135,6 +135,13 @@ type IsolatedOnlyHooks = {
     players?: string;
     /** Clock or countdown paint inside a player that never alters navigation. */
     paints?: string;
+    /** Host control elements other than buttons and links (custom elements) whose own changes can alter navigation. */
+    controls?: string;
+    /**
+     * A host lookup the provider caches only while the navigation watcher observes `doc`, such as Next hosts deep in
+     * shadow roots: taken once per subscription; the watcher calls `invalidate` on every structural change and `release` at its end.
+     */
+    retainCache?(doc: Document): { invalidate(): void; release(): void };
     /** Host steps for directions no host control or queue offers, such as a native Next the player unmounts with its chrome. */
     fallback?(root: ParentNode, video: HTMLVideoElement | null | undefined, href: () => string): PlaylistAction[];
     /** Host queue actions; each claimed direction (including a confirmed end) hides host controls for it. */

@@ -177,7 +177,10 @@ it('validates broker URL declarations and carries them into the registry-free ca
 });
 
 it('keeps staged extraction exemptions exact and entry implementation host-only', () => {
-  const descriptor = descriptors.find(item => item.id === 'disney')!;
+  const extracted = descriptors.find(item => item.id === 'disney')!;
+  assert.equal(isHostOnlySource(`${root}/src/providers/disney/main.ts`, extracted), true, 'no descriptor stages Disney+ any more');
+  // A provider moving feature by feature: only the listed file stays shared.
+  const descriptor = parseDescriptor({ ...extracted, legacySharedFiles: ['main.ts'] });
   assert.equal(isHostOnlySource(`${root}/src/providers/disney/main.ts`, descriptor), false);
   for (const name of ['audio-main.ts', 'audio-adapter.ts', 'audio-bridge.ts', 'nested/main.ts']) {
     assert.equal(isHostOnlySource(`${root}/src/providers/disney/${name}`, descriptor), true, name);

@@ -1,7 +1,9 @@
-import { observeProviderDom } from '../dom-watch';
 import type { ServiceAction, ServiceActionSource } from '../../core/service-actions';
-import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { isDisneyHost } from '../hosts';
+import { mediaProviderIntegrationEnabled, providerOffAttribute } from '../../media-features/provider-flags';
+import type { observeProviderDom } from '../dom-watch';
+
+import { isDisneyHost } from './hosts';
+import { DISNEY_HARVEST_EVENT } from './page';
 
 const PLAY_ID = /\/play\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 
@@ -9,6 +11,8 @@ const tokens = new WeakMap<HTMLElement, string>();
 let tokenSerial = 0;
 
 export type DisneyServiceActionHooks = {
+  /** The isolated runtime's lent DOM watcher. */
+  observe: typeof observeProviderDom;
   enabled?: () => boolean;
   host?: () => boolean;
   href?: () => string;
@@ -26,7 +30,7 @@ type LiveAction = ServiceAction & { element: HTMLElement };
  * The control-bar next episode stays on the player bar. These actions are only
  * the end-of-title surfaces Disney draws over the video.
  */
-export function createDisneyServiceActions(hooks: DisneyServiceActionHooks = {}): ServiceActionSource {
+export function createDisneyServiceActions(hooks: DisneyServiceActionHooks): ServiceActionSource {
   const enabled = hooks.enabled ?? (() => mediaProviderIntegrationEnabled('disney'));
   const host = hooks.host ?? (() => isDisneyHost());
   const href = hooks.href ?? (() => window.location.href);
@@ -81,10 +85,10 @@ export function createDisneyServiceActions(hooks: DisneyServiceActionHooks = {})
     // Up-next or the end card's title; its close button alone offers nothing next.
     hostEndsPlayback: () => live().some(action => /^disney:(next|end)/.test(action.id)),
     read: () => { progressTargets.clear(); return live().map(({ element: _element, ...action }) => action); },
-    subscribe: changed => observeProviderDom({ root: doc,
+    subscribe: changed => hooks.observe({ root: doc,
       selector: 'disney-web-player, skip-overlay, up-next-lite-v1, end-card-overlay', changed,
       relevant: record => !(record.target instanceof Element) || !record.target.matches('video, .progress-ring__circle'),
-      enabled: () => allowed(enabled, host), events: ['theater-everywhere-disney-harvest'] }),
+      enabled: () => allowed(enabled, host), events: [DISNEY_HARVEST_EVENT], flags: [providerOffAttribute('disney')] }),
     readProgress(id) {
       const target = progressTargets.get(id);
       if (!target || !allowed(enabled, host) || disneyPlayId(href()) !== target.playId

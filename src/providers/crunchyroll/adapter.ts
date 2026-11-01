@@ -1,3 +1,4 @@
+import { parseRokuBif, type BifSet } from '../../media-features/parsers/bif';
 import { MAX_CRUNCHYROLL_BIF_BYTES, MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS, parseCrunchyrollCaptionBody, type CrunchyrollSnapshot } from '../../media-features/parsers/crunchyroll';
 import {
   CRUNCHYROLL_CAPTION_ACK_EVENT,
@@ -8,9 +9,9 @@ import {
   parseCrunchyrollCaptionAck,
   parseCrunchyrollCaptionIssued
 } from '../../media-features/parsers/crunchyroll';
-import { parseRokuBif, type DisneyBifSet } from '../../media-features/parsers/disney-page';
 import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
 import type { CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter, PreviewFrame, PreviewSource } from '../../media-features/types';
+
 import { CRUNCHYROLL_HOST_CAPTION_CLASS, releaseCrunchyrollHostCaptionSurface, retainCrunchyrollHostCaptionSurface } from './host-surface';
 import {
   CRUNCHYROLL_CAPTION_ACK_TIMEOUT_MS,
@@ -107,7 +108,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
   private pending: Promise<void> | null = null;
   private loadGeneration = 0;
   private cueGeneration = 0;
-  private bif: DisneyBifSet | null = null;
+  private bif: BifSet | null = null;
   private bifFailed = false;
   private bifLoad: Promise<void> | null = null;
   private bifLoadUrl = '';

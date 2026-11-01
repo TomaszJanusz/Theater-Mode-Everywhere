@@ -39,35 +39,12 @@
   },
   "disney": {
     "src/media-features": {
-      "hostCheck": 9,
-      "serviceId": 11,
-      "domain": 15,
-      "identifier": 176,
-      "file": 2
-    },
-    "src/platform": {
-      "hostCheck": 2,
-      "serviceId": 4,
-      "domain": 1,
-      "identifier": 25
+      "serviceId": 7,
+      "domain": 2,
+      "identifier": 4
     },
     "src/providers": {
-      "hostCheck": 10,
-      "serviceId": 4,
-      "domain": 8,
-      "identifier": 15
-    },
-    "src/providers/navigation": {
-      "hostCheck": 2,
-      "serviceId": 1,
-      "domain": 1,
-      "identifier": 20,
-      "file": 1
-    },
-    "src/providers/timeline": {
-      "hostCheck": 2,
-      "identifier": 31,
-      "file": 1
+      "identifier": 2
     }
   },
   "iqiyi": {

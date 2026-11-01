@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { DISNEY_SNAPSHOT_SCRIPT_ID } from '../../media-features/parsers/disney-page';
-
-import { disneyTimeline } from './disney';
+import { DISNEY_SNAPSHOT_SCRIPT_ID } from './page';
+import { disneyTimeline } from './timeline';
 
 type Stubs = { restore(): void; chromeReads(): number; publish(snapshot: object | null): void; setChrome(seconds: number | null): void };
 

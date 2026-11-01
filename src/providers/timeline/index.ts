@@ -1,17 +1,15 @@
 import { providerRegistry } from '../runtime-registration';
 
-import { disneyTimeline } from './disney';
 import type { HostSeekDispatch, HostSeekInput, ProviderTimeline, TimelineBounds } from './types';
 
 export { LIVE_EDGE_SECONDS, MAX_LIVE_DVR_SECONDS, MIN_LIVE_DVR_SECONDS } from '../timeline-limits';
 export type { HostSeekDispatch, HostSeekInput, MediaSeekDetail, TimelineBounds } from './types';
 
-// Isolated dispatch order: registered providers (YouTube, whose live timeline does not read its
-// integration flag, and Netflix, which seeks only while its flag is on), then Disney, which seeks and
-// reads its clock on the host with the flag ignored. MAIN routes Disney, then the registered seeks.
+// Registered providers in registration order; each decides whether its integration flag applies (YouTube's live
+// timeline and Disney+'s clock ignore it, Netflix seeks only while it is on). MAIN routes the registered seeks.
 // Read per call: registration closes before the runtime starts.
 function providers(): ProviderTimeline[] {
-  return [...providerRegistry.all().flatMap(hooks => hooks.timeline ?? []), disneyTimeline];
+  return providerRegistry.all().flatMap(hooks => hooks.timeline ?? []);
 }
 
 export function hostLiveHint(video: HTMLVideoElement): boolean {
@@ -38,7 +36,7 @@ export function readHostVodDuration(video: HTMLVideoElement): number | null {
   return null;
 }
 
-/** Disney content clock. Null on every other host. */
+/** A provider's content clock, such as Disney+'s; null where none registers one. */
 export function readProviderClock(video: HTMLVideoElement | null): number | null {
   for (const provider of providers()) {
     const clock = provider.readClock?.(video);
@@ -47,10 +45,7 @@ export function readProviderClock(video: HTMLVideoElement | null): number | null
   return null;
 }
 
-/**
- * Disney publishes through its clock event, writes that time onto the video,
- * and falls back to the dataset clock. Other hosts subscribe to nothing.
- */
+/** A provider's clock publication, such as Disney+'s clock event; other hosts subscribe to nothing. */
 export function observeProviderClock(
   video: HTMLVideoElement | null,
   onClock: (published: number | null) => void

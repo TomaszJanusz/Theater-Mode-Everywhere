@@ -3,7 +3,6 @@ import { usableControlIndexes, type PlaylistHelpers } from '../playlist-controls
 import { providerRegistry } from '../runtime-registration';
 
 import { DAILYMOTION_PLAYER_SELECTOR, readDailymotionControls } from './dailymotion';
-import { findDisneyPlaylistActions } from './disney';
 import { readVideoJsControls, peerTubeNeighborPreviews, VIDEOJS_PLAYER_SELECTOR } from './videojs';
 
 export const HOST_PLAYER_SCOPE = [
@@ -20,10 +19,7 @@ export function findProviderPlaylistActions(
   const queued = new Set(queues.flatMap(queue => [...queue.claimed]));
   const host = queues.flatMap(queue => queue.actions).concat(hostActions(root, video, helpers).filter(action => !queued.has(action.direction)));
   const href = () => pageHref(root);
-  const dedicated = [
-    ...providerRegistry.all().flatMap(hooks => hooks.navigation?.fallback?.(root, video, href) ?? []),
-    ...findDisneyPlaylistActions(root, href)
-  ];
+  const dedicated = providerRegistry.all().flatMap(hooks => hooks.navigation?.fallback?.(root, video, href) ?? []);
   const claimed = new Set(host.map((action) => action.direction));
   return host.concat(dedicated.filter((action) => !claimed.has(action.direction)))
     .sort((a, b) => a.direction === b.direction ? 0 : a.direction === 'previous' ? -1 : 1);

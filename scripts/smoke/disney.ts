@@ -20,10 +20,36 @@ web.mediaPlayer = { audio: { get availableTracks() { return tracks; }, get selec
   setTrack(next) { selected = next; state = { player: { extensions: { audio: { tracks, selected: next.id } } } }; listeners.forEach(listener => listener()); } } };
 web.stateStore = { getState: () => state, subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); } };
 window.selectedAudio = () => selected.id;
+// The host's own metadata and thumbnail requests, harvested by the provider's MAIN script.
+fetch('https://disney.api.edge.bamgrid.com/explore/v1.21/playerExperience/smoke').then(response => response.json());
+const bif = new XMLHttpRequest();
+bif.open('GET', 'https://vod-bgc-eu-west-1.media.dssott.com/thumbnails/smoke/BIF/smoke.bif');
+bif.responseType = 'blob';
+bif.send();
 fetch('/fixture.webm').then(response => response.blob()).then(blob => { document.querySelector('video').src = URL.createObjectURL(blob); });
 </script></body></html>`;
 
-/** Disney+ audio loads per host beside the legacy integration: installed-extension evidence on intercepted host URLs. */
+/** A Roku BIF of eight one-byte frames: the shape the provider accepts as a timeline thumbnail set. */
+function smokeBif(): Buffer {
+  const count = 8;
+  const bytes = Buffer.alloc(64 + (count + 1) * 8 + count);
+  Buffer.from([0x89, 0x42, 0x49, 0x46, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes);
+  bytes.writeUInt32LE(count, 12);
+  bytes.writeUInt32LE(1000, 16);
+  for (let index = 0; index <= count; index++) {
+    bytes.writeUInt32LE(index < count ? index * 10 : 0xffffffff, 64 + index * 8);
+    bytes.writeUInt32LE(64 + (count + 1) * 8 + index, 68 + index * 8);
+  }
+  return bytes;
+}
+
+/** What the provider's MAIN script publishes for the page, or null where it does not run. */
+const snapshot = (page: Page) => page.evaluate(() => {
+  const text = document.getElementById('theater-everywhere-disney-snapshot')?.textContent;
+  return text ? JSON.parse(text) as { title?: string; bifBlobUrl?: string } | null : null;
+});
+
+/** Disney+ loads per host: installed-extension evidence on intercepted host URLs. */
 export async function assertDisneyProvider(page: Page, context: BrowserContext): Promise<void> {
   const worker = await extensionWorker(context);
   // Three sync writes (its declared budget): the pick's own save, RTE off, and one restore of both keys, so a later
@@ -36,7 +62,14 @@ export async function assertDisneyProvider(page: Page, context: BrowserContext):
     else await route.fulfill({ contentType: 'text/html', body: disneyFixture });
   };
   const hosts = /^https:\/\/(?:www\.disneyplus\.com|www\.disneyplus\.com\.evil\.test|player\.example\.test)\//;
+  const assets = /^https:\/\/(?:disney\.api\.edge\.bamgrid\.com|vod-bgc-eu-west-1\.media\.dssott\.com)\//;
+  const assetHandler = async (route: Route) => {
+    const headers = { 'access-control-allow-origin': '*' };
+    if (route.request().url().endsWith('.bif')) await route.fulfill({ contentType: 'application/octet-stream', headers, body: smokeBif() });
+    else await route.fulfill({ contentType: 'application/json', headers, body: JSON.stringify({ data: { playerExperience: { title: 'Smoke Title', subtitle: 'S1:E1' } } }) });
+  };
   await context.route(hosts, handler);
+  await context.route(assets, assetHandler);
   // The MAIN entry answers the provider's own query; nothing answers where it is not loaded.
   const tracks = () => page.evaluate(() => {
     window.dispatchEvent(new CustomEvent('theater-everywhere-disney-audio-query', { detail: 'smoke-query' }));
@@ -60,7 +93,14 @@ export async function assertDisneyProvider(page: Page, context: BrowserContext):
     await page.goto(DISNEY);
     await ready();
     assert.equal(await tracks(), 2, 'MAIN reads Hive in the page world');
+    // JSON through the registered harvest, the BIF Blob through its binary target.
+    await page.waitForFunction(() => {
+      const text = document.getElementById('theater-everywhere-disney-snapshot')?.textContent;
+      const published = text ? JSON.parse(text) as { title?: string; bifBlobUrl?: string } | null : null;
+      return published?.title === 'Smoke Title' && published.bifBlobUrl?.startsWith('blob:');
+    });
     await openSettings();
+    assert.equal(await page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-disney-stage')), true, 'stage through the provider');
     await row.click();
     await page.locator('#theater-audio-track-list .theater-cc-menu-item').filter({ hasText: 'Polski' }).click();
     await page.waitForFunction(() => (window as unknown as { selectedAudio(): number }).selectedAudio() === 14);
@@ -76,6 +116,7 @@ export async function assertDisneyProvider(page: Page, context: BrowserContext):
       await page.goto(url);
       await ready();
       assert.equal(await tracks(), null, `${url} must not load the Disney+ provider`);
+      assert.equal(await snapshot(page), null, `${url} must not harvest for Disney+`);
     }
 
     // Last, so the restore below also switches it back on.
@@ -84,9 +125,10 @@ export async function assertDisneyProvider(page: Page, context: BrowserContext):
     await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-disney-integration-off'));
     await ready();
     assert.equal(await tracks(), null, 'MAIN stays silent with RTE off, so the adapter lists nothing');
-    console.log('smoke provider scripts: Disney+ audio registration in both worlds, pick confirmed by Hive and saved, RTE off, spoofed/generic host passed (installed fixture)');
+    console.log('smoke provider scripts: Disney+ per-host provider: JSON and BIF harvest, stage, audio pick confirmed by Hive and saved, RTE off, spoofed/generic host passed (installed fixture)');
   } finally {
     await context.unroute(hosts, handler);
+    await context.unroute(assets, assetHandler);
     // One write: the keys were absent in the fresh profile; a set is needed only for keys that existed.
     await worker.evaluate(async ({ keys, saved }) => {
       const absent = keys.filter(key => !(key in saved));

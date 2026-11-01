@@ -27,8 +27,8 @@ export type DisneyAudioClock = { setTimeout(callback: () => void, ms: number): n
 const RECOVERY_DELAYS = [250, 500, 1_000, 2_000, 5_000];
 
 /**
- * Disney+ audio tracks for the theater, beside the legacy Disney adapter that owns captions,
- * previews and the title. Every read goes to MAIN, since Hive switches tracks itself. A read that
+ * Disney+ audio tracks for the theater, the audio part of `DisneyAdapter` (which owns captions,
+ * previews and the title). Every read goes to MAIN, since Hive switches tracks itself. A read that
  * fails for a title that already listed its tracks keeps them, stale and not selectable, until a
  * retry or a host notification reads them again; another title, RTE-off and exit forget them.
  */
