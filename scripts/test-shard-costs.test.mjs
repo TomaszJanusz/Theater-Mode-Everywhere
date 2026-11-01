@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
+import { parseShardCosts } from './run-tests.mjs';
 import { buildCosts, vitestSeconds } from './test-shard-costs.mjs';
 
 test('a file measured in several runs takes the median and the table is sorted', () => {
@@ -18,4 +20,9 @@ test('Vitest component file times come from its JUnit suites', () => {
     <testsuite name="src/b.component.test.ts" timestamp="t" hostname="h" tests="26" failures="0" time="3.102"></testsuite>
   </testsuites>`;
   assert.deepEqual(vitestSeconds(xml), { 'src/a.component.test.ts': 0.528, 'src/b.component.test.ts': 3.102 });
+});
+
+test('the checked-in cost table is valid', () => {
+  const costs = parseShardCosts(readFileSync(new URL('./test-shard-costs.json', import.meta.url), 'utf8'));
+  assert.ok(Object.keys(costs.files).length > 0);
 });

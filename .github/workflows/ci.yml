@@ -292,7 +292,7 @@ jobs:
         env:
           STORYBOOK_BROWSER: firefox
       - name: Browser tests Firefox
-        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/3 --report-dir=test-reports
+        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/3 --shard-costs=scripts/test-shard-costs.json --report-dir=test-reports
         timeout-minutes: 10
         env:
           THEATER_TEST_ENGINES: firefox

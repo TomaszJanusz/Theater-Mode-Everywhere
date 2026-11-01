@@ -2,6 +2,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { FILE_CONCURRENCY } from './run-tests.mjs';
+
 // Builds the cost table that `pnpm test --shard-costs=` balances shards with (see balanceShard in run-tests.mjs)
 // from the `--report-dir` of finished runs: `<node|tsx>-seconds.json` holds each file process's time, and Vitest's
 // `vitest.xml` the time of each component file. CI uploads these as the `test-reports-firefox-<shard>` artifacts.
@@ -10,7 +12,8 @@ import { pathToFileURL } from 'node:url';
 //   node scripts/test-shard-costs.mjs --overhead=1:40 /tmp/reports/* > scripts/test-shard-costs.json
 //
 // Pass one directory per shard (or per run). A file seen in several directories gets the median, which damps one
-// noisy run. `--overhead=<shard>:<seconds>` records non-test work the workflow runs in a shard, such as Storybook.
+// noisy run. `--overhead=<shard>:<seconds>` records non-test work the workflow runs in a shard, such as the
+// Storybook step, as wall-clock seconds; the table counts file-seconds, so they are scaled by the runner's file concurrency.
 
 export function vitestSeconds(xml) {
   return Object.fromEntries([...xml.matchAll(/<testsuite\b[^>]*?\bname="([^"]+)"[^>]*?\btime="([\d.]+)"/g)].map(([, name, time]) => [name, Number(time)]));
@@ -41,7 +44,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const directories = [];
   for (const arg of process.argv.slice(2)) {
     const [, shard, seconds] = /^--overhead=(\d+):([\d.]+)$/.exec(arg) ?? [];
-    if (shard) overhead[shard] = Number(seconds);
+    if (shard) overhead[shard] = Number(seconds) * FILE_CONCURRENCY;
     else directories.push(arg);
   }
   if (directories.length === 0) {

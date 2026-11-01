@@ -25,6 +25,9 @@ export function discoverTests(root) {
   return found.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
+// Test files that run at once in one process group; a shard of N file-seconds takes about N / FILE_CONCURRENCY.
+export const FILE_CONCURRENCY = 2;
+
 // Component tests run in Vitest browser mode (`components` project in vitest.config.ts), in the browser lane.
 const isComponentTest = file => file.endsWith('.component.test.ts');
 
@@ -136,7 +139,7 @@ function runTsxTests(spawn, plan, root, reportDirectory) {
     if (result.error) throw result.error;
     if (result.status !== 0) return result.status ?? 1;
   }
-  return runNodeTests(spawn, [tsxEntry(), '--test', '--test-concurrency=2'], plan, { label: 'tsx', reportDirectory });
+  return runNodeTests(spawn, [tsxEntry(), '--test', `--test-concurrency=${FILE_CONCURRENCY}`], plan, { label: 'tsx', reportDirectory });
 }
 
 function runVitestTests(spawn, plan, reportDirectory) {

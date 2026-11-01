@@ -188,7 +188,7 @@ there, so a stalled check fails instead of hanging.
 | `boundaries`, `css-and-unused` | `pnpm check:boundaries`, `pnpm check:shared-hosts`, `pnpm lint:css`; Knip is reported only (`pnpm check:unused`). |
 | `unit` | `pnpm test --lane=unit` on the selection. |
 | `browser-chromium` | Two shards of `pnpm test --lane=browser` on Chromium; shard 1 also runs `pnpm storybook:test`. |
-| `browser-firefox` | The same on Firefox, only when `ci-changes.mjs` selects it; also runs `pnpm storybook:test` for Firefox. |
+| `browser-firefox` | Three shards of `pnpm test --lane=browser` on Firefox, only when `ci-changes.mjs` selects it, balanced by measured file cost (below); shard 1 also runs `pnpm storybook:test` for Firefox. |
 | `smoke` | Chromium smoke when shipped inputs are affected; Firefox smoke with the installed extension when Firefox is selected. |
 
 ## Booting the player in a test
@@ -300,6 +300,18 @@ both engines, preserving local, nightly and release coverage. Comma-separated `c
 and `firefox` are accepted; empty, duplicate or unknown values fail. Existing
 cases explicitly tied to Chromium still use Chromium in either browser lane;
 the switch does not claim to port those cases to Firefox.
+
+**Shards.** `--test-shard=<i>/<n>` splits a lane. With `--shard-costs=<table>` the runner itself partitions the
+lane's files (node:test and Vitest alike) greedily by seconds, so shards finish together
+instead of holding equal file counts. The Firefox lane passes
+[`scripts/test-shard-costs.json`](../scripts/test-shard-costs.json); Chromium keeps the count-based split.
+Every shard derives the same partition from the same inputs, so each selected file runs in exactly one shard. A file missing
+from the table weighs the median measured file, and a stale entry is ignored: drift costs balance, never a test. `overhead`
+holds non-test work a shard runs (Storybook on shard 1). To recalibrate after the suite changed
+materially, download the `test-reports-firefox-<shard>` artifacts of a recent full run (each job uploads its `--report-dir`, kept
+three days) and run `node scripts/test-shard-costs.mjs --overhead=1:<storybook seconds> <dir>... > scripts/test-shard-costs.json`
+(see the script header). A job needs `matrix.shard` and the same `<n>` in `--test-shard`; the `check` job
+requires the whole `browser-firefox` matrix (`needs.<job>.result` aggregates its shards), so a red shard is one red `check`.
 
 PRs run the jobs above on the affected tests (see below). The build artifact is shared
 with verification and smoke. Each test lane publishes its 15 slowest tests and failures
