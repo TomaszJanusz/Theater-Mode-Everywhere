@@ -65,7 +65,7 @@ including serialized browser code. Its textual rules conservatively count timers
 frames, sleep helpers, timer imports and named retry loops, including mocks and
 watchdogs; review clock ownership and aliases separately. Per-file/per-kind counts
 must match `scripts/test-determinism-baseline.json` and cannot grow past the
-baseline at the merge base with the PR base (`origin/$GITHUB_BASE_REF` in CI, else `origin/main`). CI requires that ref and full history;
+baseline at the merge base with the PR base (`origin/$GITHUB_BASE_REF` in CI; locally `origin/main` or `origin/dev`, whichever `HEAD` diverged from last, `origin/main` on a tie). CI requires that ref and full history;
 locally a missing ref logs a skipped history comparison while inventory checks still run.
 After removing calls, run `pnpm exec tsx scripts/test-determinism.ts --update`;
 it only accepts reductions. Omit `--update` to print counts. Do not hide waits in

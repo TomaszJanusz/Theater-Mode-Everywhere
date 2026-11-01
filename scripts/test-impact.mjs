@@ -171,7 +171,7 @@ export function selectTests(tests, changed, graph, entries) {
   };
 }
 
-export async function impact({ root = process.cwd(), gitRoot = root, base = baseRef(), head = 'HEAD' } = {}) {
+export async function impact({ root = process.cwd(), gitRoot = root, base = baseRef(process.env, gitRoot), head = 'HEAD' } = {}) {
   const tests = discoverTests(root);
   let previous;
   try {
