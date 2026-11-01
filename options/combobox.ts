@@ -12,19 +12,22 @@ export function createCombobox<Value extends string>(
   onChange: (value: Value) => void
 ): { render(value: Value): void; destroy(): void } {
   const scope = new AbortController();
-  const list = document.createElement('div');
+  // The trigger's own document: Storybook renders Settings in a frame.
+  const doc = trigger.ownerDocument;
+  const win = doc.defaultView!;
+  const list = doc.createElement('div');
   list.id = `${trigger.id}-listbox`;
   list.className = 'choice-listbox';
   list.role = 'listbox';
   list.setAttribute('aria-labelledby', trigger.getAttribute('aria-labelledby') ?? trigger.id);
   list.hidden = true;
   // A fixed popup escapes the Settings card's overflow without moving the trigger.
-  document.body.append(list);
+  doc.body.append(list);
   trigger.role = 'combobox';
   trigger.setAttribute('aria-haspopup', 'listbox');
   trigger.setAttribute('aria-controls', list.id);
   trigger.setAttribute('aria-expanded', 'false');
-  const label = document.createElement('span');
+  const label = doc.createElement('span');
   label.className = 'choice-label';
   trigger.append(label);
   let selected = 0;
@@ -32,12 +35,12 @@ export function createCombobox<Value extends string>(
   let query = '';
   let lastTyped = 0;
   const items = options.map((option, index) => {
-    const item = document.createElement('div');
+    const item = doc.createElement('div');
     item.id = `${list.id}-${index}`;
     item.className = 'choice-option';
     item.role = 'option';
     item.dataset.value = option.value;
-    const text = document.createElement('span');
+    const text = doc.createElement('span');
     if (option.lang) item.lang = option.lang;
     if (option.dir) item.dir = option.dir;
     item.append(text);
@@ -65,15 +68,15 @@ export function createCombobox<Value extends string>(
     if (!list.hidden || trigger.disabled || !items.length) return;
     const rect = trigger.getBoundingClientRect();
     const gap = 6;
-    const below = window.innerHeight - rect.bottom - gap - 8;
+    const below = win.innerHeight - rect.bottom - gap - 8;
     const above = rect.top - gap - 8;
     const flip = below < Math.min(280, list.scrollHeight || 280) && above > below;
-    list.dir = getComputedStyle(trigger).direction;
-    list.style.width = `${Math.min(Math.max(rect.width, 240), window.innerWidth - 16)}px`;
+    list.dir = win.getComputedStyle(trigger).direction;
+    list.style.width = `${Math.min(Math.max(rect.width, 240), win.innerWidth - 16)}px`;
     list.style.maxHeight = `${Math.max(0, Math.min(280, flip ? above : below))}px`;
     list.hidden = false;
     const width = list.getBoundingClientRect().width;
-    list.style.left = `${Math.max(8, Math.min(list.dir === 'rtl' ? rect.right - width : rect.left, window.innerWidth - width - 8))}px`;
+    list.style.left = `${Math.max(8, Math.min(list.dir === 'rtl' ? rect.right - width : rect.left, win.innerWidth - width - 8))}px`;
     list.style.top = `${flip ? rect.top - gap - list.getBoundingClientRect().height : rect.bottom + gap}px`;
     trigger.setAttribute('aria-expanded', 'true');
     activate(selected);
@@ -120,14 +123,14 @@ export function createCombobox<Value extends string>(
       if (options[index].label().toLocaleLowerCase().startsWith(search)) { activate(index); break; }
     }
   }, { signal: scope.signal });
-  document.addEventListener('pointerdown', event => {
+  doc.addEventListener('pointerdown', event => {
     if (event.target instanceof Node && !trigger.contains(event.target) && !list.contains(event.target)) close();
   }, { signal: scope.signal });
-  document.addEventListener('scroll', event => {
+  doc.addEventListener('scroll', event => {
     if (event.target !== list) close();
   }, { capture: true, signal: scope.signal });
-  window.addEventListener('resize', close, { signal: scope.signal });
-  window.addEventListener('hashchange', close, { signal: scope.signal });
+  win.addEventListener('resize', close, { signal: scope.signal });
+  win.addEventListener('hashchange', close, { signal: scope.signal });
   const panel = trigger.closest('[role="tabpanel"]');
   const visibility = new MutationObserver(close);
   if (panel) visibility.observe(panel, { attributes: true, attributeFilter: ['hidden'] });

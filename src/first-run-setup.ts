@@ -4,6 +4,8 @@
  * it; how answers become settings is the Settings page's (options/setup-answers.ts).
  */
 import { AUTO_THEATER_STORAGE_KEY } from './auto-theater-preferences';
+import { LEGACY_YOUTUBE_EXCLUSION_MIGRATION_KEY } from './platform/legacy-youtube-exclusion';
+import { OBSOLETE_LOCAL_KEYS, OBSOLETE_LOCAL_PREFIX } from './update-notice';
 
 /** Settings opens the setup at this hash. Not an `OPTIONS_SECTIONS` entry: only the background opens it. */
 export const SETUP_HASH = 'setup';
@@ -13,9 +15,13 @@ export const SETUP_HASH = 'setup';
  * on install only when none is pending, so a partial setup never reaches a fresh install.
  */
 export const SETUP_STEPS = [
+  { id: 'language', ready: true },
   { id: 'services', ready: true },
   { id: 'start', ready: true },
   { id: 'keys', ready: true },
+  { id: 'accent', ready: true },
+  { id: 'layout', ready: true },
+  { id: 'controls', ready: true },
   { id: 'summary', ready: true }
 ] as const satisfies readonly { id: string; ready: boolean }[];
 export type SetupStepId = (typeof SETUP_STEPS)[number]['id'];
@@ -65,6 +71,16 @@ export function hasSettingsProfile(sync: Record<string, unknown>): boolean {
   });
 }
 
+/**
+ * Whether `storage.local` shows this profile ran 2.0.x. A 2.0.x profile that never left its defaults looks like a fresh
+ * one in sync, yet 2.0.x also wrote the feature-highlight and what's-new markers (no install since 2.1 writes them) and
+ * the YouTube migration marker (only an update writes it), so those are positive evidence of a previous install.
+ */
+export function hasLegacyInstall(local: Record<string, unknown>): boolean {
+  return Object.keys(local).some(key => key === LEGACY_YOUTUBE_EXCLUSION_MIGRATION_KEY
+    || OBSOLETE_LOCAL_KEYS.includes(key) || key.startsWith(OBSOLETE_LOCAL_PREFIX));
+}
+
 export interface InstallPlan {
   /** One `storage.sync.set`, read before anything was written. */
   sync: Record<string, unknown>;
@@ -75,15 +91,15 @@ export interface InstallPlan {
 }
 
 /**
- * The `onInstalled` `install` handling. `sync` and `state` are read before any write. The setup is offered
- * only when it is complete, sync holds no profile and this device has no setup state yet (a Firefox
- * temporary add-on reports every reload as an install).
+ * The `onInstalled` `install` handling. `sync` and `local` are read before any write. The setup is offered
+ * only when it is complete, neither sync nor this device's earlier 2.0.x install holds a profile, and this
+ * device has no setup state yet (a Firefox temporary add-on reports every reload as an install).
  */
-export function installPlan(sync: Record<string, unknown>, state: unknown, version: string, complete = setupComplete()): InstallPlan {
+export function installPlan(sync: Record<string, unknown>, local: Record<string, unknown>, version: string, complete = setupComplete()): InstallPlan {
   const defaults: Record<string, unknown> = {};
   if (!sync.shortcuts) defaults.shortcuts = { ...INSTALL_SHORTCUTS };
   if (!sync.blacklist) defaults.blacklist = [];
-  if (!complete || resolveSetupState(state)) return { sync: defaults, openSetup: false };
-  if (hasSettingsProfile(sync)) return { sync: defaults, state: { status: 'profile', version }, openSetup: false };
+  if (!complete || resolveSetupState(local[SETUP_STATE_KEY])) return { sync: defaults, openSetup: false };
+  if (hasSettingsProfile(sync) || hasLegacyInstall(local)) return { sync: defaults, state: { status: 'profile', version }, openSetup: false };
   return { sync: { ...defaults, ...FRESH_INSTALL_SETTINGS }, state: { status: 'pending', version }, openSetup: true };
 }

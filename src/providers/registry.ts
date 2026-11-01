@@ -67,32 +67,14 @@ export function shouldAttachProvider(id: MediaProviderId, flags: MediaProviderFl
   return providerDefinition(id).matchesHost(host);
 }
 
-export function markMainWorldBooted(target: object): boolean {
+/** The first call per target and key wins; a repeat (a second injection into the same world) reports false. */
+function markOnce(target: object, key: symbol): boolean {
   const record = target as Record<symbol, unknown>;
-  if (record[MAIN_WORLD_BOOT_KEY]) return false;
-  try {
-    Object.defineProperty(target, MAIN_WORLD_BOOT_KEY, {
-      configurable: false,
-      enumerable: false,
-      value: true
-    });
-  } catch {
-    record[MAIN_WORLD_BOOT_KEY] = true;
-  }
+  if (record[key]) return false;
+  // Hidden and fixed by default; a target that refuses the definition still gets a plain marker.
+  if (!Reflect.defineProperty(target, key, { value: true })) record[key] = true;
   return true;
 }
 
-export function markFetchPatched(target: object): boolean {
-  const record = target as Record<symbol, unknown>;
-  if (record[MAIN_FETCH_PATCH_KEY]) return false;
-  try {
-    Object.defineProperty(target, MAIN_FETCH_PATCH_KEY, {
-      configurable: false,
-      enumerable: false,
-      value: true
-    });
-  } catch {
-    record[MAIN_FETCH_PATCH_KEY] = true;
-  }
-  return true;
-}
+export const markMainWorldBooted = (target: object): boolean => markOnce(target, MAIN_WORLD_BOOT_KEY);
+export const markFetchPatched = (target: object): boolean => markOnce(target, MAIN_FETCH_PATCH_KEY);

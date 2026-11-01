@@ -87,6 +87,10 @@ async function open(page: Page, sync: Record<string, unknown> = USED, local: Rec
 const harness = (page: Page) => page.evaluate(() => (window as unknown as { __harness: Harness }).__harness);
 const writes = async (page: Page) => (await harness(page)).writes;
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'Reset all settings?' });
+/** Next until the step headed `title`. */
+async function toStep(page: Page, title: string): Promise<void> {
+  while (await page.locator('.setup-step-title').textContent() !== title) await page.getByRole('button', { name: 'Next' }).click();
+}
 
 async function blockingViolations(page: Page, selector: string): Promise<string[]> {
   if (!await page.evaluate(() => 'axe' in window)) await page.addScriptTag({ content: axeSource });
@@ -111,7 +115,11 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     await page.locator('.setup-step').waitFor();
     assert.equal(new URL(page.url()).hash, '#setup');
     assert.equal(await page.locator('#settings-tabs').isHidden(), true);
-    assert.equal(await page.getByRole('radio', { name: 'Choose services' }).isChecked(), true, 'the saved services, not the defaults');
+    // The saved choices, not the defaults: the services and the accent.
+    await toStep(page, 'Services with extra features');
+    assert.equal(await page.getByRole('radio', { name: 'Choose services' }).isChecked(), true);
+    await toStep(page, 'Accent color');
+    assert.equal(await page.locator('.setup-accent [data-choice="green"]').getAttribute('aria-checked'), 'true');
     await page.getByRole('button', { name: 'Skip setup' }).click();
     await page.locator('#features').waitFor();
     assert.deepEqual(await writes(page), []);
@@ -163,9 +171,12 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     assert.deepEqual(data.sync, { shortcuts: USED.shortcuts, blacklist: USED.blacklist, ...FRESH_INSTALL_SETTINGS });
     assert.deepEqual(data.local, { pendingUpdate: COMPLETED.pendingUpdate }, 'other device state stays');
     // The setup shows a fresh install's preselection, with the kept theater key.
+    await toStep(page, 'Services with extra features');
     assert.equal(await page.getByRole('radio', { name: 'All supported services' }).isChecked(), true);
     await page.getByRole('button', { name: 'Next' }).click();
     assert.equal(await page.getByRole('radio', { name: 'Only when I press G' }).isChecked(), true);
+    await toStep(page, 'Accent color');
+    assert.equal(await page.locator('.setup-accent [data-choice="system"]').getAttribute('aria-checked'), 'true', 'the reset accent');
     await page.getByRole('button', { name: 'Skip setup' }).click();
     await page.locator('#features').waitFor();
     // Settings behind the setup show the reset values, not the ones the page loaded with.
@@ -188,7 +199,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     const { data, writes: saved } = await harness(page);
     assert.deepEqual(saved.filter(([area]) => area === 'sync').map(([, kind]) => kind), ['remove', 'set']);
     assert.deepEqual(data.sync, { shortcuts: { ...INSTALL_SHORTCUTS }, blacklist: [], ...FRESH_INSTALL_SETTINGS });
-    await page.getByRole('button', { name: 'Next' }).click();
+    await toStep(page, 'Starting theater mode');
     assert.equal(await page.getByRole('radio', { name: 'Only when I press T' }).isChecked(), true);
     // Finish writes against the reset settings: only the launcher offer, then this device's state.
     while (await page.locator('.setup-summary').count() === 0) await page.getByRole('button', { name: 'Next' }).click();

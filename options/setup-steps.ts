@@ -1,22 +1,35 @@
 /** The setup's steps: each builds its DOM once per visit, edits the shared answers and relabels on `localize`. */
+import type { AccentColorPreset } from '../src/accentTheme';
 import type { SetupStepId } from '../src/first-run-setup';
 import { t } from '../src/i18n';
 import { languageRuntime } from '../src/i18n-runtime';
+import type { Language } from '../src/language';
 import { MEDIA_PROVIDER_IDS } from '../src/media-features/provider-flags';
 import { PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
+import { PICTURE_ALIGNS, type PictureAlign } from '../src/ui/picture-align-settings';
 import { shortcutLabel } from '../src/ui/shortcut-display';
 import { shortcutDisplayEnv, withShortcutDefaults } from '../src/ui/shortcuts';
 
+import { createChoiceGrid } from './choice-grid';
+import { createCombobox } from './combobox';
+import { accentChoices, accentName, languageChoices, languageName, PICTURE_ALIGN_COPY, pictureAlignIcon } from './settings-choices';
 import { autoTheaterAvailable, effectiveStart, serviceFlags, type SetupAnswers, type StartChoice } from './setup-answers';
 import { setupMessage as copy } from './setup-wizard-copy';
 
-export interface StepView { element: HTMLElement; localize(): void }
+export interface StepView {
+  element: HTMLElement;
+  localize(): void;
+  /** Releases what lives outside `element`, such as a combobox's popup list. */
+  dispose?(): void;
+}
 export interface StepContext {
   doc: Document;
   answers: SetupAnswers;
   /** Sync as the setup read it: names the user's own keys and their per-service AutoTheater switches. */
   stored: Record<string, unknown>;
   finish(section: string): void;
+  /** Shows the answered language or accent on the page now; the setup puts the saved ones back unless it saves. */
+  preview(setting: 'language' | 'accent'): void;
 }
 
 export function element<K extends keyof HTMLElementTagNameMap>(doc: Document, tag: K, className?: string): HTMLElementTagNameMap[K] {
@@ -224,6 +237,116 @@ function keysStep({ doc, answers, stored }: StepContext): StepView {
   };
 }
 
+function languageStep({ doc, answers, preview }: StepContext): StepView {
+  const root = element(doc, 'div', 'setup-step-body');
+  const description = element(doc, 'p', 'setup-step-desc');
+  const footer = element(doc, 'p', 'section-desc-footer');
+  const trigger = element(doc, 'button', 'choice-combobox setup-language');
+  trigger.type = 'button';
+  trigger.id = 'setup-language';
+  trigger.setAttribute('aria-labelledby', 'setup-step-title');
+  // Settings' own language menu; the page switches at once, so the rest of the setup reads in that language.
+  const menu = createCombobox<Language>(trigger, languageChoices(), value => {
+    answers.language = value;
+    menu.render(value);
+    preview('language');
+  });
+  root.append(description, trigger, footer);
+  return {
+    element: root,
+    localize() {
+      description.textContent = t('languageDescription');
+      footer.textContent = copy('setupAppearanceFooter');
+      menu.render(answers.language);
+    },
+    dispose: () => menu.destroy()
+  };
+}
+
+function accentStep({ doc, answers, preview }: StepContext): StepView {
+  const root = element(doc, 'div', 'setup-step-body');
+  const description = element(doc, 'p', 'setup-step-desc');
+  const footer = element(doc, 'p', 'section-desc-footer');
+  const grid = element(doc, 'div', 'choice-grid setup-accent');
+  grid.setAttribute('role', 'radiogroup');
+  grid.setAttribute('aria-labelledby', 'setup-step-title');
+  // Settings' accent grid; the page itself is the preview.
+  const choices = createChoiceGrid<AccentColorPreset>(grid, accentChoices(), value => {
+    answers.accent = value;
+    choices.render(value);
+    preview('accent');
+  });
+  choices.render(answers.accent);
+  root.append(description, grid, footer);
+  return {
+    element: root,
+    localize() {
+      description.textContent = copy('setupAccentDescription');
+      footer.textContent = copy('setupAppearanceFooter');
+      choices.render();
+    }
+  };
+}
+
+function layoutStep({ doc, answers }: StepContext): StepView {
+  const root = element(doc, 'div', 'setup-step-body');
+  const description = element(doc, 'p', 'setup-step-desc');
+  const footer = element(doc, 'p', 'section-desc-footer');
+  const choices = choiceGroup<PictureAlign>(doc, 'setup-layout', PICTURE_ALIGNS.map(value => ({
+    value, label: () => t(PICTURE_ALIGN_COPY[value].name), description: () => t(PICTURE_ALIGN_COPY[value].description)
+  })), value => {
+    answers.layout = value;
+    subtitles.row.hidden = value !== 'top';
+  });
+  // The pictures Settings shows for each layout.
+  for (const value of PICTURE_ALIGNS) {
+    const { card, input } = choices.item(value);
+    card.classList.add('has-picture');
+    input.after(pictureAlignIcon(doc, value));
+  }
+  const subtitles = switchRow(doc, 'setup-raise-subtitles', answers.raiseOnlyWithSubtitles, checked => { answers.raiseOnlyWithSubtitles = checked; });
+  subtitles.row.classList.add('setup-nested');
+  choices.check(answers.layout);
+  subtitles.row.hidden = answers.layout !== 'top';
+  root.append(description, choices.group, subtitles.row, footer);
+  return {
+    element: root,
+    localize() {
+      description.textContent = copy('setupLayoutDescription');
+      choices.localize();
+      subtitles.label.textContent = t('pictureAlignSubtitlesOnlyTitle');
+      subtitles.description.textContent = t('pictureAlignSubtitlesOnlyDescription');
+      footer.textContent = copy('setupAppearanceFooter');
+    }
+  };
+}
+
+function controlsStep({ doc, answers }: StepContext): StepView {
+  const root = element(doc, 'div', 'setup-step-body');
+  const description = element(doc, 'p', 'setup-step-desc');
+  const footer = element(doc, 'p', 'section-desc-footer');
+  const pin = switchRow(doc, 'setup-pin-controls', answers.pinControls, checked => { answers.pinControls = checked; });
+  const group = element(doc, 'div', 'setup-choices');
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-labelledby', 'setup-step-title');
+  group.append(pin.row);
+  root.append(description, group, footer);
+  return {
+    element: root,
+    localize() {
+      description.textContent = copy('setupControlsDescription');
+      pin.label.textContent = t('keepControlsVisibleTitle');
+      pin.description.textContent = t('keepControlsVisibleDescription');
+      footer.textContent = copy('setupAppearanceFooter');
+    }
+  };
+}
+
+function layoutSummary(answers: SetupAnswers): string {
+  if (answers.layout === 'top' && answers.raiseOnlyWithSubtitles) return t('pictureAlignSubtitlesOnlyTitle');
+  return t(PICTURE_ALIGN_COPY[answers.layout].name);
+}
+
 function servicesSummary(answers: SetupAnswers): string {
   const flags = serviceFlags(answers);
   const on = MEDIA_PROVIDER_IDS.filter(id => flags[id]).length;
@@ -242,11 +365,17 @@ function summaryStep({ doc, answers, stored, finish }: StepContext): StepView {
   const root = element(doc, 'div', 'setup-step-body');
   const description = element(doc, 'p', 'setup-step-desc');
   const list = element(doc, 'dl', 'setup-summary');
+  const onOff = (on: boolean) => copy(on ? 'setupSummaryOn' : 'setupSummaryOff');
+  // In step order.
   const rows = [
+    { label: () => t('languageTitle'), value: () => languageName(answers.language) },
     { label: () => copy('setupServicesTitle'), value: () => servicesSummary(answers) },
     { label: () => copy('setupStartTitle'), value: () => startSummary(answers, stored) },
-    { label: () => t('seekHoldTitle'), value: () => copy(answers.seekHold ? 'setupSummaryOn' : 'setupSummaryOff') },
-    { label: () => t('volumeBoostTitle'), value: () => copy(answers.volumeBoost ? 'setupSummaryOn' : 'setupSummaryOff') }
+    { label: () => t('seekHoldTitle'), value: () => onOff(answers.seekHold) },
+    { label: () => t('volumeBoostTitle'), value: () => onOff(answers.volumeBoost) },
+    { label: () => t('accentColorLabel'), value: () => accentName(answers.accent) },
+    { label: () => t('pictureAlignLabel'), value: () => layoutSummary(answers) },
+    { label: () => t('keepControlsVisibleTitle'), value: () => onOff(answers.pinControls) }
   ].map(row => {
     const node = element(doc, 'div', 'setup-summary-row');
     const term = element(doc, 'dt');
@@ -284,8 +413,11 @@ function summaryStep({ doc, answers, stored, finish }: StepContext): StepView {
 }
 
 export const STEP_VIEWS: { [Id in SetupStepId]?: (context: StepContext) => StepView } = {
-  services: servicesStep, start: startStep, keys: keysStep, summary: summaryStep
+  language: languageStep, services: servicesStep, start: startStep, keys: keysStep,
+  accent: accentStep, layout: layoutStep, controls: controlsStep, summary: summaryStep
 };
+/** Message keys; Settings' own headings where they name the same setting. */
 export const STEP_TITLES: { [Id in SetupStepId]?: string } = {
-  services: 'setupServicesTitle', start: 'setupStartTitle', keys: 'setupKeysTitle', summary: 'setupSummaryTitle'
+  language: 'languageTitle', services: 'setupServicesTitle', start: 'setupStartTitle', keys: 'setupKeysTitle',
+  accent: 'accentColorLabel', layout: 'pictureAlignLabel', controls: 'setupControlsTitle', summary: 'setupSummaryTitle'
 };

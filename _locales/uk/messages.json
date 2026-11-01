@@ -1538,6 +1538,26 @@
     "message": "Усі клавіші можна переглянути й змінити в меню «Налаштування → Гарячі клавіші».",
     "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
   },
+  "setupAccentDescription": {
+    "message": "Використовується для елементів керування, повзунків і виділень програвача, а також тут, у налаштуваннях. Ця сторінка одразу показує ваш вибір.",
+    "description": "First-run setup, accent colour step: what the accent colour is used for. The Settings page recolours as soon as one is picked."
+  },
+  "setupLayoutDescription": {
+    "message": "Де розташоване зображення в режимі кінотеатру.",
+    "description": "First-run setup, layout step: one line above the Centered and Raised choices."
+  },
+  "setupControlsTitle": {
+    "message": "Керування програвачем",
+    "description": "First-run setup step heading: the step about pinning the playback controls."
+  },
+  "setupControlsDescription": {
+    "message": "У режимі кінотеатру елементи керування ховаються під час перегляду й з’являються знову, коли ви рухаєте мишею.",
+    "description": "First-run setup, player controls step: how the controls behave unless they are pinned."
+  },
+  "setupAppearanceFooter": {
+    "message": "Це можна змінити пізніше в меню «Налаштування → Зовнішній вигляд».",
+    "description": "Footer of the first-run setup steps for language, accent colour, layout and pinned controls. \"Settings → Appearance\" names the Settings page and its tab."
+  },
   "setupSummaryStartKey": {
     "message": "Лише після натискання $1",
     "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."

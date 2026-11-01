@@ -18,7 +18,7 @@ import { defaultSetupAnswers } from './setup-answers';
 const html = readFileSync(new URL('./options.html', import.meta.url), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '').replace(/<link\b[^>]*>/g, '');
 const css = readStylesheet(new URL('./options.css', import.meta.url));
 const axeSource = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
-const catalogs = Object.fromEntries(['en', 'ar'].map(locale => [locale,
+const catalogs = Object.fromEntries(['en', 'ar', 'de'].map(locale => [locale,
   JSON.parse(readFileSync(new URL(`../_locales/${locale}/messages.json`, import.meta.url), 'utf8'))]));
 // The page's own wiring (options.ts) minus what needs Vite: tabs, appearance, and the setup over chrome storage.
 const BUNDLE = bundleModules([`
@@ -29,6 +29,8 @@ const BUNDLE = bundleModules([`
   import { observeAppearance } from './appearance-runtime';
   import { applyAccentColorPreset } from './accentTheme';
   window.setLanguage = async locale => { await languageRuntime.set(locale); localizeDocument(); };
+  // As Settings does: a language change, such as the setup's own, relabels the page and sets its direction.
+  languageRuntime.subscribe(() => localizeDocument());
   window.ready = (async () => {
     await window.setLanguage('en');
     setupSettingsTabs(document.getElementById('settings-tabs'));
@@ -104,9 +106,17 @@ const writes = (page: Page) => page.evaluate(() => (window as unknown as Harness
 async function toSummary(page: Page): Promise<void> {
   while (await page.locator('.setup-summary').count() === 0) await page.getByRole('button', { name: 'Next' }).click();
 }
+/** Next until the step headed `title`. */
+async function toStep(page: Page, title: string): Promise<void> {
+  while (await page.locator('.setup-step-title').textContent() !== title) await page.locator('.setup-actions .te-dialog-btn-primary').click();
+}
 const focusedText = (page: Page) => page.evaluate(() => document.activeElement?.textContent ?? '');
 
 async function blockingViolations(page: Page): Promise<string[]> {
+  // Contrast is meaningful after the step's opacity animation, not during its fade-in.
+  await page.locator('#setup-wizard').evaluate(async wizard => {
+    await Promise.all((wizard.querySelector('.setup-step')?.getAnimations() ?? []).map(animation => animation.finished));
+  });
   if (!await page.evaluate(() => 'axe' in window)) await page.addScriptTag({ content: axeSource });
   return page.evaluate(async () => {
     const results = await (window as unknown as { axe: { run(scope: Element): Promise<{ violations: Array<{ id: string; impact: string; nodes: Array<{ target: string[] }> }> }> } })
@@ -127,7 +137,12 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     // The setup replaces the settings while the page is at #setup.
     assert.equal(await page.locator('#settings-tabs').isHidden(), true);
     assert.equal(await page.locator('.settings-stack').isHidden(), true);
-    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 1 of 4');
+    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 1 of 8');
+    assert.equal(await page.locator('.setup-step-title').textContent(), 'Language');
+    assert.equal(await page.getByRole('combobox', { name: 'Language' }).textContent(), 'Automatic (browser language)');
+    await page.getByRole('button', { name: 'Next' }).click();
+    assert.equal(await focusedText(page), 'Services with extra features');
+    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 2 of 8');
     assert.equal(await page.getByRole('radio', { name: 'All supported services' }).isChecked(), true);
     assert.equal(await page.locator('#setup-services').isHidden(), true);
     assert.deepEqual(await blockingViolations(page), []);
@@ -150,7 +165,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
 
     await page.getByRole('button', { name: 'Next' }).click();
     assert.equal(await focusedText(page), 'Starting theater mode');
-    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 2 of 4');
+    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 3 of 8');
     // The user's own theater key names the choices.
     assert.equal(await page.getByRole('radio', { name: 'Only when I press T' }).isChecked(), true);
     assert.equal(await page.locator('#setup-skip-countdown').isHidden(), true);
@@ -172,14 +187,15 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     await page.keyboard.press('Space');
     assert.deepEqual(await blockingViolations(page), []);
 
-    await page.getByRole('button', { name: 'Next' }).click();
+    await toSummary(page);
     assert.equal(await focusedText(page), 'You’re all set');
-    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 4 of 4');
+    assert.equal(await page.locator('.setup-progress').textContent(), 'Step 8 of 8');
     assert.deepEqual(await page.locator('.setup-summary dd').allTextContents(), [
-      `${PROVIDER_CAPABILITIES.length - 1} of ${PROVIDER_CAPABILITIES.length} services`, 'Automatically, without a countdown', 'On', 'On'
+      'Automatic (browser language)', `${PROVIDER_CAPABILITIES.length - 1} of ${PROVIDER_CAPABILITIES.length} services`,
+      'Automatically, without a countdown', 'On', 'On', 'System', 'Raised only with subtitles', 'Off'
     ]);
     assert.deepEqual(await blockingViolations(page), []);
-    for (const heading of ['Keys and sound', 'Starting theater mode', 'Services with extra features']) {
+    for (const heading of ['Player controls', 'Layout', 'Accent color', 'Keys and sound', 'Starting theater mode', 'Services with extra features']) {
       await page.getByRole('button', { name: 'Back' }).click();
       assert.equal(await focusedText(page), heading);
     }
@@ -212,7 +228,9 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     const page = await newPage(t);
     await open(page);
     await toSummary(page);
-    assert.deepEqual(await page.locator('.setup-summary dd').allTextContents(), ['All supported services', 'Only when you press T', 'On', 'Off']);
+    assert.deepEqual(await page.locator('.setup-summary dd').allTextContents(), [
+      'Automatic (browser language)', 'All supported services', 'Only when you press T', 'On', 'Off', 'System', 'Raised only with subtitles', 'Off'
+    ]);
     await page.getByRole('button', { name: 'Finish' }).click();
     await page.locator('#features').waitFor();
     assert.deepEqual(await writes(page), [
@@ -224,6 +242,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     // Unchanged answers close quietly; changed ones make the browser ask before the tab closes.
     const unload = () => skipped.evaluate(() => !window.dispatchEvent(new Event('beforeunload', { cancelable: true })));
     assert.equal(await unload(), false);
+    await toStep(skipped, 'Services with extra features');
     await skipped.getByRole('radio', { name: 'None' }).check();
     assert.equal(await unload(), true);
     await skipped.getByRole('button', { name: 'Skip setup' }).click();
@@ -235,6 +254,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
   it('keeps "Start automatically" unavailable, and says why, when no chosen service supports it', async t => {
     const page = await newPage(t);
     await open(page);
+    await toStep(page, 'Services with extra features');
     await page.getByRole('radio', { name: 'None' }).check();
     await page.getByRole('button', { name: 'Next' }).click();
     const auto = page.getByRole('radio', { name: 'Start automatically' });
@@ -245,7 +265,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     assert.deepEqual(await blockingViolations(page), []);
     await page.getByRole('radio', { name: 'T, or a button on videos' }).check();
     await toSummary(page);
-    assert.deepEqual(await page.locator('.setup-summary dd').allTextContents(), ['None', 'T or a button on videos', 'On', 'Off']);
+    assert.deepEqual((await page.locator('.setup-summary dd').allTextContents()).slice(1, 5), ['None', 'T or a button on videos', 'On', 'Off']);
     await page.getByRole('group', { name: 'Or finish and open:' }).getByRole('button', { name: 'Keyboard Shortcuts' }).click();
     await page.locator('#shortcuts').waitFor();
     const [[, settings]] = await writes(page);
@@ -258,6 +278,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     // Arrives while the setup is open.
     const live = await newPage(t);
     await open(live);
+    await toStep(live, 'Services with extra features');
     await live.getByRole('radio', { name: 'None' }).check();
     await live.evaluate(() => (window as unknown as Harness).external({ blacklist: ['example.com'] }));
     await live.locator('.setup-notice').waitFor();
@@ -270,6 +291,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     // Arrives without a change event before Finish: the Finish-time read catches it.
     const quiet = await newPage(t);
     await open(quiet);
+    await toStep(quiet, 'Services with extra features');
     await quiet.getByRole('radio', { name: 'None' }).check();
     await quiet.evaluate(() => (window as unknown as Harness).external({ language: 'pl' }, true));
     await toSummary(quiet);
@@ -286,7 +308,9 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
 
   it('opened by hand, shows the saved choices and ignores the profile check', async t => {
     const page = await newPage(t);
-    await open(page, { ...FRESH, netflixIntegrationEnabled: false, language: 'pl' }, {});
+    await open(page, { ...FRESH, netflixIntegrationEnabled: false, accentColor: 'green' }, {});
+    assert.equal(await page.getByRole('combobox', { name: 'Language' }).textContent(), 'Automatic (browser language)');
+    await toStep(page, 'Services with extra features');
     assert.equal(await page.getByRole('radio', { name: 'Choose services' }).isChecked(), true);
     assert.equal(await page.locator('#setup-services [role="switch"]:checked').count(), PROVIDER_CAPABILITIES.length - 1);
     await page.getByRole('button', { name: 'Skip setup' }).click();
@@ -307,6 +331,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     };
     await start(defaultAnswers());
     assert.equal(await page.locator('.setup-step').count(), 1);
+    await toStep(page, 'Services with extra features');
     assert.equal(await page.getByRole('radio', { name: 'All supported services' }).isChecked(), true, 'the given answers, not the saved ones');
     await page.getByRole('button', { name: 'Skip setup' }).click();
     await page.locator('#features').waitFor();
@@ -314,6 +339,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     await start();
     assert.equal(new URL(page.url()).hash, '#setup');
     assert.equal(await page.locator('#settings-tabs').isHidden(), true);
+    await toStep(page, 'Services with extra features');
     assert.equal(await page.getByRole('radio', { name: 'Choose services' }).isChecked(), true);
     assert.equal(await page.evaluate(() => history.length), entries, 'the same tab and history entry');
     await toSummary(page);
@@ -324,26 +350,115 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     assert.deepEqual((await writes(page)).filter(([area]) => area === 'sync'), [['sync', { videoActivatorPromptAnswer: false }]]);
   });
 
-  it('lays out right to left in Arabic and stays accessible', async t => {
+  it('lays out right to left in Arabic, chosen in the setup itself, and stays accessible', async t => {
     const page = await newPage(t);
     await open(page);
-    await page.evaluate(() => (window as unknown as Harness).setLanguage('ar'));
-    assert.equal(await page.evaluate(() => document.documentElement.dir), 'rtl');
-    assert.equal(await page.locator('.setup-progress').textContent(), catalogs.ar.setupProgress.message.replace('$1', '1').replace('$2', '4'));
+    // Settings' language menu by keyboard: open, type the start of a name, choose.
+    await page.getByRole('combobox', { name: 'Language' }).focus();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.documentElement.dir === 'rtl');
+    const ar = (key: string) => catalogs.ar[key].message as string;
+    assert.equal(await page.locator('.setup-step-title').textContent(), ar('languageTitle'));
+    assert.equal(await page.getByRole('combobox', { name: ar('languageTitle') }).textContent(), 'العربية');
+    assert.equal(await page.locator('.setup-progress').textContent(), ar('setupProgress').replace('$1', '1').replace('$2', '8'));
+    assert.deepEqual(await blockingViolations(page), []);
     // Skip sits at the inline start, the step buttons at the inline end: mirrored in right to left.
     const skip = await page.locator('.setup-skip').boundingBox();
     const next = await page.locator('.setup-actions .te-dialog-btn-primary').boundingBox();
     assert.ok(skip && next && skip.x > next.x, 'Skip is on the right in right-to-left');
-    await page.getByRole('radio', { name: catalogs.ar.setupServicesChoose.message }).check();
+    await toStep(page, ar('setupServicesTitle'));
+    await page.getByRole('radio', { name: ar('setupServicesChoose') }).check();
     assert.deepEqual(await blockingViolations(page), []);
     // The nested countdown switch indents from the inline start: the right in right to left.
     await page.locator('.setup-actions .te-dialog-btn-primary').click();
-    await page.getByRole('radio', { name: catalogs.ar.setupStartAuto.message }).check();
+    await page.getByRole('radio', { name: ar('setupStartAuto') }).check();
     const choice = await page.locator('.setup-choice:has(input[value="auto"])').boundingBox();
     const nested = await page.locator('.setup-nested').boundingBox();
     assert.ok(choice && nested && nested.x + nested.width < choice.x + choice.width, 'indented from the right');
     assert.deepEqual(await blockingViolations(page), []);
-    await page.locator('.setup-actions .te-dialog-btn-primary').click();
+    for (const title of ['setupKeysTitle', 'accentColorLabel', 'pictureAlignLabel', 'setupControlsTitle', 'setupSummaryTitle']) {
+      await toStep(page, ar(title));
+      assert.deepEqual(await blockingViolations(page), [], title);
+    }
+    // Each layout's picture sits at the inline start of its card: the right.
+    await page.getByRole('button', { name: ar('setupBack') }).click();
+    await page.getByRole('button', { name: ar('setupBack') }).click();
+    const card = await page.locator('.setup-choice.has-picture').first().boundingBox();
+    const picture = await page.locator('.setup-choice.has-picture .picture-align-icon').first().boundingBox();
+    assert.ok(card && picture && picture.x + picture.width > card.x + card.width / 2, 'the picture on the right');
+  });
+
+  it('switches the page language and accent as they are chosen, and saves them with the layout and pinned controls', async t => {
+    const page = await newPage(t);
+    await open(page);
+    await page.getByRole('combobox', { name: 'Language' }).focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('d');
+    await page.keyboard.press('Enter');
+    const de = (key: string) => catalogs.de[key].message as string;
+    await page.locator('.setup-title', { hasText: de('setupTitle') }).waitFor();
+    assert.equal(await page.locator('.setup-step-title').textContent(), de('languageTitle'), 'the setup reads in German at once');
+    assert.equal(await focusedText(page), 'Deutsch', 'focus stays on the menu');
+
+    await toStep(page, de('accentColorLabel'));
+    const accent = () => page.evaluate(() => document.documentElement.style.getPropertyValue('--accent-color'));
+    const before = await accent();
+    await page.locator('.setup-accent [data-choice="green"]').click();
+    assert.notEqual(await accent(), before, 'the page previews the accent');
+    assert.equal(await page.locator('.setup-accent [data-choice="green"]').getAttribute('aria-checked'), 'true');
     assert.deepEqual(await blockingViolations(page), []);
+
+    await page.locator('.setup-actions .te-dialog-btn-primary').click();
+    assert.equal(await focusedText(page), de('pictureAlignLabel'));
+    // The real layouts, each with Settings' picture; the subtitles switch belongs to Raised.
+    assert.equal(await page.locator('.setup-choice.has-picture svg').count(), 2);
+    assert.equal(await page.getByRole('radio', { name: de('pictureAlignTop') }).isChecked(), true);
+    assert.equal(await page.getByRole('switch', { name: de('pictureAlignSubtitlesOnlyTitle') }).isChecked(), true);
+    await page.getByRole('radio', { name: de('pictureAlignTop') }).focus();
+    await page.keyboard.press('ArrowUp');
+    assert.equal(await page.getByRole('radio', { name: de('pictureAlignCenter') }).isChecked(), true);
+    assert.equal(await page.locator('#setup-raise-subtitles').isHidden(), true);
+    assert.deepEqual(await blockingViolations(page), []);
+
+    await page.locator('.setup-actions .te-dialog-btn-primary').click();
+    assert.equal(await focusedText(page), de('setupControlsTitle'));
+    await page.getByRole('switch', { name: de('keepControlsVisibleTitle') }).focus();
+    await page.keyboard.press('Space');
+    assert.deepEqual(await blockingViolations(page), []);
+
+    await page.locator('.setup-actions .te-dialog-btn-primary').click();
+    const values = await page.locator('.setup-summary dd').allTextContents();
+    assert.deepEqual([values[0], ...values.slice(5)], ['Deutsch', de('accentColorGreen'), de('pictureAlignCenter'), de('setupSummaryOn')]);
+    assert.deepEqual(await writes(page), [], 'nothing is written before Finish');
+    await page.getByRole('button', { name: de('setupFinish') }).click();
+    await page.locator('#features').waitFor();
+    assert.deepEqual(await writes(page), [
+      ['sync', { videoActivatorPromptAnswer: false, language: 'de', accentColor: 'green', pictureAlign: 'center', keepControlsVisible: true }],
+      ['local', { firstRunSetup: { status: 'completed', version: '2.1.0' } }]
+    ]);
+    // Saved: the page keeps the chosen language and accent.
+    assert.equal(await page.getByRole('tab', { name: de('featuresTitle') }).getAttribute('aria-selected'), 'true');
+  });
+
+  it('puts the saved language and accent back when the setup is skipped', async t => {
+    const page = await newPage(t);
+    // Opened by hand over saved settings: a pending install would give way to them.
+    await open(page, { ...FRESH, accentColor: 'purple' }, {});
+    const accent = () => page.evaluate(() => document.documentElement.style.getPropertyValue('--accent-color'));
+    const saved = await accent();
+    await page.getByRole('combobox', { name: 'Language' }).focus();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.documentElement.dir === 'rtl');
+    await toStep(page, catalogs.ar.accentColorLabel.message);
+    await page.locator('.setup-accent [data-choice="teal"]').click();
+    assert.notEqual(await accent(), saved);
+    await page.getByRole('button', { name: catalogs.ar.setupSkip.message }).click();
+    await page.locator('#features').waitFor();
+    await page.waitForFunction(() => document.documentElement.dir === 'ltr');
+    assert.equal(await page.getByRole('tab', { name: 'Features' }).getAttribute('aria-selected'), 'true', 'back in English');
+    assert.equal(await accent(), saved);
+    assert.deepEqual(await writes(page), []);
   });
 });
