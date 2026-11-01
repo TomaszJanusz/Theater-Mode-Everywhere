@@ -139,7 +139,7 @@ describe('YouTube audio tracks', () => {
     it(`auto-applies once per video after ads, without fighting the host, in ${engine}`, async t => {
       const page = await open(t, engine);
       await page.evaluate(`document.getElementById('movie_player').classList.add('ad-showing');
-        window.controller = new AudioTest.AudioTrackController({ preference: () => 'fr', locales: () => ['en'], onChange() {} });
+        window.controller = new AudioTest.AudioTrackController({ preference: () => 'fr', locales: () => ['en'], atVideoStart: () => true, onChange() {} });
         controller.bind(adapter);`);
       assert.deepEqual(await sets(page), [], 'waits out the ad');
       // The ad ends with only a class flip, which the adapter observes.
@@ -157,6 +157,18 @@ describe('YouTube audio tracks', () => {
       await page.evaluate('controller.dispose(); stopObserving(); stopObserving();');
       await page.evaluate(`history.pushState(null, '', '/watch?v=${VIDEO}'); window.__state.videoId = '${VIDEO}'; window.__hostChoose('German')`);
       assert.deepEqual(await sets(page), ['French', 'French'], 'nothing runs after disposal');
+    });
+
+    it(`leaves the audio track alone when theater is entered mid-playback, and applies the saved one to the next video in ${engine}`, async t => {
+      const page = await open(t, engine);
+      await page.evaluate(`window.controller = new AudioTest.AudioTrackController({ preference: () => 'fr', locales: () => ['en'], atVideoStart: () => false, onChange() {} });
+        controller.bind(adapter);`);
+      assert.equal(await page.evaluate('controller.tracks().length > 1'), true, 'the video already lists its tracks at entry');
+      assert.deepEqual(await sets(page), [], 'the viewer\'s native choice is not overridden on entry');
+      await page.evaluate(`history.pushState(null, '', '/watch?v=${NEXT}'); window.__state.videoId = '${NEXT}'; window.__emit('videodatachange')`);
+      await page.waitForFunction('window.__state.sets.length === 1');
+      assert.deepEqual(await sets(page), ['French']);
+      await page.evaluate('controller.dispose(); stopObserving();');
     });
   }
 });

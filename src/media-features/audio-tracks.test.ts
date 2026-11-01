@@ -61,8 +61,9 @@ class FakeHost {
 
 const flush = () => new Promise<void>(resolve => setImmediate(resolve));
 
-function setup(saved: string | null = 'fr') {
+function setup(saved: string | null = 'fr', options: { offered?: boolean; atVideoStart?: boolean } = {}) {
   const host = new FakeHost();
+  if (options.offered) host.offer(...dubbed);
   let changes = 0;
   const preference = { saved };
   const savedPicks: string[] = [];
@@ -71,6 +72,7 @@ function setup(saved: string | null = 'fr') {
     preference: () => preference.saved,
     onPreferenceChange: (value) => { savedPicks.push(value); },
     locales: () => ['en'],
+    ...(options.atVideoStart === undefined ? {} : { atVideoStart: () => options.atVideoStart === true }),
     onChange: () => { changes += 1; },
     onResult: (result) => { results.push(result); }
   });
@@ -94,6 +96,35 @@ describe('audio track auto-apply', () => {
     host.notify();
     await flush();
     assert.equal(host.selections.length, 1);
+  });
+
+  it('does not apply the saved track to a video already playing when theater is entered', async () => {
+    // The viewer picked English in the host's own menu; the saved preference is French.
+    for (const atVideoStart of [undefined, false]) {
+      const { host, controller, results } = setup('fr', { offered: true, atVideoStart });
+      host.choose('en');
+      await flush();
+      assert.deepEqual(host.selections, [], `joined mid-video (${atVideoStart})`);
+      assert.deepEqual(results, []);
+      assert.equal(controller.tracks().find(track => track.selected)?.id, 'en');
+      host.notify();
+      await flush();
+      assert.deepEqual(host.selections, [], 'later notifications do not apply it either');
+    }
+  });
+
+  it('applies the saved track to a video that is still at its start when theater is entered', async () => {
+    const { host } = setup('fr', { offered: true, atVideoStart: true });
+    await flush();
+    assert.deepEqual(host.selections, [{ id: 'fr', mediaId: 'video-a' }]);
+  });
+
+  it('evaluates the next video that loads while theater is open, whatever joined first', async () => {
+    const { host } = setup('fr', { offered: true, atVideoStart: false });
+    host.mediaId = 'video-b';
+    host.offer(...dubbed);
+    await flush();
+    assert.deepEqual(host.selections, [{ id: 'fr', mediaId: 'video-b' }]);
   });
 
   it('leaves the host choice when nothing matches, the match is selected, or the mode is host', async () => {
@@ -341,7 +372,7 @@ describe('retained audio knowledge', () => {
     let list: AudioTrackList = { mediaId: 'video-a', tracks: host.tracks, blocked: false, bindingId: 'one' };
     adapter.listAudioTracks = () => list;
     const reports: AudioTrackResult[] = [];
-    const controller = new AudioTrackController({ preference: () => 'en-US', locales: () => ['en'], onChange() {}, onResult: result => reports.push(result) });
+    const controller = new AudioTrackController({ preference: () => 'en-US', locales: () => ['en'], atVideoStart: () => true, onChange() {}, onResult: result => reports.push(result) });
     controller.bind(adapter);
     assert.equal(reports.length, 1);
     list = { ...list, blocked: true, stale: true, tracks: list.tracks.map(track => ({ ...track, selected: false, disabled: true })) };
@@ -385,7 +416,7 @@ describe('retained audio knowledge', () => {
     let list: AudioTrackList = { mediaId: 'video-a', tracks: host.tracks, blocked: false, bindingId: 'one' };
     adapter.listAudioTracks = () => list;
     const reports: AudioTrackResult[] = [];
-    const controller = new AudioTrackController({ preference: () => 'en-US', locales: () => ['en'], onChange() {}, onResult: result => reports.push(result) });
+    const controller = new AudioTrackController({ preference: () => 'en-US', locales: () => ['en'], atVideoStart: () => true, onChange() {}, onResult: result => reports.push(result) });
     controller.bind(adapter);
     assert.equal(reports.length, 1);
     list = { ...list, blocked: true, stale: true, tracks: list.tracks.map(track => ({ ...track, selected: false, disabled: true })) };

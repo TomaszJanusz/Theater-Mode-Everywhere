@@ -9,6 +9,12 @@ export type AudioTrackOptions = {
   /** Locales whose language names may appear in untagged host labels. */
   locales: () => readonly string[];
   onChange: () => void;
+  /**
+   * Whether the item the controller joined was just loading. A list already offered when the controller
+   * binds (theater entry) belongs to a video the viewer may have been watching, and changing its audio
+   * natively; only a video still at its start is evaluated then. Lists that appear later always are.
+   */
+  atVideoStart?: () => boolean;
   /** What the viewer should hear about after the player acted on audio; never called for results that went stale. */
   onResult?: (result: AudioTrackResult) => void;
 };
@@ -28,7 +34,9 @@ export type AudioTrackResult = { playing: IndexedAudioTrack | null; refused?: In
  * media item. An item is evaluated once, when it first lists two or more tracks outside an ad:
  * a matching preference is applied at most once, a manual choice ends evaluation, and whatever
  * the host does afterwards (restoring its own choice included) is left alone, so the player and
- * the host can never take turns.
+ * the host can never take turns. An item that was already playing when the controller bound, as on
+ * theater entry, is not evaluated unless it is still at its start: the viewer may have picked a
+ * track in the host's own menu, and entering theater must not override it.
  */
 export class AudioTrackController {
   private adapter: MediaFeaturesAdapter | null = null;
@@ -38,6 +46,8 @@ export class AudioTrackController {
   /** The item the decision below belongs to; an id the host reports survives element resets. */
   private itemKey: string | null = null;
   private evaluated = false;
+  /** True until the first refresh after `bind`, whose list (if any) was there before the controller. */
+  private joining = false;
   /** Bumps with every pick, so only the newest one is reported when picks overlap. */
   private pick = 0;
   private stopObserving = () => {};
@@ -50,6 +60,7 @@ export class AudioTrackController {
     this.stopObserving();
     this.adapter = adapter;
     this.generation += 1;
+    this.joining = true;
     let cleanup: (() => void) | undefined;
     try {
       // Rebinding stops this subscription; the identity check covers a notification already queued.
@@ -85,8 +96,9 @@ export class AudioTrackController {
     const key = list?.mediaId ?? `generation:${this.generation}`;
     if (key !== this.itemKey) {
       this.itemKey = key;
-      this.evaluated = false;
+      this.evaluated = this.joining && (list?.tracks.length ?? 0) >= 2 && !this.options.atVideoStart?.();
     }
+    this.joining = false;
     this.list = list;
     this.options.onChange();
     this.autoApply();

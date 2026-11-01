@@ -46,7 +46,7 @@ const DUBBED = [
 ];
 
 async function open(test: TestContext, engine: 'chromium' | 'firefox', settings: Record<string, unknown>, tracks = DUBBED,
-  subtitles?: Promise<void>): Promise<Page> {
+  subtitles?: Promise<void>, watchedSeconds = 0): Promise<Page> {
   const page = await (await browsers[engine].newContext(test, { viewport: { width: 1280, height: 720 } })).newPage();
   const video = canvasVideoFixture({ title: 'Dubbed' });
   await serveFixture(page, subtitles ? video.replace('</video>', '<track kind="subtitles" label="English" srclang="en" src="/en.vtt"></video>') : video, `http://${HOST}/`);
@@ -58,6 +58,11 @@ async function open(test: TestContext, engine: 'chromium' | 'firefox', settings:
   // tsx wraps named functions in __name(); the serialized fixture needs it before bootPlayer defines it.
   await page.addScriptTag({ content: 'window.__name = (fn) => fn;' });
   await page.evaluate(installAudioTracks, tracks);
+  // The stream plays in real time; what theater finds already watched is part of the case, not of the machine's speed.
+  await page.evaluate(watched => {
+    const video = document.querySelector('video')!;
+    Object.defineProperty(video, 'played', { value: { length: watched > 0 ? 1 : 0, start: () => 0, end: () => watched } });
+  }, watchedSeconds);
   await bootPlayer(page, { settings });
   await page.waitForFunction(() => (document.querySelector('video')?.readyState ?? 0) >= 2);
   await enterTheater(page);
@@ -128,6 +133,56 @@ describe('audio track menu and per-service preference', () => {
       const isolated = await open(t, engine, { audioPreferenceByHost: { 'other.test': 'de', 'youtube.com': 'original' } });
       await row(isolated).waitFor({ state: 'attached' });
       assert.deepEqual(await changes(isolated), [], 'another service\'s preference never applies');
+    });
+
+    it(`leaves the audio track alone when theater is entered on a video that is already being watched in ${engine}`, async t => {
+      // The viewer chose English in the host's own menu; this service's saved language is French.
+      const page = await open(t, engine, { audioPreferenceByHost: { [HOST]: 'fr' } }, DUBBED, undefined, 60);
+      await row(page).waitFor({ state: 'attached' });
+      assert.deepEqual(await changes(page), []);
+      assert.deepEqual(await enabled(page), [true, false, false, false]);
+      assert.equal(await notice(page).count(), 0, 'nothing was applied, so nothing is announced');
+    });
+
+    it(`closes an open menu with Escape before Escape exits theater, however it was opened, in ${engine}`, async t => {
+      const page = await open(t, engine, {}, DUBBED, Promise.resolve());
+      const active = () => page.locator('.theater-controls-wrapper').count();
+      const menuOpen = () => page.locator('.theater-menu.is-open').count();
+      const escape = async (menus: number, theater: number) => {
+        await page.keyboard.press('Escape');
+        assert.deepEqual([await menuOpen(), await active()], [menus, theater]);
+      };
+      // Opened by a click: pinned, focus on the page.
+      await page.locator('.player-settings-btn').click();
+      await page.locator('.theater-settings-container.is-open').waitFor();
+      await escape(0, 1);
+      // Opened by hover alone.
+      await page.mouse.move(0, 0);
+      await page.locator('.player-settings-btn').hover();
+      await page.locator('.theater-settings-container.is-open').waitFor();
+      await escape(0, 1);
+      // The subtitle menu, pinned by a click.
+      await page.locator('.cc-btn').click();
+      await page.locator('.theater-menu.is-open').waitFor();
+      await escape(0, 1);
+      // Its Audio track list, with focus handed to the page.
+      await page.mouse.move(0, 0);
+      await openAudioMenu(page);
+      await page.evaluate(() => {
+        const player = document.createElement('div');
+        player.tabIndex = -1;
+        document.body.append(player);
+        player.focus();
+      });
+      await escape(0, 1);
+      // From the keyboard: focus returns to the button that opened it.
+      await page.locator('.player-settings-btn').focus();
+      await page.keyboard.press('Enter');
+      await page.locator('.theater-settings-container.is-open').waitFor();
+      await escape(0, 1);
+      assert.equal(await page.locator('.player-settings-btn').evaluate(element => element.matches(':focus')), true, 'Escape returns to the settings button');
+      await page.keyboard.press('Escape');
+      await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
     });
 
     it(`lists tracks, saves a pick for this service and resets it to the service default in ${engine}`, async t => {
