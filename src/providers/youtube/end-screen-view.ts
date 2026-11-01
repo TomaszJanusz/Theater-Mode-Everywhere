@@ -63,6 +63,9 @@ export function mountEndScreenSettings(
 ): () => void {
   const style = document.createElement('style');
   style.textContent = css;
+  // A line of its own under the tiles centres the switch on the stage; only the label itself takes clicks.
+  const row = document.createElement('div');
+  row.className = 'theater-recommendations-row';
   const control = document.createElement('label');
   control.className = 'theater-recommendations-setting';
   const input = document.createElement('input');
@@ -70,14 +73,15 @@ export function mountEndScreenSettings(
   input.role = 'switch';
   const text = document.createElement('span');
   control.append(input, text);
-  container.append(style, control);
-  // Unpinned controls overlay the picture. Keep this corner control above their real box,
-  // including wrapped toolbars; the pinned bar is already outside the curtain.
+  row.append(control);
+  container.append(style, row);
+  // Unpinned controls overlay the picture: centre the curtain's content in the part their real box leaves clear,
+  // including wrapped toolbars. The pinned bar is already outside the curtain.
   const toolbar = (container.getRootNode() as ParentNode).querySelector('.theater-controls-wrapper');
   if (toolbar) {
     const place = () => {
       if (scope.isDisposed) return;
-      control.style.bottom = `${Math.max(20, container.getBoundingClientRect().bottom - toolbar.getBoundingClientRect().top + 12)}px`;
+      container.style.paddingBottom = `${Math.max(0, container.getBoundingClientRect().bottom - toolbar.getBoundingClientRect().top + 12)}px`;
     };
     const observer = new ResizeObserver(place);
     observer.observe(toolbar);
@@ -90,7 +94,7 @@ export function mountEndScreenSettings(
   const update = () => {
     if (scope.isDisposed) return;
     const snapshot = source.read();
-    control.hidden = !snapshot;
+    row.hidden = !snapshot;
     text.textContent = recommendationsLabel();
     input.checked = settings.values.youtube.showRecommendations;
     input.disabled = !settings.loaded;
@@ -100,7 +104,7 @@ export function mountEndScreenSettings(
     const focused = grid?.matches(':focus-within');
     grid?.remove();
     grid = settings.loaded && input.checked ? renderEndScreen(source, label, scope) : null;
-    if (grid) container.insertBefore(grid, control);
+    if (grid) container.insertBefore(grid, row);
     if (focused) (grid?.querySelector('button') ?? input).focus();
   };
   scope.listen(input, 'click', event => { if (event.detail) input.blur(); });
@@ -111,7 +115,7 @@ export function mountEndScreenSettings(
   });
   scope.add(settings.subscribe(update));
   scope.add(languageRuntime.subscribe(update));
-  scope.add(() => { style.remove(); control.remove(); grid?.remove(); });
+  scope.add(() => { style.remove(); row.remove(); grid?.remove(); });
   update();
   return update;
 }

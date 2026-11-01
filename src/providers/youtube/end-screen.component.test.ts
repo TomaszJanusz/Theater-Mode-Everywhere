@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest';
-import { userEvent } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 
 import { DisposableScope } from '../../core/disposable-scope';
 import { APPEARANCE_MODES, blockingViolations } from '../../test-utils/axe';
@@ -119,5 +119,50 @@ describe('YouTube recommendation switch', () => {
       scope.dispose(); scope.dispose();
       expect(curtain.isConnected).toBe(false);
     });
+  }
+});
+
+describe('YouTube recommendation switch placement', () => {
+  afterEach(() => page.viewport(1280, 800));
+
+  /** Centred on the stage, a gap under `above` (the tile row, scrolled within itself when short) and clear of the bar. */
+  async function placed(curtain: HTMLElement, bar: HTMLElement, above: string) {
+    const control = curtain.querySelector<HTMLElement>('.theater-recommendations-setting')!;
+    await expect.poll(() => control.getBoundingClientRect().bottom <= bar.getBoundingClientRect().top - 12).toBe(true);
+    const box = control.getBoundingClientRect();
+    const stage = curtain.getBoundingClientRect();
+    // Firefox lays out in sixtieths of a pixel.
+    expect(box.top).toBeGreaterThan(curtain.querySelector(above)!.getBoundingClientRect().bottom + 15.5);
+    expect(Math.abs(box.left + box.width / 2 - (stage.left + stage.width / 2))).toBeLessThan(1);
+    expect(box.top).toBeGreaterThanOrEqual(stage.top);
+  }
+
+  for (const [width, height] of [[1280, 720], [640, 360], [400, 640]] as const) {
+    for (const count of [3, 1]) {
+      for (const dir of ['ltr', 'rtl']) {
+        test(`sits centred under ${count} tile(s) and above an overlaying bar at ${width}x${height}, ${dir}`, async () => {
+          await page.viewport(width, height);
+          const host = getPlayerUiRoot().host as HTMLElement;
+          host.dir = dir;
+          // An unpinned bar overlays the bottom of the picture, as the production controls do.
+          const bar = document.createElement('div');
+          bar.className = 'theater-controls-wrapper';
+          bar.style.cssText = 'position:fixed;inset:auto 24px 24px;height:72px';
+          mountPlayerUi(bar);
+          const { curtain, grid, source } = mount(count, true);
+          grid?.remove();
+          scope.add(() => { bar.remove(); host.dir = ''; });
+          const settings = createYouTubeSettings();
+          scope.add(() => settings.dispose());
+          await settings.ready;
+          mountEndScreenSettings(curtain, source, { label: 'Suggested videos', scope, settings });
+          await placed(curtain, bar, '.theater-end-screen');
+          // Off, the switch takes the tiles' place under Replay.
+          await settings.set('youtube', 'showRecommendations', false);
+          await placed(curtain, bar, '.theater-home-pill');
+          await settings.set('youtube', 'showRecommendations', true);
+        });
+      }
+    }
   }
 });

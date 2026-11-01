@@ -1,4 +1,4 @@
-.theater-ended-curtain:has(.theater-end-screen) {
+.theater-ended-curtain:has(.theater-recommendations-row) {
   flex-wrap: wrap;
   align-content: center;
 }
@@ -9,7 +9,8 @@
   gap: 16px;
   flex-basis: 100%;
   max-width: min(1000px, 88%);
-  max-height: 65%;
+  /* A short stage keeps room for Replay's line above (when it wraps) and the switch's line below. */
+  max-height: min(65%, 100% - 120px);
   overflow: auto;
   padding: 6px;
   pointer-events: auto;
@@ -99,10 +100,14 @@
   .theater-end-screen-title { font-size: 12px; }
 }
 
+.theater-recommendations-row {
+  display: flex;
+  flex-basis: 100%;
+  justify-content: center;
+  min-width: 0;
+}
+.theater-recommendations-row[hidden] { display: none; }
 .theater-recommendations-setting {
-  position: absolute;
-  inset-inline-start: 24px;
-  bottom: 20px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -113,7 +118,6 @@
   pointer-events: auto;
   cursor: pointer;
 }
-.theater-recommendations-setting[hidden] { display: none; }
 .theater-recommendations-setting input {
   appearance: none;
   position: relative;
