@@ -1,6 +1,5 @@
-import { matchesShortcut } from './ui/shortcuts';
 import { HOST_PLAY_CONTROL_SELECTOR, isProviderPlayControl } from './providers/play-controls';
-import { registeredHostPlayback } from './providers/runtime-registration';
+import { matchesShortcut } from './ui/shortcuts';
 
 function isTheaterUiNode(node: Element): boolean {
   if (node.id === 'theater-everywhere-ui') return true;
@@ -51,7 +50,6 @@ export function findHostPlayButton(video: HTMLVideoElement): HTMLElement | null 
 
 export function requestVideoPlay(video: HTMLVideoElement): void {
   if (mediaHasSource(video)) {
-    if (registeredHostPlayback('play', video)) return;
     video.play().catch((err) => {
       console.error('[Theater Everywhere] Play failed:', err);
     });
@@ -68,12 +66,13 @@ export function requestVideoPlay(video: HTMLVideoElement): void {
   console.warn('[Theater Everywhere] No media source and no host play control found');
 }
 
-export function toggleVideoPlayback(video: HTMLVideoElement): void {
-  if (!mediaHasSource(video) || video.paused) {
-    requestVideoPlay(video);
-    return;
-  }
-  if (!registeredHostPlayback('pause', video)) video.pause();
+/** `viaHost` hands the action to a provider that plays through the host's own player; true when it did. */
+export function toggleVideoPlayback(video: HTMLVideoElement, viaHost: (action: 'play' | 'pause') => boolean = () => false): void {
+  const sourced = mediaHasSource(video);
+  const play = !sourced || video.paused;
+  if (sourced && viaHost(play ? 'play' : 'pause')) return;
+  if (play) requestVideoPlay(video);
+  else video.pause();
 }
 
 /**
