@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected translations in Arabic, Chinese (Simplified), French, German, Italian, Japanese, Polish, Portuguese (Brazil), Russian, Spanish and Ukrainian: AutoTheater and Pin controls now read On/Off instead of Yes/No in French, Italian, Portuguese and Spanish, the confirmation shown when controls are set to auto-hide is shorter, and list punctuation, key names and capitalisation are fixed in several places.
 - The note under an empty Website Exclusions list in Settings no longer says theater mode starts on every video page: it now says AutoTheater starts theater mode on supported services and that adding a site keeps it off there.
 - On Disney+, the subtitles and the elapsed time in theater mode no longer stop on one line while the film plays on after its video reloads, such as when you change the audio track in theater or in Disney+'s own menu. They keep following the dialogue.
+- On Disney+, pausing with the player bar or Space now pauses Disney+'s own player, not only the picture, and playing resumes it the same way, so Disney+'s own bar shows the right icon and changing the audio track on a paused film no longer jumps the film ahead by the time it sat paused. Needs Rich Theater Experience on; with it off, the picture alone is paused as before.
 
 ## [2.0.8] - 2026-10-28
 

@@ -1,6 +1,7 @@
 import type { DisposableScope } from '../core/disposable-scope';
 import { measureNextFrame } from '../core/frame-batch';
 import { AUDIO_PREF_STORAGE_KEY, resolveAudioPreferences, upsertAudioPreference } from '../media-features/audio-preference';
+import { registeredHostPlayback } from '../providers/runtime-registration';
 import { PROVIDER_SETTINGS_KEY } from '../providers/settings';
 import { serviceAutoEnabled } from '../providers/settings-values';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
@@ -569,7 +570,7 @@ function executeCommand(command: PlayerCommand): void {
       const willPlay = nextPlaybackAction() === 'play';
       if (native) {
         cancelPendingSeekResume(native);
-        toggleVideoPlayback(native);
+        toggleVideoPlayback(native, action => registeredHostPlayback(action, native));
       } else {
         toggleDirectPlayback(surface);
       }

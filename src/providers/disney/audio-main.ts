@@ -49,10 +49,10 @@ export type DisneyAudioEnv = {
   clearTimeout(id: number): void;
 };
 
-const isRecord = (value: unknown): value is HiveRecord => Boolean(value) && typeof value === 'object';
+export const isRecord = (value: unknown): value is HiveRecord => Boolean(value) && typeof value === 'object';
 
 /** `mediaPlayer` and `stateStore` are expandos on the element; anything inherited is not Hive's. */
-function own(target: object, key: string): unknown {
+export function own(target: object, key: string): unknown {
   try {
     return Object.prototype.hasOwnProperty.call(target, key) ? (target as HiveRecord)[key] : undefined;
   } catch {

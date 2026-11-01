@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, mediaHasSource, toggleDirectPlayback } from './host-play';
+import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, mediaHasSource, requestVideoPlay, toggleDirectPlayback } from './host-play';
 
 describe('host play controls', () => {
   it('recognizes unlabeled Vimeo Play buttons and YouTube overlay classes', () => {
@@ -100,5 +100,32 @@ describe('wasm play/pause ownership', () => {
     assert.equal(mainWorldOwnsWasmPlayPause(key({ key: 'k', code: 'KeyK' }), 'K'), false);
     assert.equal(mainWorldOwnsWasmPlayPause(key({ key: 'k', code: 'KeyK' }), null), false);
     assert.equal(mainWorldOwnsWasmPlayPause(key({ key: ' ', code: 'Space', shiftKey: true }), 'Shift+Space'), true);
+  });
+});
+
+describe('requestVideoPlay rejections', () => {
+  async function logged(reason: unknown): Promise<unknown[][]> {
+    const calls: unknown[][] = [];
+    const original = console.error;
+    console.error = (...args: unknown[]) => { calls.push(args); };
+    try {
+      const rejected = Promise.reject(reason);
+      requestVideoPlay({ currentSrc: 'blob:x', play: () => rejected } as unknown as HTMLVideoElement);
+      // The theater's own handler was attached first, so it has run when this one does.
+      await rejected.catch(() => undefined);
+    } finally {
+      console.error = original;
+    }
+    return calls;
+  }
+
+  it('does not log a play() a pause interrupted or the browser holds back until a gesture', async () => {
+    assert.deepEqual(await logged(new DOMException('The play() request was interrupted by a call to pause().', 'AbortError')), []);
+    assert.deepEqual(await logged(new DOMException('play() failed because the user did not interact', 'NotAllowedError')), []);
+  });
+
+  it('logs any other failure with its name and message, not as [object DOMException]', async () => {
+    assert.deepEqual(await logged(new DOMException('The element has no supported sources.', 'NotSupportedError')),
+      [['[Theater Everywhere] Play failed:', 'NotSupportedError: The element has no supported sources.']]);
   });
 });

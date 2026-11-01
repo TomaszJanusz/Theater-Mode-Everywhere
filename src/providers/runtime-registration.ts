@@ -40,3 +40,5 @@ export const providerRegistry = createProviderRegistry(typeof window === 'undefi
 export const registeredChat = () => providerRegistry.all().find(hooks => hooks.chat)?.chat;
 export const registeredEvents = (kind: keyof NonNullable<ProviderHooks['events']>): string[] =>
   providerRegistry.all().flatMap(hooks => hooks.events?.[kind] ?? []);
+export const registeredHostPlayback = (action: 'play' | 'pause', video: HTMLVideoElement): boolean =>
+  providerRegistry.all().some(hooks => hooks.hostPlayback && hooks.hostPlayback(action, video));

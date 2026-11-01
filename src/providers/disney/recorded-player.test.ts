@@ -5,6 +5,7 @@ import { describe, it } from 'node:test';
 import { parseDisneyAudioSnapshot } from './audio-bridge';
 import { createDisneyAudioHost } from './audio-main';
 import { disneyDurationSeconds, readDisneyContentTime, writeDisneyContentTime } from './page';
+import { createDisneyHostPlayback } from './playback-main';
 import { disneyVideoRole } from './watch-playback';
 
 // Recorded signed-in Disney+ watch page, 2026-11-01 (see the fixture's notes). Fixture evidence, not an installed-extension pass.
@@ -171,5 +172,43 @@ describe('recorded Disney+ menu, playing, idle and audio-switch states', () => {
       assert.equal(capture.videos[capture.mediaElementIndex].paused, false);
       assert.ok(capture.clock.playheadPositionMs / 1000 > capture.clock.contentVideoCurrentTimeSeconds + 60, 'the playhead, not video.currentTime, is the content position');
     }
+  });
+});
+
+describe('recorded Disney+ pause desync, through the provider\'s host playback', () => {
+  const { afterExtensionPause, afterHivePause } = states.audioSwitch.playbackModel;
+  /** Hive's playback slice and a video that follows it: Hive's own pause pauses the element and its model, as recorded. */
+  function recordedHive(start: { videoPaused: boolean; hiveIsPaused: boolean; hiveCurrentState: string }) {
+    const hive = { isPaused: start.hiveIsPaused, currentState: start.hiveCurrentState, calls: [] as string[] };
+    const video = { paused: start.videoPaused, ended: false, isConnected: true, pause() { this.paused = true; }, play() { this.paused = false; return Promise.resolve(); } };
+    const mediaPlayer = {
+      pause() { hive.calls.push('pause'); hive.isPaused = true; hive.currentState = 'PAUSED'; video.paused = true; },
+      play() { hive.calls.push('play'); hive.isPaused = false; hive.currentState = 'PLAYING'; video.paused = false; }
+    };
+    const web = { mediaPlayer };
+    const hostPlayback = createDisneyHostPlayback({
+      enabled: () => true, href: () => href, web: () => web, contentVideo: () => video as unknown as HTMLVideoElement,
+      setTimeout: () => 1, clearTimeout: () => {}
+    });
+    return { hive, video, hostPlayback: (action: 'play' | 'pause') => hostPlayback(action, video as unknown as HTMLVideoElement) };
+  }
+
+  it('leaves Hive PLAYING when only the element is paused, the recorded desync', () => {
+    const { hive, video } = recordedHive({ videoPaused: false, hiveIsPaused: false, hiveCurrentState: 'PLAYING' });
+    video.pause();
+    assert.deepEqual([video.paused, hive.isPaused, hive.currentState], [afterExtensionPause.videoPaused, afterExtensionPause.hiveIsPaused, afterExtensionPause.hiveCurrentState]);
+  });
+
+  it('pauses Hive too, so its model matches a pause through its own API', () => {
+    const { hive, video, hostPlayback } = recordedHive({ videoPaused: false, hiveIsPaused: false, hiveCurrentState: 'PLAYING' });
+    assert.equal(hostPlayback('pause'), true);
+    assert.deepEqual([video.paused, hive.isPaused, hive.currentState], [afterHivePause.videoPaused, afterHivePause.hiveIsPaused, afterHivePause.hiveCurrentState]);
+    assert.deepEqual(hive.calls, ['pause'], 'one call, no second toggle');
+  });
+
+  it('plays through Hive so a later reload resumes from where the viewer pressed play', () => {
+    const { hive, video, hostPlayback } = recordedHive({ videoPaused: true, hiveIsPaused: true, hiveCurrentState: 'PAUSED' });
+    assert.equal(hostPlayback('play'), true);
+    assert.deepEqual([video.paused, hive.isPaused, hive.currentState, hive.calls], [false, false, 'PLAYING', ['play']]);
   });
 });
