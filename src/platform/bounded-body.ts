@@ -1,6 +1,9 @@
 /** Upper bound for caption and text metadata bodies, in bytes. */
 export const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
 
+/** Upper bound for a binary harvest body (BIF thumbnail sets), in bytes. */
+export const MAX_BINARY_HARVEST_BYTES = 16 * 1024 * 1024;
+
 /** Only pass an owned fetch response, clone, or Blob stream, never the page's body. */
 export type BoundedResponse = {
   headers?: { get(name: string): string | null };

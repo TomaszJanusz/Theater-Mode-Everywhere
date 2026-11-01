@@ -155,4 +155,48 @@ for (const engine of testEngines()) describe(`${engine} registered MAIN harvest`
     assert.deepEqual(await page.evaluate('window.__seen'), ['/meta/current', '/meta/state', '/meta/after']);
     assert.equal(await page.evaluate('window.__roundTrips'), 2, 'both A→B→A cases end on the URL their read began on');
   });
+
+  it('passes binary targets\' bytes from fetch and XHR once, never as text, and only with the integration on', async t => {
+    const page = await open(t, engine);
+    // A tiny binary body with bytes that are not UTF-8 and an advertised media type the text checks would refuse.
+    await page.route('https://www.youtube.com/bif/**', route => route.fulfill({ contentType: 'image/bif', body: Buffer.from([0x89, 0x42, 0x49, 0x46, 0xff, 0x00, 0x01]) }));
+    await page.addScriptTag({ content: fixture });
+    const seen = await page.evaluate(`(async () => {
+      HarvestVeto.exposeFixtureRuntime('main');
+      const seen = [];
+      let arrived = () => {};
+      const settled = count => new Promise(resolve => { arrived = () => { if (seen.length >= count) resolve(); }; arrived(); });
+      HarvestVeto.providerRuntime('main').register({ id: 'youtube', contractVersion: 1,
+        watchPlayback: { pageIdentity: () => null, mainVideo: () => null },
+        harvest: { qualify: url => url.includes('/bif/') ? 'bif' : null, binaryTargets: ['bif'], cloneTargets: ['bif'],
+          binary: (target, url, bytes) => { seen.push([target, new URL(url).pathname, Array.from(new Uint8Array(bytes)).join(',')]); arrived(); },
+          text: () => seen.push(['text']), json: () => seen.push(['json']), response: () => seen.push(['response']) } });
+      HarvestVeto.installMainWorldRuntime();
+      const xhr = (path, type) => new Promise(resolve => {
+        const request = new XMLHttpRequest();
+        request.open('GET', path);
+        request.responseType = type;
+        request.send();
+        // Added after send(), so the harvest's own loadend listener has run when this one resolves.
+        request.addEventListener('loadend', resolve);
+      });
+      await (await fetch('/bif/fetch')).arrayBuffer();
+      await xhr('/bif/buffer', 'arraybuffer');
+      await xhr('/bif/blob', 'blob');
+      await xhr('/bif/text', 'text');
+      // Reads still in flight when the integration turns off are dropped too; let these three finish first.
+      await settled(3);
+      document.documentElement.setAttribute('data-te-youtube-integration-off', '');
+      await (await fetch('/bif/off')).arrayBuffer();
+      await xhr('/bif/off-buffer', 'arraybuffer');
+      document.documentElement.removeAttribute('data-te-youtube-integration-off');
+      await xhr('/bif/last', 'blob');
+      await settled(4);
+      return seen;
+    })()`) as string[][];
+    const bytes = '137,66,73,70,255,0,1';
+    assert.deepEqual(seen.map(entry => entry[1]).sort(), ['/bif/blob', '/bif/buffer', '/bif/fetch', '/bif/last'],
+      'fetch, arraybuffer and blob bodies arrive once; a text XHR and reads with the integration off do not');
+    assert.ok(seen.every(entry => entry[0] === 'bif' && entry[2] === bytes), 'the provider gets the exact bytes, never text, JSON or the Response');
+  });
 });

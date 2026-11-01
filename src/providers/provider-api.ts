@@ -220,9 +220,17 @@ export type ProviderHarvest = {
    * as Blobs. The core streams the body within the text cap and a 15 s deadline, and cancels it on any committed
    * navigation (even back to the same URL; not a state-only `replaceState`), back/forward, a hash change or page
    * hide/show; such a read is dropped. `platform/navigation-visit.ts` states the guarantee and its residual gap.
-   * Text only: binary bodies (BIF thumbnails) do not fit this field.
+   * Text only: binary bodies use `binaryTargets`.
    */
   blobTextTargets?: readonly string[];
+  /**
+   * Targets whose bodies are binary, such as BIF thumbnail sets. The core reads their fetch clone and their XHR
+   * `arraybuffer` or `blob` body itself, up to `MAX_BINARY_HARVEST_BYTES` and within the page read's 15 s deadline,
+   * and passes the bytes once to `binary` while the page URL is unchanged and the provider's integration is enabled.
+   * These targets never reach `json`, `text` or `response`; their fetch responses skip the text Content-Type check.
+   */
+  binaryTargets?: readonly string[];
+  binary?(target: string, url: string, bytes: ArrayBuffer): void;
   /**
    * False on hosts that replace fetch with their own transport, where a wrapper breaks playback (Twitch's VOD
    * seeking): Response and XHR observers still harvest. Any registered provider can veto the wrapper this way.
