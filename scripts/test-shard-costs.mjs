@@ -24,7 +24,10 @@ export function buildCosts(runs, overhead = {}) {
   for (const run of runs) {
     for (const [file, seconds] of Object.entries(run)) samples.set(file, [...(samples.get(file) ?? []), seconds]);
   }
-  const median = values => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+  const median = values => {
+    const sorted = [...values].sort((a, b) => a - b);
+    return (sorted[Math.floor((sorted.length - 1) / 2)] + sorted[Math.floor(sorted.length / 2)]) / 2;
+  };
   const files = Object.fromEntries([...samples].sort(([a], [b]) => (a < b ? -1 : 1)).map(([file, values]) => [file, Number(median(values).toFixed(1))]));
   return { files, ...(Object.keys(overhead).length > 0 && { overhead }) };
 }

@@ -7,6 +7,7 @@ import { buildCosts, vitestSeconds } from './test-shard-costs.mjs';
 
 test('a file measured in several runs takes the median and the table is sorted', () => {
   const costs = buildCosts([{ 'b.test.ts': 10, 'a.test.ts': 2 }, { 'b.test.ts': 30 }, { 'b.test.ts': 12.34 }], { 1: 40 });
+  assert.equal(buildCosts([{ 'a.test.ts': 4 }, { 'a.test.ts': 6 }]).files['a.test.ts'], 5);
   assert.deepEqual(costs, { files: { 'a.test.ts': 2, 'b.test.ts': 12.3 }, overhead: { 1: 40 } });
   assert.deepEqual(Object.keys(costs.files), ['a.test.ts', 'b.test.ts']);
   assert.deepEqual(buildCosts([{ 'a.test.ts': 1 }]), { files: { 'a.test.ts': 1 } });

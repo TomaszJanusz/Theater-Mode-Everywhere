@@ -42,19 +42,20 @@ export function isBrowserTest(file) {
 // partitions the lane itself, so every shard is balanced by measured seconds and no file can fall between two splits.
 // Greedy longest-first: each file goes to the lightest shard. Unmeasured files weigh the median measured one, so a new
 // test only unbalances a shard, never drops out. `overhead` is non-test work the workflow runs in a shard (Storybook).
-// Every shard computes the same partition from the same inputs.
+// Every shard computes the same partition from the same inputs and runs its files heaviest first.
 export function balanceShard(files, costs, index, total) {
   const known = files.map(file => costs.files[file]).filter(seconds => seconds !== undefined).sort((a, b) => a - b);
   const fallback = known.length === 0 ? 1 : known[Math.floor(known.length / 2)];
   const weight = file => costs.files[file] ?? fallback;
   const loads = Array.from({ length: total }, (_, shard) => costs.overhead?.[shard + 1] ?? 0);
-  const owner = new Map();
+  const shards = loads.map(() => []);
   for (const file of [...files].sort((a, b) => weight(b) - weight(a) || (a < b ? -1 : 1))) {
     const lightest = loads.indexOf(Math.min(...loads));
-    owner.set(file, lightest);
+    shards[lightest].push(file);
     loads[lightest] += weight(file);
   }
-  return files.filter(file => owner.get(file) === index - 1);
+  // Heaviest first: the runner starts files in this order, so the long ones never begin last and stretch the tail.
+  return shards[index - 1];
 }
 
 export function parseShardCosts(text) {
