@@ -7,7 +7,6 @@ import { sharedEngineBrowsers } from './test-utils/engine-browsers';
 import { bundleModules } from './test-utils/player-boot';
 import { readStylesheet } from './test-utils/styles';
 import { testEngines } from './test-utils/test-engines';
-import { WHATS_NEW_RELEASES } from './whatsNew-content';
 
 const bundle = bundleModules([
   "export { buildWhatsNewContent, WHATS_NEW_RELEASES } from './whatsNew-content';",
@@ -41,39 +40,30 @@ it('renders static English semantic content safely and refreshes localized dialo
   const root = page.locator('.whats-new-content');
   assert.equal(await root.getAttribute('lang'), 'en');
   assert.equal(await root.getAttribute('dir'), 'ltr');
-  assert.equal(await root.locator('h3 strong').textContent(), WHATS_NEW_RELEASES[0].heading);
-  assert.equal(await root.locator(':scope > p').first().textContent(), "I'm delighted to announce that this is the biggest update of this extension so far. The new version brings a more comfortable theater mode, new controls, more supported services within Rich Theater Experience, and performance improvements.");
-  assert.equal(await root.locator(':scope > p strong').textContent(), 'biggest update');
+  // A 2.0.8 upgrader (announced since 2.0) sees 2.1 only.
+  assert.deepEqual(await root.locator('h3 strong').allTextContents(), ['Here is Theater Mode Everywhere 2.1!']);
+  assert.equal(await root.locator(':scope > p').first().textContent(), "I'm happy to share an update that makes the end of a video feel finished, lets you tune each service on its own, and brings theater mode to a few more places.");
+  assert.equal(await root.locator(':scope > p strong').textContent(), 'the end of a video');
   assert.deepEqual(await root.locator('ul > li').allTextContents(), [
-    'New services in Rich Theater Experience: Support for the unique features of Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll and Netflix 🥳',
-    'RTE chat support: Using Theater Mode Everywhere no longer means saying goodbye to the YouTube and Twitch chats. You can show them beside the video or below it, and slide the chat panel out or hide it.',
-    'Captions under the video: The picture is raised by default while subtitles are on; you can switch to a centered picture or raise it always. In a raised layout the video moves to the top and TME tries to use the space below it to display captions.',
-    'Pin controls: Keep the controls docked flush to the player edges, go to the previous or next video, and check the title in the player.',
-    'Rich Theater Experience: Support for skip buttons, playing the next episodes and skipping ads on YouTube, Vimeo, Netflix, Disney+, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll;',
-    'Rich Theater Experience: You can turn RTE on or off for individual services in Settings → Features, where each service tile lights up in its brand colors, and filter services by capability, including playlists. Playlist and queue navigation is available on YouTube, Vimeo Showcase, Netflix, Disney+, Bilibili, Bilibili.tv and Tencent Video / WeTV when the host provides it.',
-    'Audio effects: Adjust dialogue, loud sounds, bass (from Less to MOAAARR!, with a subwoofer that turns red at the top levels) and volume in the player settings, or scroll over the speaker or volume slider. Available for all content that is not protected by DRM.',
-    'SponsorBlock support: See markers from your installed SponsorBlock extension on the YouTube theater timeline, in its own colors, while keeping its notices visible.',
-    'Automatic theater mode: A corner notice counts down the seconds before the entry; click it or press Esc to cancel, or turn the countdown off in Settings → Features. Now also on Bilibili, Bilibili.tv and Patreon posts with a single native video.',
-    'Video launcher: Off by default; turn it on in Settings → Features → Video launcher to enter theater mode with a small button on the left edge of a paused video. It hides during playback, except for the first five seconds after a page or in-app navigation loads. Its tooltip shows your theater shortcut, such as [T]. With YouTube Rich Theater Experience, a white rhombus with an accent triangle stays in the player toolbar regardless of playback or pointer activity. When you turn AutoTheater off, TME offers to enable it.',
-    'Fullscreen in theater mode: Double-click the picture to enter or leave fullscreen without leaving theater mode. A single click now plays or pauses faster, and a quick double-click never pauses the video.',
-    'Accessibility: Choose High contrast, Reduce transparency and Reduce motion separately (Auto, On or Off) in Settings → Appearance; Auto follows your system preferences. Settings and the player also work better with screen readers.',
-    'Hold for 2x speed: Hold the Seek Forward key (→ unless you changed it) to play at 2x until you let go; a tap still skips 5 seconds. You can turn this off in Settings → Keyboard Shortcuts.',
-    'Settings warn you about conflicting keyboard shortcuts.',
-    'The titles of the videos being played are displayed.',
-    'You can go to the home page of the service the video is playing on.',
-    'Theater Mode Everywhere should now use fewer resources.',
-    'The player now has a dedicated settings menu, and the subtitles menu lets you search long track lists.',
-    'A clearer layout of the extension\'s settings page; a new "About" page has been added, with the privacy policy you can read inside the extension.',
-    'You can change the language, and the translations have been improved; spotted a mistake? Use Report a translation issue next to Language in Settings.',
-    'And many smaller visual refinements, behavior fixes and reliability improvements throughout the extension.'
+    'A proper ending: When a video ends, a calm black screen with Replay (and Next, when a playlist has one) now replaces the frozen last frame. Services with their own next-episode step, such as Netflix and Disney+, keep theirs.',
+    "YouTube recommendations: With Rich Theater Experience, the end of a YouTube video shows up to three suggestions you can pick without leaving theater mode, and YouTube's autoplay countdown appears right in our player, with Cancel. Not your thing? Turn off the Show recommendations switch under them.",
+    'Settings for each service: Service cards in Settings → Features have a new Settings button, where you can switch YouTube recommendations on or off and choose AutoTheater for that service alone.',
+    'A quick setup: A fresh install now asks three short questions about services, how theater mode starts and a few extras. Changed your mind later? Settings → About has Run setup again, and Reset to defaults for a clean start.',
+    "New services in Rich Theater Experience: SOOP, iQIYI and Rakuten Viki, with episode navigation, subtitle and audio choices and AutoTheater where the service allows it. SOOP's own chat joins you beside the video.",
+    'Audio tracks and subtitle language: Choose a dub or the original audio from the player settings on Netflix, Disney+ and YouTube, and I will remember your language for that service. While subtitles load, the corner notice already shows which language is coming.',
+    'Speed keys: Press < and > to change the speed as you do on YouTube, or hold Seek Forward to play at 2x until you let go.',
+    'Updates stay out of your way: A new version no longer opens a tab. A NEW badge on the toolbar icon, a note in the popup and a line at the bottom of the player menu lead you here instead; open any of them and the badge goes away.',
+    'Smoother theater: Theater opens and closes with less of a freeze on large pages such as YouTube, and it no longer ends when a site briefly hides its player while switching videos.',
+    "Fixes you may have noticed: AutoTheater now starts on Vimeo videos and when you expand YouTube's miniplayer, Disney+ subtitles keep following the dialogue after the audio track changes, Twitch chat no longer cuts off messages, and letter shortcuts work on Cyrillic, Greek, Hebrew and other non-Latin keyboards.",
+    'New languages: 🇬🇧 English (UK), 🇨🇿 Čeština and 🇸🇰 Slovenčina are now in the language list in Settings.',
+    "And a few smaller things: drag the edge of the chat to resize it, move around the player bar with W, A, S and D, theater on YouTube's miniplayer, and clearer keyboard shortcut names and help."
   ]);
-  assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pin controls', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:', 'SponsorBlock support:', 'Automatic theater mode:', 'Video launcher:', 'Fullscreen in theater mode:', 'Accessibility:', 'Hold for 2x speed:']);
-  assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to @liango2 for the idea of the always-visible interface, to Denis for the idea of automatically entering theater mode, and to @wesleyel for the playback speed shortcuts and holding Seek Forward for 2x.');
+  assert.deepEqual(await root.locator('li strong').allTextContents(), ['A proper ending', 'YouTube recommendations', 'Settings for each service', 'A quick setup', 'New services in Rich Theater Experience', 'Audio tracks and subtitle language', 'Speed keys', 'Updates stay out of your way', 'Smoother theater', 'Fixes you may have noticed', 'New languages']);
+  assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to @wesleyel for the groundwork behind the playback speed keys and holding Seek Forward for 2x.');
   const profiles = page.locator('.whats-new-thanks a');
   assert.deepEqual(await profiles.evaluateAll(links => links.map(link => ({
     text: link.textContent, href: link.getAttribute('href'), target: link.getAttribute('target'), rel: link.getAttribute('rel')
   }))), [
-    { text: '@liango2', href: 'https://github.com/liango2', target: '_blank', rel: 'noopener noreferrer' },
     { text: '@wesleyel', href: 'https://github.com/wesleyel', target: '_blank', rel: 'noopener noreferrer' }
   ]);
   assert.equal(await page.getByRole('link', { name: '@wesleyel' }).count(), 1);
@@ -82,10 +72,8 @@ it('renders static English semantic content safely and refreshes localized dialo
   assert.equal(await page.locator('.te-dialog-close').evaluate(el => el === document.activeElement), true, 'close button is in the focus loop');
   await page.keyboard.press('Tab');
   assert.equal(await page.locator('.te-dialog-body').evaluate(el => el === document.activeElement), true, 'shared scroll area is in the focus loop');
-  for (const name of ['@liango2', '@wesleyel']) {
-    await page.keyboard.press('Tab');
-    assert.equal(await page.getByRole('link', { name }).evaluate(el => el === document.activeElement), true, `${name} is in the focus loop`);
-  }
+  await page.keyboard.press('Tab');
+  assert.equal(await page.getByRole('link', { name: '@wesleyel' }).evaluate(el => el === document.activeElement), true, '@wesleyel is in the focus loop');
   const englishBody = await root.textContent();
   for (const locale of ['pl', 'ar', 'en']) {
     await page.evaluate(`Announcement.languageRuntime.set('${locale}')`);
@@ -121,6 +109,27 @@ it('renders static English semantic content safely and refreshes localized dialo
   await page.locator('.te-dialog-btn-primary').click();
   await page.getByRole('dialog').waitFor({ state: 'hidden' });
   assert.equal(await page.locator('#opener').evaluate(el => el === document.activeElement), true);
+});
+
+it('shows 2.0 below 2.1, each with its own thanks, to someone who never saw the 2.0 highlights', { timeout: 30_000 }, async t => {
+  const page = await (await browsers.chromium.newContext(t)).newPage();
+  await page.setContent('<html><body></body></html>');
+  await page.evaluate('window.__name = value => value');
+  await page.evaluate(catalogs => {
+    Object.assign(window, { chrome: {
+      runtime: { sendMessage: async ({ locale }: { locale: string }) => catalogs[locale] },
+      storage: { local: { get: async () => ({ pendingUpdate: { version: '2.1.0', since: '1.9' } }) } }
+    } });
+  }, catalogs);
+  await page.addScriptTag({ content: bundle });
+  await page.evaluate('void Announcement.openWhatsNewDialog()');
+  await page.getByRole('dialog').waitFor();
+  assert.deepEqual(await page.locator('.whats-new-content h3 strong').allTextContents(),
+    ['Here is Theater Mode Everywhere 2.1!', 'Here is Theater Mode Everywhere 2.0!']);
+  assert.deepEqual(await page.locator('.whats-new-thanks em').allTextContents(), [
+    'Big thanks to @wesleyel for the groundwork behind the playback speed keys and holding Seek Forward for 2x.',
+    'Big thanks to @liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.'
+  ]);
 });
 
 for (const engine of testEngines()) {

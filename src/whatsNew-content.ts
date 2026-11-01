@@ -27,7 +27,6 @@ const RELEASE_2_0: AnnouncementContent = {
     [{ strong: 'Video launcher:' }, ' Off by default; turn it on in Settings → Features → Video launcher to enter theater mode with a small button on the left edge of a paused video. It hides during playback, except for the first five seconds after a page or in-app navigation loads. Its tooltip shows your theater shortcut, such as [T]. With YouTube Rich Theater Experience, a white rhombus with an accent triangle stays in the player toolbar regardless of playback or pointer activity. When you turn AutoTheater off, TME offers to enable it.'],
     [{ strong: 'Fullscreen in theater mode:' }, ' Double-click the picture to enter or leave fullscreen without leaving theater mode. A single click now plays or pauses faster, and a quick double-click never pauses the video.'],
     [{ strong: 'Accessibility:' }, ' Choose High contrast, Reduce transparency and Reduce motion separately (Auto, On or Off) in Settings → Appearance; Auto follows your system preferences. Settings and the player also work better with screen readers.'],
-    [{ strong: 'Hold for 2x speed:' }, ' Hold the Seek Forward key (→ unless you changed it) to play at 2x until you let go; a tap still skips 5 seconds. You can turn this off in Settings → Keyboard Shortcuts.'],
     ['Settings warn you about conflicting keyboard shortcuts.'],
     ['The titles of the videos being played are displayed.'],
     ['You can go to the home page of the service the video is playing on.'],
@@ -39,8 +38,31 @@ const RELEASE_2_0: AnnouncementContent = {
   ],
   thanks: [
     'Big thanks to ', { link: '@liango2', href: 'https://github.com/liango2' },
-    ' for the idea of the always-visible interface, to Denis for the idea of automatically entering theater mode, and to ',
-    { link: '@wesleyel', href: 'https://github.com/wesleyel' }, ' for the playback speed shortcuts and holding Seek Forward for 2x.'
+    ' for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.'
+  ]
+};
+
+const RELEASE_2_1: AnnouncementContent = {
+  generation: '2.1',
+  heading: 'Here is Theater Mode Everywhere 2.1!',
+  paragraph: ["I'm happy to share an update that makes ", { strong: 'the end of a video' }, ' feel finished, lets you tune each service on its own, and brings theater mode to a few more places.'],
+  items: [
+    [{ strong: 'A proper ending' }, ': When a video ends, a calm black screen with Replay (and Next, when a playlist has one) now replaces the frozen last frame. Services with their own next-episode step, such as Netflix and Disney+, keep theirs.'],
+    [{ strong: 'YouTube recommendations' }, ': With Rich Theater Experience, the end of a YouTube video shows up to three suggestions you can pick without leaving theater mode, and YouTube\'s autoplay countdown appears right in our player, with Cancel. Not your thing? Turn off the Show recommendations switch under them.'],
+    [{ strong: 'Settings for each service' }, ': Service cards in Settings → Features have a new Settings button, where you can switch YouTube recommendations on or off and choose AutoTheater for that service alone.'],
+    [{ strong: 'A quick setup' }, ': A fresh install now asks three short questions about services, how theater mode starts and a few extras. Changed your mind later? Settings → About has Run setup again, and Reset to defaults for a clean start.'],
+    [{ strong: 'New services in Rich Theater Experience' }, ': SOOP, iQIYI and Rakuten Viki, with episode navigation, subtitle and audio choices and AutoTheater where the service allows it. SOOP\'s own chat joins you beside the video.'],
+    [{ strong: 'Audio tracks and subtitle language' }, ': Choose a dub or the original audio from the player settings on Netflix, Disney+ and YouTube, and I will remember your language for that service. While subtitles load, the corner notice already shows which language is coming.'],
+    [{ strong: 'Speed keys' }, ': Press < and > to change the speed as you do on YouTube, or hold Seek Forward to play at 2x until you let go.'],
+    [{ strong: 'Updates stay out of your way' }, ': A new version no longer opens a tab. A NEW badge on the toolbar icon, a note in the popup and a line at the bottom of the player menu lead you here instead; open any of them and the badge goes away.'],
+    [{ strong: 'Smoother theater' }, ': Theater opens and closes with less of a freeze on large pages such as YouTube, and it no longer ends when a site briefly hides its player while switching videos.'],
+    [{ strong: 'Fixes you may have noticed' }, ': AutoTheater now starts on Vimeo videos and when you expand YouTube\'s miniplayer, Disney+ subtitles keep following the dialogue after the audio track changes, Twitch chat no longer cuts off messages, and letter shortcuts work on Cyrillic, Greek, Hebrew and other non-Latin keyboards.'],
+    [{ strong: 'New languages' }, ': 🇬🇧 English (UK), 🇨🇿 Čeština and 🇸🇰 Slovenčina are now in the language list in Settings.'],
+    ['And a few smaller things: drag the edge of the chat to resize it, move around the player bar with W, A, S and D, theater on YouTube\'s miniplayer, and clearer keyboard shortcut names and help.']
+  ],
+  thanks: [
+    'Big thanks to ', { link: '@wesleyel', href: 'https://github.com/wesleyel' },
+    ' for the groundwork behind the playback speed keys and holding Seek Forward for 2x.'
   ]
 };
 
@@ -48,7 +70,7 @@ const RELEASE_2_0: AnnouncementContent = {
  * Every release's highlights, newest first. Release copy is deliberately English-only, independent of the
  * interface language. Add a release's entry at the top when it has highlights to announce.
  */
-export const WHATS_NEW_RELEASES: readonly AnnouncementContent[] = [RELEASE_2_0];
+export const WHATS_NEW_RELEASES: readonly AnnouncementContent[] = [RELEASE_2_1, RELEASE_2_0];
 
 /** Everything released after `since` (the generation last announced), or the latest release when nothing is newer. */
 export function releasesSince(since?: Generation, releases = WHATS_NEW_RELEASES): readonly AnnouncementContent[] {

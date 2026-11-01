@@ -53,6 +53,13 @@ describe('Update highlights catalog', () => {
     assert.deepEqual(shown(), ['2.3'], 'opened without an announcement');
   });
 
+  it('shows a 2.0.8 upgrader only 2.1, and 2.0 as well to someone who never saw its highlights', () => {
+    const generations = (since?: Generation) => releasesSince(since).map(release => release.generation);
+    assert.deepEqual(generations('2.0'), ['2.1']);
+    assert.deepEqual(generations('1.9'), ['2.1', '2.0']);
+    assert.deepEqual(generations(), ['2.1'], 'opened without an announcement');
+  });
+
   it('lists releases newest first and keeps up with the manifest, so a release cannot ship without its highlights', () => {
     const manifest = JSON.parse(readFileSync(resolve(import.meta.dirname, '../manifest.json'), 'utf8')).version;
     const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, '../package.json'), 'utf8'));
