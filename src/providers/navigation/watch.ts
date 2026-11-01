@@ -6,7 +6,6 @@ import { providerRegistry } from '../runtime-registration';
 
 const SURFACES = ['button.vjs-previous-video', 'button.vjs-next-video', '[data-testid="button-previous-video"]',
   '[data-testid="button-next-video"]', 'button.prev_button', 'button.next_button',
-  '.txp_btn_next_u', '.txp_btn_next', '[data-role="wetv-player-ctrl-next"]',
   'button[data-href]', 'a[href*="video="]', '.watch-video [data-uia="player"]',
   'disney-web-player', 'controls-overlay', 'main-app-controls-overlay'].join(',');
 
@@ -29,8 +28,7 @@ export function subscribePlaylistNavigation(root: Document | ShadowRoot, read: (
       }
       if (element?.closest('video, .inner, .progress-ring__circle')) return false;
       // Host clock and scrubber paint are unrelated to persistent navigation.
-      return Boolean(element?.closest('button, a, play-next, '
-        + '.txp_btn_next_u, .txp_btn_next, [data-role="wetv-player-ctrl-next"]')
+      return Boolean(element?.closest('button, a, play-next')
         || (record.type === 'childList' && [...record.addedNodes, ...record.removedNodes].some(node => node instanceof Element)));
     },
     flags: registered.map(hooks => providerOffAttribute(hooks.id)),

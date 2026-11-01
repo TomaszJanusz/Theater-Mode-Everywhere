@@ -1,3 +1,5 @@
+import { providerRuntime } from './provider-api';
+
 /**
  * Hover previews and the miniplayer: never a discovered theater target, even when nothing else is
  * playable. The miniplayer's video is entered only through the explicit fallback in
@@ -49,14 +51,14 @@ export function hasLeftPlaybackSurface(video: HTMLVideoElement, surface: 'watch'
 }
 
 /**
- * ThumbPlayer keeps a sourced standby video beside visible playback. Disney
+ * Some providers keep a sourced standby beside visible playback. Disney
  * mounts a display:none standby first when the next episode replaces the
  * player, then adds the real video.
  */
-const STANDBY_VIDEO_HOST_SELECTOR = '.txp_videos_container, disney-web-player';
+const standbySelector = () => ['disney-web-player', typeof window === 'undefined' ? '' : providerRuntime('isolated')?.services?.standbyVideoSelector?.() ?? ''].filter(Boolean).join(', ');
 
 export function isInactiveStandbyVideo(video: HTMLVideoElement): boolean {
-  if (!video.closest(STANDBY_VIDEO_HOST_SELECTOR)) return false;
+  if (!video.closest(standbySelector())) return false;
   const view = video.ownerDocument?.defaultView;
   if (!view) return false;
   if (view.getComputedStyle(video).visibility === 'hidden') return true;

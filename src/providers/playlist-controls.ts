@@ -144,7 +144,7 @@ function isHostStepUsable(control: ObservedPlaylistControl): boolean {
   if (control.disabled || control.ariaDisabled === 'true') return false;
   const names = new Set(control.className.split(/\s+/).filter(Boolean));
   if (names.has('vjs-disabled') || names.has('vjs-hidden')) return false;
-  if (names.has('txp_disabled') || names.has('txp_none') || names.has('disabled') || names.has('bpx-state-disabled')) return false;
+  if (names.has('disabled') || names.has('bpx-state-disabled')) return false;
   if (control.inlineDisplay === 'none' || control.computedDisplay === 'none') return false;
   if (control.provider === 'vimeo-showcase' && control.width <= 0) return false;
   return true;

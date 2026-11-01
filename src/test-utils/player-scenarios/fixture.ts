@@ -1,26 +1,27 @@
 import type { TestContext } from 'node:test';
 import { readFileSync } from 'node:fs';
-import { buildSync } from 'esbuild';
+import { bundleModules, PROVIDER_ENTRIES } from '../player-boot';
 import { sharedTestBrowser } from '../test-browser';
 import { readStylesheet } from '../styles';
 import { readCatalog } from '../language-audit';
 
-const bundle = buildSync({
-  stdin: { contents: "export { bootstrapPlayerRuntime } from './ui/player-runtime'; export { installMainWorldRuntime } from './platform/main-world-runtime'; export { languageRuntime } from './i18n-runtime'; export { setPlayerUiCss } from './ui/root';", resolveDir: new URL('../../', import.meta.url).pathname, loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'SmokeRegressions', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+// Provider entries register only on their own hosts, as the manifest loads them; elsewhere the page stays generic.
+const bundle = bundleModules([...PROVIDER_ENTRIES, "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
+  "export { installMainWorldRuntime } from './platform/main-world-runtime';", "export { languageRuntime } from './i18n-runtime';",
+  "export { setPlayerUiCss } from './ui/root';"], 'SmokeRegressions');
 const fixture = readFileSync(new URL('../../../test/fixtures/local-player.html', import.meta.url), 'utf8');
 const vod = readFileSync(new URL('../../../test/fixtures/vod.webm', import.meta.url));
 const css = readStylesheet(new URL('../../content.css', import.meta.url));
 const catalogs: Record<string, unknown> = { pl: readCatalog('pl'), ar: readCatalog('ar') };
 const shadow = readStylesheet(new URL('../../ui/shadow.css', import.meta.url));
 
-export async function playerFixture(shared: ReturnType<typeof sharedTestBrowser>, t: TestContext) {
+/** `origin` serves the fixture from a provider's host, for a scenario whose behavior that provider owns. */
+export async function playerFixture(shared: ReturnType<typeof sharedTestBrowser>, t: TestContext, origin = 'http://smoke-regression.test') {
   const context = await shared.newContext(t, { viewport: { width: 1280, height: 720 } });
   const page = await context.newPage();
-  await page.route('http://smoke-regression.test/**', route => route.fulfill(route.request().url().endsWith('/vod.webm')
+  await page.route(`${origin}/**`, route => route.fulfill(route.request().url().endsWith('/vod.webm')
     ? { contentType: 'video/webm', body: vod } : { contentType: 'text/html', body: fixture }));
-  await page.goto('http://smoke-regression.test/');
+  await page.goto(`${origin}/`);
   await page.evaluate('window.__name = fn => fn;');
   await page.evaluate(catalogs => {
     const values: Record<string, unknown> = { shortcuts: { exit: 'X' } };

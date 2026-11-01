@@ -1,7 +1,8 @@
 import { DisposableScope } from '../../core/disposable-scope';
+import type { ProviderPlaybackSession } from '../provider-api';
+
 import { openTencentWasmSurface } from './wasm-bridge';
 import { isUsableTencentWasmPlayer, replacementTencentWasmHost } from './wasm-player';
-import type { ProviderPlaybackSession } from '../playback-session';
 
 export function openTencentPlaybackSession(
   element: HTMLElement,

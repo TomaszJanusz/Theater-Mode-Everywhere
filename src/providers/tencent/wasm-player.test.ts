@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
 import { createFrameMessage } from '../../protocol/frame-messages';
 import { isTrustedFrameEnvelope } from '../../protocol/frame-messages';
+
 import { createWasmEventWatch, createWasmIdWatch, openTencentWasmSurface, type WasmTransport } from './wasm-bridge';
 import {
   createWasmClock,
@@ -9,7 +11,7 @@ import {
   emptyWasmSnapshot,
   isTencentWasmFrameDocument,
   isTencentWasmFrameUrl,
-  ordinaryChildWindows,
+  tencentWasmContentWindows,
   readTencentWasmHostToggle,
   replacementTencentWasmHost,
   selectTencentTheaterTarget
@@ -147,7 +149,7 @@ describe('tencent wasm host toggle', () => {
       origin: 'https://vm.gtimg.cn',
       data: { ...message, nonce: '' }
     }, page), null);
-    assert.deepEqual(ordinaryChildWindows(root), [foreignWindow]);
+    assert.deepEqual(tencentWasmContentWindows(root), [wasmWindow]);
     assert.equal(isTrustedFrameEnvelope(message, {
       eventOrigin: 'https://vm.gtimg.cn',
       trustedOrigin: true,
