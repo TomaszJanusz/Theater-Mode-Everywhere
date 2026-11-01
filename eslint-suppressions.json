@@ -1652,7 +1652,7 @@
       "count": 1
     },
     "import/order": {
-      "count": 5
+      "count": 4
     }
   },
   "src/test-utils/player-scenarios/playback.ts": {
