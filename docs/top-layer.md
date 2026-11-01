@@ -45,5 +45,8 @@ Limits:
   either.)
 - While native chat is active (`data-theater-chat-active`) the host leaves the top layer and uses
   z-index again: service popups (Twitch, YouTube) rely on z-index to sit above the chrome, which the
-  top layer would defeat. Those pages do not get the top-layer benefit.
+  top layer would defeat. Those pages do not get the top-layer benefit. That includes a chat the user
+  has hidden: the attribute means the service chat exists (`data-theater-chat-visible` means it is
+  shown), the YouTube popup lifts in `src/native-chat.css` key on it, and those popups (menus, the
+  "continue watching?" dialog) still open while the column is hidden.
 - A page that removes and re-attaches the host is re-shown on the next UI mount, not immediately.
