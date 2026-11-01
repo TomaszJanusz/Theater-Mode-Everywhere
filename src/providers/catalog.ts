@@ -132,6 +132,13 @@ export const PROVIDER_SETTINGS = [
     "id": "bilibili",
     "settings": [
       {
+        "id": "showRecommendations",
+        "type": "boolean",
+        "default": true,
+        "label": "providerShowRecommendations",
+        "description": "providerShowRecommendationsDescription"
+      },
+      {
         "id": "autoTheater",
         "type": "boolean",
         "default": true,

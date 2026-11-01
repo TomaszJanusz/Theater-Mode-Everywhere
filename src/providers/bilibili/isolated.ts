@@ -2,6 +2,7 @@ import { mediaProviderIntegrationEnabled } from '../../media-features/provider-f
 import { providerRuntime } from '../provider-api';
 
 import { BilibiliAdapter } from './adapter';
+import { createBilibiliEndScreen } from './end-screen';
 import { allowsBilibiliMediaFetch } from './fetch-policy';
 import { BILIBILI_PLAYER_SELECTOR, readBilibiliControls } from './navigation';
 import { createBilibiliServiceActions } from './service-actions';
@@ -12,6 +13,7 @@ const services = api?.services;
 if (services) api?.register({
   id: 'bilibili', contractVersion: 1, watchPlayback: bilibiliWatchPlayback,
   allowsMediaFetch: allowsBilibiliMediaFetch,
+  endScreen: createBilibiliEndScreen,
   createAdapter: () => new BilibiliAdapter(services),
   navigation: { playerSelector: BILIBILI_PLAYER_SELECTOR, readControls: readBilibiliControls, surfaces: '.bpx-player-ctrl-prev, .bpx-player-ctrl-next' },
   serviceActions(options) {

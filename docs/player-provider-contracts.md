@@ -281,6 +281,8 @@ countdown keep the picture instead of showing even the plain curtain. The same
 method on `ServiceActionSource` lets a host's live post-play step do so. The curtain is triggered only by a real media end, never a pause. Empty
 provider content leaves the existing Replay/Next screen unchanged.
 
+The tiles, the recommendations switch and their stylesheet are one shared view (`providers/end-screen-view.ts`, keyed by the provider's id in `providerSettings`); a provider supplies only a snapshot and an activation. YouTube reads its rendered end grid. Bilibili (CN) reads its ending panel (`.bpx-player-ending-panel`), which it fills only when nothing follows: a following part or series item switches through `pushState` at once and never shows it. Tiles carry a title and cover there, completed from the matching sidebar cards (uploader, views, duration), and a click goes through Bilibili's own tile. With autoplay on, the first tile carries a running countdown ring and a cancel control: the curtain yields while they are usable, Play now and Cancel are `ServiceActionSource` actions on Bilibili's own controls (the ring has no readable progress, so none is shown), and the viewer's autoplay setting is only ever read through that effect, never changed. Cancelling or autoplay being off leaves the tiles. The ended signal needs no `playbackEnd`: the video ends and `emptied`/`loadstart` fire on every switch.
+
 1. Define a small shared contract for the feature, including availability and cleanup where needed.
 2. Implement the interface once in the player using only that contract.
 3. Implement each host's data and commands inside its provider (see below), exposed through a hook on that contract.

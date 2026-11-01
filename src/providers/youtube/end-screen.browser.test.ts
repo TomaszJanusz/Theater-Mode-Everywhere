@@ -9,8 +9,7 @@ import { readStylesheet } from '../../test-utils/styles';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { testEngines } from '../../test-utils/test-engines';
 import { serveFixture, vodVideoFixture } from '../../test-utils/video-fixtures';
-
-import type { EndScreenItem } from './end-screen-model';
+import type { EndScreenItem } from '../end-screen-view';
 
 const recorded = readFileSync(new URL('../../../test/host-fixtures/youtube-end-screen.html', import.meta.url), 'utf8');
 const url = 'https://www.youtube.com/watch?v=jNQXAC9IVRw';

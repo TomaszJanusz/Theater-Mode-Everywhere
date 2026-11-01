@@ -4,9 +4,8 @@ import { page, userEvent } from 'vitest/browser';
 import { DisposableScope } from '../../core/disposable-scope';
 import { APPEARANCE_MODES, blockingViolations } from '../../test-utils/axe';
 import { getPlayerUiRoot, mountPlayerUi } from '../../ui/root';
+import { mountEndScreenSettings, renderEndScreen, type EndScreenItem, type SuggestionSource } from '../end-screen-view';
 
-import type { EndScreenItem, SuggestionSource } from './end-screen-model';
-import { mountEndScreenSettings, renderEndScreen } from './end-screen-view';
 import { createYouTubeSettings } from './settings';
 
 let scope: DisposableScope;
@@ -99,7 +98,7 @@ describe('YouTube recommendation switch', () => {
       const settings = createYouTubeSettings();
       scope.add(() => settings.dispose());
       await settings.ready;
-      mountEndScreenSettings(curtain, source, { label: 'Suggested videos', scope, settings });
+      mountEndScreenSettings(curtain, source, { label: 'Suggested videos', scope, settings, provider: 'youtube' });
       const input = curtain.querySelector<HTMLInputElement>('[role=switch]')!;
       await expect.element(input).toHaveAccessibleName('Show recommendations');
       await userEvent.click(input);
@@ -155,7 +154,7 @@ describe('YouTube recommendation switch placement', () => {
           const settings = createYouTubeSettings();
           scope.add(() => settings.dispose());
           await settings.ready;
-          mountEndScreenSettings(curtain, source, { label: 'Suggested videos', scope, settings });
+          mountEndScreenSettings(curtain, source, { label: 'Suggested videos', scope, settings, provider: 'youtube' });
           await placed(curtain, bar, '.theater-end-screen');
           // Off, the switch takes the tiles' place under Replay.
           await settings.set('youtube', 'showRecommendations', false);

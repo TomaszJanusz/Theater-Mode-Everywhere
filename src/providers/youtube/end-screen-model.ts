@@ -1,24 +1,4 @@
-/** Host-owned text and URLs extracted from the rendered suggestion links. */
-export interface EndScreenItem {
-  id: string;
-  href: string;
-  kind: 'video' | 'playlist';
-  title: string;
-  thumbnailUrl?: string;
-  channel?: string;
-  meta?: string;
-  durationText?: string;
-}
-
-export interface EndScreenSnapshot {
-  mediaId: string;
-  items: readonly EndScreenItem[];
-}
-
-export interface SuggestionSource {
-  read(): EndScreenSnapshot | null;
-  activate(id: string, mediaId: string): boolean;
-}
+import type { EndScreenItem } from '../end-screen-view';
 
 /** Pure normalization of the small fields read from a native suggestion anchor. */
 export function normalizeSuggestion(fields: {
