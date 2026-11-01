@@ -1676,7 +1676,7 @@ html { scrollbar-gutter: stable; }
 .rte-badges { --rte-badge-pad-x: 8px; display: flex; flex-wrap: wrap; gap: 5px; grid-column: 1 / -1; }
 /* Capability colors are shared by tile badges and filter chips. Opaque surfaces
    keep them legible with reduced transparency as well. They are calm mid-tones,
-   not pastels: each text color must stay at least 4.5:1 over its own 16% tint
+   not pastels over a dark, muted 8% tint: each text color must stay at least 4.5:1 over its own tint
    (checked in rte-settings.browser.test.ts). */
 [data-capability="title"] { --rte-capability-color: #a599d1; }
 [data-capability="subtitles"] { --rte-capability-color: #62c2cf; }
@@ -1689,7 +1689,7 @@ html { scrollbar-gutter: stable; }
 [data-capability="autoTheater"] { --rte-capability-color: #c892d1; }
 .rte-badge, .rte-filter-buttons button {
   --rte-badge-color: var(--appearance-ink, var(--rte-capability-color));
-  --rte-badge-background: color-mix(in srgb, var(--rte-capability-color) 16%, var(--appearance-normal-background));
+  --rte-badge-background: color-mix(in srgb, var(--rte-capability-color) 8%, var(--appearance-normal-background));
 }
 .rte-badge {
   /* line-height: 1 puts the capitals optically centered; the extra top pixel offsets the empty descender space. */
