@@ -1948,3 +1948,7 @@ html { scrollbar-gutter: stable; }
 .setup-actions-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .setup-reset-also { display: flex; align-items: center; gap: 10px; margin-top: 16px; cursor: pointer; }
 .setup-reset-also input { flex-shrink: 0; width: 18px; height: 18px; margin: 0; accent-color: var(--accent-color); }
+/* Setup: language, accent and layout steps reuse the Settings controls. */
+.setup-language { justify-self: start; min-width: min(260px, 100%); }
+.setup-choice.has-picture { align-items: center; }
+.setup-choice.has-picture .picture-align-icon { flex-shrink: 0; width: 104px; color: var(--appearance-ink, var(--text-primary)); }

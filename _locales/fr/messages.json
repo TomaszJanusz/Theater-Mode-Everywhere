@@ -1538,6 +1538,26 @@
     "message": "Consultez et modifiez toutes les touches dans Paramètres → Raccourcis clavier.",
     "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
   },
+  "setupAccentDescription": {
+    "message": "Utilisée pour les commandes, curseurs et éléments en surbrillance du lecteur, et ici dans les Paramètres. Cette page affiche votre choix immédiatement.",
+    "description": "First-run setup, accent colour step: what the accent colour is used for. The Settings page recolours as soon as one is picked."
+  },
+  "setupLayoutDescription": {
+    "message": "Où se place l’image en mode cinéma.",
+    "description": "First-run setup, layout step: one line above the Centered and Raised choices."
+  },
+  "setupControlsTitle": {
+    "message": "Commandes du lecteur",
+    "description": "First-run setup step heading: the step about pinning the playback controls."
+  },
+  "setupControlsDescription": {
+    "message": "En mode cinéma, les commandes se masquent pendant la lecture et réapparaissent quand vous bougez la souris.",
+    "description": "First-run setup, player controls step: how the controls behave unless they are pinned."
+  },
+  "setupAppearanceFooter": {
+    "message": "Vous pourrez modifier ce choix plus tard dans Paramètres → Apparence.",
+    "description": "Footer of the first-run setup steps for language, accent colour, layout and pinned controls. \"Settings → Appearance\" names the Settings page and its tab."
+  },
   "setupSummaryStartKey": {
     "message": "Seulement quand vous appuyez sur $1",
     "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."

@@ -1538,6 +1538,26 @@
     "message": "Vedi e cambia tutti i tasti in Impostazioni → Scorciatoie da tastiera.",
     "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
   },
+  "setupAccentDescription": {
+    "message": "Usato per i controlli, i cursori e le evidenziazioni del player, e qui nelle Impostazioni. Questa pagina mostra subito la tua scelta.",
+    "description": "First-run setup, accent colour step: what the accent colour is used for. The Settings page recolours as soon as one is picked."
+  },
+  "setupLayoutDescription": {
+    "message": "Dove si trova l’immagine in modalità cinema.",
+    "description": "First-run setup, layout step: one line above the Centered and Raised choices."
+  },
+  "setupControlsTitle": {
+    "message": "Controlli del player",
+    "description": "First-run setup step heading: the step about pinning the playback controls."
+  },
+  "setupControlsDescription": {
+    "message": "In modalità cinema, i controlli si nascondono mentre guardi e tornano quando muovi il mouse.",
+    "description": "First-run setup, player controls step: how the controls behave unless they are pinned."
+  },
+  "setupAppearanceFooter": {
+    "message": "Puoi cambiarlo in seguito in Impostazioni → Aspetto.",
+    "description": "Footer of the first-run setup steps for language, accent colour, layout and pinned controls. \"Settings → Appearance\" names the Settings page and its tab."
+  },
   "setupSummaryStartKey": {
     "message": "Solo quando premi $1",
     "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."

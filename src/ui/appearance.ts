@@ -7,9 +7,15 @@ import {
 import { raisedCaptionBandMin } from '../media-features/caption-dock';
 import { stepLevel } from '../step-level';
 import { t } from './messages';
+import { PICTURE_ALIGNS, type PictureAlign } from './picture-align-settings';
 
 export { applyAccentColorPreset, DEFAULT_ACCENT_COLOR, resolveAccentColorPreset };
 export type { AccentColorPreset };
+export {
+  DEFAULT_PICTURE_ALIGN, DEFAULT_RAISE_ONLY_WITH_SUBTITLES, PICTURE_ALIGN_STORAGE_KEY, PICTURE_ALIGNS,
+  RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY, resolvePictureAlign, resolveRaiseOnlyWithSubtitles
+} from './picture-align-settings';
+export type { PictureAlign } from './picture-align-settings';
 
 export const VIDEO_FIT_STORAGE_KEY = 'videoFitMode';
 export const VIDEO_FIT_MODES = ['contain', 'cover', 'fill'] as const;
@@ -37,28 +43,9 @@ export function videoFitLabel(mode: VideoFitMode): string {
   return t(VIDEO_FIT_LABEL_KEYS[mode]);
 }
 
-export const PICTURE_ALIGN_STORAGE_KEY = 'pictureAlign';
-export const PICTURE_ALIGNS = ['center', 'top'] as const;
-export type PictureAlign = (typeof PICTURE_ALIGNS)[number];
-export const DEFAULT_PICTURE_ALIGN: PictureAlign = 'top';
-
-export const RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY = 'raiseOnlyWithSubtitles';
-export const DEFAULT_RAISE_ONLY_WITH_SUBTITLES = true;
-
 /** One layout down or up in the options page's order, held at the ends; the cycle shortcut flips on its own. */
 export function stepPictureAlign(align: PictureAlign, direction: 1 | -1): PictureAlign {
   return stepLevel(PICTURE_ALIGNS, align, direction);
-}
-
-export function resolvePictureAlign(value: unknown): PictureAlign {
-  return typeof value === 'string' && PICTURE_ALIGNS.includes(value as PictureAlign)
-    ? value as PictureAlign
-    : DEFAULT_PICTURE_ALIGN;
-}
-
-/** Only a saved boolean overrides the default, so an explicit choice always wins. */
-export function resolveRaiseOnlyWithSubtitles(value: unknown): boolean {
-  return typeof value === 'boolean' ? value : DEFAULT_RAISE_ONLY_WITH_SUBTITLES;
 }
 
 export type PicturePositionOptions = {

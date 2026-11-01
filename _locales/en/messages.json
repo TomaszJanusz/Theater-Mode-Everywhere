@@ -1549,6 +1549,26 @@
     "message": "See and change every key in Settings → Keyboard Shortcuts.",
     "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
   },
+  "setupAccentDescription": {
+    "message": "Used for the player’s controls, sliders and highlights, and here in Settings. This page shows your choice right away.",
+    "description": "First-run setup, accent colour step: what the accent colour is used for. The Settings page recolours as soon as one is picked."
+  },
+  "setupLayoutDescription": {
+    "message": "Where the picture sits in theater mode.",
+    "description": "First-run setup, layout step: one line above the Centered and Raised choices."
+  },
+  "setupControlsTitle": {
+    "message": "Player controls",
+    "description": "First-run setup step heading: the step about pinning the playback controls."
+  },
+  "setupControlsDescription": {
+    "message": "In theater mode, the controls hide while you watch and come back when you move the mouse.",
+    "description": "First-run setup, player controls step: how the controls behave unless they are pinned."
+  },
+  "setupAppearanceFooter": {
+    "message": "You can change this later in Settings → Appearance.",
+    "description": "Footer of the first-run setup steps for language, accent colour, layout and pinned controls. \"Settings → Appearance\" names the Settings page and its tab."
+  },
   "setupSummaryStartKey": {
     "message": "Only when you press $1",
     "description": "Summary value: theater mode starts only with the key. $1 is that key, usually T."

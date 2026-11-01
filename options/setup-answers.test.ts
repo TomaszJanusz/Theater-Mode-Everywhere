@@ -17,7 +17,8 @@ const PROMPT = { videoActivatorPromptAnswer: false };
 
 it('preselects a fresh install: every service, the theater key only, hold for 2x on and no volume boost', () => {
   assert.deepEqual({ ...defaultSetupAnswers(), chosen: undefined }, {
-    services: 'all', chosen: undefined, start: 'key', skipCountdown: false, seekHold: true, volumeBoost: false
+    services: 'all', chosen: undefined, start: 'key', skipCountdown: false, seekHold: true, volumeBoost: false,
+    language: 'automatic', accent: 'system', layout: 'top', raiseOnlyWithSubtitles: true, pinControls: false
   });
   assert.deepEqual(answersFromSettings(FRESH), defaultSetupAnswers());
   // Finishing the preselection writes only the launcher offer's answer, so it does not come back later.
@@ -85,4 +86,26 @@ it('maps hold for 2x and volume boost, and describes saved values as the matchin
   assert.equal(answersFromSettings(off).services, 'none');
   // "None" keeps the switches on, so moving to "Choose services" starts from everything.
   assert.ok(MEDIA_PROVIDER_IDS.every(id => answersFromSettings(off).chosen[id]));
+});
+
+it('reads and writes language, accent, layout and pinned controls through their own keys and resolvers', () => {
+  const stored = { ...FRESH, language: 'de', accentColor: 'green', pictureAlign: 'center', raiseOnlyWithSubtitles: false, keepControlsVisible: true };
+  assert.deepEqual(answersFromSettings(stored), answers({
+    language: 'de', accent: 'green', layout: 'center', raiseOnlyWithSubtitles: false, pinControls: true
+  }));
+  // Invalid stored values read as their defaults, as Settings shows them.
+  assert.deepEqual(answersFromSettings({ ...FRESH, language: 'xx', accentColor: 'plaid', pictureAlign: 'left' }), defaultSetupAnswers());
+  assert.deepEqual(setupSettingsPatch(answersFromSettings(stored), stored), PROMPT, 'run again unchanged: nothing new');
+  assert.deepEqual(setupSettingsPatch(answers({ language: 'ar', accent: 'teal', layout: 'center', pinControls: true }), FRESH), {
+    ...PROMPT, language: 'ar', accentColor: 'teal', pictureAlign: 'center', keepControlsVisible: true
+  });
+  // Back to Automatic is a change too.
+  assert.deepEqual(setupSettingsPatch(answers(), stored), {
+    ...PROMPT, language: 'automatic', accentColor: 'system', pictureAlign: 'top', raiseOnlyWithSubtitles: true, keepControlsVisible: false
+  });
+});
+
+it('writes "Raised only with subtitles" only with Raised, as Settings offers it', () => {
+  assert.deepEqual(setupSettingsPatch(answers({ raiseOnlyWithSubtitles: false }), FRESH), { ...PROMPT, raiseOnlyWithSubtitles: false });
+  assert.deepEqual(setupSettingsPatch(answers({ layout: 'center', raiseOnlyWithSubtitles: false }), FRESH), { ...PROMPT, pictureAlign: 'center' });
 });
