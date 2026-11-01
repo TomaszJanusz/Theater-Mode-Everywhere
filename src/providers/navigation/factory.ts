@@ -4,7 +4,6 @@ import { providerRegistry } from '../runtime-registration';
 
 import { DAILYMOTION_PLAYER_SELECTOR, readDailymotionControls } from './dailymotion';
 import { findDisneyPlaylistActions } from './disney';
-import { findNetflixPlaylistActions } from './netflix';
 import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
 import { readVideoJsControls, peerTubeNeighborPreviews, VIDEOJS_PLAYER_SELECTOR } from './videojs';
 
@@ -24,7 +23,7 @@ export function findProviderPlaylistActions(
   const host = queues.flatMap(queue => queue.actions).concat(hostActions(root, video, helpers).filter(action => !queued.has(action.direction)));
   const href = () => pageHref(root);
   const dedicated = [
-    ...findNetflixPlaylistActions(root, video, href),
+    ...providerRegistry.all().flatMap(hooks => hooks.navigation?.fallback?.(root, video, href) ?? []),
     ...findDisneyPlaylistActions(root, href)
   ];
   const claimed = new Set(host.map((action) => action.direction));
@@ -62,7 +61,7 @@ function readHostControls(root: ParentNode) {
     ...readVideoJsControls(root),
     ...readDailymotionControls(root),
     ...readTencentControls(root),
-    ...providerRegistry.all().flatMap(hooks => hooks.navigation?.readControls(root) ?? [])
+    ...providerRegistry.all().flatMap(hooks => hooks.navigation?.readControls?.(root) ?? [])
   ];
 }
 

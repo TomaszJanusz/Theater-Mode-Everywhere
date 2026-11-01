@@ -31,25 +31,10 @@ export type DisneyPlayerSnapshot = {
   captionTracks?: DisneyCaptionMeta[];
 };
 
-export type NetflixProbeSnapshot = {
-  videoId?: string;
-  title?: string;
-  tracks?: Array<{
-    id: string;
-    language: string;
-    label: string;
-    kind?: string;
-    forced?: boolean;
-    none?: boolean;
-  }>;
-  selectedTrackId?: string;
-};
-
 export type MediaProbeSnapshot = {
   /** Registered providers' snapshots by provider id, unvalidated: each provider normalizes its own. */
   providers?: Record<string, unknown>;
   disney?: DisneyPlayerSnapshot | null;
-  netflix?: NetflixProbeSnapshot | null;
   tencent?: TencentSnapshot | null;
   crunchyroll?: CrunchyrollSnapshot | null;
 };
@@ -82,7 +67,6 @@ export function requestMediaProbe(timeoutMs = 800): Promise<MediaProbeSnapshot> 
       resolve({
         providers: plainRecord(snapshot.providers),
         disney: snapshot.disney ?? null,
-        netflix: snapshot.netflix ?? null,
         tencent: snapshot.tencent ?? null,
         crunchyroll: snapshot.crunchyroll ?? null
       });

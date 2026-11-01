@@ -1,7 +1,8 @@
-import { NETFLIX_HARVEST_EVENT } from '../../media-features/parsers/netflix-page';
 import { publishHiddenJson } from '../../platform/hidden-json';
-import { netflixVideoId } from '../../media-features/parsers/netflix-page';
+
 import { NETFLIX_ACTION_SNAPSHOT_ID } from './action-bridge';
+import { NETFLIX_HARVEST_EVENT } from './page';
+import { netflixVideoId } from './page';
 import { netflixWatchId, readNetflixPlayerAppApi, seekNetflixSession, selectNetflixSession } from './session';
 
 let labeledVideoId: string | null = null;

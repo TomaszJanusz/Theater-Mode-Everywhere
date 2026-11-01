@@ -1,5 +1,6 @@
-import type { PreviewFrame } from '../types';
-import { netflixVideoId } from './netflix-page';
+import type { PreviewFrame } from '../../media-features/types';
+
+import { netflixVideoId } from './page';
 
 export const NETFLIX_PREVIEW_EVENT = 'theater-everywhere-netflix-preview';
 export const NETFLIX_PREVIEW_ID = 'theater-everywhere-netflix-preview-frame';

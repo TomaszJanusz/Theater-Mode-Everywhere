@@ -5,9 +5,18 @@ import path from 'node:path';
 import { netflixAudioHtml } from '../../src/providers/netflix/test-utils/audio-fixture';
 
 import { extensionWorker, ROOT, type BrowserContext, type Page, type Route } from './helpers';
+import { assertAutoTheaterEntry } from './provider-auto-theater';
+import { watchBridgeQuery } from './providers';
+
+const WATCH = 'https://www.netflix.com/watch/12345';
+/** The MAIN snapshot publisher's video id, or null where no Netflix MAIN script runs. */
+const snapshotVideoId = (page: Page) => page.evaluate(() => {
+  const text = document.getElementById('theater-everywhere-netflix-snapshot')?.textContent;
+  return text ? (JSON.parse(text) as { videoId?: string }).videoId ?? null : null;
+});
 
 /** Real installed isolated/MAIN scripts on synthetic Cadmium data. No authenticated Netflix claim. */
-export async function assertNetflixAudio(page: Page, context: BrowserContext): Promise<void> {
+export async function assertNetflixProvider(page: Page, context: BrowserContext): Promise<void> {
   const worker = await extensionWorker(context);
   const keys = ['autoEnterTheater', 'netflixIntegrationEnabled', 'audioPreferenceByHost'];
   const saved = await worker.evaluate(keys => chrome.storage.sync.get(keys), keys);
@@ -28,10 +37,15 @@ export async function assertNetflixAudio(page: Page, context: BrowserContext): P
   await context.route(hosts, handler);
   try {
     await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false, netflixIntegrationEnabled: true, audioPreferenceByHost: {} }));
-    await page.goto('https://www.netflix.com/watch/12345');
+    await page.goto(WATCH);
     await ready();
+    const query = watchBridgeQuery(page);
+    assert.equal(await query(), 'pilot-query', 'the MAIN provider answers the validated watch bridge');
+    await page.waitForFunction(() => document.getElementById('theater-everywhere-netflix-snapshot') !== null);
+    assert.equal(await snapshotVideoId(page), '12345', 'the MAIN snapshot publisher runs from the host script');
     await page.keyboard.press('t');
     await page.locator('.theater-controls-wrapper').waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-netflix-stage')), true, 'stage through the provider');
     await openAudio();
     assert.equal(await page.locator('#theater-audio-track-list .theater-cc-menu-item').count(), 13);
     await page.locator('#theater-audio-track-list .theater-cc-menu-item').filter({ hasText: /^polski$/ }).click();
@@ -47,8 +61,10 @@ export async function assertNetflixAudio(page: Page, context: BrowserContext): P
     await page.reload();
     await ready();
     await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-netflix-integration-off'));
+    assert.equal(await query(), 'pilot-query', 'MAIN identity stays available with RTE off');
     await page.keyboard.press('t');
     await page.locator('.theater-controls-wrapper').waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-netflix-stage')), true, 'the native stage stays with RTE off');
     await page.locator('.player-settings-btn').click();
     assert.equal(await page.locator('.audio-track-btn').isHidden(), true);
     await page.keyboard.press('Escape');
@@ -63,6 +79,12 @@ export async function assertNetflixAudio(page: Page, context: BrowserContext): P
           detail: JSON.stringify({ requestId: 'smoke', clientId: 'smoke', mediaId: '12345', pageHref: location.href, observe: false }) }));
         return document.getElementById('theater-everywhere-netflix-audio')?.textContent ?? null;
       }), null, 'no Netflix audio bridge on a non-matching host');
+      assert.equal(await snapshotVideoId(page), null, 'no Netflix MAIN script on a non-matching host');
+      assert.equal(await query(), null, 'no Netflix watch bridge on a non-matching host');
+      await page.keyboard.press('t');
+      await page.locator('.theater-controls-wrapper').waitFor();
+      assert.equal(await page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-netflix-stage')), false, 'generic stage on a non-matching host');
+      await page.keyboard.press('Escape');
     }
     await page.goto('https://www.netflix.com./watch/12345');
     await ready();
@@ -84,7 +106,14 @@ export async function assertNetflixAudio(page: Page, context: BrowserContext): P
         detail: JSON.stringify({ requestId: 'frame', clientId: 'frame', mediaId: '12345', pageHref: location.href, observe: false }) }));
       return JSON.parse(document.getElementById('theater-everywhere-netflix-audio')?.textContent ?? 'null')?.list.tracks.length;
     }), 13, 'Netflix bridge registers in its own matching frame');
-    console.log('smoke Netflix audio: installed isolated/MAIN JSON bridge, live-object setter, shared menu/HUD/preference, exit cleanup, RTE off and spoofed/generic host admission, DNS dot and matching frame registration passed (synthetic fixture)');
+    assert.equal(await snapshotVideoId(page), null, 'the generic parent loads no Netflix script');
+    // Netflix moves between episodes with pushState and a new player session on the same element.
+    await assertAutoTheaterEntry(page, context, 'netflix', { url: WATCH, navigate: next => next.evaluate(() => {
+      const scope = window as unknown as { nf: unknown; nfCreate(id: string, element: Element | null): unknown };
+      scope.nf = scope.nfCreate('67890', document.querySelector('.watch-video video'));
+      history.pushState({}, '', '/watch/67890');
+    }) });
+    console.log('smoke Netflix provider scripts: MAIN watch bridge and snapshot publisher, stage through the provider, installed isolated/MAIN audio JSON bridge, live-object setter, shared menu/HUD/preference, exit cleanup, RTE off, spoofed/generic hosts generic, DNS dot, matching frame registration and AutoTheater across an episode change passed (synthetic fixture)');
   } finally {
     await context.unroute(hosts, handler);
     await worker.evaluate(async ({ keys, saved }) => { await chrome.storage.sync.remove(keys); await chrome.storage.sync.set(saved); }, { keys, saved });

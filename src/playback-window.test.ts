@@ -504,30 +504,6 @@ describe('playback window', () => {
     }
   });
 
-  it('dispatches Netflix seeks only while provider integration is on', () => {
-    const blocked = installHost('www.netflix.com', ['data-te-netflix-integration-off']);
-    try {
-      const video = fakeVideo({ duration: 3600, currentTime: 10 });
-      seekToMediaTime(video, 90);
-      assert.equal(video.currentTime, 90);
-      assert.equal(blocked.dispatched.length, 0);
-    } finally {
-      blocked.restore();
-    }
-
-    const enabled = installHost('www.netflix.com', []);
-    try {
-      const video = fakeVideo({ duration: 3600, currentTime: 10 });
-      seekToMediaTime(video, 90);
-      assert.equal(video.currentTime, 10);
-      assert.equal(enabled.dispatched.length, 1);
-      assert.equal(JSON.parse((enabled.dispatched[0] as CustomEvent).detail).resumeAfterSeek, true);
-      assert.equal(JSON.parse((enabled.dispatched[0] as CustomEvent).detail).time, 90);
-    } finally {
-      enabled.restore();
-    }
-  });
-
   it('reads and observes the Disney clock only on Disney+', () => {
     const other = installHost('www.netflix.com', []);
     try {

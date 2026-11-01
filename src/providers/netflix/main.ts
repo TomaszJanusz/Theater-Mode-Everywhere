@@ -1,6 +1,12 @@
-import { observeProviderDom } from '../dom-watch';
-import { MAX_NETFLIX_PREVIEW_BYTES, NETFLIX_PREVIEW_EVENT, NETFLIX_PREVIEW_ID, parseNetflixPreviewRequest } from '../../media-features/parsers/netflix-preview';
 import { sanitizeContentTitle } from '../../media-features/content-title';
+import { mediaProviderIntegrationEnabled, providerOffAttribute } from '../../media-features/provider-flags';
+import { publishHiddenJson } from '../../platform/hidden-json';
+import { observeProviderDom } from '../dom-watch';
+
+import { NETFLIX_ACTION_ACK_EVENT, NETFLIX_ACTION_EVENT, NETFLIX_ACTION_SNAPSHOT_ID, validNetflixTimedActionId } from './action-bridge';
+import { isNetflixHost } from './hosts';
+import { NETFLIX_NEXT_ACK_EVENT, NETFLIX_NEXT_EVENT } from './next-episode';
+import { NETFLIX_NEXT_PREVIEW_ID, syncNetflixNextPreview } from './next-preview';
 import {
   NETFLIX_ACK_EVENT,
   NETFLIX_CAPTION_EVENT,
@@ -22,15 +28,10 @@ import {
   resolveNetflixTitle,
   stripNetflixSiteTitle,
   type NetflixTextTrack
-} from '../../media-features/parsers/netflix-page';
-import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { publishHiddenJson } from '../../platform/hidden-json';
-import { isNetflixHost } from '../hosts';
-import { relayNetflixShadowClick } from './shadow-click';
+} from './page';
+import { MAX_NETFLIX_PREVIEW_BYTES, NETFLIX_PREVIEW_EVENT, NETFLIX_PREVIEW_ID, parseNetflixPreviewRequest } from './preview';
 import { findNetflixPlayerRoot, netflixSessionTitle, netflixWatchId, playNetflixNextEpisode, readNetflixPlayerAppApi, selectNetflixSession, seekNetflixSession } from './session';
-import { NETFLIX_ACTION_ACK_EVENT, NETFLIX_ACTION_EVENT, NETFLIX_ACTION_SNAPSHOT_ID, validNetflixTimedActionId } from './action-bridge';
-import { NETFLIX_NEXT_ACK_EVENT, NETFLIX_NEXT_EVENT } from './next-episode';
-import { NETFLIX_NEXT_PREVIEW_ID, syncNetflixNextPreview } from './next-preview';
+import { relayNetflixShadowClick } from './shadow-click';
 import { activateNetflixTimedAction, syncNetflixTimedAction } from './timed-action';
 
 export function netflixIntegrationEnabled(): boolean {
@@ -405,14 +406,15 @@ export function installNetflixMain(): void {
     changed: syncHarvest,
     relevant: record => record.type !== 'attributes' || !(record.target instanceof Element)
       || !record.target.matches('video, .inner'),
-    ignore: record => netflixMutationIsOwnSnapshot([record])
+    ignore: record => netflixMutationIsOwnSnapshot([record]),
+    flags: [providerOffAttribute('netflix')]
   });
   window.addEventListener('pagehide', event => { if (!event.persisted) stop(); }, { once: true });
 
 }
 
 /** Host-controlled DRM playback uses the Netflix clock in milliseconds. */
-export function handleNetflixMediaSeek(detail: { time?: number; resumeAfterSeek?: boolean }, video: HTMLVideoElement | null): boolean {
+export function handleNetflixMediaSeek(detail: { time?: number; resumeAfterSeek?: boolean }, video: Element | null): boolean {
   if (!isNetflixHost() || !netflixIntegrationEnabled()) return false;
   const root = playerRoot();
   if (!video || !root?.contains(video)) return false;

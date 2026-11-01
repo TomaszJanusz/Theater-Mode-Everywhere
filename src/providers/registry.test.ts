@@ -3,7 +3,8 @@ import { describe, it } from 'node:test';
 
 import { defaultMediaProviderFlags } from '../media-features/provider-flags';
 
-import { isCrunchyrollHost, isDisneyHost, isNetflixHost, isSoopHost, isTencentHost, isYouTubeHost } from './hosts';
+import { isCrunchyrollHost, isDisneyHost, isSoopHost, isTencentHost, isYouTubeHost } from './hosts';
+import { isNetflixHost } from './netflix/hosts';
 import {
   matchingProviders,
   PROVIDER_DEFINITIONS,
@@ -22,7 +23,7 @@ describe('provider registry', () => {
     // Registered providers (YouTube, SOOP) declare `harvest` in their hooks instead of the static gate.
     assert.equal(shouldPatchMainWorld('www.youtube.com'), false);
     assert.equal(shouldPatchMainWorld('www.disneyplus.com'), true);
-    assert.equal(shouldPatchMainWorld('www.netflix.com'), true);
+    assert.equal(shouldPatchMainWorld('www.netflix.com'), false);
     assert.equal(shouldPatchMainWorld('example.com'), false);
     assert.equal(shouldPatchMainWorld('127.0.0.1'), false);
     assert.equal(isYouTubeHost('www.youtube-nocookie.com'), true);
@@ -103,16 +104,16 @@ describe('provider registry', () => {
   });
 
   it('merges a staged descriptor with its legacy definition without dropping startup or adding a duplicate', t => {
-    const definition = providerDefinition('netflix');
-    assert.equal(PROVIDER_DEFINITIONS.filter(item => item.id === 'netflix').length, 1);
-    const watch = definition.watchPlayback;
+    const definition = providerDefinition('disney');
+    assert.equal(PROVIDER_DEFINITIONS.filter(item => item.id === 'disney').length, 1);
+    const watch = { pageIdentity: () => null, mainVideo: () => null };
     const createAdapter = () => { throw new Error('getter only'); };
-    t.mock.method(providerRegistry, 'get', (id: string) => id === 'netflix'
-      ? { id: 'netflix', contractVersion: 1, watchPlayback: watch!, createAdapter } : undefined);
+    t.mock.method(providerRegistry, 'get', (id: string) => id === 'disney'
+      ? { id: 'disney', contractVersion: 1, watchPlayback: watch, createAdapter } : undefined);
     assert.equal(definition.createAdapter, createAdapter, 'registration stays visible after registry construction');
     assert.equal(definition.watchPlayback, watch);
-    assert.equal(shouldPatchMainWorld('www.netflix.com'), true, 'legacy MAIN is still required');
-    assert.deepEqual(matchingProviders('www.netflix.com'), ['native', 'netflix']);
+    assert.equal(shouldPatchMainWorld('www.disneyplus.com'), true, 'legacy MAIN is still required');
+    assert.deepEqual(matchingProviders('www.disneyplus.com'), ['native', 'disney']);
   });
 
   it('marks MAIN boot and fetch patches as idempotent', () => {

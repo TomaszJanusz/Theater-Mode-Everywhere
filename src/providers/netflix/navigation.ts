@@ -1,12 +1,15 @@
-import type { PlaylistAction } from '../../playlist-nav';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { netflixVideoId } from '../../media-features/parsers/netflix-page';
-import { isNetflixHost } from '../hosts';
-import { requestNetflixNextEpisode } from '../netflix/next-episode';
-import { readNetflixNextAvailable, readNetflixNextPreview } from '../netflix/next-preview';
-import { netflixWatchId } from '../netflix/session';
+import type { PlaylistAction } from '../../playlist-nav';
+
+import { isNetflixHost } from './hosts';
+import { requestNetflixNextEpisode } from './next-episode';
+import { readNetflixNextAvailable, readNetflixNextPreview } from './next-preview';
+import { netflixVideoId } from './page';
+import { netflixWatchId } from './session';
 
 const NEXT_BUTTON = 'button[data-uia="control-next"]';
+/** The watch page's player, labelled with the playing title's `data-videoid`. */
+export const NETFLIX_WATCH_PLAYER = '.watch-video [data-uia="player"]';
 
 /**
  * Native watch-toolbar Next. Stage CSS hides chrome with visibility, opacity,
@@ -40,7 +43,7 @@ export function findNetflixPlaylistActions(
     activate() {
       if (!netflixNavEnabled()) return;
       if (!within(root, player)) return;
-      if (video && video.closest('.watch-video [data-uia="player"]') !== player) return;
+      if (video && video.closest(NETFLIX_WATCH_PLAYER) !== player) return;
       if (boundVideoId(player, href()) !== videoId) return;
       if (button && player.contains(button) && usable(button)) {
         button.click();
@@ -61,7 +64,7 @@ function netflixNavEnabled(): boolean {
 
 function currentPlayer(root: ParentNode, video: HTMLVideoElement | null | undefined, href: string): HTMLElement | null {
   if (video) {
-    const player = video.closest('.watch-video [data-uia="player"]');
+    const player = video.closest(NETFLIX_WATCH_PLAYER);
     if (!(player instanceof HTMLElement) || !within(root, player)) return null;
     return boundVideoId(player, href) ? player : null;
   }
@@ -77,7 +80,7 @@ function playersIn(root: ParentNode): HTMLElement[] {
     found.push(root);
   }
   if (root instanceof Document || root instanceof DocumentFragment || root instanceof Element || root instanceof ShadowRoot) {
-    root.querySelectorAll('.watch-video [data-uia="player"]').forEach((node) => {
+    root.querySelectorAll(NETFLIX_WATCH_PLAYER).forEach((node) => {
       if (node instanceof HTMLElement && !found.includes(node)) found.push(node);
     });
   }

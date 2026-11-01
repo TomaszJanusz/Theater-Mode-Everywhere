@@ -14,7 +14,7 @@ import { FirefoxRemote } from './firefox-rdp';
 import { assertFreshInstall, closeInstallSetup } from './first-run-setup';
 import { assertEmbeddedKeysAndFullscreen } from './frames';
 import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist, useSyncQuota } from './helpers';
-import { assertNetflixAudio } from './netflix-audio';
+import { assertNetflixProvider } from './netflix';
 import { assertPinStorage } from './pin-storage';
 import { assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, assertTwitchProvider, assertVimeoProvider, assertYoutubeProvider } from './providers';
 import { assertRteSettings, assertPictureLayout } from './settings';
@@ -42,7 +42,7 @@ const PROVIDER_SCENARIOS: ReadonlyArray<{ name: string; syncWrites: number; run:
   { name: 'assertTwitchProvider', syncWrites: 7, run: assertTwitchProvider },
   { name: 'assertDisneyProvider', syncWrites: 3, run: assertDisneyProvider },
   { name: 'assertVikiProvider', syncWrites: 7, run: assertVikiProvider },
-  { name: 'assertNetflixAudio', syncWrites: 5, run: assertNetflixAudio }
+  { name: 'assertNetflixProvider', syncWrites: 8, run: assertNetflixProvider }
 ];
 
 async function runProviderScenarios(page: Page, context: BrowserContext): Promise<void> {

@@ -5,14 +5,12 @@ import { mediaProviderIntegrationEnabled, type MediaProviderId } from '../media-
 import { createCrunchyrollServiceActions } from './crunchyroll/service-actions';
 import { createDisneyServiceActions } from './disney/service-actions';
 import { observeProviderDom } from './dom-watch';
-import { isCrunchyrollHost, isDisneyHost, isNetflixHost } from './hosts';
+import { isCrunchyrollHost, isDisneyHost } from './hosts';
 import type { ServiceActionOptions } from './native-service-actions';
-import { createNetflixServiceActions } from './netflix/service-actions';
 import { providerRegistry } from './runtime-registration';
 
 /** Provider composition belongs here; the shared CTA only consumes actions. */
 export function createServiceActions(options: ServiceActionOptions = {}): ServiceActionSource | null {
-  if (isNetflixHost()) return createNetflixServiceActions();
   if (isDisneyHost()) return createDisneyServiceActions();
   if (isCrunchyrollHost()) return observed(createCrunchyrollServiceActions(), 'crunchyroll', '#player-container');
   for (const hooks of providerRegistry.all()) {

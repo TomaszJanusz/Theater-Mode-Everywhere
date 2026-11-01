@@ -447,7 +447,8 @@ describe('playlist navigation DOM', () => {
     try {
       executable = chromium.executablePath();
       if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
-      const compiled = playlistBrowserBundle();
+      // Netflix's step comes from its registered provider, which admits only Netflix documents.
+      const compiled = bundleModules([...PROVIDER_ENTRIES, "export { findPlaylistActions } from './playlist-nav';"], 'PlaylistNav');
       const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
       try {
         const page = await context.newPage();

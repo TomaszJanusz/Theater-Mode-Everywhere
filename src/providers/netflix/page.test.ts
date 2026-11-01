@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
+import { publishedNetflixPayload } from './main';
 import {
   applyPlayerCaption,
   chooseNetflixRawTrack,
@@ -16,8 +18,7 @@ import {
   selectableTextTracks,
   selectCaptionTarget,
   stripNetflixSiteTitle
-} from './parsers/netflix-page';
-import { publishedNetflixPayload } from '../providers/netflix/main';
+} from './page';
 
 const publicTracks = [
   {

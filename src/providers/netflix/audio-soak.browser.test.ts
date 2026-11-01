@@ -8,7 +8,7 @@ import { testEngines } from '../../test-utils/test-engines';
 import { netflixAudioHtml } from './test-utils/audio-fixture';
 
 const bundle = bundleModules([
-  "export { NetflixAudioAdapter } from './providers/netflix/audio-adapter';",
+  "export { NetflixAdapter } from './providers/netflix/adapter';",
   "export { installNetflixAudio } from './providers/netflix/audio-main';",
   "export { navigationObserver } from './platform/navigation-visit';",
   "export { CompositeMediaAdapter } from './media-features/composite-adapter';",
@@ -38,7 +38,7 @@ const setup = `window.now = 0; window.nextTimer = 0; window.tasks = new Map(); w
   window.stopMain = Soak.installNetflixAudio({ check: () => nav.check(), subscribe(fn) {
     navCount++; const stop = nav.subscribe(fn); return () => { navCount--; stop(); };
   } });
-  window.adapter = new Soak.NetflixAudioAdapter(document.querySelector('video'), clock);
+  window.adapter = new Soak.NetflixAdapter(document.querySelector('video'), clock);
   window.composite = new Soak.CompositeMediaAdapter([adapter]);
   window.scope = new Soak.DisposableScope();
   const noop = () => {}; const t = key => key;
@@ -146,8 +146,8 @@ describe('Netflix title retention and self-healing soak', { timeout: 60_000 }, (
         await page.evaluate(`const replacement = root.cloneNode(true); root.replaceWith(replacement); nf.element = replacement.querySelector('video');`);
         assert.equal((await read()).disabled, false);
         // A second observing/non-observing reader cannot steal or stop the first owner.
-        await page.evaluate(`window.second = new Soak.NetflixAudioAdapter(nf.element, clock); second.listAudioTracks(); second.dispose();
-          second = new Soak.NetflixAudioAdapter(nf.element, clock); window.stopSecond = second.observeAudioTracks(() => {}); stopSecond(); second.dispose();
+        await page.evaluate(`window.second = new Soak.NetflixAdapter(nf.element, clock); second.listAudioTracks(); second.dispose();
+          second = new Soak.NetflixAdapter(nf.element, clock); window.stopSecond = second.observeAudioTracks(() => {}); stopSecond(); second.dispose();
           nf.manifest = false; nf.emit('loadedtracks');`);
         assert.equal((await read()).timers, 1);
         await page.evaluate('restore(); advance(5000)');

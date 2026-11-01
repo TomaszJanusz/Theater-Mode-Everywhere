@@ -1,5 +1,4 @@
 import { DISNEY_SHADOW_PARENT_CSS } from './disney/stage';
-import { rankNetflixTheaterVideos } from './netflix/playback';
 import { providerRegistry } from './runtime-registration';
 import { injectTencentWasmFrameStyles, tencentVideosShareContainer } from './tencent/stage';
 
@@ -12,9 +11,6 @@ export type ProviderDiscovery = {
 
 const providerDiscovery: ProviderDiscovery[] = [
   {
-    rankBest: rankNetflixTheaterVideos
-  },
-  {
     prepareShadowRoot: injectTencentWasmFrameStyles,
     sharesPlaybackHost: tencentVideosShareContainer
   },
@@ -24,7 +20,7 @@ const providerDiscovery: ProviderDiscovery[] = [
 ];
 
 export function providerRankedVideo(videos: HTMLVideoElement[]): HTMLVideoElement | null {
-  for (const hook of providerDiscovery) {
+  for (const hook of [...providerRegistry.all().flatMap(hooks => hooks.discovery ?? []), ...providerDiscovery]) {
     const picked = hook.rankBest?.(videos);
     if (picked) return picked;
   }
@@ -47,5 +43,5 @@ export function providerSharesPlaybackHost(current: HTMLVideoElement, replacemen
 }
 
 export function providerVideoAbandoned(video: HTMLVideoElement): boolean {
-  return providerRegistry.all().some(hooks => hooks.discovery?.abandonedVideo(video) === true);
+  return providerRegistry.all().some(hooks => hooks.discovery?.abandonedVideo?.(video) === true);
 }

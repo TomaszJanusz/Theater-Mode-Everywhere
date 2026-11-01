@@ -1,4 +1,4 @@
-import { netflixVideoId, stripNetflixSiteTitle, type NetflixCaptionApi } from '../../media-features/parsers/netflix-page';
+import { netflixVideoId, stripNetflixSiteTitle, type NetflixCaptionApi } from './page';
 
 export type NetflixSessionPlayer = NetflixCaptionApi & {
   getMovieId?: () => unknown;

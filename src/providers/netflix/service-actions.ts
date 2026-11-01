@@ -1,10 +1,11 @@
-import { observeProviderDom } from '../dom-watch';
 import type { ServiceAction, ServiceActionSource } from '../../core/service-actions';
-import { netflixVideoId } from '../../media-features/parsers/netflix-page';
-import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { isNetflixHost } from '../hosts';
-import { netflixWatchId } from './session';
+import { mediaProviderIntegrationEnabled, providerOffAttribute } from '../../media-features/provider-flags';
+import type { observeProviderDom } from '../dom-watch';
+
 import { readNetflixTimedAction, requestNetflixTimedAction } from './action-bridge';
+import { isNetflixHost } from './hosts';
+import { NETFLIX_HARVEST_EVENT, netflixVideoId } from './page';
+import { netflixWatchId } from './session';
 
 /**
  * Bounded watch-player controls. Stage CSS hides host chrome with visibility,
@@ -31,13 +32,15 @@ export type NetflixServiceAction = ServiceAction;
 export type NetflixServiceActionSource = ServiceActionSource;
 
 export type NetflixServiceActionHooks = {
+  /** The runtime's lent DOM watcher, so the provider script carries no second copy. */
+  observe: typeof observeProviderDom;
   enabled?: () => boolean;
   host?: () => boolean;
   href?: () => string;
   document?: Document;
 };
 
-export function createNetflixServiceActions(hooks: NetflixServiceActionHooks = {}): NetflixServiceActionSource {
+export function createNetflixServiceActions(hooks: NetflixServiceActionHooks): NetflixServiceActionSource {
   const enabled = hooks.enabled ?? (() => mediaProviderIntegrationEnabled('netflix'));
   const host = hooks.host ?? (() => isNetflixHost());
   const href = hooks.href ?? (() => window.location.href);
@@ -81,9 +84,9 @@ export function createNetflixServiceActions(hooks: NetflixServiceActionHooks = {
       progressTargets.clear();
       return live().map(({ element: _element, ...action }) => action);
     },
-    subscribe: changed => observeProviderDom({ root: doc, selector: '.watch-video [data-uia="player"]',
+    subscribe: changed => hooks.observe({ root: doc, selector: '.watch-video [data-uia="player"]',
       relevant: record => !(record.target instanceof Element) || !record.target.matches('video, .inner'),
-      changed, enabled: () => allowed(enabled, host), events: ['theater-everywhere-netflix-harvest'] }),
+      changed, enabled: () => allowed(enabled, host), events: [NETFLIX_HARVEST_EVENT], flags: [providerOffAttribute('netflix')] }),
     readProgress(id) {
       const target = progressTargets.get(id);
       if (!target || !allowed(enabled, host) || watchPath(href()) !== target.path || !target.root.isConnected

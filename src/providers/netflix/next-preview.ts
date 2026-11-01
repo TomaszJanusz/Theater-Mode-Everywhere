@@ -1,5 +1,6 @@
-import { stripNetflixSiteTitle } from '../../media-features/parsers/netflix-page';
 import { publishHiddenJson } from '../../platform/hidden-json';
+
+import { stripNetflixSiteTitle } from './page';
 
 export const NETFLIX_NEXT_PREVIEW_ID = 'theater-everywhere-netflix-next-preview';
 

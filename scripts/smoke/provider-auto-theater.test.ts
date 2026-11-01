@@ -12,7 +12,7 @@ const COVERED_ELSEWHERE = new Set(['youtube']);
  * Legacy bundled integrations with no installed provider smoke yet. Add the shared helper when one gets a
  * smoke case, then delete its entry: the list may only shrink.
  */
-const KNOWN_GAPS = new Set(['netflix', 'disney']);
+const KNOWN_GAPS = new Set(['disney']);
 
 function coveredByHelper(): Set<string> {
   const covered = new Set<string>();

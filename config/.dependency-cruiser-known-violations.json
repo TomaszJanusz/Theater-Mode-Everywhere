@@ -15,48 +15,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/providers/navigation/netflix.ts",
-    "to": "src/providers/netflix/next-episode.ts",
-    "unresolvedTo": "../netflix/next-episode",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/providers/navigation/netflix.ts",
-    "to": "src/providers/netflix/next-preview.ts",
-    "unresolvedTo": "../netflix/next-preview",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/providers/navigation/netflix.ts",
-    "to": "src/providers/netflix/session.ts",
-    "unresolvedTo": "../netflix/session",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/providers/navigation/watch.ts",
     "to": "src/providers/disney/play-next.ts",
     "unresolvedTo": "../disney/play-next",
@@ -253,20 +211,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/media-features/netflix-adapter.ts",
-    "to": "src/providers/netflix/session.ts",
-    "unresolvedTo": "../providers/netflix/session",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/media-features/resolve-adapter.ts",
     "to": "src/providers/crunchyroll/adapter.ts",
     "unresolvedTo": "../providers/crunchyroll/adapter",
@@ -310,20 +254,6 @@
   {
     "type": "dependency",
     "from": "src/media-features/resolve-adapter.ts",
-    "to": "src/providers/netflix/adapter.ts",
-    "unresolvedTo": "../providers/netflix/adapter",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/media-features/resolve-adapter.ts",
     "to": "src/providers/tencent/adapter.ts",
     "unresolvedTo": "../providers/tencent/adapter",
     "dependencyTypes": [
@@ -354,20 +284,6 @@
     "from": "src/platform/main-world-runtime.ts",
     "to": "src/providers/disney/main.ts",
     "unresolvedTo": "../providers/disney/main",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/platform/main-world-runtime.ts",
-    "to": "src/providers/netflix/main.ts",
-    "unresolvedTo": "../providers/netflix/main",
     "dependencyTypes": [
       "local",
       "import"

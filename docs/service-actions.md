@@ -1,7 +1,8 @@
 # Player service actions
 
-`src/providers/service-actions.ts` composes contextual actions for Netflix,
-YouTube, Bilibili.com and Bilibili.tv. The shared player CTA consumes only
+`src/providers/service-actions.ts` composes contextual actions for Disney+ and
+Crunchyroll and reads the registered `serviceActions` hook of the others (Netflix,
+YouTube, Bilibili.com, Bilibili.tv and more). The shared player CTA consumes only
 `ServiceActionSource`; providers own availability, identity and activation.
 The source is bound to the current theater playback surface and checks the
 provider's Rich Theater Experience flag on every read and activation.

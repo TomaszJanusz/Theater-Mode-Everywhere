@@ -1,7 +1,7 @@
 import type { FrameMeasure } from '../core/frame-batch';
 import { createVisibleRefresh } from '../core/visible-refresh';
 
-const FLAGS = ['data-te-netflix-integration-off', 'data-te-disney-integration-off'];
+const FLAGS = ['data-te-disney-integration-off'];
 const EVENTS = ['DOMContentLoaded', 'readystatechange', 'popstate', 'resize', 'loadedmetadata', 'emptied', 'durationchange', 'play', 'pause', 'seeked', 'ended'];
 
 /** Providers choose observed surfaces; discovery only examines changed subtrees. */

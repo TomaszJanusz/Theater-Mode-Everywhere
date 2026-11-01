@@ -3,9 +3,8 @@ import type { MediaFeaturesAdapter } from '../media-features/types';
 
 import { PROVIDER_CATALOG } from './catalog';
 import { descriptorMatchesHost } from './descriptor-hosts';
-import { isCrunchyrollHost, isDisneyHost, isNetflixHost, isTencentHost } from './hosts';
+import { isCrunchyrollHost, isDisneyHost, isTencentHost } from './hosts';
 import type { LauncherPlacementFactory } from './launcher-placement';
-import { netflixWatchPlayback } from './netflix/watch-playback';
 import { providerRegistry } from './runtime-registration';
 import type { WatchPlayback } from './watch-playback';
 
@@ -29,7 +28,6 @@ const legacyDefinitions: ProviderDefinition[] = [
   { id: 'native', matchesHost: () => true },
   // Disney+ registers its watch playback from its per-host entries.
   { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname) },
-  { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname), watchPlayback: netflixWatchPlayback },
   { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },
   { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) },
 ];
@@ -39,7 +37,7 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   ...PROVIDER_CATALOG.map(descriptor => ({
     id: descriptor.id, matchesHost: (hostname: string) => descriptorMatchesHost(descriptor.hosts, hostname),
     get createAdapter() { return providerRegistry.get(descriptor.id)?.createAdapter; },
-    get watchPlayback() { return providerRegistry.get(descriptor.id)?.watchPlayback ?? legacyDefinitions.find(item => item.id === descriptor.id)?.watchPlayback; },
+    get watchPlayback() { return providerRegistry.get(descriptor.id)?.watchPlayback; },
     get titleFromPage() { return providerRegistry.get(descriptor.id)?.titleFromPage; },
     get launcherPlacement() { return providerRegistry.get(descriptor.id)?.launcherPlacement ?? legacyDefinitions.find(item => item.id === descriptor.id)?.launcherPlacement; }
   }))

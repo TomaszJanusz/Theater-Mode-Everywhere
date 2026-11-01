@@ -1,5 +1,6 @@
-import { isNetflixHost } from '../hosts';
 import type { ProviderPlaybackBindOptions } from '../../core/provider-presentation';
+
+import { isNetflixHost } from './hosts';
 
 export type NetflixVideoFacts = {
   inPlayer: boolean;

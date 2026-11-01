@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { publishedNetflixPayload } from '../providers/netflix/main';
 
-import { contentTitle } from './content-title';
-import { NetflixAdapter, requestNetflixHostCaption } from './netflix-adapter';
+import { contentTitle } from '../../media-features/content-title';
+
+import { NetflixAdapter, requestNetflixHostCaption } from './adapter';
+import { publishedNetflixPayload } from './main';
 import {
   NETFLIX_ACK_EVENT,
   NETFLIX_CAPTION_EVENT,
@@ -12,7 +13,7 @@ import {
   netflixCaptionAckDetail,
   parseCaptionRequest,
   parseNetflixTextTracks
-} from './parsers/netflix-page';
+} from './page';
 
 const rawTracks = [
   {
