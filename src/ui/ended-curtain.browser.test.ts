@@ -43,6 +43,12 @@ async function runTimers(page: Page, ms: number): Promise<void> {
   await page.clock.runFor(ms);
 }
 
+/** The player's caption overlay: painted, and whether the caption choice still has it on. */
+const captions = (page: Page) => page.evaluate(() => {
+  const overlay = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-caption-overlay')!;
+  return { painted: getComputedStyle(overlay).visibility === 'visible', on: overlay.classList.contains('visible') };
+});
+
 const curtainCount = (page: Page) => page.evaluate(selector =>
   document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelectorAll(selector).length ?? 0, CURTAIN);
 
@@ -56,10 +62,17 @@ describe('ended curtain on a generic HTML5 player', () => {
       // The clock flows in real time until a check holds it.
       await page.clock.install();
       await page.clock.setFixedTime(0);
-      await serveFixture(page, FIXTURE);
+      // One cue over the whole clip, so captions are on screen at its end.
+      await page.route('http://player-boot.test/**', route => route.fulfill(new URL(route.request().url()).pathname === '/en.vtt'
+        ? { contentType: 'text/vtt', body: 'WEBVTT\n\n00:00:00.000 --> 00:01:00.000\nThe last line\n' }
+        : { contentType: 'text/html', body: FIXTURE.replace('</video>', '<track kind="subtitles" label="English" srclang="en" src="/en.vtt"></video>') }));
+      await page.goto('http://player-boot.test/');
       await bootPlayer(page, { settings: { keepControlsVisible: false } });
       await page.waitForFunction(() => Boolean(document.querySelector('video')?.readyState && document.querySelector('video')!.readyState >= 2));
       await enterTheater(page);
+      await page.keyboard.press('c');
+      await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!
+        .querySelector('.theater-caption-overlay')!.classList.contains('visible'));
 
       // A pause a moment before the end is not an end.
       await page.evaluate(async () => {
@@ -84,6 +97,8 @@ describe('ended curtain on a generic HTML5 player', () => {
       assert.equal(geometry.background, 'rgb(0, 0, 0)');
       assert.equal(await page.locator(`${CURTAIN} button`).first().getAttribute('aria-label'), 'Replay');
       assert.equal(await page.locator('.theater-controls-wrapper .play-pause-btn').getAttribute('aria-label'), 'Replay');
+      assert.deepEqual(await captions(page), { painted: false, on: true }, 'the curtain hides the captions, which stay on');
+      assert.equal(await page.locator('.cc-btn').getAttribute('aria-pressed'), 'true');
 
       // The idle hide has its turn and leaves the title and controls up while the curtain shows.
       await page.mouse.move(640, 200);
@@ -100,12 +115,14 @@ describe('ended curtain on a generic HTML5 player', () => {
       await page.waitForFunction(() => { const video = document.querySelector('video')!; return !video.paused && !video.ended && video.currentTime < 1.5; });
       await page.locator(CURTAIN).waitFor({ state: 'detached' });
       assert.equal(await page.locator('.theater-controls-wrapper .play-pause-btn').getAttribute('aria-label'), 'Pause');
+      assert.deepEqual(await captions(page), { painted: true, on: true }, 'captions come back with the picture');
 
       // A seek back.
       await playToEnd(page);
       await page.locator(CURTAIN).waitFor();
       await page.evaluate(() => { document.querySelector('video')!.currentTime = 0.5; });
       await page.locator(CURTAIN).waitFor({ state: 'detached' });
+      assert.deepEqual(await captions(page), { painted: true, on: true }, 'a seek back brings the captions back');
 
       // New media in the same element.
       await playToEnd(page);

@@ -5,6 +5,7 @@ import { manualClock } from '../../.storybook/manual-clock';
 import { DisposableScope } from '../core/disposable-scope';
 import type { EndScreenSource, PlaybackEndSource } from '../core/end-screen';
 import type { ServiceActionSource } from '../core/service-actions';
+import { CaptionRenderer } from '../media-features/caption-renderer';
 import { APPEARANCE_MODES, blockingViolations } from '../test-utils/axe';
 
 import { ENDED_CURTAIN_CLASS, ENDED_CURTAIN_DELAY_MS, mountEndedCurtain, REPLAY_ICON } from './ended-curtain';
@@ -270,6 +271,32 @@ describe('ended curtain', () => {
     media.emit('seeking', true);
     expect(curtain()).not.toBeNull();
     expect(reports).toEqual([true, false, true, false, true, false, true]);
+  });
+
+  test('hides the player captions while it shows and gives them back as it leaves, the caption choice untouched', () => {
+    // The controls build the caption overlay before the curtain, as the player does.
+    const captions = new CaptionRenderer();
+    captions.setCues([{ start: 0, end: 3, text: 'The last line' }]);
+    captions.update(2);
+    const overlay = queryPlayerUi<HTMLElement>('.theater-caption-overlay')!;
+    const shown = () => getComputedStyle(overlay).visibility === 'visible';
+    try {
+      const { media, scope, end } = mount();
+      expect(shown()).toBe(true);
+      for (const leave of ['seeking', 'loadstart', 'emptied']) {
+        end();
+        expect(shown(), leave).toBe(false);
+        expect(overlay.classList.contains('visible'), leave).toBe(true);
+        media.emit(leave, false);
+        expect(shown(), leave).toBe(true);
+      }
+      end();
+      expect(shown()).toBe(false);
+      scope.dispose();
+      expect(shown()).toBe(true);
+    } finally {
+      captions.dispose();
+    }
   });
 
   test('mirrors the bar: Replay always, Next only while playlist navigation offers it', () => {
