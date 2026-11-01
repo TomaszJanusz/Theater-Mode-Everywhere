@@ -21,9 +21,8 @@ const playlistBrowserBundle = (): string => bundleModules([
   "import { findPlaylistActions, neighborPreviews, sanitizePlaylistPreview } from './playlist-nav';",
   "import { peerTubeNeighborPreviews as readPeerTubeNeighborPreviews } from './providers/navigation/videojs';",
   "import { vimeoShowcasePreview as readVimeoShowcasePreview } from './providers/vimeo/navigation';",
-  "import { installDisneyPlayNext } from './providers/disney/play-next';",
   'const helpers = { neighborPreviews, sanitizePreview: sanitizePlaylistPreview };',
-  'export { findPlaylistActions, installDisneyPlayNext };',
+  'export { findPlaylistActions };',
   'export function peerTubeNeighborPreviews(root, href) { return readPeerTubeNeighborPreviews(root, href, helpers); }',
   'export function vimeoShowcasePreview(root, href) { return readVimeoShowcasePreview(root, href, helpers); }'
 ], 'PlaylistNav');
@@ -705,7 +704,9 @@ describe('playlist navigation DOM', () => {
     try {
       executable = chromium.executablePath();
       if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
-      const compiled = playlistBrowserBundle();
+      // Disney+'s Next is its provider's navigation hook: load the provider entries, as on the host.
+      const compiled = bundleModules([...PROVIDER_ENTRIES, "export { findPlaylistActions } from './playlist-nav';",
+        "export { installDisneyPlayNext } from './providers/disney/play-next';"], 'PlaylistNav');
       const context = await shared.newContext(t);
       try {
         const page = await context.newPage();
