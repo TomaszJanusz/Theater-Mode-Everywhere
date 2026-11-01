@@ -38,11 +38,14 @@ Limits:
   **after** covers it unless the host hears an event. Page popovers fire `toggle`, so they are handled.
 - A page **modal** dialog makes the rest of the document inert while it is open, the player UI included,
   whether it opened before or after theater (Chromium and Firefox, `src/ui/surfaces.component.test.ts`).
-  Re-entering the top layer cannot undo that: pointer input reaches the dialog, not the UI. The host
-  still stays in the top layer, so the controls paint above the dialog's backdrop at full brightness.
-  Keyboard shortcuts still act (M mutes, T enters theater), and Escape exits theater while the dialog
-  stays open. The UI works again once the page closes the dialog. (Z-index never beat a modal dialog
-  either.)
+  Re-entering the top layer cannot undo that: pointer input reaches the dialog, not the UI. So, as for a
+  page element's fullscreen, the host leaves the top layer while a page `dialog:modal` is open and the
+  dialog and its backdrop cover it, as they did before the migration, instead of painting a UI that
+  looks usable and is not. Keyboard shortcuts still act (M mutes, T enters theater), and Escape exits
+  theater while the dialog stays open. When the dialog closes the host re-enters on the next frame
+  (dialogs fire `toggle` from Chromium 132 and Firefox 133; in older Chromium a dialog shown before
+  the host leaves it on z-index until the next top-layer event or UI mount). Modal dialogs inside a
+  page's shadow roots are not seen.
 - While native chat is active (`data-theater-chat-active`) the host leaves the top layer and uses
   z-index again: service popups (Twitch, YouTube) rely on z-index to sit above the chrome, which the
   top layer would defeat. Those pages do not get the top-layer benefit.

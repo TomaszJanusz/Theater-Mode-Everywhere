@@ -122,15 +122,26 @@ for (const engine of testEngines()) {
     await page.locator(HOST).waitFor({ state: 'detached' });
   });
 
-  it(`${engine}: a modal dialog opened after entering theater still covers the UI`, { timeout: 60_000 }, async t => {
-    const { page } = await open(t, engine);
+  it(`${engine}: a page modal dialog takes the host out of the top layer and its close restores it`, { timeout: 60_000 }, async t => {
+    const { page, errors } = await open(t, engine);
+    const dialog = (action: 'showModal' | 'close') => page.evaluate(a => (document.getElementById('modal') as HTMLDialogElement)[a](), action);
     await bootPlayer(page);
+    // Shown before theater: the host never enters above it.
+    await dialog('showModal');
     await enterTheater(page);
-    await page.evaluate(() => (document.getElementById('modal') as HTMLDialogElement).showModal());
-    // Known limit (docs/top-layer.md): a modal dialog shown after the host covers it. Z-index never
-    // beat a modal dialog either, so this is unchanged; the test pins it so an improvement is noticed.
-    assert.equal(await uiOnTop(page), false);
-    assert.equal(await isOpen(page), true);
+    assert.equal(await isOpen(page), false);
+    assert.equal(await hostHit(page), false, 'the dialog covers the UI');
+    await dialog('close');
+    await page.waitForFunction(h => document.querySelector(h)!.matches(':popover-open'), HOST);
+    assert.equal(await uiOnTop(page), true, 'restored after a dialog shown before theater');
+    // Shown during theater: the host leaves instead of painting a UI the inert document cannot reach.
+    await dialog('showModal');
+    await hostLeavesTopLayer(page);
+    assert.equal(await hostHit(page), false, 'the dialog covers the UI');
+    await dialog('close');
+    await page.waitForFunction(h => document.querySelector(h)!.matches(':popover-open'), HOST);
+    assert.equal(await uiOnTop(page), true, 'restored after a dialog shown during theater');
+    assert.deepEqual(errors, []);
   });
 
   it(`${engine}: document fullscreen enter and exit keep the UI shown and on top`, { timeout: 60_000 }, async t => {

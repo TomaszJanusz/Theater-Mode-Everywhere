@@ -13,8 +13,11 @@ import { DisposableScope } from '../core/disposable-scope';
  * A fullscreen element that does not contain the host (a page's own player, say) also keeps it
  * out: pointer input goes to that element, so a host painted over it would look usable and not be.
  * Out of the top layer the fullscreen element covers it until fullscreen ends.
- * Not detectable without observers: `dialog.showModal()` in browsers that fire no
- * `toggle` for dialogs, and a page re-attaching the host (`ensure` covers the next mount).
+ * A page modal dialog keeps it out for the same reason: the rest of the document is inert, so
+ * above the backdrop the host would look usable and not be. Dialogs fire `toggle` when they open
+ * and close (Chromium 132, Firefox 133); in older Chromium a dialog shown before the host keeps it
+ * out (z-index still applies) until the next `ensure` or top-layer event.
+ * Not detectable without observers: a page re-attaching the host (`ensure` covers the next mount).
  * Elements shown before the host entered stay below it.
  */
 export interface TopLayerBinding {
@@ -47,7 +50,8 @@ export function bindTopLayer(host: HTMLElement): TopLayerBinding {
   const wanted = () => {
     if (document.documentElement.hasAttribute(CHAT_ACTIVE)) return false;
     const fullscreen = document.fullscreenElement;
-    return !fullscreen || fullscreen.contains(host);
+    if (fullscreen && !fullscreen.contains(host)) return false;
+    return !document.querySelector('dialog:modal');
   };
   const show = () => {
     if (scope.isDisposed || !host.isConnected || isOpen(host) || !wanted()) return;
@@ -73,11 +77,11 @@ export function bindTopLayer(host: HTMLElement): TopLayerBinding {
   };
 
   scope.listen(document, 'fullscreenchange', sync);
-  // `toggle` does not bubble; the capture listener sees every page popover. The host's own
-  // events are ignored so raising cannot retrigger itself.
+  // `toggle` does not bubble; the capture listener sees every page popover and dialog. Opening
+  // raises the host over it, or hides it for a modal dialog; closing lets it back after a dialog.
+  // The host's own events are ignored so raising cannot retrigger itself.
   scope.listen(document, 'toggle', (event) => {
-    if (event.target === host) return;
-    if ((event as ToggleEvent).newState === 'open') raiseNextFrame();
+    if (event.target !== host) raiseNextFrame();
   }, true);
   // Something other than us closed the host (Escape does not close manual popovers).
   scope.listen(host, 'toggle', () => { if (!isOpen(host) && wanted()) raiseNextFrame(); });
