@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { SETUP_STATE_KEY } from '../../src/first-run-setup';
+import { SETUP_STATE_KEY, shownSetupSteps } from '../../src/first-run-setup';
 
 import { extensionWorker, fail, timeScenario, type BrowserContext, type ExtensionBackground } from './helpers';
 
@@ -72,9 +72,11 @@ export async function assertFreshInstall(
       // The installed page, real storage: the preselected answers only answer the launcher offer.
       const page = context.pages().find(candidate => candidate.url().endsWith(SETUP_PAGE))!;
       await page.locator('.setup-step').waitFor();
-      for (const step of [2, 3, 4]) {
+      // Every step the setup ships, from the registry it is built from.
+      const total = shownSetupSteps().length;
+      for (let step = 2; step <= total; step++) {
         await page.getByRole('button', { name: 'Next' }).click();
-        await page.locator('.setup-progress', { hasText: `Step ${step} of 4` }).waitFor();
+        await page.locator('.setup-progress', { hasText: `Step ${step} of ${total}` }).waitFor();
       }
       await page.getByRole('button', { name: 'Finish' }).click();
       await page.locator('#features').waitFor();
