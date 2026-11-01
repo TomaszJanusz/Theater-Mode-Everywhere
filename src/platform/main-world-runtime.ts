@@ -1,7 +1,7 @@
 import { isNativeChatEvent } from '../chat/events';
 import { isChatDocument } from '../chat/url';
 import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
-import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
+import { mediaProviderIntegrationEnabled, type MediaProviderId } from '../media-features/provider-flags';
 import { CC_SEARCH_KEY_EVENT } from '../protocol/cc-search';
 import { MEDIA_SEEK_EVENT, parseMediaSeekDetail } from '../protocol/media-seek';
 import { MODAL_KEY_EVENT } from '../protocol/modal';
@@ -33,6 +33,7 @@ import { matchesShortcut } from '../ui/shortcuts';
 
 import { findActiveVideo } from './active-video';
 import { readCurrentBlobText } from './blob-text';
+import { MAX_BINARY_HARVEST_BYTES } from './bounded-body';
 import { isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
 import { installMediaAudioRuntime } from './media-audio-runtime';
 import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
@@ -83,8 +84,10 @@ export function installMainWorldRuntime(): void {
   }
 
   // Registration closed before startup, so this list is complete before any observer is installed.
-  const harvests = providerRegistry.all().flatMap(hooks => hooks.harvest ?? []);
-  type ProviderTarget = { harvest: ProviderHarvest; id: string };
+  type RegisteredHarvest = { provider: MediaProviderId; harvest: ProviderHarvest };
+  const registered: RegisteredHarvest[] = providerRegistry.all().flatMap(hooks => hooks.harvest ? [{ provider: hooks.id, harvest: hooks.harvest }] : []);
+  const harvests = registered.map(entry => entry.harvest);
+  type ProviderTarget = RegisteredHarvest & { id: string };
   type HarvestTarget = NetworkHarvestTarget | ProviderTarget;
   const isProviderTarget = (target: HarvestTarget | null): target is ProviderTarget => typeof target === 'object' && target !== null;
 
@@ -97,17 +100,34 @@ export function installMainWorldRuntime(): void {
       }
     }, url);
     if (legacy) return legacy;
-    for (const harvest of harvests) {
-      const id = harvest.qualify(url, window.location.href);
-      if (id) return { harvest, id };
+    for (const entry of registered) {
+      const id = entry.harvest.qualify(url, window.location.href);
+      if (id) return { ...entry, id };
     }
     return null;
+  }
+
+  const isBinaryTarget = (target: HarvestTarget | null) => isProviderTarget(target) && target.harvest.binaryTargets?.includes(target.id) === true;
+
+  /** One bounded read of a binary target's owned body; the bytes reach the provider only while its integration is on. */
+  function harvestBinary(target: ProviderTarget, url: string, body: Response | Blob | ArrayBuffer): void {
+    const enabled = () => mediaProviderIntegrationEnabled(target.provider);
+    if (!enabled()) return;
+    if (body instanceof ArrayBuffer) {
+      if (body.byteLength <= MAX_BINARY_HARVEST_BYTES) target.harvest.binary?.(target.id, url, body);
+      return;
+    }
+    if (body instanceof Blob && body.size > MAX_BINARY_HARVEST_BYTES) return;
+    readPageResponseBytes(body instanceof Blob ? { body: body.stream() } : body, MAX_BINARY_HARVEST_BYTES, undefined, { isCurrent: enabled })
+      .then(bytes => { if (bytes && enabled()) target.harvest.binary?.(target.id, url, bytes); })
+      .catch((error: unknown) => noteWrapperFailure('binary', error));
   }
 
   /** Format checks treat a registered provider's target as text or JSON metadata. */
   const formatTarget = (target: HarvestTarget | null) => isProviderTarget(target) ? 'provider' as const : target;
 
   function harvestJson(target: HarvestTarget | null, url: string, data: unknown): void {
+    if (isBinaryTarget(target)) return;
     if (isProviderTarget(target)) { target.harvest.json?.(target.id, url, data); return; }
     switch (target) {
       case 'disney': harvestDisneyData(url, data); break;
@@ -116,6 +136,7 @@ export function installMainWorldRuntime(): void {
   }
 
   function harvestText(target: HarvestTarget | null, url: string, text: string): void {
+    if (isBinaryTarget(target)) return;
     if (isProviderTarget(target)) { target.harvest.text?.(target.id, url, text); return; }
     switch (target) {
       case 'disney': harvestDisneyBody(url, text); break;
@@ -129,7 +150,8 @@ export function installMainWorldRuntime(): void {
   /** Each selected consumer owns this single clone. Its text/json read bypasses the host Response observers to avoid a second harvest. */
   function consumeFetchClone(target: HarvestTarget | null, url: string, response: Response): void {
     if (isProviderTarget(target)) {
-      if (target.harvest.cloneTargets?.includes(target.id)) target.harvest.response?.(target.id, url, markOwnedHarvestResponse(response.clone()));
+      if (isBinaryTarget(target)) harvestBinary(target, url, markOwnedHarvestResponse(response.clone()));
+      else if (target.harvest.cloneTargets?.includes(target.id)) target.harvest.response?.(target.id, url, markOwnedHarvestResponse(response.clone()));
       return;
     }
     switch (target) {
@@ -156,8 +178,10 @@ export function installMainWorldRuntime(): void {
             const finalUrl = response.url || url;
             const target = finalUrl ? harvestTarget(finalUrl) : null;
             const length = Number(response.headers.get('content-length'));
-            const cap = target === 'disney-bif' ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;
-            if (!harvestFetchFormatMatches(formatTarget(target), response.headers.get('content-type') || '') || length > cap) return response;
+            const binary = isBinaryTarget(target);
+            let cap = binary ? MAX_BINARY_HARVEST_BYTES : MAX_CAPTION_BYTES;
+            if (target === 'disney-bif') cap = MAX_BIF_BYTES;
+            if ((!binary && !harvestFetchFormatMatches(formatTarget(target), response.headers.get('content-type') || '')) || length > cap) return response;
             consumeFetchClone(target, finalUrl, response);
           }
         } catch (error) {
@@ -232,6 +256,10 @@ export function installMainWorldRuntime(): void {
     installXhrHarvest(XMLHttpRequest.prototype, (xhr, url) => {
       const target = harvestTarget(url);
       if (!target) return;
+      if (isProviderTarget(target) && isBinaryTarget(target)) {
+        if (xhr.response instanceof ArrayBuffer || xhr.response instanceof Blob) harvestBinary(target, url, xhr.response);
+        return;
+      }
       // Opted-in Blob bodies only, read as bounded text once; a read that outlives its deadline or a navigation is stale.
       if (visit && isProviderTarget(target) && xhr.responseType === 'blob') {
         if (xhr.response instanceof Blob && (target.harvest.blobTextTargets || []).includes(target.id)) {
