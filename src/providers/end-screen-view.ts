@@ -1,10 +1,33 @@
-import type { DisposableScope } from '../../core/disposable-scope';
-import { languageRuntime } from '../../i18n-runtime';
-import type { ProviderSettingsStore } from '../settings';
+import type { DisposableScope } from '../core/disposable-scope';
+import { languageRuntime, translateMessage } from '../i18n-runtime';
 
-import type { SuggestionSource } from './end-screen-model';
-import css from './end-screen.css?inline';
-import { recommendationsLabel } from './settings';
+import css from './end-screen-view.css?inline';
+import type { ProviderSettingsStore } from './settings';
+
+/** Host-owned text and URLs a provider extracted from the links its host rendered. */
+export interface EndScreenItem {
+  id: string;
+  href?: string;
+  kind: 'video' | 'playlist';
+  title: string;
+  thumbnailUrl?: string;
+  channel?: string;
+  meta?: string;
+  durationText?: string;
+}
+
+export interface EndScreenSnapshot {
+  mediaId: string;
+  items: readonly EndScreenItem[];
+}
+
+export interface SuggestionSource {
+  read(): EndScreenSnapshot | null;
+  activate(id: string, mediaId: string): boolean;
+}
+
+/** Provider-only fallback: these bytes never join content.js or mainWorld.js. */
+export const recommendationsLabel = () => translateMessage({ providerShowRecommendations: 'Show recommendations' }, 'providerShowRecommendations');
 
 /** One activation path: a real button gives Enter/Space and pointer the same host command. */
 export function renderEndScreen(source: SuggestionSource, label: string, scope: DisposableScope): HTMLElement | null {
@@ -59,7 +82,7 @@ export function renderEndScreen(source: SuggestionSource, label: string, scope: 
 /** The switch outlives its tiles, so a saved off choice is reversible on the same curtain. */
 export function mountEndScreenSettings(
   container: HTMLElement, source: SuggestionSource,
-  { label, scope, settings }: { label: string; scope: DisposableScope; settings: ProviderSettingsStore }
+  { label, scope, settings, provider }: { label: string; scope: DisposableScope; settings: ProviderSettingsStore; provider: string }
 ): () => void {
   const style = document.createElement('style');
   style.textContent = css;
@@ -96,7 +119,7 @@ export function mountEndScreenSettings(
     const snapshot = source.read();
     row.hidden = !snapshot;
     text.textContent = recommendationsLabel();
-    input.checked = settings.values.youtube.showRecommendations;
+    input.checked = settings.values[provider]?.showRecommendations ?? false;
     input.disabled = !settings.loaded;
     const key = JSON.stringify(settings.loaded && input.checked ? snapshot : null);
     if (key === previous) return;
@@ -109,7 +132,7 @@ export function mountEndScreenSettings(
   };
   scope.listen(input, 'click', event => { if (event.detail) input.blur(); });
   scope.listen(input, 'change', () => {
-    void settings.set('youtube', 'showRecommendations', input.checked).catch(error => {
+    void settings.set(provider, 'showRecommendations', input.checked).catch(error => {
       console.error('Error saving recommendations:', error);
     }).finally(() => { update(); });
   });

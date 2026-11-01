@@ -1,0 +1,7 @@
+{
+  "source": "https://www.bilibili.com/video/BV1HHxv6KETZ/",
+  "captured": "2026-11-01",
+  "environment": "Public logged-out desktop Bilibili CN (zh-Hans), Playwright Chromium, autoplay on (default); no extension installed",
+  "evidence": "Recorded host DOM fixture, not live extension verification",
+  "notes": "bpx-player-ending-panel after the video ended: the first four related tiles, the first with its running autoplay ring and 取消连播 control (Cancel and autoplay off both hide them inline), plus the matching sidebar cards (.next-play and .rec-list). Panel tiles carry a title and cover only; the sidebar cards add link, duration, uploader and views. Cancelling kept the document; a non-last part or series item switches at once through pushState and never shows the panel. Avatar, uploader and action blocks of the panel are excluded."
+}

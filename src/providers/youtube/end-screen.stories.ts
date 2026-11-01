@@ -9,9 +9,8 @@ import { ENDED_CURTAIN_DELAY_MS, mountEndedCurtain, REPLAY_ICON } from '../../ui
 import { t } from '../../ui/messages';
 import { queryPlayerUi } from '../../ui/root';
 import { setSvgIcon } from '../../ui/svg-icon';
+import { mountEndScreenSettings, type EndScreenItem } from '../end-screen-view';
 
-import type { EndScreenItem } from './end-screen-model';
-import { mountEndScreenSettings } from './end-screen-view';
 import { createYouTubeSettings } from './settings';
 
 interface Args { count: number; missingThumbnail: boolean; recommendations: boolean; captions: boolean }
@@ -46,7 +45,7 @@ function render({ count, missingThumbnail, recommendations, captions }: Args): H
     mount(container, owner, label) {
       mountEndScreenSettings(container, { read: () => ({ mediaId: 'story',
         items: items.slice(0, count).map(item => ({ ...item, thumbnailUrl: missingThumbnail ? undefined : image })) }),
-      activate: () => true }, { label, scope: owner, settings });
+      activate: () => true }, { label, scope: owner, settings, provider: 'youtube' });
     },
     hostEndsPlayback: () => false, subscribe: () => () => {}, dispose() {}
   };

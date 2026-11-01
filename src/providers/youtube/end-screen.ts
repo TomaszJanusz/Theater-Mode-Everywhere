@@ -1,9 +1,9 @@
 import type { EndScreenSource } from '../../core/end-screen';
 import { providerOffAttribute } from '../../media-features/provider-flags';
+import { mountEndScreenSettings, type EndScreenSnapshot, type SuggestionSource } from '../end-screen-view';
 
 import { readYouTubeAutonav } from './autonav';
-import { readYouTubeSuggestions, type EndScreenSnapshot, type SuggestionSource } from './end-screen-model';
-import { mountEndScreenSettings } from './end-screen-view';
+import { readYouTubeSuggestions } from './end-screen-model';
 import { createYouTubeSettings } from './settings';
 import { youtubeWatchPlayback } from './watch-playback';
 
@@ -43,7 +43,7 @@ export function createYouTubeEndScreen(element: HTMLElement): EndScreenSource & 
   let refresh = () => {};
   return {
     mount(container, scope, label) {
-      refresh = mountEndScreenSettings(container, { read, activate }, { label, scope, settings });
+      refresh = mountEndScreenSettings(container, { read, activate }, { label, scope, settings, provider: 'youtube' });
       scope.add(() => { refresh = () => {}; });
     },
     read, hostEndsPlayback,
