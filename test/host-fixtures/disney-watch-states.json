@@ -1,0 +1,1132 @@
+{
+ "source": "Disney+ watch page, /play/:uuid (signed in)",
+ "captured": "2026-11-01",
+ "environment": "Brave Beta Chromium 156.1.100.44, macOS, signed-in account, Polish UI; read through CDP with the unpacked extension (origin/dev 73be2de) loaded; synthetic events only for the native-menu steps",
+ "evidence": "Recorded host fixture (Hive player objects and Disney UI DOM as the MAIN world reads them), not live extension verification",
+ "notes": "Second Disney+ recording (the first is disney-watch-player.json, paused only). Adds: the native Audio & Subtitles menu DOM open (three views, test/host-fixtures/disney-watch-{settings,audio,subtitles}-menu.html), a playing state, an idle (controls hidden) state, and an audio switch recorded before/after. Hive objects are summarised through a fixed field list (no urls, tokens, ids, profile data or cue text); the player/container ids are renumbered. User preference lists are replaced by [\"en\"]. The three paused-switch playhead jumps, the Hive-paused control and the playing reload sequences are measured values, not constants: positions depend on the title and on how long the title had been paused. The native-menu captures were opened by synthetic DOM events (pointer input reached the page about 5 s late through CDP); everything else used real key and pointer input through the extension UI.",
+ "consumers": {
+  "audioSwitch.tracksBefore/After + store slices": "src/providers/disney/audio-main.ts DisneyAudioHost (record/hiveTracks, signature)",
+  "audioSwitch.identity + states.*.videos": "src/providers/disney/watch-playback.ts disneyMediaElement, disneyVideoRole",
+  "audioSwitch.reloadWhilePlaying": "src/providers/disney/audio-main.ts media() (emptied/loadstart -> loadedmetadata reload), clock-policy.ts",
+  "audioSwitch.playbackModel + positionAfterSwitch": "src/providers/disney/audio-main.ts resumed() (re-pause through Hive), watch-playback.ts pause paths",
+  "states.idleControlsHidden.flags.idleClass": "src/providers/disney/main.ts disneySessionLooksPaused (.btm-media-player-idle)",
+  "test/host-fixtures/disney-watch-*-menu.html": "native Audio & Subtitles menu, for the TME menu to be compared with (labels, order, count)"
+ },
+ "web": {
+  "tag": "disney-web-player",
+  "mediaElementClass": "hive-video",
+  "mediaElement": "video.hive-video",
+  "mediaClientElement": "div.btm-media-client",
+  "dummyVideo": "video.btm-media-client-element (display none, never the mediaElement, readyState 0)"
+ },
+ "states": {
+  "playing": {
+   "videos": [
+    {
+     "index": 0,
+     "className": "btm-media-client-element fontDefault fontColorWhite fontOpacity100 fontSize32 fontEdgeNone backgroundColorBlack backgroundOpacity75 windowColorWhite windowOpacity0",
+     "id": "",
+     "isMediaElement": false,
+     "paused": true,
+     "readyState": 0,
+     "videoWidth": 0,
+     "videoHeight": 0,
+     "srcKind": "none",
+     "display": "none",
+     "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0
+     },
+     "chain": [
+      "video.btm-media-client-element.fontDefault.fontColorWhite.fontOpacity100.fontSize32.fontEdgeNone",
+      "div#media-element-container-00000000-0000-4000-8000-000000000001.media-element-container",
+      "div#bamtech-media-player--1700000000000.btm-media-client",
+      "disney-web-player#player-00000000-0000-4000-8000-000000000003",
+      "div.btm-media-clients",
+      "div.btm-media-player.playback-experience-v2",
+      "div._1axyo7x0.mini-player-inner",
+      "draggable-surface"
+     ]
+    },
+    {
+     "index": 1,
+     "className": "hive-video",
+     "id": "hivePlayer1",
+     "isMediaElement": true,
+     "paused": false,
+     "readyState": 4,
+     "videoWidth": 1280,
+     "videoHeight": 720,
+     "srcKind": "blob",
+     "display": "inline",
+     "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 1334,
+      "h": 780
+     },
+     "chain": [
+      "video#hivePlayer1.hive-video",
+      "div#media-element-container-00000000-0000-4000-8000-000000000001.media-element-container",
+      "div#bamtech-media-player--1700000000000.btm-media-client",
+      "disney-web-player#player-00000000-0000-4000-8000-000000000003",
+      "div.btm-media-clients",
+      "div.btm-media-player.playback-experience-v2",
+      "div._1axyo7x0.mini-player-inner",
+      "draggable-surface"
+     ]
+    }
+   ],
+   "mediaElementIndex": 1,
+   "timelineInfo": {
+    "playheadPositionMs": 6768321.099121094,
+    "programDurationMs": 7260003,
+    "seekableDurationMs": 7260003,
+    "seekableEndMs": 7260003,
+    "forwardBufferDurationMs": 9451,
+    "type": "VOD"
+   },
+   "clock": {
+    "playheadPositionMs": 6768321.099121094,
+    "contentVideoCurrentTimeSeconds": 65.267164
+   },
+   "audioSelectedTrackId": 1,
+   "captions": {
+    "enabled": true,
+    "selectedTrackId": 8
+   },
+   "flags": {
+    "idleClass": false,
+    "overlay": true
+   },
+   "note": "Controls visible, native UI active, content playing (credits portion of the title). Disney UI not idle."
+  },
+  "idleControlsHidden": {
+   "videos": [
+    {
+     "index": 0,
+     "className": "btm-media-client-element fontDefault fontColorWhite fontOpacity100 fontSize32 fontEdgeNone backgroundColorBlack backgroundOpacity75 windowColorWhite windowOpacity0",
+     "id": "",
+     "isMediaElement": false,
+     "paused": true,
+     "readyState": 0,
+     "videoWidth": 0,
+     "videoHeight": 0,
+     "srcKind": "none",
+     "display": "none",
+     "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0
+     },
+     "chain": [
+      "video.btm-media-client-element.fontDefault.fontColorWhite.fontOpacity100.fontSize32.fontEdgeNone",
+      "div#media-element-container-00000000-0000-4000-8000-000000000001.media-element-container",
+      "div#bamtech-media-player--1700000000000.btm-media-client",
+      "disney-web-player#player-00000000-0000-4000-8000-000000000003",
+      "div.btm-media-clients",
+      "div.btm-media-player.playback-experience-v2.btm-media-player-idle",
+      "div._1axyo7x0.mini-player-inner",
+      "draggable-surface"
+     ]
+    },
+    {
+     "index": 1,
+     "className": "hive-video",
+     "id": "hivePlayer1",
+     "isMediaElement": true,
+     "paused": false,
+     "readyState": 4,
+     "videoWidth": 1280,
+     "videoHeight": 720,
+     "srcKind": "blob",
+     "display": "inline",
+     "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 1334,
+      "h": 780
+     },
+     "chain": [
+      "video#hivePlayer1.hive-video",
+      "div#media-element-container-00000000-0000-4000-8000-000000000001.media-element-container",
+      "div#bamtech-media-player--1700000000000.btm-media-client",
+      "disney-web-player#player-00000000-0000-4000-8000-000000000003",
+      "div.btm-media-clients",
+      "div.btm-media-player.playback-experience-v2.btm-media-player-idle",
+      "div._1axyo7x0.mini-player-inner",
+      "draggable-surface"
+     ]
+    }
+   ],
+   "mediaElementIndex": 1,
+   "timelineInfo": {
+    "playheadPositionMs": 6772039.152099609,
+    "programDurationMs": 7260003,
+    "seekableDurationMs": 7260003,
+    "seekableEndMs": 7260003,
+    "forwardBufferDurationMs": 9231,
+    "type": "VOD"
+   },
+   "clock": {
+    "playheadPositionMs": 6772039.152099609,
+    "contentVideoCurrentTimeSeconds": 69.069375
+   },
+   "audioSelectedTrackId": 1,
+   "captions": {
+    "enabled": true,
+    "selectedTrackId": 8
+   },
+   "flags": {
+    "idleClass": true,
+    "overlay": true
+   },
+   "note": "Playing, pointer still for 3 s: .btm-media-player-idle set, native controls hidden. Idle came 3.0 s after the last pointer movement."
+  }
+ },
+ "audioSwitch": {
+  "tracksBefore": {
+   "fields": [
+    "id",
+    "language",
+    "title",
+    "isSelected",
+    "hasDescribesVideo"
+   ],
+   "tracks": [
+    [
+     9,
+     "id",
+     "Bahasa Indonesia",
+     0,
+     0
+    ],
+    [
+     13,
+     "ms",
+     "Bahasa Melayu",
+     0,
+     0
+    ],
+    [
+     0,
+     "cs",
+     "Čeština",
+     0,
+     0
+    ],
+    [
+     6,
+     "de",
+     "Deutsch",
+     0,
+     0
+    ],
+    [
+     7,
+     "de",
+     "Deutsch [Audiodeskription]",
+     0,
+     1
+    ],
+    [
+     1,
+     "en",
+     "English",
+     1,
+     0
+    ],
+    [
+     2,
+     "en",
+     "English [Audio Description]",
+     0,
+     1
+    ],
+    [
+     19,
+     "es-ES",
+     "Español",
+     0,
+     0
+    ],
+    [
+     20,
+     "es-419",
+     "Español (Latinoamérica)",
+     0,
+     0
+    ],
+    [
+     3,
+     "fr-FR",
+     "Français",
+     0,
+     0
+    ],
+    [
+     4,
+     "fr-CA",
+     "Français (Canada)",
+     0,
+     0
+    ],
+    [
+     5,
+     "fr-FR",
+     "Français [Audiodescription]",
+     0,
+     1
+    ],
+    [
+     10,
+     "it",
+     "Italiano",
+     0,
+     0
+    ],
+    [
+     8,
+     "hu",
+     "Magyar",
+     0,
+     0
+    ],
+    [
+     14,
+     "pl",
+     "Polski",
+     0,
+     0
+    ],
+    [
+     15,
+     "pt-BR",
+     "Português (Brasil)",
+     0,
+     0
+    ],
+    [
+     16,
+     "pt-BR",
+     "Português (Brasil) [Audiodescrição]",
+     0,
+     1
+    ],
+    [
+     17,
+     "ro",
+     "Română",
+     0,
+     0
+    ],
+    [
+     18,
+     "sk",
+     "Slovenčina",
+     0,
+     0
+    ],
+    [
+     22,
+     "tr",
+     "Türkçe",
+     0,
+     0
+    ],
+    [
+     21,
+     "th",
+     "ไทย",
+     0,
+     0
+    ],
+    [
+     12,
+     "ko",
+     "한국어",
+     0,
+     0
+    ],
+    [
+     11,
+     "ja",
+     "日本語",
+     0,
+     0
+    ]
+   ]
+  },
+  "tracksAfter": {
+   "fields": [
+    "id",
+    "language",
+    "title",
+    "isSelected",
+    "hasDescribesVideo"
+   ],
+   "tracks": [
+    [
+     9,
+     "id",
+     "Bahasa Indonesia",
+     0,
+     0
+    ],
+    [
+     13,
+     "ms",
+     "Bahasa Melayu",
+     0,
+     0
+    ],
+    [
+     0,
+     "cs",
+     "Čeština",
+     0,
+     0
+    ],
+    [
+     6,
+     "de",
+     "Deutsch",
+     0,
+     0
+    ],
+    [
+     7,
+     "de",
+     "Deutsch [Audiodeskription]",
+     0,
+     1
+    ],
+    [
+     1,
+     "en",
+     "English",
+     0,
+     0
+    ],
+    [
+     2,
+     "en",
+     "English [Audio Description]",
+     0,
+     1
+    ],
+    [
+     19,
+     "es-ES",
+     "Español",
+     0,
+     0
+    ],
+    [
+     20,
+     "es-419",
+     "Español (Latinoamérica)",
+     0,
+     0
+    ],
+    [
+     3,
+     "fr-FR",
+     "Français",
+     0,
+     0
+    ],
+    [
+     4,
+     "fr-CA",
+     "Français (Canada)",
+     0,
+     0
+    ],
+    [
+     5,
+     "fr-FR",
+     "Français [Audiodescription]",
+     0,
+     1
+    ],
+    [
+     10,
+     "it",
+     "Italiano",
+     0,
+     0
+    ],
+    [
+     8,
+     "hu",
+     "Magyar",
+     0,
+     0
+    ],
+    [
+     14,
+     "pl",
+     "Polski",
+     1,
+     0
+    ],
+    [
+     15,
+     "pt-BR",
+     "Português (Brasil)",
+     0,
+     0
+    ],
+    [
+     16,
+     "pt-BR",
+     "Português (Brasil) [Audiodescrição]",
+     0,
+     1
+    ],
+    [
+     17,
+     "ro",
+     "Română",
+     0,
+     0
+    ],
+    [
+     18,
+     "sk",
+     "Slovenčina",
+     0,
+     0
+    ],
+    [
+     22,
+     "tr",
+     "Türkçe",
+     0,
+     0
+    ],
+    [
+     21,
+     "th",
+     "ไทย",
+     0,
+     0
+    ],
+    [
+     12,
+     "ko",
+     "한국어",
+     0,
+     0
+    ],
+    [
+     11,
+     "ja",
+     "日本語",
+     0,
+     0
+    ]
+   ]
+  },
+  "storeAudioSliceBefore": {
+   "audioSlice": {
+    "preferences": {
+     "languagePriorityList": [
+      "en"
+     ],
+     "preferDescribesVideo": false,
+     "smoothSwitch": false
+    },
+    "trackIds": [
+     9,
+     13,
+     0,
+     6,
+     7,
+     1,
+     2,
+     19,
+     20,
+     3,
+     4,
+     5,
+     10,
+     8,
+     14,
+     15,
+     16,
+     17,
+     18,
+     22,
+     21,
+     12,
+     11
+    ]
+   },
+   "audioSliceKeys": [
+    "preferences",
+    "tracks",
+    "selectedLanguage"
+   ]
+  },
+  "storeAudioSliceAfter": {
+   "audioSlice": {
+    "preferences": {
+     "languagePriorityList": [
+      "en"
+     ],
+     "preferDescribesVideo": false,
+     "smoothSwitch": false
+    },
+    "trackIds": [
+     9,
+     13,
+     0,
+     6,
+     7,
+     1,
+     2,
+     19,
+     20,
+     3,
+     4,
+     5,
+     10,
+     8,
+     14,
+     15,
+     16,
+     17,
+     18,
+     22,
+     21,
+     12,
+     11
+    ]
+   },
+   "audioSliceKeys": [
+    "preferences",
+    "tracks",
+    "selectedLanguage"
+   ]
+  },
+  "before": {
+   "videos": [
+    {
+     "index": 0,
+     "className": "btm-media-client-element fontDefault fontColorWhite fontOpacity100 fontSize32 fontEdgeNone backgroundColorBlack backgroundOpacity75 windowColorWhite windowOpacity0",
+     "id": "",
+     "isMediaElement": false,
+     "paused": true,
+     "readyState": 0,
+     "videoWidth": 0,
+     "videoHeight": 0,
+     "srcKind": "none",
+     "display": "none",
+     "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0
+     },
+     "chain": [
+      "video.btm-media-client-element.fontDefault.fontColorWhite.fontOpacity100.fontSize32.fontEdgeNone",
+      "div#media-element-container-00000000-0000-4000-8000-000000000001.media-element-container",
+      "div#bamtech-media-player--1700000000000.btm-media-client",
+      "disney-web-player#player-00000000-0000-4000-8000-000000000003",
+      "div.btm-media-clients",
+      "div.btm-media-player.playback-experience-v2.btm-media-player-idle",
+      "div._1axyo7x0.mini-player-inner",
+      "draggable-surface"
+     ]
+    },
+    {
+     "index": 1,
+     "className": "hive-video",
+     "id": "hivePlayer1",
+     "isMediaElement": true,
+     "paused": true,
+     "readyState": 4,
+     "videoWidth": 1280,
+     "videoHeight": 720,
+     "srcKind": "blob",
+     "display": "block",
+     "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 1334,
+      "h": 780
+     },
+     "chain": [
+      "video#hivePlayer1.hive-video",
+      "div#media-element-container-00000000-0000-4000-8000-000000000001.media-element-container",
+      "div#bamtech-media-player--1700000000000.btm-media-client",
+      "disney-web-player#player-00000000-0000-4000-8000-000000000003",
+      "div.btm-media-clients",
+      "div.btm-media-player.playback-experience-v2.btm-media-player-idle",
+      "div._1axyo7x0.mini-player-inner",
+      "draggable-surface"
+     ]
+    }
+   ],
+   "mediaElementIndex": 1,
+   "timelineInfo": {
+    "playheadPositionMs": 518255.3459472656,
+    "programDurationMs": 7260003,
+    "seekableDurationMs": 7260003,
+    "seekableEndMs": 7260003,
+    "forwardBufferDurationMs": 9749,
+    "type": "VOD"
+   },
+   "clock": {
+    "playheadPositionMs": 518255.3459472656,
+    "contentVideoCurrentTimeSeconds": 209.251346
+   },
+   "audioSelectedTrackId": 1,
+   "captions": {
+    "enabled": true,
+    "selectedTrackId": 8
+   },
+   "flags": {
+    "idleClass": true,
+    "overlay": true
+   },
+   "note": "English selected, video paused by the extension (video element only), 8:38 into the title."
+  },
+  "after": {
+   "videos": [
+    {
+     "index": 0,
+     "className": "btm-media-client-element fontDefault fontColorWhite fontOpacity100 fontSize32 fontEdgeNone backgroundColorBlack backgroundOpacity75 windowColorWhite windowOpacity0",
+     "id": "",
+     "isMediaElement": false,
+     "paused": true,
+     "readyState": 0,
+     "videoWidth": 0,
+     "videoHeight": 0,
+     "srcKind": "none",
+     "display": "none",
+     "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0
+     },
+     "chain": [
+      "video.btm-media-client-element.fontDefault.fontColorWhite.fontOpacity100.fontSize32.fontEdgeNone",
+      "div#media-element-container-00000000-0000-4000-8000-000000000001.media-element-container",
+      "div#bamtech-media-player--1700000000000.btm-media-client",
+      "disney-web-player#player-00000000-0000-4000-8000-000000000003",
+      "div.btm-media-clients",
+      "div.btm-media-player.playback-experience-v2.btm-media-player-idle",
+      "div._1axyo7x0.mini-player-inner",
+      "draggable-surface"
+     ]
+    },
+    {
+     "index": 1,
+     "className": "hive-video",
+     "id": "hivePlayer1",
+     "isMediaElement": true,
+     "paused": true,
+     "readyState": 4,
+     "videoWidth": 1280,
+     "videoHeight": 720,
+     "srcKind": "blob",
+     "display": "block",
+     "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 1334,
+      "h": 780
+     },
+     "chain": [
+      "video#hivePlayer1.hive-video",
+      "div#media-element-container-00000000-0000-4000-8000-000000000001.media-element-container",
+      "div#bamtech-media-player--1700000000000.btm-media-client",
+      "disney-web-player#player-00000000-0000-4000-8000-000000000003",
+      "div.btm-media-clients",
+      "div.btm-media-player.playback-experience-v2.btm-media-player-idle",
+      "div._1axyo7x0.mini-player-inner",
+      "draggable-surface"
+     ]
+    }
+   ],
+   "mediaElementIndex": 1,
+   "timelineInfo": {
+    "playheadPositionMs": 579304.0920410156,
+    "programDurationMs": 7260003,
+    "seekableDurationMs": 7260003,
+    "seekableEndMs": 7260003,
+    "forwardBufferDurationMs": 1276,
+    "type": "VOD"
+   },
+   "clock": {
+    "playheadPositionMs": 579304.0920410156,
+    "contentVideoCurrentTimeSeconds": 20.012746
+   },
+   "audioSelectedTrackId": 14,
+   "captions": {
+    "enabled": true,
+    "selectedTrackId": 8
+   },
+   "flags": {
+    "idleClass": true,
+    "overlay": true
+   },
+   "note": "Polski (id 14) selected, still paused. The reload gave the media element a new timeline (currentTime restarted at 20 s); the playhead differs from currentTime by a different offset."
+  },
+  "identity": {
+   "videoCount": 2,
+   "contentVideo": "video.hive-video (display inline, readyState 4, the mediaElement)",
+   "dummyVideo": "video.btm-media-client-element (display none, readyState 0, never the mediaElement)",
+   "mediaClientElement": "div.btm-media-client (a container, not a video)",
+   "acrossTheSwitch": "the same hive-video node and the same mediaElement before, during and after every switch (sampled every 100 ms; node identity unchanged, no video added or removed)",
+   "pictureDuringReload": "while playing: paused=true, readyState 0, currentTime 0 for about 0.3-0.5 s, then readyState 1-4 and currentTime 20"
+  },
+  "reloadWhilePlaying": {
+   "toPolski": [
+    {
+     "dtMs": 0,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 116.51,
+     "playheadS": 2147.66,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 104,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 116.61,
+     "playheadS": 2147.93,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 245,
+     "paused": true,
+     "readyState": 0,
+     "currentTime": 0,
+     "playheadS": 2147.93,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 300,
+     "paused": true,
+     "readyState": 0,
+     "currentTime": 0,
+     "playheadS": 2147.93,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 400,
+     "paused": true,
+     "readyState": 0,
+     "currentTime": 0,
+     "playheadS": 2147.93,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 501,
+     "paused": true,
+     "readyState": 1,
+     "currentTime": 0,
+     "playheadS": 2147.93,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 603,
+     "paused": false,
+     "readyState": 1,
+     "currentTime": 20,
+     "playheadS": 2147.93,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 700,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.01,
+     "playheadS": 2148.18,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 800,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.09,
+     "playheadS": 2148.18,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 901,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.19,
+     "playheadS": 2148.18,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 1001,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.29,
+     "playheadS": 2148.24,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 1102,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.39,
+     "playheadS": 2148.24,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    }
+   ],
+   "toEnglish": [
+    {
+     "dtMs": 0,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 50.49,
+     "playheadS": 2178.32,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 99,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 50.59,
+     "playheadS": 2178.58,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 240,
+     "paused": true,
+     "readyState": 0,
+     "currentTime": 0,
+     "playheadS": 2178.58,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 299,
+     "paused": true,
+     "readyState": 0,
+     "currentTime": 0,
+     "playheadS": 2178.58,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 400,
+     "paused": true,
+     "readyState": 0,
+     "currentTime": 0,
+     "playheadS": 2178.58,
+     "audioTrackId": 14,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 517,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.01,
+     "playheadS": 2178.69,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 599,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.05,
+     "playheadS": 2178.69,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 700,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.15,
+     "playheadS": 2178.69,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 800,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.25,
+     "playheadS": 2178.89,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 899,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.35,
+     "playheadS": 2178.89,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 999,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.45,
+     "playheadS": 2178.89,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    },
+    {
+     "dtMs": 1100,
+     "paused": false,
+     "readyState": 4,
+     "currentTime": 20.55,
+     "playheadS": 2179.16,
+     "audioTrackId": 1,
+     "videoCount": 2,
+     "hiveVideoNodeId": 1,
+     "mediaElementIsHiveVideo": true
+    }
+   ]
+  },
+  "playbackModel": {
+   "afterExtensionPause": {
+    "note": "after the extension paused the title (TME pause button or Space)",
+    "videoPaused": true,
+    "hiveIsPaused": false,
+    "hiveCurrentState": "PLAYING",
+    "hivePreviousState": "SEEKING",
+    "nativePauseIcon": "still shows pause"
+   },
+   "afterHivePause": {
+    "note": "after mediaPlayer.pause()",
+    "videoPaused": true,
+    "hiveIsPaused": true,
+    "hiveCurrentState": "PAUSED"
+   },
+   "storePath": "state.player.extensions.playback.{isPaused,paused,playing,currentState,previousState}"
+  },
+  "positionAfterSwitch": [
+   {
+    "case": "switch through the extension menu, title paused earlier by the extension (video element only; pause age not timed, about a minute)",
+    "playheadBeforeS": 518.3,
+    "playheadAfterS": 579.3,
+    "jumpS": 61.0,
+    "stillPaused": true,
+    "currentTimeBeforeS": 209.25,
+    "currentTimeAfterS": 20.01
+   },
+   {
+    "case": "same, second time, title paused for about 1.5 min (not timed to the second)",
+    "playheadBeforeS": 648.0,
+    "playheadAfterS": 749.7,
+    "jumpS": 101.7,
+    "stillPaused": true
+   },
+   {
+    "case": "switch back (Polski -> English) when Hive had just been paused through its own API by the extension's re-pause",
+    "playheadBeforeS": 579.3,
+    "playheadAfterS": 579.3,
+    "jumpS": 0,
+    "stillPaused": true
+   },
+   {
+    "case": "switch through Disney's own menu, title paused by the extension (video element only) for about 2 min",
+    "playheadBeforeS": 1919.9,
+    "playheadAfterS": 2027.4,
+    "jumpS": 107.5,
+    "stillPaused": false,
+    "note": "Disney resumed playback itself; 6 s had played by the read"
+   },
+   {
+    "case": "control: title paused through mediaPlayer.pause() (Hive knows) for 75 s, then Disney's own menu",
+    "playheadBeforeS": 6912.2,
+    "playheadAfterS": 6912.2,
+    "jumpS": 0,
+    "stillPaused": true,
+    "audioTrackIdAfter": 10
+   },
+   {
+    "case": "switches while playing (extension menu), two runs",
+    "playheadContinuous": true,
+    "note": "playhead moves 0.0-0.3 s across the reload, no jump"
+   }
+  ]
+ },
+ "captionLists": {
+  "hiveCaptionTrackCount": 38,
+  "extensionMenu": "Off + 38 entries labelled with English names (German, Danish, Chinese (Hong Kong)...), the same 38 as Hive captions.availableTracks",
+  "nativeMenu": "Wył. + 38 entries labelled with endonyms (Deutsch, Dansk...); \".cc\" marks the [CC] renditions",
+  "independentState": "with the extension caption menu on Off, Hive captions.enabled stays true with the English track selected; the extension renders its own WebVTT overlay and the native line is not painted while it is on",
+  "extensionCuesAfterAudioSwitch": "stay aligned with the native cue after a switch (the playhead, not currentTime, is the clock)"
+ }
+}
