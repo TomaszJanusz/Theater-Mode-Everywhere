@@ -232,9 +232,9 @@ interface HostilePage {
   afterOpen?: boolean;
   fullscreen?: boolean;
   /**
-   * Set when the page legitimately wins (a page modal dialog makes the rest of the document inert,
-   * whichever entered the top layer first; a page element in fullscreen takes pointer input, so the
-   * host leaves the top layer; docs/top-layer.md). Undoes it, so recovery is asserted.
+   * Set when the page legitimately wins (a page modal dialog makes the rest of the document inert;
+   * a page element in fullscreen takes pointer input; either way the host leaves the top layer;
+   * docs/top-layer.md). Undoes it, so recovery is asserted.
    */
   release?(): void | Promise<void>;
   /** The page took focus while it won, so a surface that does not trap focus closed. */
@@ -277,7 +277,7 @@ const hostilePages: HostilePage[] = [
   { name: 'a page popover shown before the player UI', install: pagePopover },
   { name: 'a page popover shown while the surface is open', install: pagePopover, afterOpen: true },
   { name: 'a page modal dialog shown before the player UI', install: modalDialog, release: () => pageDialog?.close(), takesFocus: true },
-  { name: 'a page modal dialog shown while the surface is open', install: modalDialog, afterOpen: true, release: () => pageDialog?.close(), takesFocus: true },
+  { name: 'a page modal dialog shown while the surface is open', install: modalDialog, afterOpen: true, release: () => pageDialog?.close(), takesFocus: true, hidesHost: true },
   {
     // The document goes fullscreen, as in theater fullscreen. The Enter that opened the surface is the
     // user activation it needs.
@@ -333,6 +333,8 @@ for (const registration of representatives) {
         if (page.release && !page.afterOpen) {
           expect(onTop(mounted, mounted.trigger), 'the page dialog wins while open').toBe(false);
           await page.release();
+          await vi.advanceTimersByTimeAsync(50);
+          expect(mounted.root.host.matches(':popover-open'), 'host back in the top layer').toBe(true);
         }
         expect(onTop(mounted, mounted.trigger)).toBe(true);
         await openWith(mounted, 'keyboard');
@@ -344,6 +346,8 @@ for (const registration of representatives) {
             expect(onTop(mounted, policy.content(mounted)), 'the page wins while it holds the top layer').toBe(false);
             expect(mounted.root.host.matches(':popover-open'), 'host in the top layer').toBe(!page.hidesHost);
             await page.release();
+            await vi.advanceTimersByTimeAsync(50);
+            expect(mounted.root.host.matches(':popover-open'), 'host back in the top layer').toBe(true);
             // The dialog took focus; a surface that does not trap focus closed when it left.
             if (page.takesFocus && !policy.trapsFocus) {
               expect(state(mounted)).toBe('closed');
