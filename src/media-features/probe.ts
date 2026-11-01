@@ -7,33 +7,9 @@ export const MEDIA_PROBE_RESULT_EVENT = 'theater-everywhere-media-probe-result';
 export const MEDIA_FETCH_EVENT = 'theater-everywhere-media-fetch';
 export const MEDIA_FETCH_RESULT_EVENT = 'theater-everywhere-media-fetch-result';
 
-export type DisneyCaptionMeta = {
-  id: string;
-  language: string;
-  label: string;
-  url: string;
-};
-
-export type DisneyPlayerSnapshot = {
-  mediaId?: string;
-  title?: string;
-  duration?: number;
-  masterUrl?: string;
-  storyboardUrl?: string;
-  bifBlobUrl?: string;
-  thumbnail?: {
-    width: number;
-    height: number;
-    intervalMs: number;
-    bifUrl?: string;
-  };
-  captionTracks?: DisneyCaptionMeta[];
-};
-
 export type MediaProbeSnapshot = {
   /** Registered providers' snapshots by provider id, unvalidated: each provider normalizes its own. */
   providers?: Record<string, unknown>;
-  disney?: DisneyPlayerSnapshot | null;
   crunchyroll?: CrunchyrollSnapshot | null;
 };
 
@@ -64,7 +40,6 @@ export function requestMediaProbe(timeoutMs = 800): Promise<MediaProbeSnapshot> 
       window.removeEventListener(MEDIA_PROBE_RESULT_EVENT, onResult as EventListener);
       resolve({
         providers: plainRecord(snapshot.providers),
-        disney: snapshot.disney ?? null,
         crunchyroll: snapshot.crunchyroll ?? null
       });
     };

@@ -3,7 +3,8 @@ import { describe, it } from 'node:test';
 
 import { defaultMediaProviderFlags } from '../media-features/provider-flags';
 
-import { isCrunchyrollHost, isDisneyHost, isSoopHost, isYouTubeHost } from './hosts';
+import { isDisneyHost } from './disney/hosts';
+import { isCrunchyrollHost, isSoopHost, isYouTubeHost } from './hosts';
 import { isNetflixHost } from './netflix/hosts';
 import {
   matchingProviders,
@@ -21,9 +22,10 @@ import { isVikiHost } from './viki/hosts';
 describe('provider registry', () => {
   it('matches provider hosts used for MAIN patches', () => {
     assert.deepEqual(matchingProviders('www.youtube-nocookie.com').filter((id) => id !== 'native'), ['youtube']);
-    // Registered providers (YouTube, SOOP) declare `harvest` in their hooks instead of the static gate.
+    // Registered providers (YouTube, SOOP, Disney+) declare `harvest` in their hooks instead of the static gate.
     assert.equal(shouldPatchMainWorld('www.youtube.com'), false);
-    assert.equal(shouldPatchMainWorld('www.disneyplus.com'), true);
+    assert.equal(shouldPatchMainWorld('www.disneyplus.com'), false);
+    assert.equal(shouldPatchMainWorld('www.crunchyroll.com'), true);
     assert.equal(shouldPatchMainWorld('www.netflix.com'), false);
     assert.equal(shouldPatchMainWorld('example.com'), false);
     assert.equal(shouldPatchMainWorld('127.0.0.1'), false);
@@ -104,7 +106,7 @@ describe('provider registry', () => {
     assert.equal(shouldAttachProvider('soop', defaultMediaProviderFlags(), 'www.iq.com'), false);
   });
 
-  it('merges a staged descriptor with its legacy definition without dropping startup or adding a duplicate', t => {
+  it('reads a descriptor provider\'s hooks from its registration, with one definition and no legacy MAIN gate', t => {
     const definition = providerDefinition('disney');
     assert.equal(PROVIDER_DEFINITIONS.filter(item => item.id === 'disney').length, 1);
     const watch = { pageIdentity: () => null, mainVideo: () => null };
@@ -113,7 +115,7 @@ describe('provider registry', () => {
       ? { id: 'disney', contractVersion: 1, watchPlayback: watch, createAdapter } : undefined);
     assert.equal(definition.createAdapter, createAdapter, 'registration stays visible after registry construction');
     assert.equal(definition.watchPlayback, watch);
-    assert.equal(shouldPatchMainWorld('www.disneyplus.com'), true, 'legacy MAIN is still required');
+    assert.equal(shouldPatchMainWorld('www.disneyplus.com'), false, 'its registered harvest installs the MAIN observers');
     assert.deepEqual(matchingProviders('www.disneyplus.com'), ['native', 'disney']);
   });
 

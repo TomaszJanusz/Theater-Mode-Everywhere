@@ -14,11 +14,6 @@ export function isYouTubeHost(hostname = currentHost()): boolean {
   return catalogHost('youtube', hostname);
 }
 
-export function isDisneyHost(hostname = currentHost()): boolean {
-  const host = normalizeHost(hostname);
-  return host === 'disneyplus.com' || host.endsWith('.disneyplus.com');
-}
-
 /** SOOP (formerly AfreecaTV) international: www., play. and vod. under sooplive.com. */
 export function isSoopHost(hostname = currentHost()): boolean {
   return catalogHost('soop', hostname);

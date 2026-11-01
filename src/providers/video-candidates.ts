@@ -51,14 +51,14 @@ export function hasLeftPlaybackSurface(video: HTMLVideoElement, surface: 'watch'
 }
 
 /**
- * Some providers keep a sourced standby beside visible playback. Disney
- * mounts a display:none standby first when the next episode replaces the
- * player, then adds the real video.
+ * Some providers keep a sourced standby beside visible playback, inside the containers they register as
+ * `discovery.standbySelector`: a hidden video there is not a candidate.
  */
-const standbySelector = () => ['disney-web-player', typeof window === 'undefined' ? '' : providerRuntime('isolated')?.services?.standbyVideoSelector?.() ?? ''].filter(Boolean).join(', ');
+const standbySelector = () => typeof window === 'undefined' ? '' : providerRuntime('isolated')?.services?.standbyVideoSelector?.() ?? '';
 
 export function isInactiveStandbyVideo(video: HTMLVideoElement): boolean {
-  if (!video.closest(standbySelector())) return false;
+  const selector = standbySelector();
+  if (!selector || !video.closest(selector)) return false;
   const view = video.ownerDocument?.defaultView;
   if (!view) return false;
   if (view.getComputedStyle(video).visibility === 'hidden') return true;

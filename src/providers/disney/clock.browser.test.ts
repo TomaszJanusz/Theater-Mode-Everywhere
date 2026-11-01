@@ -7,7 +7,7 @@ import { bundleModules } from '../../test-utils/player-boot';
 import { testEngines } from '../../test-utils/test-engines';
 
 const PLAY_ID = '86e14fdb-3841-4282-ad38-07c8c4aab4b6';
-const compiled = bundleModules(["import { handleDisneyMediaSeek, harvestDisneyData, installDisneyMain } from './providers/disney/main'; import { DisneyAdapter } from './media-features/disney-adapter'; export { handleDisneyMediaSeek, harvestDisneyData, installDisneyMain, DisneyAdapter };"], 'DisneyMain');
+const compiled = bundleModules(["import { handleDisneyMediaSeek, harvestDisneyData, installDisneyMain } from './providers/disney/main'; import { DisneyAdapter } from './providers/disney/adapter'; export { handleDisneyMediaSeek, harvestDisneyData, installDisneyMain, DisneyAdapter };"], 'DisneyMain');
 const browsers = sharedEngineBrowsers();
 /** What the reset cases call on the bundled MAIN module. */
 type DisneyClockApi = { installDisneyMain(): void };
@@ -37,12 +37,12 @@ for (const engine of testEngines()) {
       await page.addScriptTag({ content: 'globalThis.__name = fn => fn;\n' + compiled });
       const report = await page.evaluate(async () => {
         const api = (window as unknown as { DisneyMain: typeof import('./main') & {
-          DisneyAdapter: typeof import('../../media-features/disney-adapter').DisneyAdapter;
+          DisneyAdapter: typeof import('./adapter').DisneyAdapter;
         } }).DisneyMain;
         let notified = 0;
         window.addEventListener('theater-everywhere-disney-harvest', () => { notified += 1; });
         const settle = () => new Promise((resolve) => setTimeout(resolve, 120));
-        const adapter = new api.DisneyAdapter();
+        const adapter = new api.DisneyAdapter({ requestMediaProbe: async () => ({}), requestPageFetch: async () => null, parseCaptionPayload: () => [] });
         const read = () => ({ title: adapter.getTitle(), subtitle: adapter.getSubtitle() });
         const header = (title: string, subtitle: string) => ({
           data: { playerExperience: { availId: '7ff61f45-eded-42d3-9323-d9681c3eac81', title, subtitle, timeline: { runtimeMs: 3344000 } } }

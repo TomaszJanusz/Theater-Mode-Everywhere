@@ -1,13 +1,24 @@
+import type { HostSeekDispatch, HostSeekInput, ProviderTimeline } from '../timeline/types';
+
+import { isDisneyHost } from './hosts';
 import {
   DISNEY_CLOCK_EVENT,
-  isDisneyHost,
   readDisneyChromeDuration,
   readDisneyContentTime,
   readPublishedDisneySnapshot,
   writeDisneyContentTime
-} from '../../media-features/parsers/disney-page';
-import { providerHostname } from './page-host';
-import type { HostSeekDispatch, HostSeekInput, ProviderTimeline } from './types';
+} from './page';
+
+/**
+ * Hostname of the page, or null when a window exists but has no location.
+ * Event-target stubs are not a provider host, and reading their hostname throws.
+ */
+function providerHostname(): string | null {
+  const candidate = (globalThis as { window?: { location?: { hostname?: unknown } } }).window;
+  if (!candidate) return '';
+  const hostname = candidate.location?.hostname;
+  return typeof hostname === 'string' ? hostname : null;
+}
 
 function onDisneyHost(): boolean {
   const hostname = providerHostname();

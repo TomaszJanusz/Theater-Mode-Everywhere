@@ -27,7 +27,8 @@ export const PROVIDER_CATALOG = [
         "domain": "disneyplus.com",
         "includeSubdomains": true
       }
-    ]
+    ],
+    "home": "https://www.disneyplus.com/"
   },
   {
     "id": "iqiyi",

@@ -1,18 +1,10 @@
 import type { ProviderPlaybackBindOptions, ProviderStage, ProviderStructuralHelpers } from '../core/provider-presentation';
 
-import { disneyTheaterStage } from './disney/stage';
 export type { ProviderPlaybackBindOptions, ProviderStage, ProviderStructuralHelpers } from '../core/provider-presentation';
 import { providerRegistry, registeredEvents } from './runtime-registration';
 
-const legacyStages: ProviderStage[] = [
-  disneyTheaterStage
-];
-
 // Read after registration closes, never cache the empty document-start registry.
-const providerStages = (): ProviderStage[] => [
-  ...legacyStages,
-  ...providerRegistry.all().flatMap(hooks => hooks.stage ? [hooks.stage] : [])
-];
+const providerStages = (): ProviderStage[] => providerRegistry.all().flatMap(hooks => hooks.stage ? [hooks.stage] : []);
 
 let stopObservingProviderStages: (() => void) | null = null;
 

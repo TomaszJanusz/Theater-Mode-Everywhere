@@ -8,18 +8,6 @@ import { MODAL_KEY_EVENT } from '../protocol/modal';
 import { parseProbeRequest } from '../protocol/page-requests';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope, type WorldEnvelope } from '../protocol/world-messages';
 import { consumeCrunchyrollWrappedFetch, crunchyrollAllowsCaptionFetch, crunchyrollIntegrationEnabled, isCrunchyrollOwnedRequest, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
-import {
-  captureDisneyNetworkResponse,
-  disneyIntegrationEnabled,
-  handleDisneyMediaSeek,
-  harvestDisneyBifFromXhr,
-  harvestDisneyBody,
-  harvestDisneyData,
-  installDisneyMain,
-  isAllowedDisneyBifUrl,
-  MAX_BIF_BYTES,
-  readDisneySnapshot
-} from '../providers/disney/main';
 import { } from '../providers/hosts';
 import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
 import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
@@ -95,9 +83,7 @@ export function installMainWorldRuntime(): void {
     if (isCrunchyrollOwnedRequest(url)) return null;
     const legacy = qualifyNetworkHarvest({
       hostname: window.location.hostname,
-      flags: {
-        disney: disneyIntegrationEnabled(), crunchyroll: crunchyrollIntegrationEnabled()
-      }
+      flags: { crunchyroll: crunchyrollIntegrationEnabled() }
     }, url);
     if (legacy) return legacy;
     for (const entry of registered) {
@@ -129,19 +115,13 @@ export function installMainWorldRuntime(): void {
   function harvestJson(target: HarvestTarget | null, url: string, data: unknown): void {
     if (isBinaryTarget(target)) return;
     if (isProviderTarget(target)) { target.harvest.json?.(target.id, url, data); return; }
-    switch (target) {
-      case 'disney': harvestDisneyData(url, data); break;
-      case 'crunchyroll': harvestCrunchyrollData(url, data); break;
-    }
+    if (target === 'crunchyroll') harvestCrunchyrollData(url, data);
   }
 
   function harvestText(target: HarvestTarget | null, url: string, text: string): void {
     if (isBinaryTarget(target)) return;
     if (isProviderTarget(target)) { target.harvest.text?.(target.id, url, text); return; }
-    switch (target) {
-      case 'disney': harvestDisneyBody(url, text); break;
-      case 'crunchyroll': harvestCrunchyrollBody(url, text); break;
-    }
+    if (target === 'crunchyroll') harvestCrunchyrollBody(url, text);
   }
 
   // Before any host script: a provider reading Blob bodies needs every later navigation to end the visit.
@@ -149,15 +129,9 @@ export function installMainWorldRuntime(): void {
 
   /** Each selected consumer owns this single clone. Its text/json read bypasses the host Response observers to avoid a second harvest. */
   function consumeFetchClone(target: HarvestTarget | null, url: string, response: Response): void {
-    if (isProviderTarget(target)) {
-      if (isBinaryTarget(target)) harvestBinary(target, url, markOwnedHarvestResponse(response.clone()));
-      else if (target.harvest.cloneTargets?.includes(target.id)) target.harvest.response?.(target.id, url, markOwnedHarvestResponse(response.clone()));
-      return;
-    }
-    switch (target) {
-      case 'disney':
-      case 'disney-bif': captureDisneyNetworkResponse(url, markOwnedHarvestResponse(response.clone())); break;
-    }
+    if (!isProviderTarget(target)) return;
+    if (isBinaryTarget(target)) harvestBinary(target, url, markOwnedHarvestResponse(response.clone()));
+    else if (target.harvest.cloneTargets?.includes(target.id)) target.harvest.response?.(target.id, url, markOwnedHarvestResponse(response.clone()));
   }
 
   function wrapFetch(fn: typeof fetch): typeof fetch {
@@ -179,8 +153,7 @@ export function installMainWorldRuntime(): void {
             const target = finalUrl ? harvestTarget(finalUrl) : null;
             const length = Number(response.headers.get('content-length'));
             const binary = isBinaryTarget(target);
-            let cap = binary ? MAX_BINARY_HARVEST_BYTES : MAX_CAPTION_BYTES;
-            if (target === 'disney-bif') cap = MAX_BIF_BYTES;
+            const cap = binary ? MAX_BINARY_HARVEST_BYTES : MAX_CAPTION_BYTES;
             if ((!binary && !harvestFetchFormatMatches(formatTarget(target), response.headers.get('content-type') || '')) || length > cap) return response;
             consumeFetchClone(target, finalUrl, response);
           }
@@ -272,8 +245,7 @@ export function installMainWorldRuntime(): void {
       if (target === 'crunchyroll-url') { harvestCrunchyrollBody(url, ''); return; }
       const format = harvestBodyFormat(formatTarget(target), xhr.responseType);
       if (format === 'binary') {
-        if (target === 'disney-bif') harvestDisneyBifFromXhr(xhr);
-        else if (xhr.response instanceof ArrayBuffer) rememberCrunchyrollBif(xhr.response, url);
+        if (xhr.response instanceof ArrayBuffer) rememberCrunchyrollBif(xhr.response, url);
       } else if (format === 'json') {
         harvestJson(target, url, xhr.response);
       } else if (format === 'text') {
@@ -290,10 +262,7 @@ export function installMainWorldRuntime(): void {
   if (harvestHost || providerRegistry.all().some(hooks => hooks.watchPlayback)) installWatchPlaybackQueries();
 
   installProviders();
-  if (harvestHost) {
-    installDisneyMain();
-    installCrunchyrollMain();
-  }
+  if (harvestHost) installCrunchyrollMain();
 
   installMediaAudioRuntime();
 
@@ -489,14 +458,8 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
     const requestId = parseProbeRequest((event as CustomEvent<unknown>).detail);
     if (requestId === null) return;
-    let disney: Record<string, unknown> | null = null;
-    try {
-      disney = disneyIntegrationEnabled() ? readDisneySnapshot() : null;
-    } catch {
-      disney = null;
-    }
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, providers: probeProviders(), disney, crunchyroll: readCrunchyrollSnapshot() }
+      detail: { requestId, providers: probeProviders(), crunchyroll: readCrunchyrollSnapshot() }
     }));
   });
 
@@ -504,7 +467,6 @@ export function installMainWorldRuntime(): void {
     if (!isAllowlistedPageFetchUrl(url, window.location.href)) return false;
     const classified = classifyMediaFetchUrl(url, window.location.href);
     if (!classified) return false;
-    if (classified.provider === 'disney') return disneyIntegrationEnabled();
     if (classified.provider === 'crunchyroll') return crunchyrollAllowsCaptionFetch(url);
     if (providerRegistry.get(classified.provider)) return mediaProviderIntegrationEnabled(classified.provider);
     return false;
@@ -532,14 +494,10 @@ export function installMainWorldRuntime(): void {
           try {
             const response = await fetchPageMedia(url, { credentials: 'omit', signal: controller.signal });
             if (!response) return null;
-            const isBif = isAllowedDisneyBifUrl(url);
-            const maxBytes = isBif ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;
-            const buffer = await readPageResponseBytes(response, maxBytes, controller.signal, {
+            const buffer = await readPageResponseBytes(response, MAX_CAPTION_BYTES, controller.signal, {
               isCurrent: () => window.location.href === href && pageFetchAllowed(url), navigationStart: registeredEvents('navigationStart')
             });
-            if (!buffer) return null;
-            if (isBif) return URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }));
-            return new TextDecoder().decode(buffer);
+            return buffer ? new TextDecoder().decode(buffer) : null;
           } finally {
             clearTimeout(timeout);
           }
@@ -574,7 +532,6 @@ export function installMainWorldRuntime(): void {
     const detail = parseMediaSeekDetail((event as CustomEvent<unknown>).detail);
     if (!detail) return;
     const video = findActiveVideo(document) || document.querySelector('video');
-    if (handleDisneyMediaSeek(detail, video)) return;
     if (providerRegistry.all().some(hooks => hooks.seek?.(detail, video))) return;
     if (video instanceof HTMLVideoElement && typeof detail.time === 'number' && Number.isFinite(detail.time)) {
       video.currentTime = detail.time;

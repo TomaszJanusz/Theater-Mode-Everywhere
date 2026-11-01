@@ -1,10 +1,12 @@
+import { mediaProviderIntegrationEnabled, providerOffAttribute } from '../../media-features/provider-flags';
 import { observeProviderDom } from '../dom-watch';
-import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { isDisneyHost } from '../hosts';
+
+import { isDisneyHost } from './hosts';
 
 export const DISNEY_PLAY_NEXT_EVENT = 'theater-everywhere-disney-play-next';
 export const DISNEY_PLAY_NEXT_ACK_EVENT = 'theater-everywhere-disney-play-next-ack';
 export const DISNEY_PLAY_NEXT_ATTR = 'data-te-disney-play-next';
+export const PLAY_NEXT_CHANGED_EVENT = 'theater-everywhere-disney-play-next-changed';
 
 const PLAY_ID = /\/play\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 const CONTROL_ROOTS = [
@@ -36,6 +38,11 @@ export function retainDisneyPlayNextHosts(doc: Document): () => void {
   };
 }
 
+/** The navigation watcher's hold on the Next host cache (`navigation.retainCache`). */
+export function retainDisneyNavCache(doc: Document): { invalidate(): void; release(): void } {
+  return { invalidate: () => invalidateDisneyPlayNextHosts(doc), release: retainDisneyPlayNextHosts(doc) };
+}
+
 /**
  * Disney mounts the bar's next episode only while its own controls are up,
  * and a desktop player also keeps a display:none copy for the narrow layout.
@@ -48,7 +55,7 @@ export function installDisneyPlayNext(): void {
     window.addEventListener(DISNEY_PLAY_NEXT_EVENT, onDisneyPlayNextRequest);
     const releaseHosts = retainDisneyPlayNextHosts(document);
     const stop = observeProviderDom({ root: document, selector: CONTROL_ROOTS.join(','),
-      enabled: () => disneyPlayNextEnabled() && Boolean(currentPlayId()),
+      enabled: () => disneyPlayNextEnabled() && Boolean(currentPlayId()), flags: [providerOffAttribute('disney')],
       structureChanged: () => invalidateDisneyPlayNextHosts(document), changed: syncDisneyPlayNext });
     window.addEventListener('pagehide', event => { if (!event.persisted) { stop(); releaseHosts(); } });
   }
@@ -133,7 +140,7 @@ function publishPlayNext(playId: string | null): void {
   if (!root || root.getAttribute(DISNEY_PLAY_NEXT_ATTR) === playId) return;
   if (playId) root.setAttribute(DISNEY_PLAY_NEXT_ATTR, playId);
   else root.removeAttribute(DISNEY_PLAY_NEXT_ATTR);
-  window.dispatchEvent(new Event('theater-everywhere-disney-play-next-changed'));
+  window.dispatchEvent(new Event(PLAY_NEXT_CHANGED_EVENT));
 }
 
 function findDisneyPlayNextHost(doc: Document): PlayNextHost | null {

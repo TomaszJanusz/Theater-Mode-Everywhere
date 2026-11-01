@@ -67,15 +67,21 @@ function mainYouTubeVideo(): HTMLVideoElement {
 }
 
 describe('switchable theater videos', () => {
-  it('excludes the Disney standby before and after the real episode video mounts', () => {
-    const standby = fakeVideo({ display: 'none', hosts: ['disney-web-player'] });
-    assert.deepEqual(selectSwitchableVideos([standby]), []);
-    const current = fakeVideo({ currentSrc: 'blob:https://www.disneyplus.com/episode',
-      readyState: 4, videoWidth: 1920, videoHeight: 1080, hosts: ['disney-web-player'] });
-    assert.deepEqual(selectSwitchableVideos([standby, current]), [current]);
-    const sourcedStandby = fakeVideo({ currentSrc: 'blob:https://www.disneyplus.com/standby',
-      readyState: 4, videoWidth: 1920, videoHeight: 1080, display: 'none', hosts: ['disney-web-player'] });
-    assert.deepEqual(selectSwitchableVideos([sourcedStandby, current]), [current]);
+  it('excludes the Disney standby, registered by its provider, before and after the real episode video mounts', () => {
+    const original = globalThis.window;
+    globalThis.window = { [Symbol.for('theater-everywhere.provider-runtime.isolated')]: {
+      contractVersion: 1, services: { standbyVideoSelector: () => 'disney-web-player' }
+    } } as unknown as Window & typeof globalThis;
+    try {
+      const standby = fakeVideo({ display: 'none', hosts: ['disney-web-player'] });
+      assert.deepEqual(selectSwitchableVideos([standby]), []);
+      const current = fakeVideo({ currentSrc: 'blob:https://www.disneyplus.com/episode',
+        readyState: 4, videoWidth: 1920, videoHeight: 1080, hosts: ['disney-web-player'] });
+      assert.deepEqual(selectSwitchableVideos([standby, current]), [current]);
+      const sourcedStandby = fakeVideo({ currentSrc: 'blob:https://www.disneyplus.com/standby',
+        readyState: 4, videoWidth: 1920, videoHeight: 1080, display: 'none', hosts: ['disney-web-player'] });
+      assert.deepEqual(selectSwitchableVideos([sourcedStandby, current]), [current]);
+    } finally { globalThis.window = original; }
   });
 
   it('ignores empty leftover videos with no source or metadata', () => {

@@ -1,11 +1,12 @@
-import type { PlaylistAction } from '../../playlist-nav';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
+import type { PlaylistAction } from '../../playlist-nav';
+
+import { isDisneyHost } from './hosts';
 import {
   disneyPlayNextPublished,
   findDisneyPlayNextButton,
   requestDisneyPlayNext
-} from '../disney/play-next';
-import { isDisneyHost } from '../hosts';
+} from './play-next';
 
 const PLAY_ID = /\/play\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 

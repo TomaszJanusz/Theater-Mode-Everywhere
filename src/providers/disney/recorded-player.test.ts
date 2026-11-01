@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 
 import { parseDisneyAudioSnapshot } from './audio-bridge';
 import { createDisneyAudioHost } from './audio-main';
+import { disneyDurationSeconds, readDisneyContentTime, writeDisneyContentTime } from './page';
 import { disneyVideoRole } from './watch-playback';
 
 // Recorded signed-in Disney+ watch page, 2026-11-01 (see the fixture's notes). Fixture evidence, not an installed-extension pass.
@@ -11,7 +12,7 @@ type Hive = { id: number; language: string; hasDescribesVideo: boolean; displayN
 const fixture = JSON.parse(readFileSync(new URL('../../../test/host-fixtures/disney-watch-player.json', import.meta.url), 'utf8')) as {
   web: { mediaElementIndex: number };
   videos: Array<{ index: number; className: string; isMediaElement: boolean }>;
-  mediaPlayer: { audio: { availableTracks: Hive[]; selectedTrackId: number } };
+  mediaPlayer: { audio: { availableTracks: Hive[]; selectedTrackId: number }; timelineInfo: { programDurationMs: number } };
   clock: { playheadPositionMs: number; contentVideoCurrentTimeSeconds: number };
 };
 const PLAY = 'd1f7a6c2-3b4e-4f5a-9c8d-7e6f5a4b3c2d';
@@ -49,5 +50,14 @@ describe('recorded Disney+ player objects', () => {
 
   it('records a playhead that is not the content video clock after a reload', () => {
     assert.ok(fixture.clock.playheadPositionMs / 1000 > fixture.clock.contentVideoCurrentTimeSeconds + 60, 'Hive\'s playhead, not video.currentTime, is the content position');
+  });
+
+  it('carries the recorded Hive playhead and program length through the provider\'s clock helpers', () => {
+    // MAIN publishes Hive's playhead on the video; the isolated timeline reads it back instead of `currentTime`.
+    const video = { dataset: {}, currentTime: fixture.clock.contentVideoCurrentTimeSeconds } as unknown as HTMLVideoElement;
+    assert.equal(writeDisneyContentTime(video, fixture.clock.playheadPositionMs / 1000), fixture.clock.playheadPositionMs / 1000);
+    assert.equal(readDisneyContentTime(video), fixture.clock.playheadPositionMs / 1000);
+    assert.equal(disneyDurationSeconds(fixture.mediaPlayer.timelineInfo.programDurationMs), fixture.mediaPlayer.timelineInfo.programDurationMs / 1000,
+      'the millisecond program length is a VOD duration in seconds');
   });
 });

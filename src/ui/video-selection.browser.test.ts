@@ -51,35 +51,40 @@ async function selected(frame: Page | Frame, timeout = 5000): Promise<string> {
 
 for (const engine of testEngines()) {
   const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
-  it(`${engine}: standby detection includes hidden hosts and wrappers`, async t => {
-    const page = await (await shared.newContext(t)).newPage();
-    await page.route('https://v.qq.com/**', route => route.fulfill({ contentType: 'text/html', body: '<main></main>' }));
-    await page.goto('https://v.qq.com/');
-    await boot(page);
-    const result = await page.evaluate(() => {
-      const inactive = window.VideoSelectionTest.isInactiveStandbyVideo;
-      return ['disney-web-player', 'div.txp_videos_container'].map(selector => {
-        const outer = document.createElement('section');
-        const host = document.createElement(selector.split('.')[0]);
-        host.className = selector.split('.')[1] ?? '';
-        const wrapper = document.createElement('div');
-        const video = document.createElement('video');
-        video.style.display = 'block';
-        wrapper.append(video); host.append(wrapper); outer.append(host); document.body.append(outer);
-        const visible = inactive(video);
-        host.style.display = 'none'; const hiddenHost = inactive(video);
-        host.style.display = ''; wrapper.style.display = 'none'; const hiddenWrapper = inactive(video);
-        wrapper.style.display = ''; outer.style.display = 'none'; const hiddenOuter = inactive(video);
-        // Generic players retain their existing eligibility rules.
-        document.body.append(wrapper); const generic = inactive(video);
-        wrapper.remove(); outer.remove();
-        return { visible, hiddenHost, hiddenWrapper, hiddenOuter, generic };
-      });
+  // Standby containers are provider rules: each holds on its own host, loaded with its entries, and nowhere else.
+  for (const [url, own, foreign] of [['https://v.qq.com/', 'div.txp_videos_container', 'disney-web-player'],
+    ['https://www.disneyplus.com/', 'disney-web-player', 'div.txp_videos_container']] as const) {
+    it(`${engine}: standby detection includes hidden hosts and wrappers (${new URL(url).hostname})`, async t => {
+      const page = await (await shared.newContext(t)).newPage();
+      await page.route(url, route => route.fulfill({ contentType: 'text/html', body: '<main></main>' }));
+      await page.goto(url);
+      await boot(page);
+      const result = await page.evaluate(selectors => {
+        const inactive = window.VideoSelectionTest.isInactiveStandbyVideo;
+        return selectors.map(selector => {
+          const outer = document.createElement('section');
+          const host = document.createElement(selector.split('.')[0]);
+          host.className = selector.split('.')[1] ?? '';
+          const wrapper = document.createElement('div');
+          const video = document.createElement('video');
+          video.style.display = 'block';
+          wrapper.append(video); host.append(wrapper); outer.append(host); document.body.append(outer);
+          const visible = inactive(video);
+          host.style.display = 'none'; const hiddenHost = inactive(video);
+          host.style.display = ''; wrapper.style.display = 'none'; const hiddenWrapper = inactive(video);
+          wrapper.style.display = ''; outer.style.display = 'none'; const hiddenOuter = inactive(video);
+          // Generic players retain their existing eligibility rules.
+          document.body.append(wrapper); const generic = inactive(video);
+          wrapper.remove(); outer.remove();
+          return { visible, hiddenHost, hiddenWrapper, hiddenOuter, generic };
+        });
+      }, [own, foreign]);
+      assert.deepEqual(result, [
+        { visible: false, hiddenHost: true, hiddenWrapper: true, hiddenOuter: true, generic: false },
+        { visible: false, hiddenHost: false, hiddenWrapper: false, hiddenOuter: false, generic: false }
+      ], `only ${own} is a standby container on ${url}`);
     });
-    assert.deepEqual(result, Array.from({ length: 2 }, () => ({
-      visible: false, hiddenHost: true, hiddenWrapper: true, hiddenOuter: true, generic: false
-    })));
-  });
+  }
 
   for (const fixture of [
     { url: 'https://www.disneyplus.com/play/86e14fdb-3841-4282-ad38-07c8c4aab4b6',

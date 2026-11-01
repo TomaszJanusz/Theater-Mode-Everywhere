@@ -3,8 +3,8 @@ import { crunchyrollCdnFile, isCrunchyrollBifFileUrl } from '../crunchyroll-cdn'
 import type { CaptionCue, Chapter } from '../types';
 
 import { parseAssCaptions } from './ass';
+import { parseRokuBif } from './bif';
 import { parseCaptionPayload } from './captions';
-import { parseRokuBif } from './disney-page';
 
 /**
  * Playback metadata: https://www.crunchyroll.com/playback/v3/{mediaId}/web/chrome/play

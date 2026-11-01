@@ -1,7 +1,12 @@
-import { findDisneyContentTitle, sanitizeContentTitle } from '../content-title';
-import type { CaptionCue } from '../types';
+import { sanitizeContentTitle } from '../../media-features/content-title';
+import { hasBifMagic } from '../../media-features/parsers/bif';
+import type { CaptionCue } from '../../media-features/types';
+
+import { findDisneyContentTitle } from './title';
 
 export const DISNEY_SNAPSHOT_SCRIPT_ID = 'theater-everywhere-disney-snapshot';
+/** MAIN publishes new harvested media data (title, captions, previews) with this window event. */
+export const DISNEY_HARVEST_EVENT = 'theater-everywhere-disney-harvest';
 export const DISNEY_CLOCK_EVENT = 'theater-everywhere-disney-clock';
 export const DISNEY_PLAYHEAD_DATASET = 'teDisneyPlayhead';
 
@@ -50,19 +55,6 @@ export type DisneyThumbnailMeta = {
   bifUrl?: string;
 };
 
-export type DisneyBifFrame = {
-  time: number;
-  start: number;
-  end: number;
-};
-
-export type DisneyBifSet = {
-  width: number;
-  height: number;
-  frames: DisneyBifFrame[];
-  buffer: ArrayBuffer;
-};
-
 export type DisneyPlaybackAssets = {
   mediaId?: string;
   title?: string;
@@ -80,13 +72,10 @@ const MAX_VOD_SECONDS = 12 * 60 * 60;
 const CLOCK_RE = /(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:[.,]\d{1,3})?/g;
 const DURATION_KEY_RE = /^(runtime(millis|ms)?|duration(millis|ms|inms)?|length(millis|ms)?)$/i;
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-const BIF_MAGIC = [0x89, 0x42, 0x49, 0x46, 0x0d, 0x0a, 0x1a, 0x0a];
 
 function stripWww(hostname: string): string {
   return hostname.replace(/^www\./i, '').toLowerCase();
 }
-
-export { isDisneyHost } from '../../providers/hosts';
 
 export function disneyPlayId(href: string): string | null {
   try {
@@ -179,9 +168,7 @@ export function isSafeDisneyBifUrl(url: string): boolean {
 export function disneyBifFrameCount(buffer: ArrayBuffer): number {
   if (buffer.byteLength < 80) return 0;
   const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < BIF_MAGIC.length; i++) {
-    if (bytes[i] !== BIF_MAGIC[i]) return 0;
-  }
+  if (!hasBifMagic(bytes)) return 0;
   const count = new DataView(buffer).getUint32(12, true);
   return Number.isFinite(count) && count > 0 && count <= 4000 ? count : 0;
 }
@@ -356,49 +343,6 @@ export function parseDisneyThumbnailIndex(raw: unknown): DisneyThumbnailMeta | n
     if (!best || (Number.isFinite(count) && count > 10)) best = meta;
   }
   return best;
-}
-
-export function disneyBifTimestampSeconds(timestamp: number, multiplier: number, intervalMs = 10_000): number | null {
-  if (!Number.isFinite(timestamp) || timestamp === 0xffffffff) return null;
-  const unit = Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1000;
-  if (unit <= 1 && timestamp >= 1000) return timestamp / 1000;
-  if (unit >= 1000 && timestamp >= unit) return timestamp / 1000;
-  const seconds = timestamp * unit / 1000;
-  return seconds >= 0 ? seconds : (intervalMs > 0 ? timestamp * (intervalMs / 1000) : null);
-}
-
-export function parseRokuBif(buffer: ArrayBuffer, meta?: Partial<DisneyThumbnailMeta>): DisneyBifSet | null {
-  const bytes = new Uint8Array(buffer);
-  if (bytes.byteLength < 80) return null;
-  for (let i = 0; i < BIF_MAGIC.length; i++) {
-    if (bytes[i] !== BIF_MAGIC[i]) return null;
-  }
-  const view = new DataView(buffer);
-  const count = view.getUint32(12, true);
-  const multiplier = view.getUint32(16, true) || 1000;
-  if (count < 1 || count > 4000) return null;
-  const frames: DisneyBifFrame[] = [];
-  for (let i = 0; i < count; i++) {
-    const at = 64 + i * 8;
-    const nextAt = at + 8;
-    if (nextAt + 8 > bytes.byteLength) break;
-    const timestamp = view.getUint32(at, true);
-    const start = view.getUint32(at + 4, true);
-    const end = view.getUint32(nextAt + 4, true);
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || start >= bytes.byteLength) continue;
-    const mapped = disneyBifTimestampSeconds(timestamp, multiplier, meta?.intervalMs);
-    const time = mapped == null
-      ? i * ((meta?.intervalMs || 10_000) / 1000)
-      : mapped;
-    frames.push({ time, start, end: Math.min(end, bytes.byteLength) });
-  }
-  if (frames.length === 0) return null;
-  return {
-    width: meta?.width && meta.width > 0 ? meta.width : 480,
-    height: meta?.height && meta.height > 0 ? meta.height : 270,
-    frames,
-    buffer
-  };
 }
 
 export function parseDisneyPlaybackPayload(raw: unknown, mediaId?: string | null): DisneyPlaybackAssets {

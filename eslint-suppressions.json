@@ -468,11 +468,6 @@
       "count": 1
     }
   },
-  "src/media-features/content-title.ts": {
-    "sonarjs/super-linear-regex": {
-      "count": 1
-    }
-  },
   "src/media-features/controller.test.ts": {
     "import/order": {
       "count": 3
@@ -500,17 +495,6 @@
       "count": 1
     }
   },
-  "src/media-features/disney-adapter.ts": {
-    "import/order": {
-      "count": 2
-    },
-    "local/max-symbol-name-length": {
-      "count": 4
-    },
-    "sonarjs/no-dead-store": {
-      "count": 1
-    }
-  },
   "src/media-features/fetch-allowlist.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
@@ -532,7 +516,7 @@
       "count": 2
     },
     "import/order": {
-      "count": 6
+      "count": 5
     },
     "max-lines": {
       "count": 1
@@ -553,6 +537,11 @@
   },
   "src/media-features/parsers/ass.ts": {
     "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/bif.ts": {
+    "sonarjs/no-nested-conditional": {
       "count": 1
     }
   },
@@ -605,17 +594,6 @@
     },
     "sonarjs/super-linear-regex": {
       "count": 1
-    }
-  },
-  "src/media-features/parsers/disney-page.ts": {
-    "local/max-symbol-name-length": {
-      "count": 12
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 4
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 2
     }
   },
   "src/media-features/parsers/mux-storyboard.ts": {
@@ -685,7 +663,7 @@
   },
   "src/media-features/resolve-adapter.ts": {
     "local/max-symbol-name-length": {
-      "count": 3
+      "count": 2
     }
   },
   "src/media-features/sanitize.ts": {
@@ -847,11 +825,6 @@
       "count": 1
     }
   },
-  "src/playback-window.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/playback-window.ts": {
     "local/max-symbol-name-length": {
       "count": 4
@@ -958,9 +931,6 @@
     }
   },
   "src/providers/crunchyroll/adapter.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     },
@@ -1034,6 +1004,14 @@
       "count": 2
     }
   },
+  "src/providers/disney/adapter.ts": {
+    "local/max-symbol-name-length": {
+      "count": 4
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    }
+  },
   "src/providers/disney/clock-policy.test.ts": {
     "import/order": {
       "count": 1
@@ -1074,18 +1052,28 @@
       "count": 1
     }
   },
-  "src/providers/disney/play-next.ts": {
-    "import/order": {
+  "src/providers/disney/navigation.ts": {
+    "local/max-symbol-name-length": {
       "count": 1
+    }
+  },
+  "src/providers/disney/page.ts": {
+    "local/max-symbol-name-length": {
+      "count": 11
     },
+    "sonarjs/cognitive-complexity": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/providers/disney/play-next.ts": {
     "local/max-symbol-name-length": {
       "count": 3
     }
   },
   "src/providers/disney/service-actions.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     },
@@ -1096,6 +1084,11 @@
   "src/providers/disney/stage.ts": {
     "local/max-symbol-name-length": {
       "count": 3
+    }
+  },
+  "src/providers/disney/title.ts": {
+    "sonarjs/super-linear-regex": {
+      "count": 1
     }
   },
   "src/providers/host-captions.ts": {
@@ -1135,14 +1128,6 @@
     }
   },
   "src/providers/navigation/dailymotion.ts": {
-    "local/max-symbol-name-length": {
-      "count": 1
-    }
-  },
-  "src/providers/navigation/disney.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }
@@ -1265,11 +1250,6 @@
       "count": 1
     }
   },
-  "src/providers/network-harvest.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/providers/network-harvest.ts": {
     "local/max-symbol-name-length": {
       "count": 1
@@ -1360,11 +1340,6 @@
   "src/providers/tencent/wasm-player.ts": {
     "local/max-symbol-name-length": {
       "count": 11
-    }
-  },
-  "src/providers/timeline/disney.ts": {
-    "import/order": {
-      "count": 1
     }
   },
   "src/providers/timeline/markers.ts": {

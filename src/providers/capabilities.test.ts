@@ -16,7 +16,7 @@ import { providerDefinition } from './registry';
 import { VimeoAdapter } from './vimeo/adapter';
 
 const read = (path: string) => readFileSync(resolve(__dirname, path), 'utf8');
-const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'netflix', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'patreon', 'viki', 'vimeo', 'twitch']);
+const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'disney', 'netflix', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'patreon', 'viki', 'vimeo', 'twitch']);
 
 /** Static method/source checks deliberately complement the existing behavioral
  * adapter and service-action suites without reproducing their host fixtures.

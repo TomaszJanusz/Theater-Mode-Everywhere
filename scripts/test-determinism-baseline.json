@@ -32,7 +32,7 @@
   "src/providers/tencent/wasm-player.test.ts": {
     "timer": 1
   },
-  "src/providers/timeline/disney.test.ts": {
+  "src/providers/disney/timeline.test.ts": {
     "retry": 1
   },
   "src/providers/youtube/sponsorblock.browser.test.ts": {

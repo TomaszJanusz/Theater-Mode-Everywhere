@@ -1,34 +1,6 @@
 [
   {
     "type": "dependency",
-    "from": "src/providers/navigation/disney.ts",
-    "to": "src/providers/disney/play-next.ts",
-    "unresolvedTo": "../disney/play-next",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/providers/navigation/watch.ts",
-    "to": "src/providers/disney/play-next.ts",
-    "unresolvedTo": "../disney/play-next",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/providers/youtube/watch-playback.ts",
     "to": "src/providers/navigation/watch-page.ts",
     "unresolvedTo": "../navigation/watch-page",
@@ -170,20 +142,6 @@
   {
     "type": "dependency",
     "from": "src/media-features/resolve-adapter.ts",
-    "to": "src/providers/disney/adapter.ts",
-    "unresolvedTo": "../providers/disney/adapter",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/media-features/resolve-adapter.ts",
     "to": "src/providers/native/adapter.ts",
     "unresolvedTo": "../providers/native/adapter",
     "dependencyTypes": [
@@ -200,20 +158,6 @@
     "from": "src/platform/main-world-runtime.ts",
     "to": "src/providers/crunchyroll/main.ts",
     "unresolvedTo": "../providers/crunchyroll/main",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/platform/main-world-runtime.ts",
-    "to": "src/providers/disney/main.ts",
-    "unresolvedTo": "../providers/disney/main",
     "dependencyTypes": [
       "local",
       "import"
