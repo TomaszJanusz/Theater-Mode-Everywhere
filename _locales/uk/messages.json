@@ -1539,7 +1539,7 @@
     "description": "Footer of the keys step. Settings and Keyboard Shortcuts are names in the Settings page."
   },
   "setupAccentDescription": {
-    "message": "Використовується для елементів керування, повзунків і виділень плеєра, а також тут, у налаштуваннях. Ця сторінка одразу показує ваш вибір.",
+    "message": "Використовується для елементів керування, повзунків і виділень програвача, а також тут, у налаштуваннях. Ця сторінка одразу показує ваш вибір.",
     "description": "First-run setup, accent colour step: what the accent colour is used for. The Settings page recolours as soon as one is picked."
   },
   "setupLayoutDescription": {
@@ -1547,7 +1547,7 @@
     "description": "First-run setup, layout step: one line above the Centered and Raised choices."
   },
   "setupControlsTitle": {
-    "message": "Керування плеєром",
+    "message": "Керування програвачем",
     "description": "First-run setup step heading: the step about pinning the playback controls."
   },
   "setupControlsDescription": {
