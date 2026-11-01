@@ -91,7 +91,7 @@ export function assertBaselineRatchet(
   ci = Boolean(process.env.CI),
   baseline: BaselineFile = { path: baselinePath, label: 'Determinism', read: readBaseline }
 ): void {
-  const baseName = baseRef();
+  const baseName = baseRef(process.env, directory);
   const ref = spawnSync('git', ['rev-parse', '--verify', `refs/remotes/${baseName}`], { cwd: directory, encoding: 'utf8' });
   if (ref.status !== 0) {
     const message = `${baseline.label} baseline history check requires ${baseName}; run git fetch origin (CI requires full history).`;
