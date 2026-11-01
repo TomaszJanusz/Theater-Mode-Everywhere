@@ -110,25 +110,11 @@
   },
   "tencent": {
     "src/media-features": {
-      "serviceId": 6,
-      "domain": 5,
-      "identifier": 38,
-      "file": 1
-    },
-    "src/platform": {
-      "serviceId": 4,
-      "identifier": 17
+      "serviceId": 2,
+      "identifier": 2
     },
     "src/providers": {
-      "hostCheck": 8,
-      "serviceId": 4,
-      "domain": 7,
-      "identifier": 23
-    },
-    "src/providers/navigation": {
-      "serviceId": 1,
-      "identifier": 6,
-      "file": 1
+      "identifier": 2
     }
   },
   "twitch": {

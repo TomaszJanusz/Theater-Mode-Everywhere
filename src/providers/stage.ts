@@ -3,11 +3,9 @@ import type { ProviderPlaybackBindOptions, ProviderStage, ProviderStructuralHelp
 import { disneyTheaterStage } from './disney/stage';
 export type { ProviderPlaybackBindOptions, ProviderStage, ProviderStructuralHelpers } from '../core/provider-presentation';
 import { providerRegistry, registeredEvents } from './runtime-registration';
-import { tencentTheaterStage } from './tencent/stage';
 
 const legacyStages: ProviderStage[] = [
-  disneyTheaterStage,
-  tencentTheaterStage
+  disneyTheaterStage
 ];
 
 // Read after registration closes, never cache the empty document-start registry.

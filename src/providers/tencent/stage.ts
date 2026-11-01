@@ -1,4 +1,4 @@
-import { isTencentHost } from '../hosts';
+import { isTencentHost } from './hosts';
 import { isTencentWasmPlayerElement } from './wasm-player';
 
 export const TENCENT_THEATER_STAGE_CLASS = 'theater-everywhere-tencent-stage';

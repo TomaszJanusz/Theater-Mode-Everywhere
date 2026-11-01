@@ -127,20 +127,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/core/frame-coordinator.ts",
-    "to": "src/providers/tencent/wasm-player.ts",
-    "unresolvedTo": "../providers/tencent/wasm-player",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/media-features/controller.ts",
     "to": "src/providers/timeline/markers.ts",
     "unresolvedTo": "../providers/timeline/markers",
@@ -211,20 +197,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/media-features/resolve-adapter.ts",
-    "to": "src/providers/tencent/adapter.ts",
-    "unresolvedTo": "../providers/tencent/adapter",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/platform/main-world-runtime.ts",
     "to": "src/providers/crunchyroll/main.ts",
     "unresolvedTo": "../providers/crunchyroll/main",
@@ -242,34 +214,6 @@
     "from": "src/platform/main-world-runtime.ts",
     "to": "src/providers/disney/main.ts",
     "unresolvedTo": "../providers/disney/main",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/platform/main-world-runtime.ts",
-    "to": "src/providers/tencent/main.ts",
-    "unresolvedTo": "../providers/tencent/main",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/platform/main-world-runtime.ts",
-    "to": "src/providers/tencent/wasm-player.ts",
-    "unresolvedTo": "../providers/tencent/wasm-player",
     "dependencyTypes": [
       "local",
       "import"

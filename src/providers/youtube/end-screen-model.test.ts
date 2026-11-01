@@ -31,6 +31,6 @@ describe('YouTube end-screen normalization (recorded host fixture)', () => {
     }
     const item = normalizeSuggestion({ ...fields, href: `${fields.href}&list=PL123` })!;
     assert.equal(item.kind, 'playlist');
-    assert.ok(item.href.endsWith('&list=PL123'));
+    assert.ok(item.href?.endsWith('&list=PL123'));
   });
 });

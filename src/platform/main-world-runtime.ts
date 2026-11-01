@@ -26,8 +26,6 @@ import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
 import type { ProviderHarvest } from '../providers/provider-api';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { providerRegistry, registeredEvents } from '../providers/runtime-registration';
-import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
-import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
@@ -95,7 +93,7 @@ export function installMainWorldRuntime(): void {
     const legacy = qualifyNetworkHarvest({
       hostname: window.location.hostname,
       flags: {
-        disney: disneyIntegrationEnabled(), tencent: tencentIntegrationEnabled(), crunchyroll: crunchyrollIntegrationEnabled()
+        disney: disneyIntegrationEnabled(), crunchyroll: crunchyrollIntegrationEnabled()
       }
     }, url);
     if (legacy) return legacy;
@@ -113,7 +111,6 @@ export function installMainWorldRuntime(): void {
     if (isProviderTarget(target)) { target.harvest.json?.(target.id, url, data); return; }
     switch (target) {
       case 'disney': harvestDisneyData(url, data); break;
-      case 'tencent': harvestTencentData(url, data); break;
       case 'crunchyroll': harvestCrunchyrollData(url, data); break;
     }
   }
@@ -122,7 +119,6 @@ export function installMainWorldRuntime(): void {
     if (isProviderTarget(target)) { target.harvest.text?.(target.id, url, text); return; }
     switch (target) {
       case 'disney': harvestDisneyBody(url, text); break;
-      case 'tencent': harvestTencentBody(url, text); break;
       case 'crunchyroll': harvestCrunchyrollBody(url, text); break;
     }
   }
@@ -139,7 +135,6 @@ export function installMainWorldRuntime(): void {
     switch (target) {
       case 'disney':
       case 'disney-bif': captureDisneyNetworkResponse(url, markOwnedHarvestResponse(response.clone())); break;
-      case 'tencent': captureTencentNetworkResponse(url, markOwnedHarvestResponse(response.clone())); break;
     }
   }
 
@@ -269,7 +264,6 @@ export function installMainWorldRuntime(): void {
   installProviders();
   if (harvestHost) {
     installDisneyMain();
-    installTencentMain();
     installCrunchyrollMain();
   }
 
@@ -419,7 +413,8 @@ export function installMainWorldRuntime(): void {
     if (event.composedPath().some(node => node instanceof Element
         && node.matches(PLAYER_NATIVE_ACTIVATION_SELECTOR))) return;
 
-    if (isTencentWasmPlayerElement(marked)) {
+    // Non-video host players handle playback through their own API.
+    if (marked && providerRegistry.all().some(hooks => hooks.playbackElement?.(marked))) {
       if (!mainWorldOwnsWasmPlayPause(event, publishedShortcut('playPause'))) return;
       event.preventDefault();
       event.stopPropagation();
@@ -473,7 +468,7 @@ export function installMainWorldRuntime(): void {
       disney = null;
     }
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, providers: probeProviders(), disney, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot() }
+      detail: { requestId, providers: probeProviders(), disney, crunchyroll: readCrunchyrollSnapshot() }
     }));
   });
 
@@ -482,7 +477,6 @@ export function installMainWorldRuntime(): void {
     const classified = classifyMediaFetchUrl(url, window.location.href);
     if (!classified) return false;
     if (classified.provider === 'disney') return disneyIntegrationEnabled();
-    if (classified.provider === 'tencent') return tencentIntegrationEnabled();
     if (classified.provider === 'crunchyroll') return crunchyrollAllowsCaptionFetch(url);
     if (providerRegistry.get(classified.provider)) return mediaProviderIntegrationEnabled(classified.provider);
     return false;

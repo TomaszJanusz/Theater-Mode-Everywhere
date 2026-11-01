@@ -1,6 +1,7 @@
-import { sanitizeContentTitle } from '../content-title';
-import { isAllowedMediaFetchUrl } from '../fetch-allowlist';
-import type { PreviewFrame } from '../types';
+import { sanitizeContentTitle } from '../../media-features/content-title';
+import type { PreviewFrame } from '../../media-features/types';
+import { PROVIDER_CATALOG } from '../catalog';
+import { matchesMediaFetchRules } from '../media-fetch-rules';
 
 export type TencentCaption = { id: string; language: string; label: string; url: string };
 export type TencentStoryboard = {
@@ -23,8 +24,16 @@ export function tencentCaptionUrl(value: unknown, captionType: number): string |
     // ThumbPlayer's VTT loader uses the complete file beside the HLS wrapper.
     if (captionType === 3) url.pathname = url.pathname.replace(/\.vtt\.m3u8$/i, '.vtt');
     if (url.protocol === 'http:') url.protocol = 'https:';
-    return isAllowedMediaFetchUrl({ provider: 'tencent', kind: 'caption-track', url: url.href }) ? url.href : null;
+    return matchesMediaFetchRules(PROVIDER_CATALOG.find(item => item.id === 'tencent')?.mediaFetch ?? [], { kind: 'caption-track', url: url.href }) ? url.href : null;
   } catch { return null; }
+}
+
+function captionId(value: unknown): string {
+  return typeof value === 'number' || typeof value === 'string' ? String(value) : '';
+}
+
+function captionAlternatives(value: unknown): unknown[] {
+  return Array.isArray(value) ? value.slice(0, 8).map(item => typeof item === 'string' ? item : tencentRecord(item).url) : [];
 }
 
 export function parseTencentCaptions(raw: unknown, videoId: string): TencentCaption[] {
@@ -38,9 +47,9 @@ export function parseTencentCaptions(raw: unknown, videoId: string): TencentCapt
     const key = typeof item.keyid === 'string' ? item.keyid : '';
     if (/^[a-z0-9]{11}\./i.test(key) && !key.startsWith(`${videoId}.`)) continue;
     const alternatives = tencentRecord(item.urlList).ui;
-    const urls = [item.url, ...(Array.isArray(alternatives) ? alternatives.slice(0, 8).map((u) => typeof u === 'string' ? u : tencentRecord(u).url) : [])];
+    const urls = [item.url, ...captionAlternatives(alternatives)];
     const url = urls.map((u) => tencentCaptionUrl(u, type)).find(Boolean);
-    const idValue = typeof item.id === 'number' || typeof item.id === 'string' ? String(item.id) : '';
+    const idValue = captionId(item.id);
     if (!url || !idValue || idValue.length > 80 || ids.has(idValue)) continue;
     ids.add(idValue);
     const language = typeof item.lang === 'string' ? item.lang.toLowerCase().replace(/_/g, '-').slice(0, 35) : 'und';
@@ -98,5 +107,30 @@ export function tencentPreviewFrame(storyboard: TencentStoryboard, time: number)
     image: { kind: 'sprite', url: `${storyboard.baseUrl}${storyboard.link}.${storyboard.name}.${sheet + 1}.jpg/0`,
       x: (within % columns) * width, y: Math.floor(within / columns) * height,
       tileWidth: width, tileHeight: height, sheetWidth: columns * width, sheetHeight: rows * height }
+  };
+}
+
+/** The probe crosses the page boundary: keep only the same bounded metadata accepted from the host. */
+export function parseTencentProbe(value: unknown): TencentSnapshot | null {
+  const data = tencentRecord(value);
+  const videoId = data.videoId;
+  if (typeof videoId !== 'string' || !/^[a-z0-9]{11}$/i.test(videoId)) return null;
+  const tracks = Array.isArray(data.captionTracks) ? data.captionTracks.slice(0, 64) : [];
+  const captionTracks: TencentCaption[] = [];
+  const ids = new Set<string>();
+  for (const raw of tracks) {
+    const track = tencentRecord(raw);
+    const url = tencentCaptionUrl(track.url, 1);
+    if (!url || typeof track.id !== 'string' || !track.id.startsWith(`tencent:${videoId}:`)
+      || track.id.length > 100 || ids.has(track.id) || typeof track.language !== 'string' || typeof track.label !== 'string') continue;
+    ids.add(track.id);
+    captionTracks.push({ id: track.id, language: track.language.slice(0, 35), label: sanitizeContentTitle(track.label) || track.language.slice(0, 35), url });
+  }
+  const shot = tencentRecord(data.storyboard);
+  return {
+    videoId, title: sanitizeContentTitle(data.title) || undefined,
+    duration: typeof data.duration === 'number' && data.duration > 0 && data.duration <= 86400 ? data.duration : undefined,
+    captionTracks,
+    storyboard: parseTencentStoryboard([{ url: shot.baseUrl, fn: shot.name, cd: shot.interval, c: shot.columns, r: shot.rows, w: shot.width, h: shot.height }], shot.link, Number(shot.duration))
   };
 }

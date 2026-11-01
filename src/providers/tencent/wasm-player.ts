@@ -1,5 +1,6 @@
-import { isTencentHost } from '../hosts';
 import { parseFrameMessage, type FrameEnvelope } from '../../protocol/frame-messages';
+
+import { isTencentHost } from './hosts';
 
 export const TENCENT_WASM_TAG = 'fake-iframe-video';
 export const TENCENT_WASM_FRAME_HOST = 'vm.gtimg.cn';
@@ -145,13 +146,6 @@ export function tencentWasmContentWindows(root: QueryRoot): unknown[] {
     if (frame?.contentWindow) windows.push(frame.contentWindow);
   }
   return windows;
-}
-
-export function ordinaryChildWindows(root: QueryRoot): unknown[] {
-  const hidden = new Set(tencentWasmContentWindows(root));
-  return Array.from(root.querySelectorAll('iframe'))
-    .map((frame) => (frame as FrameLike).contentWindow)
-    .filter((win) => win && !hidden.has(win));
 }
 
 function frameOrigin(src: string, pageHref: string): string | null {

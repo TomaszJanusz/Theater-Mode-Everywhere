@@ -86,7 +86,7 @@ it('each descriptor entry actually registers its own hooks in its own world befo
     runInNewContext(code, { window, URL });
     assert.equal(registry.state(descriptor.id), 'ready', `${descriptor.id}/${world} registration mismatch`);
     const hooks = registry.get(descriptor.id)!;
-    assert.ok(hooks.watchPlayback);
+    assert.equal(Boolean(hooks.watchPlayback), descriptor.settings?.some(setting => setting.id === 'autoTheater') ?? false, 'only AutoTheater providers register watch playback');
     // Isolated-only hooks never register in MAIN, and MAIN installation never in the isolated world.
     assert.equal(Boolean(hooks.createAdapter), world === 'isolated');
     for (const name of ['navigation', 'serviceActions', 'launcherPlacement', 'timeline', 'timelineMarkers', 'stage', 'hostCaptions', 'titleFromPage'] as const) assert.ok(world === 'isolated' || !hooks[name], name);

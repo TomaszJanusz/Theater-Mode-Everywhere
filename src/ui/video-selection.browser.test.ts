@@ -53,7 +53,8 @@ for (const engine of testEngines()) {
   const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
   it(`${engine}: standby detection includes hidden hosts and wrappers`, async t => {
     const page = await (await shared.newContext(t)).newPage();
-    await page.setContent('<main></main>');
+    await page.route('https://v.qq.com/**', route => route.fulfill({ contentType: 'text/html', body: '<main></main>' }));
+    await page.goto('https://v.qq.com/');
     await boot(page);
     const result = await page.evaluate(() => {
       const inactive = window.VideoSelectionTest.isInactiveStandbyVideo;

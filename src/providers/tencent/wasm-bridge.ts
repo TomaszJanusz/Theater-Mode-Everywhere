@@ -1,6 +1,7 @@
 import { rangesFromPairs, type PlaybackSurface } from '../../playback-surface';
 import { createSessionId } from '../../protocol/frame-messages';
-import { isTencentHost } from '../hosts';
+
+import { isTencentHost } from './hosts';
 import {
   TENCENT_WASM_MEDIA_EVENTS,
   coerceTencentWasmSnapshot,

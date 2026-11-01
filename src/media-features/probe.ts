@@ -1,7 +1,6 @@
 import { encodeProbeRequest, encodeProbeAsyncRequest, parseProbeAsyncReply, PROBE_ASYNC_EVENT, PROBE_ASYNC_REPLY_EVENT } from '../protocol/page-requests';
 import { createWorldMessage, readWorldEnvelope } from '../protocol/world-messages';
 import type { CrunchyrollSnapshot } from '../providers/crunchyroll/main';
-import type { TencentSnapshot } from '../providers/tencent/main';
 
 export const MEDIA_PROBE_EVENT = 'theater-everywhere-media-probe';
 export const MEDIA_PROBE_RESULT_EVENT = 'theater-everywhere-media-probe-result';
@@ -35,7 +34,6 @@ export type MediaProbeSnapshot = {
   /** Registered providers' snapshots by provider id, unvalidated: each provider normalizes its own. */
   providers?: Record<string, unknown>;
   disney?: DisneyPlayerSnapshot | null;
-  tencent?: TencentSnapshot | null;
   crunchyroll?: CrunchyrollSnapshot | null;
 };
 
@@ -67,7 +65,6 @@ export function requestMediaProbe(timeoutMs = 800): Promise<MediaProbeSnapshot> 
       resolve({
         providers: plainRecord(snapshot.providers),
         disney: snapshot.disney ?? null,
-        tencent: snapshot.tencent ?? null,
         crunchyroll: snapshot.crunchyroll ?? null
       });
     };

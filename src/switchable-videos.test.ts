@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
 import {
   hasLeftPlaybackSurface,
   isSwitchableTheaterVideo,
@@ -83,13 +84,19 @@ describe('switchable theater videos', () => {
     })), false);
   });
 
-  it('ignores a hidden ThumbPlayer standby even when it retains a source and decoded dimensions', () => {
-    const current = fakeVideo({ currentSrc: 'blob:https://v.qq.com/current', readyState: 4, duration: 2812,
-      videoWidth: 1920, videoHeight: 1080, hosts: ['.txp_videos_container'] });
-    const spare = fakeVideo({ currentSrc: 'blob:https://v.qq.com/spare', readyState: 0,
-      videoWidth: 1920, videoHeight: 1080, visibility: 'hidden', hosts: ['.txp_videos_container'] });
-    assert.equal(isSwitchableTheaterVideo(spare), false);
-    assert.deepEqual(selectSwitchableVideos([spare, current]), [current]);
+  it('ignores a hidden registered standby even when it retains a source and decoded dimensions', () => {
+    const original = globalThis.window;
+    globalThis.window = { [Symbol.for('theater-everywhere.provider-runtime.isolated')]: {
+      contractVersion: 1, services: { standbyVideoSelector: () => '.standby-container' }
+    } } as unknown as Window & typeof globalThis;
+    try {
+      const current = fakeVideo({ currentSrc: 'blob:https://v.qq.com/current', readyState: 4, duration: 2812,
+        videoWidth: 1920, videoHeight: 1080, hosts: ['.standby-container'] });
+      const spare = fakeVideo({ currentSrc: 'blob:https://v.qq.com/spare', readyState: 0,
+        videoWidth: 1920, videoHeight: 1080, visibility: 'hidden', hosts: ['.standby-container'] });
+      assert.equal(isSwitchableTheaterVideo(spare), false);
+      assert.deepEqual(selectSwitchableVideos([spare, current]), [current]);
+    } finally { globalThis.window = original; }
   });
 
   it('offers only the main video when other sourced players are Shorts, previews or miniplayers', () => {

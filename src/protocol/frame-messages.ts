@@ -164,7 +164,7 @@ export function isTrustedFrameEnvelope(envelope: FrameEnvelope, context: FrameTr
     && envelope.nonce === context.activeNonce
   );
   if (envelope.type === 'FRAME_HOST_TOGGLE') {
-    // The wasm host frame is accepted only by the Tencent DOM matcher, never as an ordinary child.
+    // The wasm host frame is accepted only by the provider's DOM matcher, never as an ordinary child.
     return false;
   }
   if (envelope.type === 'FRAME_ENTER') {

@@ -1917,7 +1917,7 @@ function initialize(): void {
     const key = event.code || event.key;
     if (claimedKeyReleases.has(key)) {
       if (event.type === 'keyup') claimedKeyReleases.delete(key);
-      // Tencent handles playback on release. Suppress only gestures claimed on
+      // Non-video host players handle playback on release. Suppress only gestures claimed on
       // keydown, including Escape and T after they have exited the session.
       event.preventDefault();
       event.stopPropagation();

@@ -626,11 +626,6 @@
       "count": 1
     }
   },
-  "src/media-features/parsers/tencent.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "src/media-features/parsers/youtube-chapters.ts": {
     "local/max-symbol-name-length": {
       "count": 3
@@ -1278,9 +1273,6 @@
   "src/providers/network-harvest.ts": {
     "local/max-symbol-name-length": {
       "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
     }
   },
   "src/providers/patreon/adapter.ts": {
@@ -1335,9 +1327,6 @@
     },
     "local/max-symbol-name-length": {
       "count": 3
-    },
-    "sonarjs/no-nested-conditional": {
-      "count": 1
     }
   },
   "src/providers/stage.ts": {
@@ -1345,67 +1334,32 @@
       "count": 2
     }
   },
-  "src/providers/tencent/adapter.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/providers/tencent/main.ts": {
-    "import/order": {
-      "count": 4
-    },
     "local/max-symbol-name-length": {
-      "count": 3
+      "count": 2
     },
     "sonarjs/super-linear-regex": {
       "count": 4
     }
   },
   "src/providers/tencent/playback-session.ts": {
-    "import/order": {
-      "count": 3
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }
   },
   "src/providers/tencent/stage.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 4
     }
   },
-  "src/providers/tencent/tencent.test.ts": {
-    "import/order": {
-      "count": 7
-    }
-  },
   "src/providers/tencent/wasm-bridge.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 3
     }
   },
-  "src/providers/tencent/wasm-player.test.ts": {
-    "import/order": {
-      "count": 2
-    }
-  },
   "src/providers/tencent/wasm-player.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 11
-    }
-  },
-  "src/providers/tencent/wasm-runtime.browser.test.ts": {
-    "import/order": {
-      "count": 1
     }
   },
   "src/providers/timeline/disney.ts": {
@@ -1498,7 +1452,7 @@
   },
   "src/providers/video-candidates.ts": {
     "local/max-symbol-name-length": {
-      "count": 3
+      "count": 2
     }
   },
   "src/providers/vimeo/navigation.ts": {
@@ -1631,11 +1585,6 @@
       "count": 3
     }
   },
-  "src/switchable-videos.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/test-utils/language-audit.ts": {
     "import/order": {
       "count": 2
@@ -1669,7 +1618,7 @@
       "count": 1
     },
     "import/order": {
-      "count": 5
+      "count": 4
     }
   },
   "src/test-utils/player-scenarios/playback.ts": {

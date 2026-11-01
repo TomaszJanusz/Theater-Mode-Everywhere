@@ -3,14 +3,12 @@ import { it } from 'node:test';
 import { harvestBodyFormat, harvestFetchFormatMatches, qualifyNetworkHarvest, type NetworkHarvestContext } from './network-harvest';
 import { youtubeHarvestTarget } from './youtube/harvest-target';
 
-const flags = { disney: true, tencent: true, crunchyroll: true };
+const flags = { disney: true, crunchyroll: true };
 const cases = [
   ['www.disneyplus.com', 'https://disney.api.edge.bamgrid.com/playback', 'disney'],
   ['www.disneyplus.com', 'https://www.disneyplus.com/api/playback', 'disney'],
   ['www.disneyplus.com', 'https://cdn.dssott.com/catalog.json', 'disney'],
   ['www.disneyplus.com', 'https://cdn.dssott.com/thumbnails/movie.bif', 'disney-bif'],
-  ['wetv.vip', 'https://play.wetv.vip/getvinfo', 'tencent'],
-  ['v.qq.com', 'https://h5vv.video.qq.com/getvinfo', 'tencent'],
   ['www.crunchyroll.com', 'https://static.crunchyroll.com/skip-events/production/G12345678.json', 'crunchyroll'],
   ['www.crunchyroll.com', 'https://www.crunchyroll.com/content/v2/cms/objects/G12345678', 'crunchyroll'],
   ['www.crunchyroll.com', 'https://www.crunchyroll.com/playback/v3/G12345678/web/chrome/play', 'crunchyroll']
@@ -21,7 +19,7 @@ it('qualifies provider endpoints before body work, respecting host and integrati
     const context: NetworkHarvestContext = { hostname, flags };
     assert.equal(qualifyNetworkHarvest(context, url), target, url);
     assert.equal(qualifyNetworkHarvest({ ...context, hostname: 'example.com' }, url), null);
-    assert.equal(qualifyNetworkHarvest({ ...context, flags: { disney: false, tencent: false, crunchyroll: false } }, url), null);
+    assert.equal(qualifyNetworkHarvest({ ...context, flags: { disney: false, crunchyroll: false } }, url), null);
     assert.equal(qualifyNetworkHarvest(context, `https://${hostname}/unrelated.json`), null);
   }
 });
@@ -50,7 +48,7 @@ it('keeps JSON objects and binary formats on their own materialization paths', (
   assert.equal(harvestBodyFormat('crunchyroll-bif', 'arraybuffer'), 'binary');
   assert.equal(harvestBodyFormat('disney-bif', 'blob'), 'binary');
   assert.equal(harvestBodyFormat('crunchyroll-bif', 'text'), null);
-  assert.equal(harvestBodyFormat('tencent', 'document'), null);
+  assert.equal(harvestBodyFormat('provider', 'document'), null);
   assert.equal(harvestBodyFormat(null, 'arraybuffer'), null);
   // A registered provider's target is text or JSON metadata.
   assert.equal(harvestBodyFormat('provider', 'json'), 'json');
@@ -61,8 +59,8 @@ it('keeps JSON objects and binary formats on their own materialization paths', (
 it('rejects advertised media formats before fetch cloning', () => {
   assert.equal(harvestFetchFormatMatches('disney', 'video/mp4'), false);
   assert.equal(harvestFetchFormatMatches('provider', 'text/html; charset=utf-8'), false);
-  assert.equal(harvestFetchFormatMatches('tencent', 'application/javascript'), true);
+  assert.equal(harvestFetchFormatMatches('provider', 'application/javascript'), true);
   assert.equal(harvestFetchFormatMatches('provider', 'application/json'), true);
   assert.equal(harvestFetchFormatMatches('disney-bif', 'application/octet-stream'), true);
-  assert.equal(harvestFetchFormatMatches('tencent', ''), true);
+  assert.equal(harvestFetchFormatMatches('provider', ''), true);
 });

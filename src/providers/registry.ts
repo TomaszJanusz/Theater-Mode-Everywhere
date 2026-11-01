@@ -3,7 +3,7 @@ import type { MediaFeaturesAdapter } from '../media-features/types';
 
 import { PROVIDER_CATALOG } from './catalog';
 import { descriptorMatchesHost } from './descriptor-hosts';
-import { isCrunchyrollHost, isDisneyHost, isTencentHost } from './hosts';
+import { isCrunchyrollHost, isDisneyHost } from './hosts';
 import type { LauncherPlacementFactory } from './launcher-placement';
 import { providerRegistry } from './runtime-registration';
 import type { WatchPlayback } from './watch-playback';
@@ -28,7 +28,6 @@ const legacyDefinitions: ProviderDefinition[] = [
   { id: 'native', matchesHost: () => true },
   // Disney+ registers its watch playback from its per-host entries.
   { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname) },
-  { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },
   { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) },
 ];
 

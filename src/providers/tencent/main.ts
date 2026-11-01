@@ -1,21 +1,18 @@
-import { readPageResponseBytes } from '../../platform/page-body';
-import { isTencentMetadataUrl } from '../network-harvest';
 import { sanitizeContentTitle } from '../../media-features/content-title';
-import { MAX_CAPTION_BYTES } from '../../media-features/fetch-allowlist';
-import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { normalizeTencentMetadata, tencentRecord, type TencentSnapshot } from '../../media-features/parsers/tencent';
-import { isTencentHost } from '../hosts';
-import { installTencentWasmBridge } from './wasm-bridge';
+import { MAX_CAPTION_BYTES } from '../../platform/bounded-body';
+import { readPageResponseBytes } from '../../platform/page-body';
 
-export { isTencentMetadataUrl } from '../network-harvest';
-export type { TencentSnapshot } from '../../media-features/parsers/tencent';
+import { isTencentMetadataUrl } from './harvest';
+import { isTencentHost } from './hosts';
+import { normalizeTencentMetadata, tencentRecord, type TencentSnapshot } from './metadata';
+import { tencentEnabled, tencentPageVideoId, wetvPageInfo } from './page';
+import { installTencentWasmBridge } from './wasm-bridge';
+export { tencentEnabled, tencentPageVideoId } from './page';
+
+export type { TencentSnapshot } from './metadata';
 let harvested: TencentSnapshot | null = null;
 let metadataObserver: MutationObserver | null = null;
 const JSONP_WRAPPED = Symbol('theater-tencent-jsonp');
-
-export function tencentIntegrationEnabled(): boolean {
-  return isTencentHost() && mediaProviderIntegrationEnabled('tencent');
-}
 
 export function tencentContentTitle(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -26,34 +23,15 @@ export function tencentContentTitle(value: unknown): string | null {
     .replace(/\s*[|_-]\s*WeTV.*$/i, ''));
 }
 
-function wetvPageInfo(): Record<string, unknown> {
-  try {
-    const next = tencentRecord((window as any).__NEXT_DATA__);
-    const data = tencentRecord(tencentRecord(next.props).pageProps).data;
-    const parsed = typeof data === 'string' && data.length <= MAX_CAPTION_BYTES ? JSON.parse(data) : data;
-    return tencentRecord(tencentRecord(parsed).videoInfo);
-  } catch { return {}; }
-}
-
-export function tencentPageVideoId(): string | null {
-  const path = window.location.pathname || '';
-  const pathId = path.match(/\/([a-z0-9]{11})\.html$/i)?.[1]
-    || path.match(/\/play\/[^/]+\/([a-z0-9]{11})(?:-|\/|$)/i)?.[1];
-  const queryId = new URLSearchParams(window.location.search || '').get('vid');
-  const info = tencentRecord((window as any).VIDEO_INFO);
-  const value = pathId || queryId || info.vid || wetvPageInfo().vid;
-  return typeof value === 'string' && /^[a-z0-9]{11}$/i.test(value) ? value : null;
-}
-
 export function harvestTencentData(url: string, data: unknown): void {
-  if (!tencentIntegrationEnabled() || !isTencentMetadataUrl(url)) return;
+  if (!tencentEnabled() || !isTencentMetadataUrl(url)) return;
   const id = tencentPageVideoId();
   const snapshot = id ? normalizeTencentMetadata(data, id) : null;
   if (snapshot) harvested = snapshot;
 }
 
 export function harvestTencentBody(url: string, body: string): void {
-  if (!tencentIntegrationEnabled() || !isTencentMetadataUrl(url) || body.length > MAX_CAPTION_BYTES) return;
+  if (!tencentEnabled() || !isTencentMetadataUrl(url) || body.length > MAX_CAPTION_BYTES) return;
   try {
     const text = body.trim();
     // getvinfo can return JSONP; parse its JSON argument without executing it.
@@ -64,8 +42,8 @@ export function harvestTencentBody(url: string, body: string): void {
 
 /** Consume the single qualified clone supplied by MAIN. */
 export function captureTencentNetworkResponse(url: string, response: Response): void {
-  if (!tencentIntegrationEnabled() || !isTencentMetadataUrl(url) || !response.ok) return;
-  void readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined, { isCurrent: tencentIntegrationEnabled })
+  if (!tencentEnabled() || !isTencentMetadataUrl(url) || !response.ok) return;
+  void readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined, { isCurrent: tencentEnabled })
     .then((buffer) => { if (buffer) harvestTencentBody(url, new TextDecoder().decode(buffer)); }).catch(() => {});
 }
 
@@ -118,7 +96,7 @@ function readWetvPlayerSnapshot(videoId: string): TencentSnapshot | null {
 }
 
 export function readTencentSnapshot(): TencentSnapshot | null {
-  if (!tencentIntegrationEnabled()) { harvested = null; return null; }
+  if (!tencentEnabled()) { harvested = null; return null; }
   const videoId = tencentPageVideoId();
   if (!videoId) return null;
   const metadata = readWetvPlayerSnapshot(videoId) || (harvested?.videoId === videoId ? harvested : null);

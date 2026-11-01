@@ -27,6 +27,7 @@ function register(hooks: ProviderHooks): boolean {
 export function exposeFixtureRuntime(world: ProviderWorld): void {
   if (world === 'main') exposeProviderRuntime('main', { contractVersion: 1, register, start() {}, services: { fetchPageMedia, navigationObserver: () => navigationObserver() } });
   else exposeProviderRuntime('isolated', { contractVersion: 1, register, start() {}, services: {
-    requestPageFetch, requestMediaProbe: (timeoutMs?: number) => requestMediaProbe(timeoutMs), requestProviderProbe, serviceElementToken, observeProviderDom, parseCaptionPayload
+    requestPageFetch, requestMediaProbe: (timeoutMs?: number) => requestMediaProbe(timeoutMs), requestProviderProbe, serviceElementToken, observeProviderDom, parseCaptionPayload,
+    standbyVideoSelector: () => providerRegistry.all().flatMap(hooks => hooks.discovery?.standbySelector ?? []).join(', ')
   } });
 }

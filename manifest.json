@@ -37,6 +37,12 @@
         "*://*.patreon.com./*",
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*",
+        "*://*.v.qq.com/*",
+        "*://*.v.qq.com./*",
+        "*://*.wetv.vip/*",
+        "*://*.wetv.vip./*",
+        "*://vm.gtimg.cn/*",
+        "*://vm.gtimg.cn./*",
         "*://*.twitch.tv/*",
         "*://*.twitch.tv./*",
         "*://*.viki.com/*",
@@ -174,6 +180,26 @@
     },
     {
       "matches": [
+        "*://*.v.qq.com/*",
+        "*://*.v.qq.com./*",
+        "*://*.wetv.vip/*",
+        "*://*.wetv.vip./*",
+        "*://vm.gtimg.cn/*",
+        "*://vm.gtimg.cn./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/tencent/isolated.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
         "*://*.twitch.tv/*",
         "*://*.twitch.tv./*"
       ],
@@ -259,6 +285,12 @@
         "*://*.patreon.com./*",
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*",
+        "*://*.v.qq.com/*",
+        "*://*.v.qq.com./*",
+        "*://*.wetv.vip/*",
+        "*://*.wetv.vip./*",
+        "*://vm.gtimg.cn/*",
+        "*://vm.gtimg.cn./*",
         "*://*.twitch.tv/*",
         "*://*.twitch.tv./*",
         "*://*.viki.com/*",
@@ -372,6 +404,24 @@
       "js": [
         "mainWorld.js",
         "providers/soop/main.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.v.qq.com/*",
+        "*://*.v.qq.com./*",
+        "*://*.wetv.vip/*",
+        "*://*.wetv.vip./*",
+        "*://vm.gtimg.cn/*",
+        "*://vm.gtimg.cn./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/tencent/main.js",
         "mainWorldStart.js"
       ],
       "run_at": "document_start",

@@ -1,0 +1,857 @@
+{
+  "source": "Netflix watch page, /watch/:id (signed in)",
+  "captured": "2026-11-01",
+  "environment": "Brave Beta Chromium 156.0.8078.74, macOS, signed-in account, Polish UI; read-only through CDP, extension installed but not driven",
+  "evidence": "Recorded host fixture (player API objects as the MAIN world reads them), not live extension verification",
+  "notes": "Captured paused (the title was paused when found). NOT captured: playing, idle (controls hidden while playing), near-end (needs seeking), ad playback, a second audio selection. The audio list and the timed-text list are the raw objects from getAudioTrackList()/getTimedTextTrackList(); selection in the real player is object identity, so the *Selected ids are recorded separately. Title id and numeric ids are replaced by 80000001. Observation: this build has no .PlayerControlsNeo__layout; controls live under [data-uia=\"controls-standard\"].",
+  "consumers": {
+    "api.audioTrackList + states.*.selectedAudioTrackId": "src/providers/netflix/audio-bridge.ts netflixAudioTrack, audio-main.ts readNetflixAudio",
+    "api.adManager": "src/providers/netflix/audio-main.ts netflixAudioBlocked (adPresenting observable .value)",
+    "api.timedTextTrackList + states.*.selectedTimedTextTrackId": "src/media-features/parsers/netflix-page.ts parseNetflixTextTracks, netflixCaptionList, netflixLiveTrackId",
+    "api.timeCodes": "src/providers/netflix/timed-action.ts liveIntro (skip_credits window)",
+    "api.metadata": "src/providers/netflix/session.ts netflixSessionTitle, next-preview.ts netflixNextEpisodePreview",
+    "states.*.flags.headerTitleSpans": "src/media-features/parsers/netflix-page.ts readHeaderSubtitle ([data-uia=\"video-title\"] > span)",
+    "states.*.video": "src/providers/netflix/playback.ts readNetflixVideoFacts"
+  },
+  "urlPattern": "/watch/:id",
+  "movieId": "80000001",
+  "api": {
+    "duration": 2973845,
+    "timeCodes": [
+      {
+        "type": "start",
+        "startOffsetMs": 7007,
+        "endOffsetMs": 7007
+      },
+      {
+        "type": "ending",
+        "startOffsetMs": 2802963,
+        "endOffsetMs": 2802963
+      },
+      {
+        "type": "skip_credits",
+        "startOffsetMs": 60853,
+        "endOffsetMs": 151402
+      }
+    ],
+    "audioTrackList": [
+      {
+        "trackId": "A:2:1;2;en;1;0;0;",
+        "bcp47": "en",
+        "displayName": "angielski [oryginalny]",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": true,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;pl;0;0;0;",
+        "bcp47": "pl",
+        "displayName": "polski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;de;0;0;0;",
+        "bcp47": "de",
+        "displayName": "niemiecki",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:2;2;en;0;0;0;",
+        "bcp47": "en",
+        "displayName": "angielski — audiodeskrypcja",
+        "trackType": "ASSISTIVE",
+        "rawTrackType": "ASSISTIVE",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;fr;0;0;0;",
+        "bcp47": "fr",
+        "displayName": "francuski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;fr-CA;0;0;0;",
+        "bcp47": "fr-CA",
+        "displayName": "francuski (Kanada)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;hi;0;0;0;",
+        "bcp47": "hi",
+        "displayName": "hindi",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;es;0;0;0;",
+        "bcp47": "es",
+        "displayName": "hiszpański (Ameryka Łacińska)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;es-ES;0;0;0;",
+        "bcp47": "es-ES",
+        "displayName": "hiszpański (Hiszpania)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;ja;0;0;0;",
+        "bcp47": "ja",
+        "displayName": "japoński",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;pt-BR;0;0;0;",
+        "bcp47": "pt-BR",
+        "displayName": "portugalski (Brazylia)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;tr;0;0;0;",
+        "bcp47": "tr",
+        "displayName": "turecki",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      },
+      {
+        "trackId": "A:2:1;2;it;0;0;0;",
+        "bcp47": "it",
+        "displayName": "włoski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "PRIMARY",
+        "channels": "2.0",
+        "isNative": false,
+        "surroundFormatLabel": "2.0"
+      }
+    ],
+    "timedTextTrackList": [
+      {
+        "trackId": "T:2:1;1;NONE;0;1;0;0;",
+        "bcp47": null,
+        "displayName": "wył.",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": true,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:1;1;en;0;0;0;0;",
+        "bcp47": "en",
+        "displayName": "angielski",
+        "trackType": "ASSISTIVE",
+        "rawTrackType": "CLOSEDCAPTIONS",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;pl;0;0;0;0;",
+        "bcp47": "pl",
+        "displayName": "polski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;de;0;0;0;0;",
+        "bcp47": "de",
+        "displayName": "niemiecki",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;ru;0;0;0;0;",
+        "bcp47": "ru",
+        "displayName": "rosyjski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;uk;0;0;0;0;",
+        "bcp47": "uk",
+        "displayName": "ukraiński",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;ar;0;0;0;0;",
+        "bcp47": "ar",
+        "displayName": "arabski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;bg;0;0;0;0;",
+        "bcp47": "bg",
+        "displayName": "bułgarski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;zh-Hant;0;0;0;0;",
+        "bcp47": "zh-Hant",
+        "displayName": "chiński (tradycyjny)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;zh-Hans;0;0;0;0;",
+        "bcp47": "zh-Hans",
+        "displayName": "chiński (uproszczony)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;hr;0;0;0;0;",
+        "bcp47": "hr",
+        "displayName": "chorwacki",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;cs;0;0;0;0;",
+        "bcp47": "cs",
+        "displayName": "czeski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;da;0;0;0;0;",
+        "bcp47": "da",
+        "displayName": "duński",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;fil;0;0;0;0;",
+        "bcp47": "fil",
+        "displayName": "filipiński",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;fi;0;0;0;0;",
+        "bcp47": "fi",
+        "displayName": "fiński",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;fr;0;0;0;0;",
+        "bcp47": "fr",
+        "displayName": "francuski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;fr-CA;0;0;0;0;",
+        "bcp47": "fr-CA",
+        "displayName": "francuski (Kanada)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;el;0;0;0;0;",
+        "bcp47": "el",
+        "displayName": "grecki",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;he;0;0;0;0;",
+        "bcp47": "he",
+        "displayName": "hebrajski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;hi;0;0;0;0;",
+        "bcp47": "hi",
+        "displayName": "hindi",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;es;0;0;0;0;",
+        "bcp47": "es",
+        "displayName": "hiszpański (Ameryka Łacińska)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;es-ES;0;0;0;0;",
+        "bcp47": "es-ES",
+        "displayName": "hiszpański (Hiszpania)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;id;0;0;0;0;",
+        "bcp47": "id",
+        "displayName": "indonezyjski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;ja;0;0;0;0;",
+        "bcp47": "ja",
+        "displayName": "japoński",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;ko;0;0;0;0;",
+        "bcp47": "ko",
+        "displayName": "koreański",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;ms;0;0;0;0;",
+        "bcp47": "ms",
+        "displayName": "malajski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;nl;0;0;0;0;",
+        "bcp47": "nl",
+        "displayName": "niderlandzki",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;nb;0;0;0;0;",
+        "bcp47": "nb",
+        "displayName": "norweski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;pt-BR;0;0;0;0;",
+        "bcp47": "pt-BR",
+        "displayName": "portugalski (Brazylia)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;pt;0;0;0;0;",
+        "bcp47": "pt",
+        "displayName": "portugalski (Portugalia)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;ro;0;0;0;0;",
+        "bcp47": "ro",
+        "displayName": "rumuński",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;sr-Latn;0;0;0;0;",
+        "bcp47": "sr-Latn",
+        "displayName": "serbski (alfabet łaciński)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;sr-Cyrl;0;0;0;0;",
+        "bcp47": "sr-Cyrl",
+        "displayName": "serbski (cyrylica)",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;sk;0;0;0;0;",
+        "bcp47": "sk",
+        "displayName": "słowacki",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;sv;0;0;0;0;",
+        "bcp47": "sv",
+        "displayName": "szwedzki",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;th;0;0;0;0;",
+        "bcp47": "th",
+        "displayName": "tajski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;tr;0;0;0;0;",
+        "bcp47": "tr",
+        "displayName": "turecki",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;hu;0;0;0;0;",
+        "bcp47": "hu",
+        "displayName": "węgierski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;vi;0;0;0;0;",
+        "bcp47": "vi",
+        "displayName": "wietnamski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      },
+      {
+        "trackId": "T:2:0;1;it;0;0;0;0;",
+        "bcp47": "it",
+        "displayName": "włoski",
+        "trackType": "PRIMARY",
+        "rawTrackType": "SUBTITLES",
+        "isNoneTrack": false,
+        "isForcedNarrative": false,
+        "isImageBased": false
+      }
+    ],
+    "adManager": {
+      "adPresentingType": "object",
+      "adPresentingValue": false
+    },
+    "playerFns": [
+      "addEpisode",
+      "addEventListener",
+      "addToPostplayList",
+      "applyCallbackToPromiseChain",
+      "clearNextSegment",
+      "close",
+      "decorateEventHandler",
+      "decoratedEventHandler",
+      "engage",
+      "generateScreenshots",
+      "getAdManager",
+      "getAdditionalLogInfo",
+      "getAudioTrack",
+      "getAudioTrackList",
+      "getBufferedTime",
+      "getBusy",
+      "getChapters",
+      "getCongestionInfo",
+      "getCropAspectRatio",
+      "getCurrentTime",
+      "getDiagnostics",
+      "getDuration",
+      "getElement",
+      "getEnded",
+      "getError",
+      "getInternalPlayer",
+      "getLivePlaybackManager",
+      "getManifestAltCastId",
+      "getMaxRecommendedAudioIndex",
+      "getMaxRecommendedTextIndex",
+      "getMaxRecommendedTimedTextIndex",
+      "getMovieId",
+      "getMuted",
+      "getPaused",
+      "getPlaybackContextId",
+      "getPlaybackRate",
+      "getPlaygraphManager",
+      "getPlaying",
+      "getReady",
+      "getSegmentTime",
+      "getSessionSummary",
+      "getTextTrack",
+      "getTextTrackList",
+      "getTimeCodes",
+      "getTimedTextSettings",
+      "getTimedTextTrack",
+      "getTimedTextTrackList",
+      "getTimedTextVisibility",
+      "getTrickPlayFrame",
+      "getVideoSize",
+      "getVolume",
+      "getXid",
+      "goToNextSegment",
+      "induceError",
+      "isBackground",
+      "isEnded",
+      "isMuted",
+      "isPaused",
+      "isPlaying",
+      "isReady",
+      "isTimedTextVisible",
+      "load",
+      "loadCustomTimedTextTrack",
+      "pause",
+      "play",
+      "playNextEpisode",
+      "playSegment",
+      "prepare",
+      "queueSegment",
+      "registerStreamingPlugin",
+      "removeEventListener",
+      "seek",
+      "setAudioTrack",
+      "setBackground",
+      "setCustomEndplayField",
+      "setMuted",
+      "setNextSegment",
+      "setPlaybackRate",
+      "setPostplayAtEnd",
+      "setTextTrack",
+      "setTimedTextBounds",
+      "setTimedTextMargins",
+      "setTimedTextSettings",
+      "setTimedTextSize",
+      "setTimedTextTrack",
+      "setTimedTextVisibility",
+      "setTimedTextVisible",
+      "setTransitionTime",
+      "setVolume",
+      "skipAd",
+      "skipAdBreak",
+      "startInactivityMonitor",
+      "transition",
+      "tryRecoverFromStall",
+      "updateNextSegmentWeights",
+      "watchCredits"
+    ],
+    "metadata": {
+      "title": "House of Cards",
+      "episodeTitle": "Rozdział 2",
+      "hasNext": true,
+      "nextTitle": "House of Cards",
+      "nextEpisodeTitle": "Rozdział 3",
+      "nextThumbnail": "https://example.invalid/thumbnail.jpg",
+      "currentVideoFns": [
+        "canBeCasted",
+        "getAllSeasons",
+        "getBookmark",
+        "getBookmarkOffsetMS",
+        "getCreditsOffset",
+        "getCreditsOffsetMS",
+        "getDisplayRuntime",
+        "getEpisodeIndex",
+        "getEpisodeNumber",
+        "getEpisodeThumbnail",
+        "getEpisodeTitle",
+        "getEpisodeTitleWithSeasonLabelData",
+        "getId",
+        "getLiveEvent",
+        "getLoadingImageUrl",
+        "getMaturityRating",
+        "getNextEpisode",
+        "getPinRequired",
+        "getPreReleasePinRequired",
+        "getProgress",
+        "getRating",
+        "getRuntime",
+        "getRuntimeMS",
+        "getSeason",
+        "getSkipMarkers",
+        "getSynopsis",
+        "getTaglineMessages",
+        "getTitle",
+        "getType",
+        "getUserRating",
+        "getWatchedToEndOffset",
+        "getYear",
+        "isEpisodic",
+        "isNSRE",
+        "isSupplemental",
+        "requiresAdultVerification",
+        "setBookmarkOffset",
+        "showEpisodeNumbers",
+        "toVideoData"
+      ]
+    }
+  },
+  "states": {
+    "paused": {
+      "isPaused": true,
+      "currentTimeMs": 6888,
+      "selectedAudioTrackId": "A:2:1;2;en;1;0;0;",
+      "selectedTimedTextTrackId": "T:2:1;1;en;0;0;0;0;",
+      "flags": {
+        "timedtextRendererMounted": true,
+        "controlsLayout": false,
+        "menuOpen": false,
+        "headerTitleSpans": [
+          "O2",
+          "Rozdział 2"
+        ],
+        "skipIntro": null,
+        "nextEpisodeButtons": [],
+        "pressed": 0
+      },
+      "video": [
+        {
+          "className": "",
+          "attrs": {
+            "disablepictureinpicture": "",
+            "tabindex": "-1",
+            "style": "height: 942px; width: 100%;",
+            "class": ""
+          },
+          "paused": true,
+          "readyState": 4,
+          "videoWidth": 1920,
+          "videoHeight": 1080,
+          "srcKind": "blob",
+          "display": "block",
+          "opacity": "1",
+          "rect": {
+            "x": 0,
+            "y": -52.5,
+            "w": 1334,
+            "h": 942
+          },
+          "textTracks": [],
+          "audioTracks": []
+        }
+      ]
+    },
+    "audio-subtitles-menu-open": {
+      "isPaused": true,
+      "currentTimeMs": 6888,
+      "selectedAudioTrackId": "A:2:1;2;en;1;0;0;",
+      "selectedTimedTextTrackId": "T:2:1;1;en;0;0;0;0;",
+      "flags": {
+        "timedtextRendererMounted": true,
+        "controlsLayout": false,
+        "menuOpen": true,
+        "headerTitleSpans": [
+          "O2",
+          "Rozdział 2"
+        ],
+        "skipIntro": null,
+        "nextEpisodeButtons": [],
+        "pressed": 0
+      },
+      "video": [
+        {
+          "className": "",
+          "attrs": {
+            "disablepictureinpicture": "",
+            "tabindex": "-1",
+            "style": "height: 878px; width: 100%;",
+            "class": ""
+          },
+          "paused": true,
+          "readyState": 4,
+          "videoWidth": 1920,
+          "videoHeight": 1080,
+          "srcKind": "blob",
+          "display": "block",
+          "opacity": "1",
+          "rect": {
+            "x": 0,
+            "y": -49,
+            "w": 1334,
+            "h": 878
+          },
+          "textTracks": [],
+          "audioTracks": []
+        }
+      ]
+    },
+    "subtitles-off-menu-open": {
+      "isPaused": true,
+      "currentTimeMs": 6888,
+      "selectedAudioTrackId": "A:2:1;2;en;1;0;0;",
+      "selectedTimedTextTrackId": "T:2:1;1;NONE;0;1;0;0;",
+      "flags": {
+        "timedtextRendererMounted": true,
+        "controlsLayout": false,
+        "menuOpen": true,
+        "headerTitleSpans": [
+          "O2",
+          "Rozdział 2"
+        ],
+        "skipIntro": null,
+        "nextEpisodeButtons": [],
+        "pressed": 0
+      },
+      "video": [
+        {
+          "className": "",
+          "attrs": {
+            "disablepictureinpicture": "",
+            "tabindex": "-1",
+            "style": "height: 878px; width: 100%;",
+            "class": ""
+          },
+          "paused": true,
+          "readyState": 4,
+          "videoWidth": 1920,
+          "videoHeight": 1080,
+          "srcKind": "blob",
+          "display": "block",
+          "opacity": "1",
+          "rect": {
+            "x": 0,
+            "y": -49,
+            "w": 1334,
+            "h": 878
+          },
+          "textTracks": [],
+          "audioTracks": []
+        }
+      ]
+    }
+  }
+}

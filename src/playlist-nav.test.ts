@@ -46,8 +46,8 @@ describe('playlist navigation availability', () => {
   it('uses enabled Bilibili and Tencent steps and ignores placeholder controls', () => {
     const controls = [
       control({ provider: 'bilibili', directionHint: 'previous', className: 'bpx-player-ctrl-prev disabled' }),
-      control({ provider: 'tencent', directionHint: 'next', className: 'txp_btn txp_none txp_disabled' }),
-      control({ provider: 'tencent', directionHint: 'next', className: 'txp_btn txp_btn_next_u' })
+      control({ provider: 'tencent', directionHint: 'next', disabled: true }),
+      control({ provider: 'tencent', directionHint: 'next', disabled: false })
     ];
     assert.deepEqual(usableControlIndexes(controls, 1280), [{ index: 2, direction: 'next' }]);
     assert.deepEqual(usableControlIndexes([

@@ -60,6 +60,7 @@ const FRESH = { shortcuts: { ...INSTALL_SHORTCUTS }, blacklist: [], autoEnterThe
 const PENDING = { firstRunSetup: { status: 'pending', version: '2.1.0' } };
 
 async function open(page: Page, sync: Record<string, unknown> = FRESH, local: Record<string, unknown> = PENDING) {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.route('http://options.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://options.test/options.html#setup');
   await page.addStyleTag({ content: css });

@@ -1,6 +1,5 @@
 import { DISNEY_SHADOW_PARENT_CSS } from './disney/stage';
 import { providerRegistry } from './runtime-registration';
-import { injectTencentWasmFrameStyles, tencentVideosShareContainer } from './tencent/stage';
 
 export type ProviderDiscovery = {
   rankBest?(videos: HTMLVideoElement[]): HTMLVideoElement | null;
@@ -10,10 +9,6 @@ export type ProviderDiscovery = {
 };
 
 const providerDiscovery: ProviderDiscovery[] = [
-  {
-    prepareShadowRoot: injectTencentWasmFrameStyles,
-    sharesPlaybackHost: tencentVideosShareContainer
-  },
   {
     extraShadowCss: () => DISNEY_SHADOW_PARENT_CSS
   }
@@ -28,7 +23,7 @@ export function providerRankedVideo(videos: HTMLVideoElement[]): HTMLVideoElemen
 }
 
 export function prepareProviderShadowRoot(shadowRoot: ShadowRoot): void {
-  for (const hook of providerDiscovery) hook.prepareShadowRoot?.(shadowRoot);
+  for (const hook of [...providerRegistry.all().flatMap(hooks => hooks.discovery ?? []), ...providerDiscovery]) hook.prepareShadowRoot?.(shadowRoot);
 }
 
 export function providerShadowCss(): string {
@@ -36,7 +31,7 @@ export function providerShadowCss(): string {
 }
 
 export function providerSharesPlaybackHost(current: HTMLVideoElement, replacement: HTMLVideoElement): boolean {
-  for (const hook of providerDiscovery) {
+  for (const hook of [...providerRegistry.all().flatMap(hooks => hooks.discovery ?? []), ...providerDiscovery]) {
     if (hook.sharesPlaybackHost && !hook.sharesPlaybackHost(current, replacement)) return false;
   }
   return true;

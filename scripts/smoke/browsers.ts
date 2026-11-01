@@ -20,6 +20,7 @@ import { assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, asse
 import { assertRteSettings, assertPictureLayout } from './settings';
 import type { QuotaClock } from './sync-quota';
 import { installSyncQuota } from './sync-quota-guard';
+import { assertTencentProvider } from './tencent';
 import { assertBadgeAfterRestart, assertUpdateNotice } from './update-notice';
 import { assertVikiProvider } from './viki-provider';
 
@@ -42,7 +43,8 @@ const PROVIDER_SCENARIOS: ReadonlyArray<{ name: string; syncWrites: number; run:
   { name: 'assertTwitchProvider', syncWrites: 7, run: assertTwitchProvider },
   { name: 'assertDisneyProvider', syncWrites: 3, run: assertDisneyProvider },
   { name: 'assertVikiProvider', syncWrites: 7, run: assertVikiProvider },
-  { name: 'assertNetflixProvider', syncWrites: 8, run: assertNetflixProvider }
+  { name: 'assertNetflixProvider', syncWrites: 8, run: assertNetflixProvider },
+  { name: 'assertTencentProvider', syncWrites: 8, run: assertTencentProvider }
 ];
 
 async function runProviderScenarios(page: Page, context: BrowserContext): Promise<void> {

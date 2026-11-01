@@ -1,10 +1,12 @@
-import { parseCaptionPayload } from '../../media-features/parsers/captions';
-import { tencentPreviewFrame, type TencentSnapshot } from '../../media-features/parsers/tencent';
-import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
 import type { CaptionActivationResult, CaptionTrack, MediaCapabilities, MediaFeaturesAdapter, PreviewSource } from '../../media-features/types';
-import { tencentIntegrationEnabled, tencentPageVideoId } from './main';
+import type { ProviderServices } from '../provider-api';
+
+import { parseTencentProbe, tencentPreviewFrame, type TencentSnapshot } from './metadata';
+import { tencentEnabled, tencentPageVideoId } from './page';
 
 export class TencentAdapter implements MediaFeaturesAdapter {
+  constructor(private readonly services: Pick<ProviderServices['isolated'], 'requestMediaProbe' | 'requestPageFetch' | 'parseCaptionPayload'>) {}
+
   private snapshot: TencentSnapshot | null = null;
   private pending: Promise<void> | null = null;
   private generation = 0;
@@ -14,8 +16,9 @@ export class TencentAdapter implements MediaFeaturesAdapter {
     this.snapshot = null;
     if (this.pending) return this.pending;
     const generation = this.generation;
-    const pending = requestMediaProbe().then((result) => {
-      if (generation === this.generation && result.tencent?.videoId === tencentPageVideoId()) this.snapshot = result.tencent;
+    const pending = this.services.requestMediaProbe().then((result) => {
+      const snapshot = parseTencentProbe(result.providers?.tencent);
+      if (generation === this.generation && snapshot?.videoId === tencentPageVideoId()) this.snapshot = snapshot;
     }).finally(() => { if (this.pending === pending) this.pending = null; });
     this.pending = pending;
     return pending;
@@ -42,9 +45,9 @@ export class TencentAdapter implements MediaFeaturesAdapter {
     const track = this.snapshot?.captionTracks.find((item) => item.id === id);
     const generation = this.generation;
     const videoId = this.snapshot?.videoId;
-    const body = track ? await requestPageFetch(track.url) : null;
-    const current = generation === this.generation && videoId === tencentPageVideoId() && tencentIntegrationEnabled();
-    const cues = body && current ? parseCaptionPayload(body) : [];
+    const body = track ? await this.services.requestPageFetch(track.url) : null;
+    const current = generation === this.generation && videoId === tencentPageVideoId() && tencentEnabled();
+    const cues = body && current ? this.services.parseCaptionPayload(body) : [];
     if (!cues.length) return { status: 'failed', delivery: 'none', cues: [] };
     this.hideHostCaptions(true);
     return { status: 'active', delivery: 'overlay', cues };

@@ -1,27 +1,32 @@
-import type { PlaybackSurface } from '../playback-surface';
 import { isInactiveStandbyVideo, isOnMiniplayerSurface, selectSwitchableVideos } from '../switchable-videos';
-import { isTencentHost } from './hosts';
-import { openTencentPlaybackSession } from './tencent/playback-session';
-import {
-  isTencentWasmFrameDocument,
-  isTencentWasmPlayerElement,
-  isUsableTencentWasmPlayer,
-  readTencentWasmHostToggle,
-  selectTencentTheaterTarget
-} from './tencent/wasm-player';
+import type { ProviderPlaybackSession } from './provider-api';
+import { providerRegistry } from './runtime-registration';
 import { readMiniplayerIdentity } from './watch-playback';
 
-export type ProviderPlaybackSession = {
-  surface: PlaybackSurface;
-  needsPointerCatcher: boolean;
-  dispose(): void;
-};
+export type { ProviderPlaybackSession } from './provider-api';
+
+const playbackHooks = () => providerRegistry.all().flatMap(hooks => hooks.playback ?? []);
 
 export function isProviderPlaybackFrameDocument(): boolean {
-  return isTencentWasmFrameDocument();
+  return playbackHooks().some(hooks => hooks.frameDocument);
 }
 
-export const readProviderHostToggle = readTencentWasmHostToggle;
+export function readProviderHostToggle(
+  event: { source: unknown; origin: string; data: unknown },
+  page: { hostname: string; href: string; root: ParentNode }
+): { action: 'toggle' | 'fullscreen'; host: HTMLElement } | null {
+  for (const hooks of playbackHooks()) {
+    const toggle = hooks.hostToggle?.(event, page);
+    if (toggle) return toggle;
+  }
+  return null;
+}
+
+/** Ordinary child frames exclude provider-owned player frames, whose messages use a separate protocol. */
+export function ordinaryChildWindows(root: ParentNode): Window[] {
+  const hidden = new Set(playbackHooks().flatMap(hooks => hooks.playerFrameWindows?.(root) ?? []));
+  return Array.from(root.querySelectorAll('iframe')).flatMap(frame => frame.contentWindow && !hidden.has(frame.contentWindow) ? [frame.contentWindow] : []);
+}
 
 /** A parked miniplayer video whose identity the host player confirms; never a discovery candidate. */
 export function isMiniplayerTarget(video: HTMLVideoElement): boolean {
@@ -35,21 +40,21 @@ export function findProviderTheaterTarget(discovery: {
   pointed?: HTMLVideoElement | null;
 }): HTMLElement | null {
   if (isProviderPlaybackFrameDocument()) return null;
-  if (!isTencentHost()) {
-    // Manual entry only: the miniplayer stays out of discovery, Switch Video and AutoTheater.
-    // It is the target when pointed at, or when nothing else on the page is one.
-    if (discovery.pointed && isMiniplayerTarget(discovery.pointed)) return discovery.pointed;
-    return discovery.findBestVideo() ?? discovery.findAllVideosDeep().find(isMiniplayerTarget) ?? null;
+  const custom = playbackHooks().filter(hooks => hooks.theaterTarget);
+  if (custom.length) {
+    const input = { best: discovery.findBestVideo(), switchable: selectSwitchableVideos(discovery.findAllVideosDeep().filter(video => !isInactiveStandbyVideo(video))) };
+    for (const hooks of custom) {
+      const target = hooks.theaterTarget?.(input);
+      if (target !== undefined) return target;
+    }
   }
-  const pool = selectSwitchableVideos(discovery.findAllVideosDeep().filter(video => !isInactiveStandbyVideo(video)));
-  const best = discovery.findBestVideo();
-  const switchable = pool.length > 0 ? (best && pool.includes(best) ? best : pool[0]) : null;
-  const wasm = Array.from(document.querySelectorAll('fake-iframe-video')).find(element => isUsableTencentWasmPlayer(element)) || null;
-  return selectTencentTheaterTarget({ switchable, wasm, fallback: best, wasmFrameDocument: false });
+  // Manual entry only: the miniplayer stays out of discovery, Switch Video and AutoTheater.
+  if (discovery.pointed && isMiniplayerTarget(discovery.pointed)) return discovery.pointed;
+  return discovery.findBestVideo() ?? discovery.findAllVideosDeep().find(isMiniplayerTarget) ?? null;
 }
 
 export function providerFullscreenTarget(active: HTMLVideoElement | null, findTarget: () => HTMLElement | null): HTMLElement | null {
-  if (!isTencentHost() && active?.isConnected) return active;
+  if (!playbackHooks().some(hooks => hooks.fullscreenFollowsTarget) && active?.isConnected) return active;
   return findTarget();
 }
 
@@ -57,5 +62,9 @@ export function openProviderPlaybackSession(
   element: HTMLElement,
   options: { isCurrent(): boolean; onReplacement(element: HTMLElement): void }
 ): ProviderPlaybackSession | null {
-  return isTencentWasmPlayerElement(element) ? openTencentPlaybackSession(element, options) : null;
+  for (const hooks of playbackHooks()) {
+    const session = hooks.openSession?.(element, options);
+    if (session) return session;
+  }
+  return null;
 }

@@ -9,8 +9,7 @@ import { readStylesheet } from '../../test-utils/styles';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { testEngines } from '../../test-utils/test-engines';
 import { serveFixture, vodVideoFixture } from '../../test-utils/video-fixtures';
-
-import type { EndScreenItem } from './end-screen-model';
+import type { EndScreenItem } from '../end-screen-view';
 
 const recorded = readFileSync(new URL('../../../test/host-fixtures/youtube-end-screen.html', import.meta.url), 'utf8');
 const url = 'https://www.youtube.com/watch?v=jNQXAC9IVRw';
@@ -23,10 +22,10 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
     it(`end-only display, native SPA activation, stale visits, autoplay, RTE and cleanup in ${engine}`, { timeout: 60_000 }, async t => {
       const page = await (await browser.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
       page.setDefaultTimeout(8000);
-      await serveFixture(page, fixture, url);
       // The recorded URLs remain intact; fixture checks never contact the thumbnail CDN.
       await page.route('https://*.ytimg.com/**', route => route.fulfill({ contentType: 'image/svg+xml',
         body: '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="270"><rect width="480" height="270" fill="#334155"/></svg>' }));
+      await serveFixture(page, fixture, url);
       await page.evaluate(() => {
         const player = document.querySelector('#movie_player')!;
         const video = document.querySelector('video')!;

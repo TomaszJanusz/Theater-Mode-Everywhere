@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parseProbeRequest } from '../../protocol/page-requests';
-
-import { captureTencentJsonpScript, harvestTencentBody, readTencentSnapshot, tencentContentTitle, tencentPageVideoId } from './main';
-import { normalizeTencentMetadata, parseTencentCaptions, parseTencentStoryboard, tencentCaptionUrl, tencentPreviewFrame } from '../../media-features/parsers/tencent';
 import { classifyMediaFetchUrl, isAllowedMediaFetchUrl, assertSafeRedirect } from '../../media-features/fetch-allowlist';
-import { TencentAdapter } from './adapter';
+import { parseCaptionPayload } from '../../media-features/parsers/captions';
+import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
+import { parseProbeRequest } from '../../protocol/page-requests';
 import { createWorldMessage, type WorldEnvelope } from '../../protocol/world-messages';
+
+import { TencentAdapter } from './adapter';
+import { captureTencentJsonpScript, harvestTencentBody, readTencentSnapshot, tencentContentTitle, tencentPageVideoId } from './main';
+import { normalizeTencentMetadata, parseTencentProbe, parseTencentCaptions, parseTencentStoryboard, tencentCaptionUrl, tencentPreviewFrame } from './metadata';
 
 const videoId = 'h0045v8ky1m';
 // Reduced getvinfo field structure observed on Three-Body EP1. No account or stream data.
@@ -154,6 +156,15 @@ describe('Tencent RTE', () => {
     } finally { page.restore(); }
   });
 
+  it('validates the provider probe before using page-owned metadata', () => {
+    const snapshot = normalizeTencentMetadata(metadata(), videoId)!;
+    assert.deepEqual(parseTencentProbe(snapshot), snapshot);
+    assert.equal(parseTencentProbe({ ...snapshot, videoId: 'invalid' }), null);
+    const untrusted = { ...snapshot, captionTracks: [{ ...snapshot.captionTracks[0], url: 'https://evil.test/track.vtt' }], storyboard: { ...snapshot.storyboard, baseUrl: 'https://evil.test/0/' } };
+    assert.deepEqual(parseTencentProbe(untrusted)?.captionTracks, []);
+    assert.equal(parseTencentProbe(untrusted)?.storyboard, null);
+  });
+
   it('renders imported VTT, hides host captions reversibly and rejects late caption loads', async () => {
     const page = installPage();
     const snapshot = normalizeTencentMetadata(metadata(), videoId)!;
@@ -162,13 +173,13 @@ describe('Tencent RTE', () => {
     let delay = false;
     page.win.addEventListener('theater-everywhere-media-probe', (event) => {
       const requestId = parseProbeRequest((event as CustomEvent).detail);
-      page.win.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', { detail: { requestId, tencent: snapshot } }));
+      page.win.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', { detail: { requestId, providers: { tencent: snapshot } } }));
     });
     (page.win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
       const send = () => ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin) );
       if (delay) replies.push(send); else send();
     };
-    const adapter = new TencentAdapter();
+    const adapter = new TencentAdapter({ requestMediaProbe, requestPageFetch, parseCaptionPayload });
     try {
       assert.deepEqual(await adapter.probe(), { captions: true, chapters: false, previews: true });
       const tracks = await adapter.listCaptionTracks();

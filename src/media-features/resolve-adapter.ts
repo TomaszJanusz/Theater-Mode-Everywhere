@@ -4,7 +4,6 @@ import { DisneyAdapter } from '../providers/disney/adapter';
 import { createHostCaptionLayoutSource } from '../providers/host-captions';
 import { NativeTextTrackAdapter } from '../providers/native/adapter';
 import { PROVIDER_DEFINITIONS, shouldAttachProvider } from '../providers/registry';
-import { TencentAdapter } from '../providers/tencent/adapter';
 
 import { CompositeMediaAdapter } from './composite-adapter';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from './provider-flags';
@@ -36,7 +35,6 @@ export function createMediaFeaturesAdapter(
   const surface = coercePlaybackSurface(media);
   const adapters: MediaFeaturesAdapter[] = [];
   if (shouldAttachDisneyAdapter(flags)) adapters.push(new DisneyAdapter());
-  if (shouldAttachProvider('tencent', flags)) adapters.push(new TencentAdapter());
   if (shouldAttachProvider('crunchyroll', flags)) adapters.push(new CrunchyrollAdapter());
   adapters.push(...registeredAdapters(flags, surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null));
   if (surface.nativeMedia instanceof HTMLVideoElement) {
