@@ -1,5 +1,6 @@
 import { matchesShortcut } from './ui/shortcuts';
 import { HOST_PLAY_CONTROL_SELECTOR, isProviderPlayControl } from './providers/play-controls';
+import { registeredHostPlayback } from './providers/runtime-registration';
 
 function isTheaterUiNode(node: Element): boolean {
   if (node.id === 'theater-everywhere-ui') return true;
@@ -50,6 +51,7 @@ export function findHostPlayButton(video: HTMLVideoElement): HTMLElement | null 
 
 export function requestVideoPlay(video: HTMLVideoElement): void {
   if (mediaHasSource(video)) {
+    if (registeredHostPlayback('play', video)) return;
     video.play().catch((err) => {
       console.error('[Theater Everywhere] Play failed:', err);
     });
@@ -71,7 +73,7 @@ export function toggleVideoPlayback(video: HTMLVideoElement): void {
     requestVideoPlay(video);
     return;
   }
-  video.pause();
+  if (!registeredHostPlayback('pause', video)) video.pause();
 }
 
 /**

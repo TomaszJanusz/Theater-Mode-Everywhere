@@ -1,6 +1,6 @@
 import { isNativeChatEvent } from '../chat/events';
 import { isChatDocument } from '../chat/url';
-import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
+import { findHostPlayButton, mainWorldOwnsWasmPlayPause, mediaHasSource, toggleDirectPlayback } from '../host-play';
 import { mediaProviderIntegrationEnabled, type MediaProviderId } from '../media-features/provider-flags';
 import { CC_SEARCH_KEY_EVENT } from '../protocol/cc-search';
 import { MEDIA_SEEK_EVENT, parseMediaSeekDetail } from '../protocol/media-seek';
@@ -10,10 +10,9 @@ import { createWorldMessage, isSameWindowMessage, readWorldEnvelope, type WorldE
 import { consumeCrunchyrollWrappedFetch, crunchyrollAllowsCaptionFetch, crunchyrollIntegrationEnabled, isCrunchyrollOwnedRequest, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
 import { } from '../providers/hosts';
 import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
-import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
 import type { ProviderHarvest } from '../providers/provider-api';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
-import { providerRegistry, registeredEvents } from '../providers/runtime-registration';
+import { providerRegistry, registeredEvents, registeredHostPlayback } from '../providers/runtime-registration';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
@@ -278,11 +277,6 @@ export function installMainWorldRuntime(): void {
     return el.isContentEditable || el.getAttribute('role') === 'textbox';
   }
 
-  function mediaHasSource(video: HTMLVideoElement): boolean {
-    if (video.currentSrc || video.src || video.srcObject) return true;
-    return Boolean(video.querySelector('source[src]'));
-  }
-
   // Installed at document_start, before page handlers. The content world remains the command owner.
   const claimedEntryKeys = new Set<string>();
   function captureEntryShortcut(event: KeyboardEvent): void {
@@ -317,28 +311,8 @@ export function installMainWorldRuntime(): void {
   for (const type of ['keydown', 'keyup', 'keypress'] as const) window.addEventListener(type, captureEntryShortcut, true);
   window.addEventListener('blur', () => claimedEntryKeys.clear());
 
-  function looksLikeHostPlayButton(el: HTMLElement): boolean {
-    if (el.id === 'theater-everywhere-ui' || el.closest('#theater-everywhere-ui')) return false;
-    return isHostPlayControlLabel(el.getAttribute('aria-label') || '', el.textContent || '', el.className.toString());
-  }
-
-  function findHostPlayButton(video: HTMLVideoElement): HTMLElement | null {
-    const scan = (root: ParentNode): HTMLElement | null => {
-      const candidates = root.querySelectorAll(HOST_PLAY_CONTROL_SELECTOR);
-      for (const node of candidates) {
-        if (node instanceof HTMLElement && looksLikeHostPlayButton(node)) return node;
-      }
-      return null;
-    };
-    let node: Node | null = video.parentNode;
-    while (node) {
-      if (node instanceof Element || node instanceof Document || node instanceof ShadowRoot) {
-        const found = scan(node);
-        if (found) return found;
-      }
-      node = node instanceof ShadowRoot ? node.host : node.parentNode;
-    }
-    return null;
+  function announce(action: 'play' | 'pause'): void {
+    window.dispatchEvent(new CustomEvent('theater-everywhere-playback-intent', { detail: { action } }));
   }
 
   function requestVideoPlay(video: HTMLVideoElement): void {
@@ -425,9 +399,7 @@ export function installMainWorldRuntime(): void {
         play: () => host.play?.(),
         pause: () => host.pause?.()
       });
-      window.dispatchEvent(new CustomEvent('theater-everywhere-playback-intent', {
-        detail: { action: willPause ? 'pause' : 'play' }
-      }));
+      announce(willPause ? 'pause' : 'play');
       return;
     }
 
@@ -441,11 +413,11 @@ export function installMainWorldRuntime(): void {
     if (event.type !== 'keydown' || event.repeat) return;
 
     const wantPaused = mediaHasSource(video) && !video.paused;
-    if (wantPaused) video.pause();
-    else requestVideoPlay(video);
-    window.dispatchEvent(new CustomEvent('theater-everywhere-playback-intent', {
-      detail: { action: wantPaused ? 'pause' : 'play' }
-    }));
+    if (!registeredHostPlayback(wantPaused ? 'pause' : 'play', video)) {
+      if (wantPaused) video.pause();
+      else requestVideoPlay(video);
+    }
+    announce(wantPaused ? 'pause' : 'play');
   }
 
   window.addEventListener('blur', () => { modalKeys.clear(); ccSearchKeys.clear(); });
