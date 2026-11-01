@@ -252,8 +252,12 @@ jobs:
   browser-firefox:
     needs: [changes, image]
     if: needs.changes.outputs.run != 'false' && needs.changes.outputs.firefox != 'false'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     runs-on: ubuntu-latest
-    timeout-minutes: 21
+    timeout-minutes: 12
     container:
       image: ${{ needs.image.outputs.ref }} # zizmor: ignore[unpinned-images] pinned by digest in the image job
       credentials:
@@ -282,13 +286,14 @@ jobs:
         with:
           name: test-selection
       - name: Storybook components Firefox
+        if: matrix.shard == 1
         run: pnpm storybook:test
         timeout-minutes: 5
         env:
           STORYBOOK_BROWSER: firefox
       - name: Browser tests Firefox
-        run: pnpm test --lane=browser --files-from=.test-impact.json --report-dir=test-reports
-        timeout-minutes: 15
+        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/3 --report-dir=test-reports
+        timeout-minutes: 10
         env:
           THEATER_TEST_ENGINES: firefox
       - name: Summarize tests
@@ -299,7 +304,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: test-reports-firefox
+          name: test-reports-firefox-${{ matrix.shard }}
           path: test-reports/
           if-no-files-found: ignore
           retention-days: 3

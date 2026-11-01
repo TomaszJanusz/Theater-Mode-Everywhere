@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { execFileSync, spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { discoverTests, isBrowserTest, main, planRun, tallyProblems } from './run-tests.mjs';
+
+import { balanceShard, discoverTests, isBrowserTest, main, parseShardCosts, planRun, tallyProblems } from './run-tests.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
@@ -43,6 +44,46 @@ test('no tracked test-like file uses an extension the runner would skip', () => 
   const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: repoRoot, encoding: 'utf8' }).split('\0').filter(Boolean);
   const unrun = tracked.filter(file => /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file) && !/\.test\.(?:ts|mjs)$/.test(file));
   assert.deepEqual(unrun, []);
+});
+
+test('cost-balanced shards cover every file exactly once and even out the load', () => {
+  const costs = { files: { 'a.test.ts': 100, 'b.test.ts': 60, 'c.test.ts': 50, 'd.test.ts': 40, 'e.test.ts': 10 } };
+  const files = ['a.test.ts', 'b.test.ts', 'c.test.ts', 'd.test.ts', 'e.test.ts', 'new.test.ts'];
+  for (const total of [1, 2, 3, 4]) {
+    const shards = Array.from({ length: total }, (_, shard) => balanceShard(files, costs, shard + 1, total));
+    assert.deepEqual(shards.flat().sort(), [...files].sort(), `${total} shards`);
+  }
+  // The unmeasured file weighs the median (50): 100+10 | 60+40 | 50+50.
+  assert.deepEqual(balanceShard(files, costs, 1, 3), ['a.test.ts', 'e.test.ts']);
+  assert.deepEqual(balanceShard(files, costs, 2, 3), ['b.test.ts', 'd.test.ts']);
+  assert.deepEqual(balanceShard(files, costs, 3, 3), ['c.test.ts', 'new.test.ts']);
+  // A shard that also runs Storybook starts with that work already on its load.
+  const withStorybook = { files: costs.files, overhead: { 1: 100 } };
+  const three = ['a.test.ts', 'b.test.ts', 'c.test.ts'];
+  assert.deepEqual(balanceShard(three, withStorybook, 1, 2), ['b.test.ts']);
+  assert.deepEqual(balanceShard(three, withStorybook, 2, 2), ['a.test.ts', 'c.test.ts']);
+  assert.deepEqual(balanceShard(['x.test.ts', 'y.test.ts'], { files: {} }, 2, 2), ['y.test.ts']);
+});
+
+test('--shard-costs replaces the count-based split of --test-shard in every group', () => {
+  const all = ['scripts/a.test.mjs', 'src/x/foo.browser.test.ts', 'src/y/bar.browser.test.ts', 'src/ui/menu.component.test.ts'];
+  const costs = { files: { 'src/x/foo.browser.test.ts': 30, 'src/y/bar.browser.test.ts': 20, 'src/ui/menu.component.test.ts': 20 } };
+  const plans = [1, 2].map(index => planRun(all, ['--lane=browser', `--test-shard=${index}/2`, '--test-concurrency=1'], undefined, costs));
+  assert.deepEqual(plans.map(plan => plan.tsx.files), [['src/x/foo.browser.test.ts'], ['src/y/bar.browser.test.ts']]);
+  assert.deepEqual(plans.map(plan => plan.vitest.files), [[], ['src/ui/menu.component.test.ts']]);
+  for (const plan of plans) {
+    assert.deepEqual(plan.tsx.flags, ['--test-concurrency=1']);
+    assert.deepEqual(plan.vitest.flags, []);
+  }
+  assert.throws(() => planRun(all, ['--lane=browser'], undefined, costs), /needs --test-shard/);
+  assert.throws(() => planRun(all, ['--test-shard=3/2'], undefined, costs), /needs --test-shard/);
+});
+
+test('shard cost tables must hold non-negative seconds', () => {
+  assert.deepEqual(parseShardCosts('{"files":{"a.test.ts":1.5},"overhead":{"1":40}}').overhead, { 1: 40 });
+  for (const text of ['null', '{}', '{"files":{"a":"1"}}', '{"files":{"a":-1}}', '{"files":{},"overhead":{"1":null}}']) {
+    assert.throws(() => parseShardCosts(text), /Invalid shard cost table/, text);
+  }
 });
 
 test('component tests run once in Vitest, in the browser lane, with translated flags', () => {

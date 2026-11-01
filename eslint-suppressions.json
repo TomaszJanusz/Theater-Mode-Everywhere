@@ -145,19 +145,11 @@
     }
   },
   "scripts/run-tests.mjs": {
-    "import/order": {
-      "count": 1
-    },
     "sonarjs/no-nested-conditional": {
       "count": 1
     },
     "sonarjs/super-linear-regex": {
       "count": 1
-    }
-  },
-  "scripts/run-tests.test.mjs": {
-    "import/order": {
-      "count": 2
     }
   },
   "scripts/smoke.ts": {
