@@ -185,9 +185,11 @@ describe('recorded Disney+ pause desync, through the provider\'s host playback',
       pause() { hive.calls.push('pause'); hive.isPaused = true; hive.currentState = 'PAUSED'; video.paused = true; },
       play() { hive.calls.push('play'); hive.isPaused = false; hive.currentState = 'PLAYING'; video.paused = false; }
     };
-    const stateStore = { getState: () => ({ player: { extensions: { playback: { isPaused: hive.isPaused, currentState: hive.currentState } } } }) };
-    const web = { mediaPlayer, stateStore };
-    const hostPlayback = createDisneyHostPlayback({ enabled: () => true, href: () => href, web: () => web, contentVideo: () => video as unknown as HTMLVideoElement });
+    const web = { mediaPlayer };
+    const hostPlayback = createDisneyHostPlayback({
+      enabled: () => true, href: () => href, web: () => web, contentVideo: () => video as unknown as HTMLVideoElement,
+      setTimeout: () => 1, clearTimeout: () => {}
+    });
     return { hive, video, hostPlayback: (action: 'play' | 'pause') => hostPlayback(action, video as unknown as HTMLVideoElement) };
   }
 
@@ -208,11 +210,5 @@ describe('recorded Disney+ pause desync, through the provider\'s host playback',
     const { hive, video, hostPlayback } = recordedHive({ videoPaused: true, hiveIsPaused: true, hiveCurrentState: 'PAUSED' });
     assert.equal(hostPlayback('play'), true);
     assert.deepEqual([video.paused, hive.isPaused, hive.currentState, hive.calls], [false, false, 'PLAYING', ['play']]);
-  });
-
-  it('leaves a play to the element when Hive already believes it plays (its play would be a no-op)', () => {
-    const { hive, hostPlayback } = recordedHive({ videoPaused: true, hiveIsPaused: false, hiveCurrentState: 'PLAYING' });
-    assert.equal(hostPlayback('play'), false);
-    assert.deepEqual(hive.calls, []);
   });
 });

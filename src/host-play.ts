@@ -50,8 +50,9 @@ export function findHostPlayButton(video: HTMLVideoElement): HTMLElement | null 
 
 export function requestVideoPlay(video: HTMLVideoElement): void {
   if (mediaHasSource(video)) {
-    video.play().catch((err) => {
-      console.error('[Theater Everywhere] Play failed:', err);
+    // A play() a pause or a new load interrupted (`AbortError`), or the browser holds back until a gesture, is not a failure.
+    video.play().catch((error: DOMException) => {
+      if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') console.error('[Theater Everywhere] Play failed:', `${error.name}: ${error.message}`);
     });
     return;
   }
