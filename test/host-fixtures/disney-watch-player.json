@@ -1,0 +1,770 @@
+{
+  "source": "Disney+ watch page, /play/:uuid (signed in)",
+  "captured": "2026-11-01",
+  "environment": "Brave Beta Chromium 156.0.8078.74, macOS, signed-in account, Polish UI; read-only through CDP, extension installed but not driven",
+  "evidence": "Recorded host fixture (Hive player objects as the MAIN world reads them), not live extension verification",
+  "notes": "Captured paused. NOT captured: the audio/subtitle menu (its button is not in disney-web-player's light DOM while the player UI is idle), playing/idle/clock progression, ads, an audio switch. Hive objects are summarised through a key filter that drops anything url/token/session/profile-like. User preference lists (audio.preferences, captions.preferences) are replaced by [\"en\"]. Caption files are fetched as WebVTT from the CDN (summarised in subtitleResources), not read from the player API. Note the clock: Hive's playhead (timeline.info.playheadPositionMs) and the content video's currentTime differ after a media reload, so the playhead is the content position.",
+  "consumers": {
+    "web.mediaElementIndex + videos": "src/providers/disney/watch-playback.ts disneyMediaElement, disneyVideoRole (mediaElement identity outranks classes)",
+    "mediaPlayer.audio.availableTracks + selectedTrack": "src/providers/disney/audio-main.ts DisneyAudioHost (record/hiveTracks), audio-bridge.ts disneyAudioTracks",
+    "store.audioSlice": "src/providers/disney/audio-main.ts signature() (state.player.extensions.audio)",
+    "mediaPlayer.timelineInfo + clock": "src/providers/disney/main.ts disneyPlayheadSeconds/disneyProgramDurationSeconds, clock-policy.ts",
+    "mediaPlayer.captions.availableTracks": "host caption list (same ids as the WebVTT renditions in subtitleResources)",
+    "flags.idleClass": "src/providers/disney/main.ts disneySessionLooksPaused (.btm-media-player-idle)"
+  },
+  "urlPattern": "/<locale>/play/:uuid",
+  "locale": "pl-pl",
+  "web": {
+    "tag": "disney-web-player",
+    "ownKeys": [
+      "boundHandlers",
+      "mediaClientElement",
+      "mediaElementContainerElement",
+      "mediaElement",
+      "configuration",
+      "extensions",
+      "stateStore",
+      "logger",
+      "mediaPlayer",
+      "mediaElementTitle",
+      "initialized",
+      "releaseCause",
+      "trackStartEvent",
+      "trackAdStartEvent",
+      "trackContentResumeEvent",
+      "trackContentProgressEvent",
+      "trackEndEvent",
+      "trackMediaCompletedEvent",
+      "trackPlaybackStateEvent",
+      "trackAdEnd",
+      "trackId3Event",
+      "initializeNielsenSdk",
+      "ttsElement",
+      "debugStateChanged",
+      "mediaPlaybackCriteriaStateChanged",
+      "mediaElementUiChanged",
+      "textToSpeechStateChanged",
+      "markerIds",
+      "onTimelineProgressContinuousPlay",
+      "onProgramEndedContinuousPlay",
+      "onMediaClientInitializedContinuousPlay",
+      "toggleMediaElementVisibility"
+    ],
+    "mediaElementIndex": 1,
+    "mediaElementClass": "hive-video",
+    "hasOwnMediaPlayer": true,
+    "hasOwnStateStore": true
+  },
+  "videos": [
+    {
+      "index": 0,
+      "className": "btm-media-client-element fontDefault fontColorWhite fontOpacity100 fontSize32 fontEdgeNone backgroundColorBlack backgroundOpacity75 windowColorWhite windowOpacity0",
+      "id": "",
+      "isMediaElement": false,
+      "paused": true,
+      "readyState": 0,
+      "videoWidth": 0,
+      "videoHeight": 0,
+      "srcKind": "none",
+      "display": "none",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "chain": [
+        "video.btm-media-client-element.fontDefault.fontColorWhite.fontOpacity100.fontSize32.fontEdgeNone",
+        "div#media-element-container-00000000-0000-4000-8000-000000000002.media-element-container",
+        "div#bamtech-media-player--1700000000000.btm-media-client",
+        "disney-web-player#player-00000000-0000-4000-8000-000000000001",
+        "div.btm-media-clients",
+        "div.btm-media-player.playback-experience-v2.btm-media-player-idle",
+        "div._1axyo7x0.mini-player-inner",
+        "draggable-surface"
+      ]
+    },
+    {
+      "index": 1,
+      "className": "hive-video",
+      "id": "hivePlayer1",
+      "isMediaElement": true,
+      "paused": true,
+      "readyState": 4,
+      "videoWidth": 640,
+      "videoHeight": 360,
+      "srcKind": "blob",
+      "display": "inline",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1334,
+        "h": 780
+      },
+      "chain": [
+        "video#hivePlayer1.hive-video",
+        "div#media-element-container-00000000-0000-4000-8000-000000000002.media-element-container",
+        "div#bamtech-media-player--1700000000000.btm-media-client",
+        "disney-web-player#player-00000000-0000-4000-8000-000000000001",
+        "div.btm-media-clients",
+        "div.btm-media-player.playback-experience-v2.btm-media-player-idle",
+        "div._1axyo7x0.mini-player-inner",
+        "draggable-surface"
+      ]
+    }
+  ],
+  "mediaPlayer": {
+    "propNames": [
+      "attachMediaElement",
+      "audio",
+      "captions",
+      "casting",
+      "catchUp",
+      "continuousPlay",
+      "dispose",
+      "drm",
+      "emit",
+      "heartbeat",
+      "id",
+      "imageApi",
+      "info",
+      "interstitialAdClicked",
+      "interstitials",
+      "isLive",
+      "isLiveEdge",
+      "liveTime",
+      "logging",
+      "mediaPlaybackCriteria",
+      "messenger",
+      "metrics",
+      "name",
+      "off",
+      "on",
+      "once",
+      "pause",
+      "play",
+      "playbackRate",
+      "playbackSession",
+      "playbackStatus",
+      "quickFastForward",
+      "quickRewind",
+      "restart",
+      "scrub",
+      "seek",
+      "seekToDate",
+      "seekToLive",
+      "seekToStart",
+      "setTimedTextAppearance",
+      "setTimedTextRegion",
+      "skipPromo",
+      "state",
+      "stateStream",
+      "storage",
+      "timecode",
+      "timeline",
+      "ui",
+      "updatePlaybackCriteriaMetadata",
+      "version",
+      "volume"
+    ],
+    "audio": {
+      "propNames": [
+        "availableTracks",
+        "hasTracks",
+        "preferences",
+        "selectedLanguage",
+        "selectedTrack",
+        "setTrack"
+      ],
+      "availableTracks": [
+        {
+          "id": 7,
+          "name": "Indonesian",
+          "language": "id",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Bahasa Indonesia"
+          }
+        },
+        {
+          "id": 11,
+          "name": "Malay",
+          "language": "ms",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Bahasa Melayu"
+          }
+        },
+        {
+          "id": 0,
+          "name": "Czech",
+          "language": "cs",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Čeština"
+          }
+        },
+        {
+          "id": 12,
+          "name": "Mandarin",
+          "language": "cmn",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Chinese (普通话)"
+          }
+        },
+        {
+          "id": 1,
+          "name": "English",
+          "language": "en",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "English"
+          }
+        },
+        {
+          "id": 2,
+          "name": "English [Audio Description]",
+          "language": "en",
+          "hasDescribesVideo": true,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "English [Audio Description]"
+          }
+        },
+        {
+          "id": 16,
+          "name": "Spanish",
+          "language": "es-ES",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Español"
+          }
+        },
+        {
+          "id": 17,
+          "name": "Spanish (Latin America)",
+          "language": "es-419",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Español (Latinoamérica)"
+          }
+        },
+        {
+          "id": 18,
+          "name": "Spanish (Latin America) [Audio Description]",
+          "language": "es-419",
+          "hasDescribesVideo": true,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Español (Latinoamérica) [Audiodescripción]"
+          }
+        },
+        {
+          "id": 3,
+          "name": "French",
+          "language": "fr-FR",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Français"
+          }
+        },
+        {
+          "id": 4,
+          "name": "French (Canada)",
+          "language": "fr-CA",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Français (Canada)"
+          }
+        },
+        {
+          "id": 5,
+          "name": "French [Audio Description]",
+          "language": "fr-FR",
+          "hasDescribesVideo": true,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Français [Audiodescription]"
+          }
+        },
+        {
+          "id": 8,
+          "name": "Italian",
+          "language": "it",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": true,
+          "displayName": {
+            "title": "Italiano"
+          }
+        },
+        {
+          "id": 6,
+          "name": "Hungarian",
+          "language": "hu",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Magyar"
+          }
+        },
+        {
+          "id": 13,
+          "name": "Polish",
+          "language": "pl",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Polski"
+          }
+        },
+        {
+          "id": 14,
+          "name": "Portuguese (Brazil)",
+          "language": "pt-BR",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Português (Brasil)"
+          }
+        },
+        {
+          "id": 15,
+          "name": "Portuguese (Brazil) [Audio Description]",
+          "language": "pt-BR",
+          "hasDescribesVideo": true,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Português (Brasil) [Audiodescrição]"
+          }
+        },
+        {
+          "id": 20,
+          "name": "Turkish",
+          "language": "tr",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "Türkçe"
+          }
+        },
+        {
+          "id": 19,
+          "name": "Thai",
+          "language": "th",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "ไทย"
+          }
+        },
+        {
+          "id": 10,
+          "name": "Korean",
+          "language": "ko",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "한국어"
+          }
+        },
+        {
+          "id": 9,
+          "name": "Japanese",
+          "language": "ja",
+          "hasDescribesVideo": false,
+          "hasDialogueEnhancement": false,
+          "isSelected": false,
+          "displayName": {
+            "title": "日本語"
+          }
+        }
+      ],
+      "selectedTrackId": 8
+    },
+    "captions": {
+      "enabled": true,
+      "availableTracks": [
+        {
+          "id": 19,
+          "name": "Indonesian",
+          "language": "id",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 23,
+          "name": "Malay",
+          "language": "ms",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 5,
+          "name": "Czech",
+          "language": "cs",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 2,
+          "name": "Chinese (Simplified)",
+          "language": "zh-Hans",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 1,
+          "name": "Chinese (Hong Kong)",
+          "language": "zh-HK",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 3,
+          "name": "Chinese (Traditional)",
+          "language": "zh-Hant",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 6,
+          "name": "Danish",
+          "language": "da",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 14,
+          "name": "German",
+          "language": "de",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 8,
+          "name": "English [CC]",
+          "language": "en",
+          "hasDescribesMusicAndSound": true,
+          "isSelected": true
+        },
+        {
+          "id": 31,
+          "name": "Spanish",
+          "language": "es-ES",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 32,
+          "name": "Spanish (Latin America)",
+          "language": "es-419",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 33,
+          "name": "Spanish (Latin America) [CC]",
+          "language": "es-419",
+          "hasDescribesMusicAndSound": true,
+          "isSelected": false
+        },
+        {
+          "id": 10,
+          "name": "French",
+          "language": "fr-FR",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 11,
+          "name": "French (Canada)",
+          "language": "fr-CA",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 12,
+          "name": "French (Canada) [CC]",
+          "language": "fr-CA",
+          "hasDescribesMusicAndSound": true,
+          "isSelected": false
+        },
+        {
+          "id": 13,
+          "name": "French [CC]",
+          "language": "fr-FR",
+          "hasDescribesMusicAndSound": true,
+          "isSelected": false
+        },
+        {
+          "id": 4,
+          "name": "Croatian",
+          "language": "hr",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 18,
+          "name": "Icelandic",
+          "language": "is",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 20,
+          "name": "Italian",
+          "language": "it",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 17,
+          "name": "Hungarian",
+          "language": "hu",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 7,
+          "name": "Dutch",
+          "language": "nl",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 24,
+          "name": "Norwegian",
+          "language": "no",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 25,
+          "name": "Polish",
+          "language": "pl",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 26,
+          "name": "Portuguese",
+          "language": "pt-PT",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 27,
+          "name": "Portuguese (Brazil)",
+          "language": "pt-BR",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 28,
+          "name": "Portuguese (Brazil) [CC]",
+          "language": "pt-BR",
+          "hasDescribesMusicAndSound": true,
+          "isSelected": false
+        },
+        {
+          "id": 29,
+          "name": "Romanian",
+          "language": "ro",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 30,
+          "name": "Slovak",
+          "language": "sk",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 9,
+          "name": "Finnish",
+          "language": "fi",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 34,
+          "name": "Swedish",
+          "language": "sv",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 36,
+          "name": "Turkish",
+          "language": "tr",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 15,
+          "name": "Greek",
+          "language": "el",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 16,
+          "name": "Hebrew",
+          "language": "he",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 0,
+          "name": "Arabic",
+          "language": "ar",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 35,
+          "name": "Thai",
+          "language": "th",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 22,
+          "name": "Korean",
+          "language": "ko",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        },
+        {
+          "id": 21,
+          "name": "Japanese",
+          "language": "ja",
+          "hasDescribesMusicAndSound": false,
+          "isSelected": false
+        }
+      ]
+    },
+    "timelineInfo": {
+      "playheadIsLive": false,
+      "playheadPositionMs": 170610.7841796875,
+      "programDurationMs": 7987396,
+      "seekableDurationMs": 7987396,
+      "seekableEndMs": 7987396,
+      "seekableStartMs": 0,
+      "startPositionMs": 0,
+      "windowPositionMs": 0,
+      "zeroPositionProgramDateTimeMs": 1700000000000,
+      "forwardBufferDurationMs": 13390,
+      "hasEnd": true,
+      "isRecording": false,
+      "type": "VOD"
+    }
+  },
+  "clock": {
+    "playheadPositionMs": 170610.7841796875,
+    "contentVideoCurrentTimeSeconds": 22.690695
+  },
+  "store": {
+    "topKeys": [
+      "player",
+      "ui"
+    ],
+    "playerKeys": [
+      "extensions",
+      "debug",
+      "core",
+      "metadata",
+      "mediaClient",
+      "mediaPlaybackCriteria"
+    ],
+    "extensionKeys": [
+      "analytics",
+      "continuousPlay",
+      "audio",
+      "captions",
+      "playback",
+      "casting",
+      "logging",
+      "globalization",
+      "drm",
+      "info",
+      "metrics",
+      "multiview",
+      "timecode",
+      "volume",
+      "interstitials"
+    ],
+    "audioSlice": {
+      "preferences": {
+        "languagePriorityList": [
+          "en"
+        ],
+        "preferDescribesVideo": false,
+        "smoothSwitch": false
+      },
+      "trackIds": [
+        7,
+        11,
+        0,
+        12,
+        1,
+        2,
+        16,
+        17,
+        18,
+        3,
+        4,
+        5,
+        8,
+        6,
+        13,
+        14,
+        15,
+        20,
+        19,
+        10,
+        9
+      ]
+    }
+  },
+  "subtitleResources": {
+    "count": 3,
+    "format": "WEBVTT",
+    "note": "signed CDN URLs omitted"
+  },
+  "flags": {
+    "idleClass": true,
+    "overlay": true
+  }
+}
