@@ -1,5 +1,5 @@
-import { matchesShortcut } from './ui/shortcuts';
 import { HOST_PLAY_CONTROL_SELECTOR, isProviderPlayControl } from './providers/play-controls';
+import { matchesShortcut } from './ui/shortcuts';
 
 function isTheaterUiNode(node: Element): boolean {
   if (node.id === 'theater-everywhere-ui') return true;
@@ -50,8 +50,9 @@ export function findHostPlayButton(video: HTMLVideoElement): HTMLElement | null 
 
 export function requestVideoPlay(video: HTMLVideoElement): void {
   if (mediaHasSource(video)) {
-    video.play().catch((err) => {
-      console.error('[Theater Everywhere] Play failed:', err);
+    // A play() a pause or a new load interrupted (`AbortError`), or the browser holds back until a gesture, is not a failure.
+    video.play().catch((error: DOMException) => {
+      if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') console.error('[Theater Everywhere] Play failed:', `${error.name}: ${error.message}`);
     });
     return;
   }
@@ -66,12 +67,13 @@ export function requestVideoPlay(video: HTMLVideoElement): void {
   console.warn('[Theater Everywhere] No media source and no host play control found');
 }
 
-export function toggleVideoPlayback(video: HTMLVideoElement): void {
-  if (!mediaHasSource(video) || video.paused) {
-    requestVideoPlay(video);
-    return;
-  }
-  video.pause();
+/** `viaHost` hands the action to a provider that plays through the host's own player; true when it did. */
+export function toggleVideoPlayback(video: HTMLVideoElement, viaHost: (action: 'play' | 'pause') => boolean = () => false): void {
+  const sourced = mediaHasSource(video);
+  const play = !sourced || video.paused;
+  if (sourced && viaHost(play ? 'play' : 'pause')) return;
+  if (play) requestVideoPlay(video);
+  else video.pause();
 }
 
 /**

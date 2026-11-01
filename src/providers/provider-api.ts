@@ -83,6 +83,13 @@ type SharedProviderHooks = {
     media?: readonly string[];
   };
   chat?: ProviderChat;
+  /**
+   * Play or pause the theater's `video` through the host's own player, for hosts whose model of playing would
+   * disagree with a paused element. True once done; false leaves the element to the caller, as for an ended title or a
+   * player that cannot be reached. The theater asks in the world it acts in: MAIN for Space, the isolated world for the
+   * bar and other shortcuts, where the provider's isolated half passes the request to its MAIN half.
+   */
+  hostPlayback?(action: 'play' | 'pause', video: HTMLVideoElement): boolean;
 };
 
 /** Hooks the isolated-world runtime reads. */

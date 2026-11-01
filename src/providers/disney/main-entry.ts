@@ -13,6 +13,7 @@ import {
   readDisneySnapshot,
   rememberDisneyBif
 } from './main';
+import { disneyHostPlayback, installDisneyPlayback } from './playback-main';
 import { disneyWatchPlayback } from './watch-playback';
 
 const api = providerRuntime('main');
@@ -30,9 +31,11 @@ if (services) api?.register({
   },
   pageFetch: url => fetchDisneyBifPage(url, services.fetchPageMedia),
   seek: handleDisneyMediaSeek,
+  hostPlayback: disneyHostPlayback,
   probe: () => disneyIntegrationEnabled() ? readDisneySnapshot() : null,
   install() {
     installDisneyAudio();
+    installDisneyPlayback();
     installDisneyMain();
   }
 });

@@ -407,9 +407,6 @@
     }
   },
   "src/host-play.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }

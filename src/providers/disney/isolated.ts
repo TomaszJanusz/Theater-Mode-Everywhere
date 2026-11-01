@@ -5,6 +5,7 @@ import { readDisneyHostCaptionLayout } from './host-captions';
 import { findDisneyPlaylistActions } from './navigation';
 import { DISNEY_HARVEST_EVENT } from './page';
 import { PLAY_NEXT_CHANGED_EVENT, retainDisneyNavCache } from './play-next';
+import { requestDisneyPlayback } from './playback-bridge';
 import { createDisneyServiceActions } from './service-actions';
 import { disneyTheaterStage, prepareDisneyShadowRoot } from './stage';
 import { disneyTimeline } from './timeline';
@@ -21,6 +22,7 @@ if (services) api?.register({
   discovery: { prepareShadowRoot: prepareDisneyShadowRoot, standbySelector: 'disney-web-player' },
   hostCaptions: () => ({ read: readDisneyHostCaptionLayout }),
   timeline: disneyTimeline,
+  hostPlayback: requestDisneyPlayback,
   serviceActions: () => createDisneyServiceActions({ observe: services.observeProviderDom }),
   navigation: {
     players: 'disney-web-player, controls-overlay, main-app-controls-overlay',
