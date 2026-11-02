@@ -19,11 +19,15 @@ const stage = () => window.__whatsNewStage!;
 const body = () => stage().doc.querySelector<HTMLElement>('.te-dialog-body')!;
 const note = () => stage().doc.querySelector<HTMLElement>('.te-dialog-note')!;
 
-/** Scrolls the highlights to `fraction` of their range and waits for the paint. */
+/** Scrolls the highlights to `fraction` of their range, waits for the paint and proves the scroll really happened. */
 async function scrollTo(fraction: number) {
   await stage().ready;
-  body().scrollTop = (body().scrollHeight - body().clientHeight) * fraction;
+  const range = body().scrollHeight - body().clientHeight;
+  // A list that fits would pass every state vacuously.
+  await expect(range).toBeGreaterThan(0);
+  body().scrollTop = range * fraction;
   await new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done())));
+  await expect(Math.abs(body().scrollTop - range * fraction)).toBeLessThan(1);
 }
 
 /** The scroll shadow is painted on the body's bottom edge; it must meet the note's separator exactly. */

@@ -28,8 +28,6 @@
   min-width: 0 !important;
   display: flex !important;
   flex-direction: column !important;
-  --te-dialog-gap: 16px;
-  gap: var(--te-dialog-gap) !important;
   margin: 0 !important;
   padding: 22px 22px 18px !important;
   border: 1px solid var(--modal-border) !important;
@@ -54,7 +52,7 @@
   align-items: center !important;
   justify-content: space-between !important;
   gap: 16px !important;
-  margin: 0 !important;
+  margin: 0 0 16px !important;
   padding: 0 !important;
   border: 0 !important;
 }
@@ -73,7 +71,7 @@
 
 .te-dialog-body {
   min-height: 0 !important;
-  margin: 0 0 var(--te-dialog-body-overlap, 0) !important;
+  margin: 0 !important;
   padding: 4px 12px 4px 0 !important;
   color: var(--appearance-muted, #a1a1aa) !important;
   font-size: 14px !important;
@@ -91,12 +89,11 @@
   background-color: var(--modal-surface) !important;
 }
 
-/* A visible note starts with its own separator: the body's scroll shadow ends at that line, not a gap above it. */
-.te-dialog-body:has(+ .te-dialog-note:not([hidden])) { --te-dialog-body-overlap: calc(-1 * var(--te-dialog-gap)); }
-
 .te-dialog-body:dir(rtl) { padding: 4px 0 4px 12px !important; }
 .te-dialog-body > p { margin: 0; }
 
+/* Spacing sits on the header and footer, not a dialog gap, so a visible note (with its own separator) meets the
+   body's scroll shadow with nothing between. */
 .te-dialog-note, .te-dialog-footer { flex: none !important; }
 .te-dialog-note { margin: 0 !important; padding: 0 !important; }
 .te-dialog-footer {
@@ -104,7 +101,7 @@
   justify-content: flex-end !important;
   flex-wrap: wrap !important;
   gap: 8px !important;
-  margin: 0 !important;
+  margin: 16px 0 0 !important;
   padding: 4px 0 0 !important;
   border: 0 !important;
 }
