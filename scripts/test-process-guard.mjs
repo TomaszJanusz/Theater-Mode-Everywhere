@@ -4,7 +4,7 @@
 // results from the file processes, so identical runs reported different test counts with exit code 0.
 // Here a file process is allowed to end by itself; only one that is still alive a grace period after its
 // tests finished is ended, and that names the handles that kept it alive. It also counts the tests that
-// ran so the runner can compare them with what its reporters received.
+// ran so the runner can compare them with what its reporters received, and times the process for shard balancing.
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -54,6 +54,7 @@ if (process.env.NODE_TEST_CONTEXT && options.has('tally')) {
 
   // The tally is written synchronously, so it survives the `process.exit()` above.
   process.on('exit', () => {
-    writeFileSync(join(directory, `file-${process.pid}.json`), JSON.stringify({ file, tests, leaks }));
+    // `seconds` is the whole process, including start-up and loading, which is what a shard pays for the file.
+    writeFileSync(join(directory, `file-${process.pid}.json`), JSON.stringify({ file, tests, leaks, seconds: performance.now() / 1000 }));
   });
 }

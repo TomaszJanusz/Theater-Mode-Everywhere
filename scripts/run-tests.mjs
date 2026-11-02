@@ -1,6 +1,6 @@
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -25,6 +25,9 @@ export function discoverTests(root) {
   return found.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
+// Test files that run at once in one process group; a shard of N file-seconds takes about N / FILE_CONCURRENCY.
+export const FILE_CONCURRENCY = 2;
+
 // Component tests run in Vitest browser mode (`components` project in vitest.config.ts), in the browser lane.
 const isComponentTest = file => file.endsWith('.component.test.ts');
 
@@ -35,7 +38,35 @@ export function isBrowserTest(file) {
     || /(?:from\s*|import\s*\()\s*['"]playwright['"]/.test(readFileSync(file, 'utf8'));
 }
 
-export function planRun(discovered, args, classify = file => file.endsWith('.browser.test.ts') || isComponentTest(file)) {
+// `--test-shard=i/n` normally goes to node:test and Vitest, which split by file count. With a cost table the runner
+// partitions the lane itself, so every shard is balanced by measured seconds and no file can fall between two splits.
+// Greedy longest-first: each file goes to the lightest shard. Unmeasured files weigh the median measured one, so a new
+// test only unbalances a shard, never drops out. `overhead` is non-test work the workflow runs in a shard (Storybook).
+// Every shard computes the same partition from the same inputs and runs its files heaviest first.
+export function balanceShard(files, costs, index, total) {
+  const known = files.map(file => costs.files[file]).filter(seconds => seconds !== undefined).sort((a, b) => a - b);
+  const fallback = known.length === 0 ? 1 : known[Math.floor(known.length / 2)];
+  const weight = file => costs.files[file] ?? fallback;
+  const loads = Array.from({ length: total }, (_, shard) => costs.overhead?.[shard + 1] ?? 0);
+  const shards = loads.map(() => []);
+  for (const file of [...files].sort((a, b) => weight(b) - weight(a) || (a < b ? -1 : 1))) {
+    const lightest = loads.indexOf(Math.min(...loads));
+    shards[lightest].push(file);
+    loads[lightest] += weight(file);
+  }
+  // Heaviest first: the runner starts files in this order, so the long ones never begin last and stretch the tail.
+  return shards[index - 1];
+}
+
+export function parseShardCosts(text) {
+  const costs = JSON.parse(text);
+  const seconds = value => Number.isFinite(value) && value >= 0;
+  if (!costs || typeof costs.files !== 'object' || !Object.values(costs.files).every(seconds)
+    || !Object.values(costs.overhead ?? {}).every(seconds)) throw new Error('Invalid shard cost table');
+  return costs;
+}
+
+export function planRun(discovered, args, classify = file => file.endsWith('.browser.test.ts') || isComponentTest(file), costs) {
   const flags = [];
   const selectors = [];
   let lane = 'all';
@@ -46,10 +77,17 @@ export function planRun(discovered, args, classify = file => file.endsWith('.bro
   }
   if (!['all', 'unit', 'browser'].includes(lane)) throw new Error(`Unknown test lane: ${lane}`);
   const laneFiles = discovered.filter(file => lane === 'all' || (lane === 'browser') === classify(file));
-  const files = selectors.length === 0
+  let files = selectors.length === 0
     ? laneFiles
     : laneFiles.filter(file => selectors.some(selector => file === selector || file.includes(selector)));
   if (selectors.length > 0 && files.length === 0) throw new Error(`No test file matches: ${selectors.join(' ')}`);
+  if (costs) {
+    const shardFlag = flags.find(flag => flag.startsWith('--test-shard='));
+    const [, index, total] = /^--test-shard=(\d+)\/(\d+)$/.exec(shardFlag ?? '') ?? [];
+    if (!(index >= 1 && Number(index) <= Number(total))) throw new Error('--shard-costs needs --test-shard=<index>/<total>');
+    files = balanceShard(files, costs, Number(index), Number(total));
+    flags.splice(flags.indexOf(shardFlag), 1);
+  }
   return {
     // Plain-JS tests need no TypeScript loader; component tests need Vitest; everything else runs under tsx.
     node: { files: files.filter(file => file.endsWith('.mjs')), flags },
@@ -102,7 +140,7 @@ function runTsxTests(spawn, plan, root, reportDirectory) {
     if (result.error) throw result.error;
     if (result.status !== 0) return result.status ?? 1;
   }
-  return runNodeTests(spawn, [tsxEntry(), '--test', '--test-concurrency=2'], plan, { label: 'tsx', reportDirectory });
+  return runNodeTests(spawn, [tsxEntry(), '--test', `--test-concurrency=${FILE_CONCURRENCY}`], plan, { label: 'tsx', reportDirectory });
 }
 
 function runVitestTests(spawn, plan, reportDirectory) {
@@ -137,7 +175,7 @@ function runNodeTests(spawn, lead, plan, { label, reportDirectory }) {
     const guard = new URL(GUARD);
     guard.searchParams.set('tally', tally);
     const status = run(spawn, [...lead, `--import=${guard.href}`, ...reporterFlags(label.toLowerCase(), reportDirectory, tally), ...plan.flags, ...plan.files], label);
-    return verifyTally(tally, status) ?? status;
+    return verifyTally(tally, status, reportDirectory && join(reportDirectory, `${label.toLowerCase()}-seconds.json`)) ?? status;
   } finally {
     rmSync(tally, { recursive: true, force: true });
   }
@@ -160,9 +198,14 @@ export function tallyProblems(ran, reported, status) {
   return problems;
 }
 
-function verifyTally(directory, status) {
+// `secondsPath` receives each file's process time, the input of scripts/test-shard-costs.mjs.
+function verifyTally(directory, status, secondsPath) {
   const records = readdirSync(directory).filter(name => name.startsWith('file-'))
     .map(name => JSON.parse(readFileSync(join(directory, name), 'utf8')));
+  if (secondsPath) {
+    const seconds = Object.fromEntries(records.map(({ file, seconds }) => [relative(process.cwd(), file).split(sep).join('/'), Number(seconds.toFixed(2))]));
+    writeFileSync(secondsPath, JSON.stringify(seconds, null, 2) + '\n');
+  }
   const reportedPath = join(directory, TALLY_REPORTED);
   const reportedText = existsSync(reportedPath) ? readFileSync(reportedPath, 'utf8') : '';
   const problems = tallyProblems(
@@ -180,29 +223,38 @@ function verifyTally(directory, status) {
   return status || 1;
 }
 
+// The PR test selection (`--files-from`), or every discovered file when it is missing, invalid or stale.
+function selectedFiles(discovered, selectionPath, root) {
+  try {
+    const selection = JSON.parse(readFileSync(join(root, selectionPath), 'utf8'));
+    if (!Array.isArray(selection.files) || selection.total !== discovered.length
+      || selection.files.some(file => typeof file !== 'string' || !discovered.includes(file))
+      || new Set(selection.files).size !== selection.files.length) throw new Error('Invalid or stale selection');
+    return selection.files;
+  } catch (error) {
+    const message = `Test selection unavailable (${error.message}); running all tests in this lane.`;
+    console.warn(message);
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n${message}\n\n${discovered.map(file => '- `' + file + '`').join('\n')}\n`);
+    return discovered;
+  }
+}
+
 export function main(args, root = fileURLToPath(new URL('..', import.meta.url)), spawn = spawnSync) {
   let plan;
   const reportArg = args.find(arg => arg.startsWith('--report-dir='));
   const reportDirectory = reportArg?.slice('--report-dir='.length);
   if (reportArg) args = args.filter(arg => arg !== reportArg);
+  const costsArg = args.find(arg => arg.startsWith('--shard-costs='));
+  if (costsArg) args = args.filter(arg => arg !== costsArg);
   try {
+    const costs = costsArg && parseShardCosts(readFileSync(join(root, costsArg.slice(14)), 'utf8'));
     let discovered = discoverTests(root);
     const selectionArg = args.find(arg => arg.startsWith('--files-from='));
     if (selectionArg) {
       args = args.filter(arg => arg !== selectionArg);
-      try {
-        const selection = JSON.parse(readFileSync(join(root, selectionArg.slice(13)), 'utf8'));
-        if (!Array.isArray(selection.files) || selection.total !== discovered.length
-          || selection.files.some(file => typeof file !== 'string' || !discovered.includes(file))
-          || new Set(selection.files).size !== selection.files.length) throw new Error('Invalid or stale selection');
-        discovered = selection.files;
-      } catch (error) {
-        const message = `Test selection unavailable (${error.message}); running all tests in this lane.`;
-        console.warn(message);
-        if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n${message}\n\n${discovered.map(file => '- `' + file + '`').join('\n')}\n`);
-      }
+      discovered = selectedFiles(discovered, selectionArg.slice(13), root);
     }
-    plan = planRun(discovered, args, file => isBrowserTest(join(root, file)));
+    plan = planRun(discovered, args, file => isBrowserTest(join(root, file)), costs || undefined);
   } catch (error) {
     console.error(error.message);
     return 1;
