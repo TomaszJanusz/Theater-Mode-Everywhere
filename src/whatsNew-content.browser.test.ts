@@ -47,20 +47,20 @@ it('renders static English semantic content safely and refreshes localized dialo
   assert.deepEqual(await root.locator('ul > li').allTextContents(), [
     'A proper ending: When a video ends, a calm black screen with Replay (and Next, when a playlist has one) now replaces the frozen last frame. Services with their own next-episode step, such as Netflix and Disney+, keep theirs.',
     "YouTube recommendations: With Rich Theater Experience, the end of a YouTube video shows up to three suggestions you can pick without leaving theater mode, and YouTube's autoplay countdown appears right in our player, with Cancel. Not your thing? Turn off the Show recommendations switch under them.",
+    'Smoother, faster theater: Theater opens and closes with less of a freeze on large pages such as YouTube, and its controls bar no longer hitches as it appears and hides. It also no longer ends when a site briefly hides its player while switching videos.',
+    'New languages: 🇬🇧 English (UK), 🇨🇿 Čeština and 🇸🇰 Slovenčina are now in the language list in Settings.',
     'Settings for each service: Service cards in Settings → Features have a new Settings button, where you can switch YouTube recommendations on or off and choose AutoTheater for that service alone.',
     'A quick setup: A fresh install now walks you through a short setup: services, how theater mode starts, your language, the look and layout, and a few extras. Changed your mind later? Settings → About has Run setup again, and Reset to defaults for a clean start.',
     "New services in Rich Theater Experience: SOOP, iQIYI and Rakuten Viki, with episode navigation, subtitle and audio choices and AutoTheater where the service allows it. SOOP's own chat joins you beside the video.",
     'Audio tracks and subtitle language: Choose a dub or the original audio from the player settings on Netflix, Disney+ and YouTube, and I will remember your language for that service. While subtitles load, the corner notice already shows which language is coming.',
     'Speed keys: Press < and > to change the speed as you do on YouTube, or hold Seek Forward to play at 2x until you let go.',
     'Updates stay out of your way: A new version no longer opens a tab. A NEW badge on the toolbar icon, a note in the popup and a line at the bottom of the player menu lead you here instead; open any of them and the badge goes away.',
-    'Smoother theater: Theater opens and closes with less of a freeze on large pages such as YouTube, and it no longer ends when a site briefly hides its player while switching videos.',
     "Fixes you may have noticed: AutoTheater now starts on Vimeo videos and when you expand YouTube's miniplayer, Disney+ subtitles keep following the dialogue after the audio track changes, Twitch chat no longer cuts off messages, and letter shortcuts work on Cyrillic, Greek, Hebrew and other non-Latin keyboards.",
-    'New languages: 🇬🇧 English (UK), 🇨🇿 Čeština and 🇸🇰 Slovenčina are now in the language list in Settings.',
     "And a few smaller things: drag the edge of the chat to resize it, move around the player bar with W, A, S and D, theater on YouTube's miniplayer, and clearer keyboard shortcut names and help."
   ]);
   // Key names are key caps (text only), not plain words.
   assert.deepEqual(await root.locator('kbd').allTextContents(), ['<', '>', 'W', 'A', 'S', 'D']);
-  assert.deepEqual(await root.locator('li strong').allTextContents(), ['A proper ending', 'YouTube recommendations', 'Settings for each service', 'A quick setup', 'New services in Rich Theater Experience', 'Audio tracks and subtitle language', 'Speed keys', 'Updates stay out of your way', 'Smoother theater', 'Fixes you may have noticed', 'New languages']);
+  assert.deepEqual(await root.locator('li strong').allTextContents(), ['A proper ending', 'YouTube recommendations', 'Smoother, faster theater', 'New languages', 'Settings for each service', 'A quick setup', 'New services in Rich Theater Experience', 'Audio tracks and subtitle language', 'Speed keys', 'Updates stay out of your way', 'Fixes you may have noticed']);
   assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to @wesleyel for the groundwork behind the playback speed keys and holding Seek Forward for 2x.');
   const profiles = page.locator('.whats-new-thanks a');
   assert.deepEqual(await profiles.evaluateAll(links => links.map(link => ({
@@ -147,7 +147,7 @@ for (const engine of testEngines()) {
     await page.evaluate('void Announcement.openWhatsNewDialog()');
     const dialog = page.getByRole('dialog');
     await dialog.waitFor();
-    assert.equal((await dialog.boundingBox())!.width, 650);
+    assert.equal((await dialog.boundingBox())!.width, 850);
     const scroll = page.locator('.te-dialog-body');
     const thanks = page.locator('.whats-new-thanks');
     const initialThanks = await thanks.boundingBox();

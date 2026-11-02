@@ -42,7 +42,8 @@
   animation: te-modal-rise-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.te-dialog[data-size="wide"] { width: min(650px, 100%) !important; }
+/* A dialog may widen its own "wide" size through --te-dialog-wide-width; every other one keeps 650px. */
+.te-dialog[data-size="wide"] { width: min(var(--te-dialog-wide-width, 650px), 100%) !important; }
 /* Reference content laid out in columns, such as the shortcuts help. */
 .te-dialog[data-size="large"] { width: min(970px, 100%) !important; }
 
