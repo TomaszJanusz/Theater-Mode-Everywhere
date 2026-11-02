@@ -314,13 +314,14 @@ three days) and run `node scripts/test-shard-costs.mjs --overhead=1:<storybook s
 requires the whole `browser-firefox` matrix (`needs.<job>.result` aggregates its shards), so a red shard is one red `check`.
 
 PRs run the jobs above on the affected tests (see below). The build artifact is shared
-with verification and smoke, and both browser lanes download it into `dist/` before their
-tests: a few browser files load the installed extension (`dist/chrome-unpacked`:
-`page-fetch`, the Tencent wasm and bilibili.tv runtime files, all Chromium-only, so they run
-in whichever lane shard holds them). `installedBuildReady`
+with verification and smoke. Both browser lanes build the extension themselves (about 8 s) before
+their tests rather than download it: a download is 2 s, but waiting for the `build` job delayed the
+lanes' start by about 33 s, which was on the critical path. A few browser files load the installed
+extension (`dist/chrome-unpacked`: `page-fetch`, the Tencent wasm and bilibili.tv runtime files, all
+Chromium-only, so they run in whichever lane shard holds them). `installedBuildReady`
 ([`installed-build.ts`](../src/test-utils/installed-build.ts)) skips such a test locally with
 `run pnpm build`, but throws when `CI` or `GITHUB_ACTIONS` is set, so a lane that loses the
-download fails instead of reporting them as skipped. Nightly and release build before
+build fails instead of reporting them as skipped. Nightly and release build before
 `pnpm test`. Each test lane publishes its 15 slowest tests and failures
 in the job summary.
 `scripts/ci-changes.mjs` additionally enables Firefox browser coverage and Firefox smoke when any changed path is:
