@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { changedFiles, impact, isFullRun, readGraph, selectTests, snapshot } from './test-impact.mjs';
+import { changedFiles, impact, isFullRun, readGraph, selectTests, snapshot, versionOnlyFiles } from './test-impact.mjs';
 import { main } from './run-tests.mjs';
 
 const tests = ['src/a.test.ts', 'src/b.test.ts'];
@@ -16,16 +16,16 @@ const graph = new Map([
 ]);
 
 test('transitive imports select their test, exclude unrelated tests, and tolerate cycles', () => {
-  const result = selectTests(tests, ['src/leaf.ts'], graph, ['src/middle.ts']);
+  const result = selectTests(tests, ['src/leaf.ts'], graph, { entries: ['src/middle.ts'] });
   assert.deepEqual(result.files, [tests[0]]);
   assert.equal(result.smoke, true);
   assert.equal(result.full, false);
-  assert.deepEqual(selectTests(tests, [tests[1]], graph, []).files, [tests[1]]);
-  assert.equal(selectTests(tests, [tests[1]], graph, []).smoke, false);
+  assert.deepEqual(selectTests(tests, [tests[1]], graph, { entries: [] }).files, [tests[1]]);
+  assert.equal(selectTests(tests, [tests[1]], graph, { entries: [] }).smoke, false);
 });
 
 test('shared inputs and unreadable/unknown graphs fail open to all tests and smoke', () => {
-  for (const file of ['config/eslint.config.mjs', 'config/eslint-rules/max-symbol-name-length.mjs', 'eslint-suppressions.json', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'manifest.json', 'scripts/build-mode.ts', 'config/vite.config.ts', 'vitest.config.ts', 'scripts/run-tests.mjs', 'scripts/ci-changes.mjs', 'scripts/test-impact.mjs', 'src/test-utils/a.ts', 'test-utils/a.ts', 'test/fixtures/a.webm', '.github/workflows/ci.yml', '.github/ci-image/Dockerfile']) {
+  for (const file of ['config/eslint.config.mjs', 'config/eslint-rules/max-symbol-name-length.mjs', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'manifest.json', 'scripts/build-mode.ts', 'config/vite.config.ts', 'vitest.config.ts', 'scripts/run-tests.mjs', 'scripts/ci-changes.mjs', 'scripts/test-impact.mjs', 'src/test-utils/a.ts', 'test-utils/a.ts', 'test/fixtures/a.webm', '.github/workflows/ci.yml', '.github/ci-image/Dockerfile']) {
     assert.equal(isFullRun(file), true, file);
     assert.deepEqual(selectTests(tests, [file], graph).files, tests);
   }
@@ -39,7 +39,7 @@ test('shared inputs and unreadable/unknown graphs fail open to all tests and smo
 
 test('catalog edits select locale consumers without selecting unrelated playback tests', () => {
   const files = ['scripts/locales.test.ts', 'src/i18n.test.ts', 'options/localization.browser.test.ts', ...tests];
-  assert.deepEqual(selectTests(files, ['_locales/pl/messages.json'], graph, []).files, files.slice(0, 3));
+  assert.deepEqual(selectTests(files, ['_locales/pl/messages.json'], graph, { entries: [] }).files, files.slice(0, 3));
 });
 
 function fixture(t) {
@@ -62,7 +62,7 @@ test('real esbuild graph includes transitive, type-only and embedded browser imp
   put(files[3], 'export {};');
   put(files[4], "const stdin = `import { Leaf } from './src/leaf';`; export { stdin };");
   const actual = await readGraph(root, files, []);
-  assert.deepEqual(selectTests([files[0], files[3], files[4]], [files[2]], actual, []).files, [files[0], files[4]]);
+  assert.deepEqual(selectTests([files[0], files[3], files[4]], [files[2]], actual, { entries: [] }).files, [files[0], files[4]]);
 });
 
 test('the base snapshot keeps export-ignored files that tests import', async t => {
@@ -86,7 +86,7 @@ test('both sides of renames/deletions count; retained base edges select survivin
   git('mv', 'src/old.ts', 'src/new.ts'); git('rm', '-q', 'src/removed.ts'); git('commit', '-qm', 'rename and delete');
   assert.deepEqual(changedFiles('HEAD^', 'HEAD', root), ['src/new.ts', 'src/old.ts', 'src/removed.ts']);
   const oldEdges = new Map([...graph, ['src/a.test.ts', new Set(['src/old.ts'])], ['src/old.ts', new Set()]]);
-  assert.deepEqual(selectTests(tests, changedFiles('HEAD^', 'HEAD', root), new Map([...oldEdges, ['src/new.ts', new Set()], ['src/removed.ts', new Set()]]), []).files, [tests[0]]);
+  assert.deepEqual(selectTests(tests, changedFiles('HEAD^', 'HEAD', root), new Map([...oldEdges, ['src/new.ts', new Set()], ['src/removed.ts', new Set()]]), { entries: [] }).files, [tests[0]]);
 });
 
 test('graph read/build failure returns full selection, never an empty success', async t => {
@@ -121,7 +121,7 @@ test('runner uses exact file lists, accepts deliberate empty lanes and fails ope
 });
 
 test('test-only shared infrastructure keeps full tests but skips installed smoke', () => {
-  const result = selectTests(tests, ['src/test-utils/helper.ts'], graph, ['src/leaf.ts']);
+  const result = selectTests(tests, ['src/test-utils/helper.ts'], graph, { entries: ['src/leaf.ts'] });
   assert.deepEqual(result.files, tests);
   assert.equal(result.smoke, false);
 });
@@ -158,10 +158,10 @@ test('computed module inputs are uncertain and cannot silently produce an empty 
 });
 
 test('only the existing reviewed-prose exemptions can skip unknown documentation inputs', () => {
-  const result = selectTests(tests, ['docs/guide.md'], graph, []);
+  const result = selectTests(tests, ['docs/guide.md'], graph, { entries: [] });
   assert.deepEqual(result.files, []);
   assert.equal(result.smoke, false);
-  assert.equal(selectTests(tests, ['docs/building.md'], graph, []).full, true);
+  assert.equal(selectTests(tests, ['docs/building.md'], graph, { entries: [] }).full, true);
 });
 
 test('build dependencies also keep installed Chromium smoke', () => {
@@ -186,7 +186,7 @@ test('CSS imports, raw/inline strings, literal file reads and built entrypoints 
   const actual = await readGraph(root, [...files, 'src/entries/content.ts', 'src/ui/shadow.css', 'src/tokens.css'], []);
   for (const style of ['src/ui/shadow.css', 'src/tokens.css']) {
     assert.equal(isFullRun(style), false);
-    const result = selectTests(files, [style], actual, ['src/entries/content.ts']);
+    const result = selectTests(files, [style], actual, { entries: ['src/entries/content.ts'] });
     assert.equal(result.full, false);
     assert.equal(result.smoke, true);
     assert.deepEqual(result.files, files.slice(0, 4));
@@ -211,7 +211,7 @@ test('HTML-loaded surface styles select their bundled tests and smoke through sh
 
 test('a stylesheet without a modelled test consumer still selects everything', () => {
   const actual = new Map([...graph, ['src/computed.css', new Set()]]);
-  const result = selectTests(tests, ['src/computed.css'], actual, []);
+  const result = selectTests(tests, ['src/computed.css'], actual, { entries: [] });
   assert.deepEqual(result.files, tests);
   assert.equal(result.full, true);
   assert.equal(result.smoke, true);
@@ -288,4 +288,107 @@ test('descriptor entries select installed consumers after extraction from core i
   const result = selectTests([files[4]], [files[2]], actual);
   assert.deepEqual(result.files, [files[4]]);
   assert.equal(result.smoke, true);
+});
+
+test('the lint baseline selects only a test that names it and keeps installed smoke off', () => {
+  assert.equal(isFullRun('eslint-suppressions.json'), false);
+  const unnamed = selectTests(tests, ['eslint-suppressions.json'], graph, { entries: [] });
+  assert.equal(unnamed.full, false);
+  assert.equal(unnamed.smoke, false);
+  assert.deepEqual(unnamed.files, []);
+  const named = new Map([...graph, ['src/b.test.ts', new Set(['eslint-suppressions.json'])], ['eslint-suppressions.json', new Set()]]);
+  assert.deepEqual(selectTests(tests, ['eslint-suppressions.json'], named, { entries: [] }).files, [tests[1]]);
+});
+
+test('a version-only manifest or package.json change is a graph input, anything else stays shared', t => {
+  const { root, put, git } = fixture(t);
+  const manifest = extra => JSON.stringify({ manifest_version: 3, version: '2.0.0', content_scripts: [{ matches: ['https://a.example/*'] }], ...extra });
+  put('manifest.json', manifest({})); put('package.json', JSON.stringify({ name: 'x', version: '2.0.0', dependencies: { a: '1' } }));
+  git('add', '.'); git('commit', '-qm', 'base');
+  put('manifest.json', manifest({ version: '2.1.0' })); put('package.json', JSON.stringify({ dependencies: { a: '1' }, version: '2.1.0', name: 'x' }));
+  git('commit', '-qam', 'bump');
+  const changed = changedFiles('HEAD^', 'HEAD', root);
+  assert.deepEqual([...versionOnlyFiles(changed, 'HEAD^', 'HEAD', root)], ['manifest.json', 'package.json']);
+  put('manifest.json', manifest({ version: '2.1.0', content_scripts: [{ matches: ['https://b.example/*'] }] })); put('package.json', JSON.stringify({ name: 'x', version: '2.1.1', dependencies: { a: '2' } }));
+  git('commit', '-qam', 'content and dependency');
+  assert.deepEqual([...versionOnlyFiles(['manifest.json', 'package.json'], 'HEAD^', 'HEAD', root)], []);
+  // A file that is not there on one side is never version-only.
+  git('rm', '-q', 'package.json'); git('commit', '-qm', 'remove');
+  assert.deepEqual([...versionOnlyFiles(['package.json'], 'HEAD^', 'HEAD', root)], []);
+
+  const readers = new Map([...graph, ['src/a.test.ts', new Set(['manifest.json'])], ['manifest.json', new Set()], ['package.json', new Set()]]);
+  for (const file of ['manifest.json', 'package.json']) {
+    assert.equal(selectTests(tests, [file], readers, { entries: [] }).full, true, file);
+    const bump = selectTests(tests, [file], readers, { entries: [], versionOnly: new Set([file]) });
+    assert.equal(bump.full, false, file);
+    assert.deepEqual(bump.files, file === 'manifest.json' ? [tests[0]] : [], file);
+  }
+});
+
+test('a release bump runs the readers of the version and the installed smoke, not the suite', async t => {
+  const { root, put, git } = fixture(t);
+  const entries = ['src/entries/content.ts', 'src/entries/main-world.ts', 'src/entries/background.ts', 'popup/popup.ts', 'options/options.ts'];
+  for (const file of entries) put(file, 'export {};');
+  put('manifest.json', JSON.stringify({ version: '2.0.0', name: 'x' })); put('package.json', JSON.stringify({ version: '2.0.0' }));
+  put('scripts/build.ts', "import { readFileSync } from 'node:fs'; export const version = [readFileSync('../package.json'), readFileSync('../manifest.json')];");
+  put('src/version.test.ts', "import manifest from '../manifest.json'; export default manifest;");
+  put('src/dist.browser.test.ts', "export const extension = 'dist/chrome-unpacked';");
+  put('src/other.test.ts', 'export {};');
+  git('add', '.'); git('commit', '-qm', 'base');
+  put('manifest.json', JSON.stringify({ version: '2.1.0', name: 'x' })); put('package.json', JSON.stringify({ version: '2.1.0' }));
+  git('commit', '-qam', 'bump');
+  const result = await impact({ root, base: 'HEAD^' });
+  assert.equal(result.full, false);
+  assert.equal(result.smoke, true);
+  assert.deepEqual(result.files, ['src/dist.browser.test.ts', 'src/version.test.ts']);
+  // The same files with a real manifest change are shared inputs again.
+  put('manifest.json', JSON.stringify({ version: '2.1.0', name: 'y' }));
+  git('commit', '-qam', 'rename');
+  assert.equal((await impact({ root, base: 'HEAD^' })).full, true);
+});
+
+test('a relative import statement does not select same-named files elsewhere, but a type import still counts', async t => {
+  const { root, put } = fixture(t);
+  const files = ['src/ui/a.test.ts', 'src/ui/captions.ts', 'src/other/captions.ts', 'src/ui/types.ts', 'src/other/types.ts', 'src/ui/b.test.ts', 'src/stdin.test.ts'];
+  put(files[0], "import './captions'; import type { Shape } from './types'; export type { Shape };");
+  put(files[1], 'export {};'); put(files[2], 'export {};');
+  put(files[3], 'export type Shape = string;'); put(files[4], 'export type Shape = number;');
+  put(files[5], 'export {};');
+  // A string holding the same specifier is a bundled stdin whose directory is unknown: every same-named file still counts.
+  put(files[6], "import './ui/captions'; export const stdin = \"import './captions';\";");
+  const actual = await readGraph(root, files, []);
+  const testFiles = [files[0], files[5], files[6]];
+  assert.deepEqual(selectTests(testFiles, [files[1]], actual, { entries: [] }).files, [files[0], files[6]]);
+  assert.deepEqual(selectTests(testFiles, [files[2]], actual, { entries: [] }).files, [files[6]]);
+  assert.deepEqual(selectTests(testFiles, [files[3]], actual, { entries: [] }).files, [files[0]]);
+  assert.deepEqual(selectTests(testFiles, [files[4]], actual, { entries: [] }).files, []);
+});
+
+test('the provider scripts are inputs of the installed extension, not of an entry bundled from source', async t => {
+  const { root, put } = fixture(t);
+  const files = ['src/providers/soop/provider.json', 'src/providers/soop/isolated.ts', 'src/entries/content.ts',
+    'src/bundled.test.ts', 'src/installed.test.ts'];
+  put(files[0], JSON.stringify({ entries: { isolated: { file: 'isolated.ts' } } }));
+  put(files[1], 'export const soop = true;');
+  put(files[2], 'export {};');
+  put(files[3], "import '../src/entries/content';");
+  put(files[4], "export const directory = 'dist/chrome-unpacked';");
+  const actual = await readGraph(root, files, []);
+  const result = selectTests([files[3], files[4]], [files[1]], actual);
+  assert.deepEqual(result.files, [files[4]]);
+  assert.equal(result.smoke, true);
+});
+
+test('package imports with a Vite suffix are external and asset URLs only add an edge', async t => {
+  const { root, put } = fixture(t);
+  put('.storybook/preview.ts', "import font from '@fontsource/roboto/latin-400.css?inline'; import vod from '../test/fixtures/vod.webm?url'; export { font, vod };");
+  put('test/fixtures/vod.webm', 'binary');
+  const actual = await readGraph(root, ['.storybook/preview.ts', 'test/fixtures/vod.webm'], []);
+  assert.ok(actual.get('.storybook/preview.ts')?.has('test/fixtures/vod.webm'));
+});
+
+test('the real repository builds its import graph', async () => {
+  const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' }).split('\n').filter(Boolean);
+  const actual = await readGraph(process.cwd(), files);
+  assert.ok(actual.size > 0);
 });

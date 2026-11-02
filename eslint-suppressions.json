@@ -255,7 +255,7 @@
       "count": 1
     },
     "sonarjs/no-os-command-from-path": {
-      "count": 6
+      "count": 1
     }
   },
   "scripts/test-impact.test.mjs": {

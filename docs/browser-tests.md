@@ -361,10 +361,14 @@ Packages are external: dependency/lockfile changes instead run all tests. Graph
 construction reads source; it never executes tests or their browser harnesses.
 
 Browser harnesses often bundle imports inside strings or read source directly.
-Literal paths, including type-only imports, are conservatively matched against
-all repository path suffixes; ambiguous names select every match. Tests reading
+Literal paths in such strings are conservatively matched against all repository
+path suffixes; ambiguous names select every match. A literal that is only a real
+`import` statement is not guessed: esbuild's resolution (or, for erased
+`import type`, the exact relative path) names its one target. Tests reading
 `dist/` depend on all five installed extension script entrypoints and the build
-roots (`scripts/build.ts` and `config/vite.config.ts`). Repository-wide
+roots (`scripts/build.ts` and `config/vite.config.ts`) and on the provider entries the
+manifest loads beside them; a test that bundles an entry from source does not depend on
+every provider. Repository-wide
 DOM and determinism guards have explicit dependency edges for the trees they scan.
 Catalog changes select localization/i18n tests and consumers of `_locales`, rather
 than unrelated playback tests. Chromium smoke runs when the entrypoint graph is
@@ -377,8 +381,22 @@ roots, so their own changes and transitive dependencies also run Chromium smoke.
 are separate from the build/installed roots that dist-dependent tests consume.
 
 Shared inputs force all test files: package/lock/workspace files, root tsconfigs,
-manifest, Vite config, `scripts/build*`, the runner, CI classifier and selector,
-`test-utils/**`, `src/test-utils/**`, `test/fixtures/**`, and GitHub workflows/actions.
+manifest, Vite config, ESLint config and rules, the provider descriptors and
+registration contracts (`provider.json`, `provider-api.ts`, `runtime-registration.ts`,
+`descriptor-hosts.ts`, `catalog.ts`), `scripts/build*`, the runner, CI classifier and
+selector, `test-utils/**`, `src/test-utils/**`, `test/fixtures/**`, and GitHub
+workflows/actions. Two inputs are narrower, because no test can observe the part of
+them that changed:
+
+- `eslint-suppressions.json` is read by ESLint alone (`pnpm lint` runs in the `static`
+  job on every PR; `eslint-ratchet.test.mjs` lints a private directory). It selects only
+  tests that name it and skips installed smoke.
+- `manifest.json` and `package.json` changes that touch only `version` (a release bump,
+  checked by comparing both sides without `version`) are graph inputs: the manifest is
+  imported by `installed-version.ts` and both files are read by `scripts/build.ts`, so
+  their readers, the built-extension tests and installed smoke run, not the suite. Any
+  other edit, a missing side or unparsable JSON keeps the file a shared input.
+
 Stylesheets use the dependency graph described below. Extend `isFullRun` in
 [`scripts/test-impact.mjs`](../scripts/test-impact.mjs) for a new shared input;
 add a selector regression case alongside it. Extend the explicit graph edges
