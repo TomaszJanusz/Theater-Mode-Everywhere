@@ -6,10 +6,11 @@ import { FILE_CONCURRENCY } from './run-tests.mjs';
 
 // Builds the cost table that `pnpm test --shard-costs=` balances shards with (see balanceShard in run-tests.mjs)
 // from the `--report-dir` of finished runs: `<node|tsx>-seconds.json` holds each file process's time, and Vitest's
-// `vitest.xml` the time of each component file. CI uploads these as the `test-reports-firefox-<shard>` artifacts.
+// `vitest.xml` the time of each component file. CI uploads these as the `test-reports-<engine>-<shard>` artifacts, and
+// the two engines have their own tables (a file costs different seconds in each browser):
 //
-//   gh run download <run-id> -D /tmp/reports -p 'test-reports-firefox-*'
-//   node scripts/test-shard-costs.mjs --overhead=1:40 /tmp/reports/* > scripts/test-shard-costs.json
+//   gh run download <run-id> -D /tmp/reports -p 'test-reports-chromium-*'
+//   node scripts/test-shard-costs.mjs --overhead=1:35 /tmp/reports/* > scripts/test-shard-costs.chromium.json
 //
 // Pass one directory per shard (or per run). A file seen in several directories gets the median, which damps one
 // noisy run. `--overhead=<shard>:<seconds>` records non-test work the workflow runs in a shard, such as the

@@ -240,7 +240,7 @@ jobs:
         run: pnpm storybook:test
         timeout-minutes: 5
       - name: Browser tests Chromium
-        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/2 --report-dir=test-reports
+        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/2 --shard-costs=scripts/test-shard-costs.chromium.json --report-dir=test-reports
         timeout-minutes: 10
         env:
           THEATER_TEST_ENGINES: chromium
@@ -248,6 +248,14 @@ jobs:
         if: always()
         run: node scripts/ci-test-summary.mjs test-reports
         timeout-minutes: 1
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-reports-chromium-${{ matrix.shard }}
+          path: test-reports/
+          if-no-files-found: ignore
+          retention-days: 3
 
   browser-firefox:
     needs: [changes, image]
@@ -292,7 +300,7 @@ jobs:
         env:
           STORYBOOK_BROWSER: firefox
       - name: Browser tests Firefox
-        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/3 --shard-costs=scripts/test-shard-costs.json --report-dir=test-reports
+        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/3 --shard-costs=scripts/test-shard-costs.firefox.json --report-dir=test-reports
         timeout-minutes: 10
         env:
           THEATER_TEST_ENGINES: firefox

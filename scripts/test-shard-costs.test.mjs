@@ -23,7 +23,9 @@ test('Vitest component file times come from its JUnit suites', () => {
   assert.deepEqual(vitestSeconds(xml), { 'src/a.component.test.ts': 0.528, 'src/b.component.test.ts': 3.102 });
 });
 
-test('the checked-in cost table is valid', () => {
-  const costs = parseShardCosts(readFileSync(new URL('./test-shard-costs.json', import.meta.url), 'utf8'));
-  assert.ok(Object.keys(costs.files).length > 0);
+test('the checked-in cost tables are valid', () => {
+  for (const engine of ['firefox', 'chromium']) {
+    const costs = parseShardCosts(readFileSync(new URL(`./test-shard-costs.${engine}.json`, import.meta.url), 'utf8'));
+    assert.ok(Object.keys(costs.files).length > 0, engine);
+  }
 });

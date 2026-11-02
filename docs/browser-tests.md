@@ -187,7 +187,7 @@ there, so a stalled check fails instead of hanging.
 | `build`, `static` | One production build; `pnpm lint`, `pnpm typecheck` and `pnpm verify:bundles` against it (which includes the shared bundle size ratchet). |
 | `boundaries`, `css-and-unused` | `pnpm check:boundaries`, `pnpm check:shared-hosts`, `pnpm lint:css`; Knip is reported only (`pnpm check:unused`). |
 | `unit` | `pnpm test --lane=unit` on the selection. |
-| `browser-chromium` | Two shards of `pnpm test --lane=browser` on Chromium; shard 1 also runs `pnpm storybook:test`. |
+| `browser-chromium` | Two shards of `pnpm test --lane=browser` on Chromium, balanced by measured file cost (below); shard 1 also runs `pnpm storybook:test`. |
 | `browser-firefox` | Three shards of `pnpm test --lane=browser` on Firefox, only when `ci-changes.mjs` selects it, balanced by measured file cost (below); shard 1 also runs `pnpm storybook:test` for Firefox. |
 | `smoke` | Chromium smoke when shipped inputs are affected; Firefox smoke with the installed extension when Firefox is selected. |
 
@@ -303,15 +303,19 @@ the switch does not claim to port those cases to Firefox.
 
 **Shards.** `--test-shard=<i>/<n>` splits a lane. With `--shard-costs=<table>` the runner itself partitions the
 lane's files (node:test and Vitest alike) greedily by seconds, so shards finish together
-instead of holding equal file counts. The Firefox lane passes
-[`scripts/test-shard-costs.json`](../scripts/test-shard-costs.json); Chromium keeps the count-based split.
+instead of holding equal file counts. Each browser lane has a table of its own, because a file costs different
+seconds in each engine: [`test-shard-costs.chromium.json`](../scripts/test-shard-costs.chromium.json) and
+[`test-shard-costs.firefox.json`](../scripts/test-shard-costs.firefox.json).
 Every shard derives the same partition from the same inputs, so each selected file runs in exactly one shard. A file missing
 from the table weighs the median measured file, and a stale entry is ignored: drift costs balance, never a test. `overhead`
 holds non-test work a shard runs (Storybook on shard 1). To recalibrate after the suite changed
-materially, download the `test-reports-firefox-<shard>` artifacts of a recent full run (each job uploads its `--report-dir`, kept
-three days) and run `node scripts/test-shard-costs.mjs --overhead=1:<storybook seconds> <dir>... > scripts/test-shard-costs.json`
-(see the script header). A job needs `matrix.shard` and the same `<n>` in `--test-shard`; the `check` job
-requires the whole `browser-firefox` matrix (`needs.<job>.result` aggregates its shards), so a red shard is one red `check`.
+materially, download the `test-reports-<engine>-<shard>` artifacts of a recent run that selected every test (each job
+uploads its `--report-dir`, kept three days; a full run is any PR that changes a shared input, or the nightly) and run
+`node scripts/test-shard-costs.mjs --overhead=1:<storybook seconds> <dir>... > scripts/test-shard-costs.<engine>.json`
+(see the script header; several runs take the median per file). A job needs `matrix.shard` and the same `<n>` in
+`--test-shard`; the `check` job requires the whole `browser-*` matrix (`needs.<job>.result` aggregates its shards), so a
+red shard is one red `check`. Compare the shard durations in the Actions run after recalibrating: they should differ by
+well under a minute.
 
 PRs run the jobs above on the affected tests (see below). The build artifact is shared
 with verification and smoke. Each test lane publishes its 15 slowest tests and failures
