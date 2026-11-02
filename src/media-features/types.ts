@@ -143,6 +143,12 @@ export interface MediaFeaturesAdapter {
   listCaptionTracks(): Promise<CaptionTrack[]>;
   activateCaptionTrack(id: string | null): Promise<CaptionActivationResult>;
   /**
+   * The listed track the host itself shows now, so the menu opens on it instead of Off. Read once per media, after
+   * the tracks are listed and when no saved language applies; selecting it does not save a preference.
+   * @returns A listed track id, or null when the host shows none.
+   */
+  hostCaptionTrack?(): string | null;
+  /**
    * Determines whether the active track needs another cue window, without fetching it.
    * @param id Identifier of the active caption track.
    * @param time Display media time in seconds.

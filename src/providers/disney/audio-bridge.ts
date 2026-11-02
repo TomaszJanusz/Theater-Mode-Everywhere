@@ -36,8 +36,16 @@ export type DisneyAudioRecord = {
   selected: boolean;
 };
 
-/** `bindingId` names the Hive player object, so a pick on a replaced one is retired, not refused. */
-export type DisneyAudioSnapshot = { requestId: string; pageHref: string; playId: string; bindingId: string; tracks: DisneyAudioRecord[] };
+/** The caption rendition Hive shows now (`captions.enabled` with a selected track), as its list names it. */
+export type DisneyNativeCaption = { language: string; describes: boolean };
+
+/**
+ * `bindingId` names the Hive player object, so a pick on a replaced one is retired, not refused.
+ * `captions` is null while Hive shows none.
+ */
+export type DisneyAudioSnapshot = {
+  requestId: string; pageHref: string; playId: string; bindingId: string; tracks: DisneyAudioRecord[]; captions: DisneyNativeCaption | null;
+};
 export type DisneyAudioSelect = { requestId: string; playId: string; trackId: string; keepPaused: boolean };
 export type DisneyAudioResult = { requestId: string; ok: boolean };
 export type DisneyAudioWatch = { watchId: string; on: boolean };
@@ -82,7 +90,13 @@ export function parseDisneyAudioSnapshot(text: string | null | undefined, reques
   if (typeof data.bindingId !== 'string' || !/^\d{1,9}$/.test(data.bindingId)) return null;
   const tracks = data.tracks;
   if (!Array.isArray(tracks) || tracks.length > MAX_DISNEY_AUDIO_TRACKS || !tracks.every(validRecord)) return null;
-  return { requestId, pageHref, playId: data.playId, bindingId: data.bindingId, tracks };
+  const captions = data.captions;
+  const native = captions && typeof captions === 'object' ? captions as Record<string, unknown> : null;
+  if (captions != null && !(native && boundedString(native.language, 35) && typeof native.describes === 'boolean')) return null;
+  return {
+    requestId, pageHref, playId: data.playId, bindingId: data.bindingId, tracks,
+    captions: native ? { language: native.language as string, describes: native.describes as boolean } : null
+  };
 }
 
 export function parseDisneyAudioSelect(raw: unknown): DisneyAudioSelect | null {

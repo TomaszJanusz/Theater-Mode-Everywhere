@@ -166,6 +166,10 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     return result;
   }
 
+  hostCaptionTrack(): string | null {
+    return this.adapters.find((adapter) => adapter.hostCaptionTrack)?.hostCaptionTrack?.() ?? null;
+  }
+
   /**
    * Delegates window preparation to the adapter owning the active selection,
    * without rediscovering tracks or starting a download.

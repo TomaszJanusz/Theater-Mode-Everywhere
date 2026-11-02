@@ -46,6 +46,8 @@ export type DisneyPageCaption = {
   url: string;
   language: string;
   label: string;
+  /** The rendition describes music and sound (Hive's "[CC]"); a language alone does not name one track. */
+  describes: boolean;
 };
 
 export type DisneyThumbnailMeta = {
@@ -231,7 +233,8 @@ export function parseDisneyHlsSubtitles(body: string, baseUrl: string): DisneyPa
       id: `disney:${language || tracks.length}:${url.slice(-48)}`.slice(0, 160),
       url,
       language,
-      label: (name || language || 'Captions').slice(0, 80)
+      label: (name || language || 'Captions').slice(0, 80),
+      describes: /describes-music-and-sound/i.test(line)
     });
     if (tracks.length >= 40) break;
   }

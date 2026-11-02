@@ -43,7 +43,10 @@ html.theater-everywhere-disney-stage disney-web-player-ui > :not(timed-text-over
   opacity: 0 !important;
 }
 
-html.theater-everywhere-disney-stage.theater-using-overlay-captions timed-text-override-region {
+/* Hidden while TME draws the cue itself, and while its menu says Off (the adapter sets the attribute, Disney+'s
+ * own caption setting is untouched). A failed TME pick, leaving theater or switching Disney+ off shows it again. */
+html.theater-everywhere-disney-stage.theater-using-overlay-captions timed-text-override-region,
+html.theater-everywhere-disney-stage[data-te-disney-captions-hidden]:not([data-te-disney-integration-off]) timed-text-override-region {
   visibility: hidden !important;
 }
 

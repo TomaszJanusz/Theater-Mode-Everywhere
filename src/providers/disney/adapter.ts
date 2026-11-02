@@ -15,6 +15,7 @@ import type {
 import type { ProviderServices } from '../provider-api';
 
 import { DisneyAudioAdapter } from './audio-adapter';
+import type { DisneyNativeCaption } from './audio-bridge';
 import {
   disneyPlayId,
   isSafeDisneyBifUrl,
@@ -34,6 +35,9 @@ import { parseDisneyProbe } from './probe';
 
 /** Shared owners lent by the isolated runtime, so the provider bundles no second probe, page fetch or caption parser. */
 export type DisneyServices = Pick<ProviderServices['isolated'], 'requestMediaProbe' | 'requestPageFetch' | 'parseCaptionPayload'>;
+
+/** On <html> while TME's menu is on Off: theater hides Disney+'s own cue layer (presentation.css). */
+const HOST_CAPTIONS_ATTR = 'data-te-disney-captions-hidden';
 
 const cueCache = new Map<string, CaptionCue[]>();
 const MAX_BIF_BYTES = 16 * 1024 * 1024;
@@ -172,6 +176,17 @@ export function captionSegmentsForWindow(segments: DisneyVttSegment[], time: num
     .sort((left, right) => left.start - right.start);
 }
 
+const primaryLanguage = (language: string) => language.toLowerCase().split('-')[0];
+
+/** The listed track for the rendition Disney+ shows: its language and [CC] flag, else the one track of its language family. */
+export function matchDisneyNativeCaption(tracks: readonly DisneyPageCaption[], native: DisneyNativeCaption): DisneyPageCaption | null {
+  const language = native.language.toLowerCase();
+  const exact = tracks.filter(track => track.language.toLowerCase() === language);
+  if (exact.length > 0) return exact.find(track => track.describes === native.describes) ?? exact[0];
+  const family = tracks.filter(track => primaryLanguage(track.language) === primaryLanguage(language));
+  return family.length === 1 ? family[0] : null;
+}
+
 function sortCues(cues: CaptionCue[]): CaptionCue[] {
   return cues.slice().sort((left, right) => left.start - right.start || left.end - right.end);
 }
@@ -224,6 +239,10 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
     loadedEnd: number;
   } | null = null;
   private captionLoadGeneration = 0;
+  /** The media whose failed pick leaves Disney+'s own cue standing in, until a new pick, an explicit Off or other media. */
+  private hostFallbackFor: string | null = null;
+  /** The next activateCaptionTrack(null) is the controller's cleanup after a failed pick, so the host layer stays up. */
+  private keepHostFallback = false;
 
   private readHarvest(): void {
     const mediaId = disneyPlayId(window.location.href);
@@ -332,9 +351,22 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
     };
   }
 
+  /** CSS only: Disney+ keeps its own caption setting, and leaving theater (or the stage class) brings the cue back. */
+  private hideHostCaptions(hidden: boolean): void {
+    document.documentElement.toggleAttribute(HOST_CAPTIONS_ATTR, hidden);
+  }
+
+  hostCaptionTrack(): string | null {
+    const native = this.tracks.length > 0 ? this.audio.nativeCaption() : null;
+    return native ? matchDisneyNativeCaption(this.tracks, native)?.id ?? null : null;
+  }
+
   async listCaptionTracks(): Promise<CaptionTrack[]> {
     await this.ensureTracks();
     void this.ensureBif();
+    // The menu starts at Off without activating anything: once it offers this title's tracks, Off also hides the cue
+    // Disney+ would paint, as a picked language does. A viewer without TME captions gets no hidden layer.
+    if (this.tracks.length > 0 && this.hostFallbackFor !== this.mediaId()) this.hideHostCaptions(true);
     return this.tracks.map((track) => ({
       id: track.id,
       language: track.language,
@@ -392,8 +424,24 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
     if (id === null) {
       this.captionLoadGeneration += 1;
       this.activeCaption = null;
+      if (this.keepHostFallback) this.keepHostFallback = false;
+      else {
+        this.hostFallbackFor = null;
+        this.hideHostCaptions(this.tracks.length > 0);
+      }
       return { status: 'off', delivery: 'none', cues: [] };
     }
+    const mediaId = this.mediaId();
+    const result = await this.activateTrack(id);
+    if (this.mediaId() !== mediaId) return result;
+    // A pick that cannot load leaves the viewer with Disney+'s own cue rather than nothing.
+    this.keepHostFallback = result.status !== 'active';
+    this.hostFallbackFor = this.keepHostFallback ? mediaId : null;
+    if (this.keepHostFallback) this.hideHostCaptions(false);
+    return result;
+  }
+
+  private async activateTrack(id: string): Promise<CaptionActivationResult> {
     await this.ensureTracks();
     const track = this.tracks.find((item) => item.id === id);
     if (!track) return { status: 'failed', delivery: 'none', cues: [] };
@@ -513,6 +561,9 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
   invalidate(): void {
     this.captionLoadGeneration += 1;
     this.activeCaption = null;
+    this.hostFallbackFor = null;
+    this.keepHostFallback = false;
+    this.hideHostCaptions(false);
     this.snapshot = null;
     this.tracks = [];
     this.bif = null;

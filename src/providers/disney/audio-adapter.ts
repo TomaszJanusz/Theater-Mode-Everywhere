@@ -13,7 +13,9 @@ import {
   disneyAudioTracks,
   parseDisneyAudioResult,
   parseDisneyAudioSnapshot,
-  type DisneyAudioSelect
+  type DisneyAudioSelect,
+  type DisneyAudioSnapshot,
+  type DisneyNativeCaption
 } from './audio-bridge';
 
 /** MAIN gives up at its own timeout; this one only covers a MAIN that never answers. */
@@ -73,7 +75,7 @@ export class DisneyAudioAdapter implements MediaFeaturesAdapter {
   }
 
   /** Live MAIN read for the page's own title; null when MAIN does not answer for it. */
-  private read(): AudioTrackList | null {
+  private snapshot(): DisneyAudioSnapshot | null {
     const view = this.view;
     const playId = this.playId();
     if (this.disposed || !view || !playId) return null;
@@ -81,9 +83,18 @@ export class DisneyAudioAdapter implements MediaFeaturesAdapter {
     const pageHref = view.location.href;
     view.dispatchEvent(new CustomEvent(DISNEY_AUDIO_QUERY, { detail: requestId }));
     const snapshot = parseDisneyAudioSnapshot(this.doc.getElementById(DISNEY_AUDIO_SNAPSHOT)?.textContent, requestId, pageHref);
-    if (!snapshot || snapshot.playId !== playId) return null;
+    return snapshot && snapshot.playId === playId ? snapshot : null;
+  }
+
+  private read(): AudioTrackList | null {
+    const snapshot = this.snapshot();
     // Disney+ ad state is not detected (Hive's interstitials were never seen populated), so nothing blocks a pick; TME-203.
-    return { mediaId: playId, tracks: disneyAudioTracks(snapshot.tracks), blocked: false, bindingId: snapshot.bindingId };
+    return snapshot && { mediaId: snapshot.playId, tracks: disneyAudioTracks(snapshot.tracks), blocked: false, bindingId: snapshot.bindingId };
+  }
+
+  /** The caption rendition Disney+ itself shows for the page's title now; null when none, or MAIN does not answer. */
+  nativeCaption(): DisneyNativeCaption | null {
+    return mediaProviderIntegrationEnabled('disney') ? this.snapshot()?.captions ?? null : null;
   }
 
   listAudioTracks(): AudioTrackList | null {

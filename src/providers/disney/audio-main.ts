@@ -17,7 +17,8 @@ import {
   parseDisneyAudioWatch,
   type DisneyAudioRecord,
   type DisneyAudioResult,
-  type DisneyAudioSnapshot
+  type DisneyAudioSnapshot,
+  type DisneyNativeCaption
 } from './audio-bridge';
 import { disneyContentVideo, isDisneyContentVideo } from './watch-playback';
 
@@ -29,7 +30,7 @@ const MAX_WATCHERS = 8;
 
 type HiveRecord = Record<string, unknown>;
 type HiveAudio = { availableTracks?: unknown; selectedTrack?: unknown; setTrack?: (track: unknown) => unknown };
-type HivePlayer = { audio?: HiveAudio; pause?: () => unknown };
+type HivePlayer = { audio?: HiveAudio; captions?: unknown; pause?: () => unknown };
 type HiveStore = { getState: () => unknown; subscribe: (listener: () => void) => unknown };
 type Live = { web: object; player: HivePlayer; audio: HiveAudio; playId: string };
 export type DisneyAudioMediaEvent = 'emptied' | 'loadstart' | 'loadedmetadata' | 'playing';
@@ -87,6 +88,14 @@ function record(track: HiveRecord, selected: string | null): DisneyAudioRecord |
     description: track.hasDescribesVideo === true,
     selected: selected !== null ? id === selected : track.isSelected === true
   };
+}
+
+/** The native caption rendition on screen: Hive's captions are on and one track is selected. */
+function nativeCaption(captions: unknown): DisneyNativeCaption | null {
+  if (!isRecord(captions) || captions.enabled === false || !Array.isArray(captions.availableTracks)) return null;
+  const selected = captions.availableTracks.slice(0, MAX_DISNEY_AUDIO_TRACKS).find(track => isRecord(track) && track.isSelected === true);
+  if (!isRecord(selected) || typeof selected.language !== 'string') return null;
+  return { language: selected.language.slice(0, 35), describes: selected.hasDescribesMusicAndSound === true };
 }
 
 function isStore(value: unknown): value is HiveStore {
@@ -262,7 +271,10 @@ export class DisneyAudioHost {
           bindingId = String(++this.nextBinding);
           this.bindings.set(live.player, bindingId);
         }
-        payload = { requestId, pageHref: this.env.href(), playId: live.playId, bindingId, tracks };
+        payload = {
+          requestId, pageHref: this.env.href(), playId: live.playId, bindingId, tracks,
+          captions: nativeCaption(live.player.captions)
+        };
       }
     } catch {
       payload = null; // Hive getters can throw while the player attaches.

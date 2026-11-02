@@ -114,7 +114,8 @@ export class MediaFeaturesController {
   private refreshQueued = false;
   private mediaId: string | null = null;
   private captionPreference: CaptionLanguageChoice | null = null;
-  private captionRestorePending = false;
+  /** Armed per media: a saved language is restored, else the host's own caption selection is mirrored, once. */
+  private captionRestorePending = true;
   private lastLanguagePref: CaptionLanguageChoice | null = null;
   private captionStyle: CaptionStyle = { ...DEFAULT_CAPTION_STYLE };
   private onCaptionChange?: () => void;
@@ -301,7 +302,7 @@ export class MediaFeaturesController {
   invalidate(): void {
     if (this.disposed) return;
     this.bumpEpoch();
-    this.captionRestorePending = Boolean(this.captionPreference);
+    this.captionRestorePending = true;
     this.adapter.invalidate?.();
     this.audio.reset();
     void this.adapter.activateCaptionTrack(null);
@@ -429,7 +430,7 @@ export class MediaFeaturesController {
       const activeTrackMissing = Boolean(this.activeTrackId && !this.tracks.some((track) => track.id === this.activeTrackId));
       if (mediaChanged || activeTrackMissing) {
         this.cancelCaptionLoad();
-        this.captionRestorePending = Boolean(this.captionPreference);
+        this.captionRestorePending = true;
         this.activateGeneration += 1;
         if (activeTrackMissing) void adapter.activateCaptionTrack(null);
         this.activeTrackId = null;
@@ -473,6 +474,11 @@ export class MediaFeaturesController {
             }
           }
         }
+      }
+      if (this.captionRestorePending && this.tracks.length > 0 && !this.activateInFlight && !this.captionsAreOn()) {
+        this.captionRestorePending = false;
+        const hostId = adapter.hostCaptionTrack?.();
+        if (hostId && this.tracks.some((track) => track.id === hostId)) await this.activate(hostId, { persist: false });
       }
     } finally {
       if (this.isCurrent(epoch, adapter)) {
