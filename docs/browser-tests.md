@@ -187,7 +187,7 @@ there, so a stalled check fails instead of hanging.
 | `build`, `static` | One production build; `pnpm lint`, `pnpm typecheck` and `pnpm verify:bundles` against it (which includes the shared bundle size ratchet). |
 | `boundaries`, `css-and-unused` | `pnpm check:boundaries`, `pnpm check:shared-hosts`, `pnpm lint:css`; Knip is reported only (`pnpm check:unused`). |
 | `unit` | `pnpm test --lane=unit` on the selection. |
-| `browser-chromium` | Two shards of `pnpm test --lane=browser` on Chromium, balanced by measured file cost (below); shard 1 also runs `pnpm storybook:test`. |
+| `browser-chromium` | Three shards of `pnpm test --lane=browser` on Chromium, balanced by measured file cost (below); shard 1 also runs `pnpm storybook:test`. |
 | `browser-firefox` | Three shards of `pnpm test --lane=browser` on Firefox, only when `ci-changes.mjs` selects it, balanced by measured file cost (below); shard 1 also runs `pnpm storybook:test` for Firefox. |
 | `smoke` | Chromium smoke when shipped inputs are affected; Firefox smoke with the installed extension when Firefox is selected. |
 
@@ -315,7 +315,9 @@ uploads its `--report-dir`, kept three days; a full run is any PR that changes a
 (see the script header; several runs take the median per file). A job needs `matrix.shard` and the same `<n>` in
 `--test-shard`; the `check` job requires the whole `browser-*` matrix (`needs.<job>.result` aggregates its shards), so a
 red shard is one red `check`. Compare the shard durations in the Actions run after recalibrating: they should differ by
-well under a minute.
+well under a minute. Chromium runs three shards because two balanced ones (about 210 s of tests plus
+Storybook each) still made the lane the longest job after `smoke`; a shard costs roughly a minute of
+container start and setup, so add one only when the balanced split would still be the critical path.
 
 PRs run the jobs above on the affected tests (see below). The build artifact is shared
 with verification and smoke. Each test lane publishes its 15 slowest tests and failures

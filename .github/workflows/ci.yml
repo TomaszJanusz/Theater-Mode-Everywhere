@@ -207,7 +207,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3]
     runs-on: ubuntu-latest
     timeout-minutes: 16
     container:
@@ -240,7 +240,7 @@ jobs:
         run: pnpm storybook:test
         timeout-minutes: 5
       - name: Browser tests Chromium
-        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/2 --shard-costs=scripts/test-shard-costs.chromium.json --report-dir=test-reports
+        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/3 --shard-costs=scripts/test-shard-costs.chromium.json --report-dir=test-reports
         timeout-minutes: 10
         env:
           THEATER_TEST_ENGINES: chromium
