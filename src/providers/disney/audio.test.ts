@@ -148,7 +148,7 @@ describe('Disney+ audio bridge', () => {
   });
 
   it('accepts a snapshot only for its request, its page and bounded, well-formed tracks', () => {
-    const good = { requestId: 'r1', pageHref: href(PLAY), playId: PLAY, bindingId: '1', tracks: [record({})] };
+    const good = { requestId: 'r1', pageHref: href(PLAY), playId: PLAY, bindingId: '1', tracks: [record({})], captions: null };
     const parse = (value: unknown, requestId = 'r1', page = href(PLAY)) => parseDisneyAudioSnapshot(JSON.stringify(value), requestId, page);
     assert.deepEqual(parse(good), good);
     assert.equal(parse(good, 'r2'), null, 'an answer to another query');
@@ -160,6 +160,11 @@ describe('Disney+ audio bridge', () => {
     assert.equal(parse({ ...good, tracks: [{ ...record({}), description: 'yes' }] }), null);
     assert.equal(parse({ ...good, tracks: [record({ label: 'x'.repeat(201) })] }), null);
     assert.equal(parse({ ...good, tracks: Array.from({ length: 65 }, (_, index) => record({ id: String(index) })) }), null);
+    const shown = { language: 'en', describes: true };
+    assert.deepEqual(parse({ ...good, captions: shown }), { ...good, captions: shown });
+    assert.deepEqual(parse({ ...good, captions: undefined }), good, 'a MAIN that predates the field shows no caption');
+    assert.equal(parse({ ...good, captions: { language: 'en' } }), null);
+    assert.equal(parse({ ...good, captions: { language: 'x'.repeat(36), describes: false } }), null);
     assert.equal(parseDisneyAudioSnapshot('{', 'r1', href(PLAY)), null);
     assert.equal(parseDisneyAudioSnapshot(null, 'r1', href(PLAY)), null);
     assert.equal(parseDisneyAudioSnapshot('x'.repeat(30_001), 'r1', href(PLAY)), null);

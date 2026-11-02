@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
+import { matchDisneyNativeCaption } from './adapter';
 import { parseDisneyAudioSnapshot } from './audio-bridge';
 import { createDisneyAudioHost } from './audio-main';
-import { disneyDurationSeconds, readDisneyContentTime, writeDisneyContentTime } from './page';
+import { disneyDurationSeconds, parseDisneyHlsSubtitles, readDisneyContentTime, writeDisneyContentTime } from './page';
 import { createDisneyHostPlayback } from './playback-main';
 import { disneyVideoRole } from './watch-playback';
 
@@ -210,5 +211,53 @@ describe('recorded Disney+ pause desync, through the provider\'s host playback',
     const { hive, video, hostPlayback } = recordedHive({ videoPaused: true, hiveIsPaused: true, hiveCurrentState: 'PAUSED' });
     assert.equal(hostPlayback('play'), true);
     assert.deepEqual([video.paused, hive.isPaused, hive.currentState, hive.calls], [false, false, 'PLAYING', ['play']]);
+  });
+});
+
+// The caption Disney+ itself shows: recorded `mediaPlayer.captions` (English [CC] selected, 38 renditions) and the native menu.
+type HiveCaption = { id: number; name: string; language: string; hasDescribesMusicAndSound: boolean; isSelected: boolean };
+const recordedCaptions = (fixture.mediaPlayer as unknown as { captions: { enabled: boolean; availableTracks: HiveCaption[] } }).captions;
+const nativeCaptionOf = (captions: unknown) => {
+  let published: unknown = null;
+  const host = createDisneyAudioHost({
+    enabled: () => true, href: () => href, contentPaused: () => true,
+    webPlayer: () => ({ mediaPlayer: { audio: { availableTracks: [], selectedTrack: null, setTrack() {} }, captions } }),
+    publishSnapshot: payload => { published = payload; }, answer: () => {}, changed: () => {}, now: () => 0, setTimeout: () => 1, clearTimeout: () => {}
+  });
+  host.query('r1');
+  return parseDisneyAudioSnapshot(JSON.stringify(published), 'r1', href)?.captions;
+};
+
+describe('recorded Disney+ native caption selection', () => {
+  it('reads the rendition Hive shows, and nothing once Disney+\'s captions are off or none is selected', () => {
+    assert.deepEqual(nativeCaptionOf(recordedCaptions), { language: 'en', describes: true });
+    assert.equal(nativeCaptionOf({ ...recordedCaptions, enabled: false }), null, 'the setting is off: nothing is painted');
+    assert.equal(nativeCaptionOf({ ...recordedCaptions, availableTracks: recordedCaptions.availableTracks.map(track => ({ ...track, isSelected: false })) }), null);
+    assert.equal(nativeCaptionOf(undefined), null, 'a player without captions');
+  });
+
+  it('names the same rendition as the native menu\'s checked row', () => {
+    const checked = radios(menu('subtitles')).find(row => row.checked)?.label;
+    const selected = recordedCaptions.availableTracks.find(track => track.isSelected);
+    assert.equal(checked, selected?.name, 'Disney+ shows the [CC] rendition the menu checks');
+  });
+
+  it('maps it to the matching row of the HLS list, by language and [CC], else by language family', () => {
+    const master = [
+      '#EXT-X-MEDIA:TYPE=SUBTITLES,NAME="English",LANGUAGE="en",URI="r/composite_en_NORMAL_a.m3u8"',
+      '#EXT-X-MEDIA:TYPE=SUBTITLES,NAME="English SDH",LANGUAGE="en",CHARACTERISTICS="public.accessibility.describes-music-and-sound",URI="r/composite_en_SDH_a.m3u8"',
+      '#EXT-X-MEDIA:TYPE=SUBTITLES,NAME="Polish",LANGUAGE="pl",URI="r/composite_pl_NORMAL_a.m3u8"',
+      '#EXT-X-MEDIA:TYPE=SUBTITLES,NAME="French (Canada)",LANGUAGE="fr-CA",URI="r/composite_frca_NORMAL_a.m3u8"',
+      '#EXT-X-MEDIA:TYPE=SUBTITLES,NAME="Portuguese",LANGUAGE="pt-PT",URI="r/composite_pt_NORMAL_a.m3u8"',
+      '#EXT-X-MEDIA:TYPE=SUBTITLES,NAME="Portuguese (Brazil)",LANGUAGE="pt-BR",URI="r/composite_ptbr_NORMAL_a.m3u8"'
+    ].join('\n');
+    const tracks = parseDisneyHlsSubtitles(master, 'https://vod-akc-euwest1.media.dssott.com/ps01/una-ctr-all-a.m3u8');
+    const label = (language: string, describes: boolean) => matchDisneyNativeCaption(tracks, { language, describes })?.label;
+    assert.equal(label('en', true), 'English SDH');
+    assert.equal(label('en', false), 'English');
+    assert.equal(label('PL', true), 'Polish', 'a language with one rendition matches whatever its flag');
+    assert.equal(label('fr', false), 'French (Canada)', 'one rendition in the family');
+    assert.equal(label('pt', false), undefined, 'two renditions in the family: no guess');
+    assert.equal(label('de', false), undefined);
   });
 });
