@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
@@ -7,15 +7,11 @@ import { describe, it } from 'node:test';
 import { chromium, type BrowserContext, type Page } from 'playwright';
 
 import { closeInstallSetup } from '../../../scripts/smoke/first-run-setup';
+import { CHROMIUM_BUILD, installedBuildReady } from '../../test-utils/installed-build';
 
 import { PAGE_URL, VIDEO_PAGE, PLAYER_HTML, FRAME_HTML, PLAIN_HTML } from './test-utils/wasm-fixture';
 
-const ROOT = path.resolve(new URL('../..', import.meta.url).pathname, '..');
-const EXTENSION = path.join(ROOT, 'dist', 'chrome-unpacked');
-
-function extensionReady(): boolean {
-  return existsSync(path.join(EXTENSION, 'content.js')) && existsSync(path.join(EXTENSION, 'manifest.json'));
-}
+const EXTENSION = CHROMIUM_BUILD;
 
 async function dismissDialog(page: Page): Promise<void> {
   const button = page.locator('.te-dialog-btn-primary');
@@ -24,10 +20,7 @@ async function dismissDialog(page: Page): Promise<void> {
 
 describe('tencent wasm theater runtime', () => {
   it('drives the fake player from the page and from the wasm frame', async (t) => {
-    if (!extensionReady()) {
-      t.skip('dist/chrome-unpacked is missing; run pnpm build');
-      return;
-    }
+    if (!installedBuildReady(t, ['manifest.json', 'content.js', 'mainWorld.js'])) return;
     const userData = mkdtempSync(path.join(tmpdir(), 'te-wasm-'));
     let context: BrowserContext | null = null;
     try {

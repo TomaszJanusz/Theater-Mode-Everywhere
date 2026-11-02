@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
 import { chromium, type BrowserContext, type Page } from 'playwright';
 
+import { CHROMIUM_BUILD, installedBuildReady } from '../../test-utils/installed-build';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 
-const ROOT = path.resolve(new URL('../..', import.meta.url).pathname, '..');
-const EXTENSION = path.join(ROOT, 'dist', 'chrome-unpacked');
+const EXTENSION = CHROMIUM_BUILD;
 const PAGE_URL = 'https://www.bilibili.tv/en/play/1053337';
 const E1 = '11371243';
 const E2 = '11371316';
@@ -60,12 +60,6 @@ type FixtureWindow = Window & {
   __probeCount?: number;
   __initialState?: unknown;
 };
-
-function extensionReady(): boolean {
-  return existsSync(path.join(EXTENSION, 'content.js'))
-    && existsSync(path.join(EXTENSION, 'mainWorld.js'))
-    && existsSync(path.join(EXTENSION, 'manifest.json'));
-}
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -604,10 +598,7 @@ async function hoverScrubber(page: Page, ratio: number): Promise<void> {
 
 describe('bilibili.tv extension runtime', () => {
   it('reads hydrated page state on the first T, then the next episode', async (t) => {
-    if (!extensionReady()) {
-      t.skip('dist/chrome-unpacked is missing; run pnpm build');
-      return;
-    }
+    if (!installedBuildReady(t, ['manifest.json', 'content.js', 'mainWorld.js'])) return;
     const hits: Hit[] = [];
     const notes: string[] = [];
     const { context, userData } = await launchExtension();
@@ -796,10 +787,7 @@ describe('bilibili.tv extension runtime', () => {
   });
 
   it('reads an upload, then an episode with the same numeric id', async (t) => {
-    if (!extensionReady()) {
-      t.skip('dist/chrome-unpacked is missing; run pnpm build');
-      return;
-    }
+    if (!installedBuildReady(t, ['manifest.json', 'content.js', 'mainWorld.js'])) return;
     const hits: Hit[] = [];
     const notes: string[] = [];
     const { context, userData } = await launchExtension();
