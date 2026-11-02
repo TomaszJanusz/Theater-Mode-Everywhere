@@ -58,6 +58,8 @@ it('renders static English semantic content safely and refreshes localized dialo
     'New languages: 🇬🇧 English (UK), 🇨🇿 Čeština and 🇸🇰 Slovenčina are now in the language list in Settings.',
     "And a few smaller things: drag the edge of the chat to resize it, move around the player bar with W, A, S and D, theater on YouTube's miniplayer, and clearer keyboard shortcut names and help."
   ]);
+  // Key names are key caps (text only), not plain words.
+  assert.deepEqual(await root.locator('kbd').allTextContents(), ['<', '>', 'W', 'A', 'S', 'D']);
   assert.deepEqual(await root.locator('li strong').allTextContents(), ['A proper ending', 'YouTube recommendations', 'Settings for each service', 'A quick setup', 'New services in Rich Theater Experience', 'Audio tracks and subtitle language', 'Speed keys', 'Updates stay out of your way', 'Smoother theater', 'Fixes you may have noticed', 'New languages']);
   assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to @wesleyel for the groundwork behind the playback speed keys and holding Seek Forward for 2x.');
   const profiles = page.locator('.whats-new-thanks a');
@@ -157,6 +159,12 @@ for (const engine of testEngines()) {
       return Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop) <= 1;
     });
     assert.deepEqual(await thanks.boundingBox(), initialThanks);
+    // The body's scroll shadow ends exactly at the note's separator: no gap, no overlap, in every scroll state.
+    const meets = () => page.evaluate(() => document.querySelector('.te-dialog-note')!.getBoundingClientRect().top
+      - document.querySelector('.te-dialog-body')!.getBoundingClientRect().bottom);
+    assert.ok(Math.abs(await meets()) < 0.5);
+    await page.evaluate(() => { document.querySelector('.te-dialog-body')!.scrollTop = 0; });
+    assert.ok(Math.abs(await meets()) < 0.5);
     for (const viewport of [{ width: 375, height: 550 }, { width: 800, height: 400 }]) {
       await page.setViewportSize(viewport);
       for (const locator of [dialog, thanks, page.locator('.te-dialog-close'), page.locator('.te-dialog-btn-primary')]) {

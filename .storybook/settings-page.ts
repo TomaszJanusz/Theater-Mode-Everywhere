@@ -6,6 +6,8 @@ import { applyAccentColorPreset } from '../src/accentTheme';
 import { observeAppearance } from '../src/appearance-runtime';
 import { INSTALL_SHORTCUTS, type SetupState } from '../src/first-run-setup';
 import { localizeDocument } from '../src/i18n';
+import { createModal, type Modal } from '../src/ui/modal';
+import { buildWhatsNewContent } from '../src/whatsNew-content';
 
 import { beginStage } from './stage-owner';
 
@@ -30,8 +32,15 @@ export interface SetupActionsStage {
   started: Array<SetupAnswers | undefined>;
 }
 
+export interface WhatsNewStage {
+  doc: Document;
+  ready: Promise<void>;
+  /** The highlights dialog, once mounted in the fixture document. */
+  modal?: Modal;
+}
+
 declare global {
-  interface Window { __setupStage?: SetupStage; __setupActionsStage?: SetupActionsStage }
+  interface Window { __setupStage?: SetupStage; __setupActionsStage?: SetupActionsStage; __whatsNewStage?: WhatsNewStage }
 }
 
 const frameHtml = (css: string, body: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Settings fixture</title>
@@ -135,5 +144,31 @@ export function renderSetupActions(sync: Record<string, unknown>): HTMLElement {
   stage.ready.catch(() => {});
   window.__setupActionsStage = stage;
   scope.add(() => { delete window.__setupActionsStage; });
+  return view;
+}
+
+/**
+ * The production highlights dialog (shared modal shell, Settings stylesheet, thanks note below the scroll area)
+ * in a Settings fixture document. `since` picks the releases shown, as the announced update does. Fixture
+ * rendering only: no extension storage, acknowledgement or update.
+ */
+export function renderWhatsNew(since?: string): HTMLElement {
+  const { scope, view, loaded } = settingsFrame('');
+  const stage = {} as WhatsNewStage;
+  stage.ready = loaded.then(doc => {
+    if (!doc) return;
+    stage.doc = doc;
+    const content = buildWhatsNewContent(since as Parameters<typeof buildWhatsNewContent>[0]);
+    stage.modal = createModal({
+      title: 'What\'s new', closeLabel: 'Close', size: 'wide', scrollable: true,
+      content, note: content.querySelector('.whats-new-thanks') ?? undefined,
+      actions: [{ label: 'Got it', kind: 'primary', value: true }],
+      mount: overlay => doc.body.append(overlay)
+    });
+    scope.add(() => stage.modal?.dispose());
+  });
+  stage.ready.catch(() => {});
+  window.__whatsNewStage = stage;
+  scope.add(() => { delete window.__whatsNewStage; });
   return view;
 }
