@@ -49,15 +49,15 @@ const RELEASE_2_1: AnnouncementContent = {
   items: [
     [{ strong: 'A proper ending' }, ': When a video ends, a calm black screen with Replay (and Next, when a playlist has one) now replaces the frozen last frame. Services with their own next-episode step, such as Netflix and Disney+, keep theirs.'],
     [{ strong: 'YouTube recommendations' }, ': With Rich Theater Experience, the end of a YouTube video shows up to three suggestions you can pick without leaving theater mode, and YouTube\'s autoplay countdown appears right in our player, with Cancel. Not your thing? Turn off the Show recommendations switch under them.'],
+    [{ strong: 'Smoother, faster theater' }, ': Theater opens and closes with less of a freeze on large pages such as YouTube, and its controls bar no longer hitches as it appears and hides. It also no longer ends when a site briefly hides its player while switching videos.'],
+    [{ strong: 'New languages' }, ': 🇬🇧 English (UK), 🇨🇿 Čeština and 🇸🇰 Slovenčina are now in the language list in Settings.'],
     [{ strong: 'Settings for each service' }, ': Service cards in Settings → Features have a new Settings button, where you can switch YouTube recommendations on or off and choose AutoTheater for that service alone.'],
     [{ strong: 'A quick setup' }, ': A fresh install now walks you through a short setup: services, how theater mode starts, your language, the look and layout, and a few extras. Changed your mind later? Settings → About has Run setup again, and Reset to defaults for a clean start.'],
     [{ strong: 'New services in Rich Theater Experience' }, ': SOOP, iQIYI and Rakuten Viki, with episode navigation, subtitle and audio choices and AutoTheater where the service allows it. SOOP\'s own chat joins you beside the video.'],
     [{ strong: 'Audio tracks and subtitle language' }, ': Choose a dub or the original audio from the player settings on Netflix, Disney+ and YouTube, and I will remember your language for that service. While subtitles load, the corner notice already shows which language is coming.'],
     [{ strong: 'Speed keys' }, ': Press ', { kbd: '<' }, ' and ', { kbd: '>' }, ' to change the speed as you do on YouTube, or hold Seek Forward to play at 2x until you let go.'],
     [{ strong: 'Updates stay out of your way' }, ': A new version no longer opens a tab. A NEW badge on the toolbar icon, a note in the popup and a line at the bottom of the player menu lead you here instead; open any of them and the badge goes away.'],
-    [{ strong: 'Smoother theater' }, ': Theater opens and closes with less of a freeze on large pages such as YouTube, and it no longer ends when a site briefly hides its player while switching videos.'],
     [{ strong: 'Fixes you may have noticed' }, ': AutoTheater now starts on Vimeo videos and when you expand YouTube\'s miniplayer, Disney+ subtitles keep following the dialogue after the audio track changes, Twitch chat no longer cuts off messages, and letter shortcuts work on Cyrillic, Greek, Hebrew and other non-Latin keyboards.'],
-    [{ strong: 'New languages' }, ': 🇬🇧 English (UK), 🇨🇿 Čeština and 🇸🇰 Slovenčina are now in the language list in Settings.'],
     ['And a few smaller things: drag the edge of the chat to resize it, move around the player bar with ', { kbd: 'W' }, ', ', { kbd: 'A' }, ', ', { kbd: 'S' }, ' and ', { kbd: 'D' }, ', theater on YouTube\'s miniplayer, and clearer keyboard shortcut names and help.']
   ],
   thanks: [
