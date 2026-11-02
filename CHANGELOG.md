@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-02
+
 ### Added
 
 - A short setup on first install: a fresh install opens Settings once, in a single tab, and asks a few things before anything is saved: the language, which the setup switches to at once; which services get Rich Theater Experience features (all supported services, the ones you choose, or none); how theater mode starts (only with the theater key, which is preselected, the key or a button on videos, or automatically with AutoTheater, with or without its countdown); whether to hold the Seek Forward key for 2x speed and use Volume Boost; the accent color, shown on the page as you pick it; the layout (Centered or Raised, with Raised only with subtitles), and whether to pin the player controls. A summary shows your choices, and every answer can be changed later in Settings. Settings → About can run the setup again over your current settings, or first reset every setting to how a fresh install starts, also on devices that sync your settings: it asks first, keeps excluded websites and keyboard shortcuts unless you tick them too, and then opens the setup. A fresh install now starts with AutoTheater off until you choose it; existing installs keep their setting. Skip the setup or close the tab and nothing else changes; a language or accent you only tried goes back to the saved one. It works by keyboard and with screen readers, and in right-to-left languages. Updates never open it, and neither does a reinstall or an install whose settings already sync from another device; if synced settings arrive while it is open, it steps aside and keeps them.
