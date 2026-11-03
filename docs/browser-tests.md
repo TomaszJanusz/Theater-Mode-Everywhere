@@ -561,8 +561,9 @@ A difference is `DRIFT` (one line per changed probe field, a warning annotation,
 summary and a rolling `Host drift: <recording>` issue under the same rules as the lane's
 issues: one retry, skipped nights change nothing, closed after three green nights). It never
 fails the step. A recipe whose page type has no target is skipped, and an environment block
-is a skip, not drift. Output carries the recording id and page type, never a target URL. On
-drift, refresh the recording first, then fix the provider if its tests fail on the new one.
+is a skip, not drift; so is one that appears after load, which is checked again when a recipe's
+`laidOut` controls never show. Output carries the recording id and page type, never a target
+URL. On drift, refresh the recording first, then fix the provider if its tests fail on the new one.
 
 `test/host-fixtures/` is `export-ignore`d (source archives) and `pnpm verify:bundles` fails
 if a recording reaches an extension package. A recording is **fixture evidence**: it shows

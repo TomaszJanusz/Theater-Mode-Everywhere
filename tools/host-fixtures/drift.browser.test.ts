@@ -24,6 +24,12 @@ function altered(fixture: HostFixture, change: (node: FixtureNode) => FixtureNod
   return { ...fixture, dom: visit(structuredClone(fixture.dom)) ?? fixture.dom };
 }
 
+// YouTube creates its controls while the player loads and lays them out later (or never).
+const youtube = committedFixture('youtube-watch-player');
+const HIDE_CONTROLS = '<style id="hide-controls">.ytp-right-controls { display: none !important; }</style>';
+const LATE_NOTICE = '<p id="late" hidden>Sign in to confirm you’re not a bot</p>';
+const withHiddenControls = (extra = ''): string => fixtureDocument(youtube).replace('</body>', `${HIDE_CONTROLS}${extra}</body>`);
+
 describe('host drift check', () => {
   const shared = sharedTestBrowser(chromium);
   const check = async (t: Parameters<typeof shared.newContext>[0], served: string) => {
@@ -55,5 +61,40 @@ describe('host drift check', () => {
     const result = await check(t, fixtureDocument(recorded).replace('</body>', '<p>Before you continue, accept all cookies</p></body>'));
     assert.equal(result.status, 'skipped');
     assert.match(result.detail ?? '', /environment: consent wall/);
+  });
+
+  describe('a host that attaches its controls before laying them out', () => {
+    /** Runs the check while the test changes the page once it is `afterMs` old (page time, so no timer here). */
+    const checkYoutube = async (t: Parameters<typeof shared.newContext>[0], served: string, change?: { afterMs: number; apply: () => void }) => {
+      const context = await shared.newContext(t, { viewport: youtube.viewport });
+      const page = await context.newPage();
+      await page.route('https://host.test/**', route => route.fulfill({ contentType: 'text/html', body: served }));
+      const result = checkDrift(page, PAGE, youtube, RECIPES[youtube.id]);
+      if (change) {
+        await page.waitForSelector('#hide-controls', { state: 'attached' });
+        await page.waitForFunction(afterMs => performance.now() > afterMs, change.afterMs);
+        await page.evaluate(change.apply);
+      }
+      return result;
+    };
+
+    it('waits for the controls instead of recording them as absent', async t => {
+      // Later than the settle poll: two equal reads of the unrendered page must not count as settled.
+      const result = await checkYoutube(t, withHiddenControls(), { afterMs: 1500, apply: () => document.getElementById('hide-controls')?.remove() });
+      assert.deepEqual(result, { fixture: youtube.id, status: 'passed' });
+    });
+
+    it('classifies an in-player bot check shown after load as an environment block', async t => {
+      // The page passes the early check; the host's error text appears with the player, later.
+      const result = await checkYoutube(t, withHiddenControls(LATE_NOTICE), { afterMs: 500, apply: () => { document.getElementById('late')!.hidden = false; } });
+      assert.equal(result.status, 'skipped');
+      assert.match(result.detail ?? '', /environment: bot check/);
+    });
+
+    it('still reports controls that never appear as drift', async t => {
+      const result = await checkYoutube(t, withHiddenControls());
+      assert.equal(result.status, 'failed');
+      assert.match(result.detail ?? '', /page never settled/);
+    });
   });
 });
