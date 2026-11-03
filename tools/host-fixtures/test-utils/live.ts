@@ -45,6 +45,20 @@ export async function openRecipePage(page: Page, url: string, recipe: FixtureRec
   const verdict = classifyPage(await collectSignals(page, status));
   if (verdict.kind !== 'ok') return { blocked: `${verdict.kind.replace('-', ' ')} (${verdict.reason})` };
   await page.waitForSelector(recipe.ready, { state: 'attached', timeout: SETTLE_TIMEOUT_MS });
+  if (recipe.laidOut) {
+    try {
+      await page.waitForFunction(selector => {
+        const rect = document.querySelector(selector)?.getBoundingClientRect();
+        return Boolean(rect && rect.width > 0 && rect.height > 0);
+      }, recipe.laidOut, { timeout: SETTLE_TIMEOUT_MS });
+    } catch (error) {
+      // The first check ran at domcontentloaded; a bot check or ad that the host shows inside the
+      // player only exists now, and it is why the controls never appeared.
+      const late = classifyPage(await collectSignals(page, status));
+      if (late.kind !== 'ok') return { blocked: `${late.kind.replace('-', ' ')} (${late.reason})` };
+      throw error;
+    }
+  }
   if (recipe.prepare) {
     await page.click(recipe.prepare.click, { timeout: SETTLE_TIMEOUT_MS });
     await page.waitForSelector(recipe.prepare.until, { state: 'attached', timeout: SETTLE_TIMEOUT_MS });
