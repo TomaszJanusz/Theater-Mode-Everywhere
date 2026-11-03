@@ -1,6 +1,7 @@
 import type { HostSeekDispatch, HostSeekInput, ProviderTimeline, TimelineBounds } from '../timeline/types';
 import { LIVE_EDGE_SECONDS, MAX_LIVE_DVR_SECONDS, MIN_LIVE_DVR_SECONDS } from '../timeline-limits';
 
+import { askMainForbidsSeeking } from './playback-bridge';
 import { youtubePlayerControl } from './player-controls';
 
 const YOUTUBE_WALL_OFFSET_RESYNC_SECONDS = 5;
@@ -128,12 +129,18 @@ function youtubeIsAtLiveHead(video: HTMLVideoElement): boolean {
   return Boolean(badge && badge.classList.contains('ytp-live-badge-is-livehead'));
 }
 
-// A live stream without DVR keeps a full progress bar whose container YouTube disables; the media still
-// reports the whole stream as seekable, and a far seek can leave the player unstarted.
-function youtubeLiveSeekDisabled(video: HTMLVideoElement): boolean {
+/**
+ * The one rule for "this live stream forbids seeking" (no DVR), used by the timeline lock and Stop label (isolated) and
+ * by play/pause routing and the seek drop (MAIN). YouTube says it twice: it disables the progress bar's container, and
+ * `getProgressState().allowSeeking` is false. Either is enough, so both worlds act alike when the two disagree; the
+ * media still reports the whole stream as seekable. `apiForbids` reads the API: directly in MAIN, by asking MAIN in
+ * the isolated world.
+ */
+export function youtubeSeekForbidden(video: HTMLVideoElement, apiForbids: (player: Element) => boolean): boolean {
   const player = youtubePlayerFor(video);
-  const container = player ? youtubePlayerControl(player, '.ytp-progress-bar-container') : null;
-  return container?.getAttribute('aria-disabled') === 'true';
+  if (!player || !youtubeLiveHint(video)) return false;
+  return youtubePlayerControl(player, '.ytp-progress-bar-container')?.getAttribute('aria-disabled') === 'true'
+    || apiForbids(player);
 }
 
 function canSeekYoutubeLive(video: HTMLVideoElement): boolean {
@@ -160,7 +167,7 @@ export const youtubeTimeline: ProviderTimeline = {
   liveHint: youtubeLiveHint,
   isAtLiveHead: youtubeIsAtLiveHead,
   liveBounds(video) {
-    if (youtubeLiveSeekDisabled(video)) return false;
+    if (youtubeSeekForbidden(video, askMainForbidsSeeking)) return false;
     return youtubeDvrBounds(video) ?? youtubeLiveHeadBounds(video);
   },
   mediaSeek: youtubeMediaSeek,

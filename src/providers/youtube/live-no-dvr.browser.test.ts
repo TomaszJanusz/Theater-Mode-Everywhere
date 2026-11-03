@@ -28,7 +28,8 @@ aria-label="Seek slider" aria-valuemin="0" aria-valuemax="2157" aria-valuenow="2
   window.hostSeeks = [];
   window.hostCommands = [];
   Object.assign(player, {
-    getProgressState: () => ({ allowSeeking: !document.querySelector('.ytp-progress-bar-container').hasAttribute('aria-disabled'), isAtLiveHead: true }),
+    // Recorded together; window.allowSeeking lets a test set the API signal apart from the bar's.
+    getProgressState: () => ({ allowSeeking: window.allowSeeking ?? !document.querySelector('.ytp-progress-bar-container').hasAttribute('aria-disabled'), isAtLiveHead: true }),
     seekTo: time => window.hostSeeks.push(time),
     seekToLiveHead: () => {},
     pauseVideo: () => { window.hostCommands.push('pauseVideo'); video.pause(); },
@@ -66,14 +67,18 @@ const state = (page: Page) => page.evaluate(() => {
     scrubberTab: scrubber.tabIndex,
     live: root.querySelector('.theater-time-elapsed')!.classList.contains('theater-time-live'),
     loading: root.querySelector('.theater-loading-indicator')!.classList.contains('visible'),
-    playLabel: root.querySelector('.play-pause-btn')!.getAttribute('aria-label'),
-    paused: video.paused,
     currentTime: video.currentTime,
     seekRequests: w.seekRequests.filter(detail => 'time' in JSON.parse(detail)).length,
     hostSeeks: w.hostSeeks.length,
     hostCommands: w.hostCommands.splice(0)
   };
 });
+
+/** `paused` flips at once; the button repaints on the media's play/pause event a task later, so wait for both. */
+const buttonSettled = (page: Page, paused: boolean, label: string) => page.waitForFunction(([paused, label]) =>
+  document.querySelector('video')!.paused === paused
+    && document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.play-pause-btn')!.getAttribute('aria-label') === label,
+[paused, label] as const);
 
 for (const name of selectTestEngines(['Chromium', 'Firefox'] as const, name => name)) {
   it(`${name}: a YouTube live without DVR locks the timeline, stops like YouTube and never asks the host to seek`, { timeout: 60_000 }, async t => {
@@ -99,21 +104,19 @@ for (const name of selectTestEngines(['Chromium', 'Firefox'] as const, name => n
     assert.equal(afterSeeks.currentTime, locked.currentTime, 'the media element is not seeked');
     assert.equal(afterSeeks.loading, false, 'no seek spinner waits for a seek that cannot happen');
 
-    const playing = () => page.waitForFunction(() => !document.querySelector('video')!.paused);
-    const paused = () => page.waitForFunction(() => document.querySelector('video')!.paused);
+    const settled = (paused: boolean, label: string) => buttonSettled(page, paused, label);
+    // Playing, the button stops, as YouTube's does on this stream.
     await page.keyboard.press('k');
-    await playing();
+    await settled(false, 'Stop');
     let now = await state(page);
     assert.deepEqual(now.hostCommands, ['playVideo'], 'play goes through YouTube, which rejoins the live edge');
-    assert.equal(now.playLabel, 'Stop', 'the button stops, as YouTube\'s does on this stream');
     await page.keyboard.press('k');
-    await paused();
+    await settled(true, 'Play');
     now = await state(page);
     assert.deepEqual(now.hostCommands, ['pauseVideo'], 'stop is YouTube\'s pause, not stopVideo()');
-    assert.equal(now.playLabel, 'Play');
-    assert.equal(await page.locator('.playback-hud rect[width="34"]').count(), 1, 'the indicator shows a stop, not a pause');
+    await page.locator('.playback-hud rect[width="34"]').waitFor({ state: 'attached' });
     await page.locator('.play-pause-btn').click();
-    await playing();
+    await settled(false, 'Stop');
     assert.deepEqual((await state(page)).hostCommands, ['playVideo'], 'the bar button follows the same path');
     assert.equal(await page.locator('.play-pause-btn').evaluate(e => e.querySelector('rect[width="14"]') !== null), true, 'a stop square');
 
@@ -123,9 +126,8 @@ for (const name of selectTestEngines(['Chromium', 'Firefox'] as const, name => n
       video.addEventListener('emptied', () => resolve(), { once: true });
       video.load();
     }));
-    const reset = await state(page);
-    assert.equal(reset.paused, true);
-    assert.equal(reset.playLabel, 'Play', 'the button follows a media reset');
+    // No pause event follows: the button must repaint from the reset itself.
+    await settled(true, 'Play');
 
     // stopVideo() unloads the media: only YouTube can start it again, never play() on the empty element.
     await page.evaluate(() => new Promise<void>(resolve => {
@@ -135,7 +137,7 @@ for (const name of selectTestEngines(['Chromium', 'Firefox'] as const, name => n
       video.load();
     }));
     await page.keyboard.press('Space');
-    await playing();
+    await settled(false, 'Stop');
     now = await state(page);
     assert.deepEqual(now.hostCommands, ['playVideo']);
     assert.equal(now.loading, false, 'no spinner is left waiting on the empty element');
@@ -145,12 +147,50 @@ for (const name of selectTestEngines(['Chromium', 'Firefox'] as const, name => n
       document.querySelector('.ytp-progress-bar-container')!.removeAttribute('aria-disabled');
       document.querySelector('video')!.dispatchEvent(new Event('timeupdate'));
     });
-    now = await state(page);
-    assert.equal(now.scrubberDisabled, 'false', 'a live stream with DVR stays seekable');
-    assert.equal(now.playLabel, 'Pause', 'and pauses');
+    await page.locator('.theater-scrubber-container[aria-disabled="false"]').waitFor({ state: 'attached' });
+    await settled(false, 'Pause');
     await page.keyboard.press('k');
-    await paused();
+    await settled(true, 'Play');
     assert.deepEqual((await state(page)).hostCommands, [], 'its pause stays with the element');
     assert.deepEqual(errors, []);
+  });
+
+  it(`${name}: either YouTube signal alone forbids seeking, and both worlds follow it`, { timeout: 60_000 }, async t => {
+    for (const [signal, setup] of [
+      ['the disabled bar, while the API still allows seeking', () => { (window as unknown as { allowSeeking: boolean }).allowSeeking = true; }],
+      ['the API, while the bar stays enabled', () => {
+        (window as unknown as { allowSeeking: boolean }).allowSeeking = false;
+        document.querySelector('.ytp-progress-bar-container')!.removeAttribute('aria-disabled');
+      }]
+    ] as const) {
+      const page = await (await browsers[name].newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await boot(page);
+      await page.evaluate(setup);
+      await page.evaluate(() => {
+        const video = document.querySelector('video')!;
+        video.pause();
+        video.dispatchEvent(new Event('timeupdate'));
+      });
+      await page.locator('.theater-scrubber-container[aria-disabled="true"]').waitFor({ state: 'attached' });
+      await buttonSettled(page, true, 'Play');
+      const before = await state(page);
+      const box = (await page.locator('.theater-scrubber-container').boundingBox())!;
+      await page.mouse.click(box.x + box.width * 0.3, box.y + box.height / 2);
+      await page.keyboard.press('ArrowLeft');
+      await page.evaluate(() => window.dispatchEvent(new CustomEvent('theater-everywhere-media-seek', { detail: JSON.stringify({ time: 0.5 }) })));
+      const seeks = await state(page);
+      assert.equal(seeks.seekRequests, 1, `${signal}: the timeline issues no seek`);
+      assert.equal(seeks.hostSeeks, 0, `${signal}: MAIN drops the request`);
+      assert.equal(seeks.currentTime, before.currentTime, `${signal}: the media is not seeked`);
+      await page.keyboard.press('k');
+      await buttonSettled(page, false, 'Stop');
+      assert.deepEqual((await state(page)).hostCommands, ['playVideo'], `${signal}: play goes through YouTube`);
+      await page.keyboard.press('k');
+      await buttonSettled(page, true, 'Play');
+      assert.deepEqual((await state(page)).hostCommands, ['pauseVideo'], `${signal}: stop goes through YouTube`);
+      assert.deepEqual(errors, []);
+    }
   });
 }
