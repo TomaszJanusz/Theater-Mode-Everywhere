@@ -4,48 +4,52 @@
 Theater Mode Everywhere
 
 ## Summary
-Powiększ dowolne wideo HTML5 do rozmiaru okna. Używaj własnych kontrolek, napisów, efektów audio i integracji z serwisami wideo.
+Naciśnij T, by wejść w tryb kinowy na całe okno. Napisy i wzmocnienie głośności; w popularnych serwisach czat i przyciski pomijania.
 
 ## Description
-Theater Mode Everywhere powiększa odtwarzacze HTML5 tak, by wypełniały całe okno przeglądarki, zapewniając wygodne wrażenia jak w kinie – bez nagłówków, paneli bocznych, komentarzy i rekomendacji.
+Naciśnij T, aby włączyć tryb kinowy: wideo wypełnia okno przeglądarki, bez rozpraszających uwagę nagłówków, paneli bocznych, komentarzy i rekomendacji.
 
-Oglądaj poradniki, transmisje, filmy i krótkie klipy z własnymi kontrolkami odtwarzania. Korzystaj z napisów, skrótów klawiszowych, dopasowania obrazu, efektów audio i regulacji głośności, a na obsługiwanych platformach także z dodatkowych funkcji.
+Theater Mode Everywhere działa z odtwarzaczami wideo na większości stron, także z wideo osadzonym na innych stronach.
 
-Rich Theater Experience (RTE) oferuje głębsze integracje z popularnymi serwisami internetowymi. Na YouTube i Twitchu dodaje czat obok obrazu, a na Netflix i Disney+ przyciski pomijania intra i nawigację do następnego odcinka. W zależności od serwisu rozszerzenie może wyświetlać tytuły, napisy, rozdziały, miniatury podglądu, przyciski pomijania, nawigację do następnego odcinka oraz dodatkowe informacje na osi czasu. Możliwości różnią się między platformami. Pełna lista obsługiwanych serwisów znajduje się w ustawieniach rozszerzenia.
+W SKRÓCIE
+- Proste sterowanie na większości stron: napisy, prędkość i opcjonalne „Wzmocnienie głośności” do 300%.
+- Usuń czarne pasy opcją „Wypełnij” lub „Rozciągnij” albo przesuń wideo do góry, by zrobić miejsce na napisy.
+- Rich Theater Experience oferuje w serwisach YouTube, Twitch, Netflix i Disney+ dodatkowe funkcje: czat obok wideo, przyciski pomijania, rozdziały i podglądy.
+- Bezpłatne, open source, bez analityki: nic o Tobie ani o tym, co oglądasz, nie trafia do twórcy.
 
-GŁÓWNE FUNKCJE
-- Tryb immersyjny jednym klawiszem: naciśnij `T`, aby natychmiast powiększyć aktywne wideo do rozmiaru okna przeglądarki. Naciśnij ponownie lub `Escape`, aby wrócić. Jeśli na stronie jest kilka filmów, przełączaj je skrótem `Shift+T`. Kliknij obraz dwukrotnie, aby wejść do trybu pełnoekranowego lub z niego wyjść bez opuszczania trybu kinowego.
-- Lepsza obsługa napisów: wybierz ścieżkę bezpośrednio w trybie kinowym, włączaj i wyłączaj napisy klawiszem `C` oraz dostosuj czcionkę, rozmiar, kolor, cień, tło i krycie. Rozszerzenie zapamiętuje preferowany język osobno dla każdej witryny.
-- Rich Theater Experience: włącz dodatkowe integracje z obsługiwanymi serwisami. Dostępne funkcje zależą od serwisu, a każdy serwis możesz włączać osobnym przełącznikiem w oknie rozszerzenia lub w ustawieniach.
-- Czat obok obrazu: na Twitchu i YouTube z Rich Theater Experience trzymaj czat na żywo lub zapis czatu obok wideo albo pod nim, a pokazuj go i ukrywaj skrótem `Alt+R`.
-- Bogatsza oś czasu: przeskakuj między rozdziałami, oglądaj miniatury podglądu przed przewinięciem i sprawdzaj najczęściej odtwarzane momenty YouTube („Most Replayed”). Znaczniki zainstalowanego SponsorBlock mogą być widoczne na osi czasu YouTube.
-- Przyciski pomijania i kolejne odcinki: tam, gdzie serwis je udostępnia, pomijaj intra, napisy końcowe i streszczenia lub reklamy na YouTube, a także przechodź do poprzedniego lub następnego wideo albo odcinka.
-- Dopasowanie obrazu i układ podniesiony: naciśnij `Z` lub użyj przycisku w odtwarzaczu, aby przełączać Dopasuj, Wypełnij i Rozciągnij oraz usuwać czarne pasy bez dodatkowych rozszerzeń. Wybierz układ podniesiony (`Shift+L`), aby przesunąć obraz na górę i wykorzystać miejsce pod nim na napisy.
-- Eleganckie własne kontrolki: nowoczesny pasek sterowania z tytułem wideo, pionowymi panelami głośności i prędkości odtwarzania, półprzezroczystymi podpowiedziami oraz wskaźnikami czasu, który upłynął i który pozostał. Skrót `Shift+H` utrzymuje kontrolki stale widoczne.
-- Efekty audio: wzmocnienie głośności (do 300%), wzmocnienie głosu, ściszanie głośnych dźwięków i bas w ustawieniach odtwarzacza, przetwarzane przez Web Audio API tylko wtedy, gdy efekt jest włączony. Niedostępne dla treści chronionych DRM.
-- Wizualny HUD: eleganckie animowane nakładki przy zmianie głośności, przewijaniu i przełączaniu odtwarzania/pauzy.
-- AutoTheater (Rich Theater Experience): automatycznie włącza tryb kinowy po rozpoczęciu obsługiwanego wideo, z krótkim odliczaniem, które możesz anulować kliknięciem lub klawiszem `Esc`.
-- Przycisk na wideo (BETA, domyślnie wyłączony): mały przycisk na wstrzymanym wideo, który włącza tryb kinowy jednym kliknięciem. Na YouTube z Rich Theater Experience znajduje się na pasku narzędzi odtwarzacza.
-- Obsługa Shadow DOM: znajduje i powiększa odtwarzacze ukryte we współczesnych shadow root, poprawiając zgodność z większą liczbą witryn.
-- Własne skróty i ustawienia: skonfiguruj klawisze do przełączania trybu kinowego, przewijania, zarządzania napisami, zmiany ich rozmiaru i przechodzenia klatka po klatce. Ustawienia ostrzegają o konfliktach skrótów, a pomoc w odtwarzaczu pozwala sprawdzić je wszystkie. Wybierz język, kolor akcentu, wysoki kontrast, ograniczenie przezroczystości i ograniczenie animacji.
-- Lista wykluczeń: wykluczaj wybrane domeny z poziomu okna w pasku przeglądarki lub strony opcji, aby uniknąć konfliktów z natywnym układem strony.
+DODATKOWE FUNKCJE W POPULARNYCH SERWISACH
+Rich Theater Experience (eksperymentalne) wprowadza do trybu kinowego funkcje poszczególnych serwisów. Włączysz je lub wyłączysz osobno dla każdego serwisu w oknie rozszerzenia na pasku narzędzi albo w Ustawieniach.
+- YouTube: czat obok wideo (na żywo lub w nagraniu), rozdziały, podglądy na osi czasu, momenty „Most Replayed”, ścieżki dźwiękowe i polecane filmy po zakończeniu odtwarzania.
+- Twitch: czat obok wideo (na żywo lub w nagraniu) oraz podglądy i napisy w nagraniach minionych transmisji.
+- Netflix: przyciski „Pomiń intro” i „Następny odcinek” oraz ścieżki dźwiękowe: z dubbingiem, oryginalne i z audiodeskrypcją.
+- Disney+: przyciski „Pomiń” i „Następny odcinek” oraz ścieżki dźwiękowe, także z audiodeskrypcją.
+Obsługiwane także:
+- Vimeo: rozdziały, podglądy i następne wideo w kolekcji.
+- Patreon: napisy, rozdziały i podglądy.
+- SOOP (sooplive.com): czat obok wideo i nazwa streamera w tytule; w nagraniach rozdziały oraz poprzednie i następne nagranie.
+- Crunchyroll: znaczniki intra i napisów końcowych, podglądy, przyciski „Pomiń” i „Następny odcinek” oraz wybór napisów (napisy wtopione w wideo pozostają włączone).
+- Bilibili: napisy (niektóre wymagają logowania na Bilibili), rozdziały, podglądy, playlisty i polecane filmy po zakończeniu odtwarzania.
+- Bilibili.tv: napisy, podglądy, znaczniki intra i outra oraz przyciski „Pomiń” i „Następny odcinek” w odcinkach.
+- Tencent Video / WeTV: napisy, podglądy i następny odcinek.
+- iQIYI (iq.com): tytuły seriali i odcinków, napisy i ścieżki dźwiękowe, znaczniki intra i outra oraz poprzedni i następny odcinek.
+- Rakuten Viki: wszystkie języki napisów odcinka, ścieżki dźwiękowe w odcinkach z dubbingiem, podglądy oraz przyciski „Pomiń intro” i „Następny odcinek”.
 
-GDZIE I JAK TO DZIAŁA
-- Uniwersalne wideo HTML5: działa ze standardowymi elementami wideo HTML5 w sieci, także z odtwarzaczami umieszczonymi w Shadow DOM.
-- Osadzone odtwarzacze: wykrywa i powiększa filmy osadzone w ramkach, takie jak odtwarzacze YouTube lub innych platform wideo.
-- Napisy HTML5: wyświetla standardowe ścieżki napisów HTML5 we własnej nakładce trybu kinowego, dzięki czemu możesz dostosować ich wygląd.
-- Integracje z platformami: poza wymienionymi na początku opisu RTE obsługuje też wiele innych platform wideo, w tym serwisy twórców, anime i azjatyckie, z kolejkami odtwarzania, tytułami, napisami, rozdziałami i automatycznym wejściem w tryb kinowy. Dostępne funkcje zależą od serwisu i wideo.
-- Transmisje na żywo: rozpoznaje transmisje NA ŻYWO i, jeśli serwis udostępnia okno DVR, pozwala przewinąć nagranie i wrócić do bieżącego momentu.
-- Serwisy chronione DRM: niektóre platformy ograniczają dostęp do odtwarzacza, więc część funkcji, np. efekty audio, może być tam niedostępna.
-- Prywatność: Nie jesteś produktem. Rozszerzenie nie wysyła deweloperowi informacji o Tobie ani o tym, co oglądasz. Ustawienia mogą się synchronizować przez konto przeglądarki. Pełna polityka prywatności jest dostępna w Ustawieniach, w sekcji „O rozszerzeniu”.
-- Bezpłatne i open source: Theater Mode Everywhere jest bezpłatne i zawsze takie będzie, a jego kod źródłowy jest otwarty.
+NAJWAŻNIEJSZE FUNKCJE
+- Dopasowanie wideo: klawisz Z przełącza między „Dopasuj”, „Wypełnij” (przycina brzegi) i „Rozciągnij”. Na ekranach wyższych niż wideo układ „U góry” (Shift+L) przesuwa je w górę, a napisy mieszczą się w wolnym miejscu poniżej.
+- Napisy i dźwięk: wybierz ścieżki napisów i dźwięku, włączaj i wyłączaj napisy klawiszem C, a także ustaw krój pisma, rozmiar, kolor i tło. Wybrane języki są zapamiętywane.
+- Opcjonalne efekty audio: „Wzmocnienie głośności” do 300%, „Wzmocnienie głosu”, „Ściszanie głośnych dźwięków” i „Bas”.
+- Klawiatura (w trybie kinowym): skróty zmiany prędkości jak na YouTube, przytrzymanie klawisza Strzałka w prawo włącza odtwarzanie 2x, przecinek i kropka przesuwają o 0,04 s, a W, A, S i D pozwalają przechodzić między kontrolkami. H wyświetla wszystkie skróty; każdy można zmienić.
+- Sterowanie i wygląd: tytuł wideo, suwaki głośności i prędkości oraz ekran „Odtwórz ponownie” po zakończeniu odtwarzania. Shift+H przypina sterowanie na ekranie. Wybierz kolor akcentu, „Wysoki kontrast”, „Ogranicz przezroczystość” lub „Ogranicz animacje”. Interfejs w 15 językach.
+Uwaga: funkcje różnią się zależnie od serwisu i wideo. Efekty audio, w tym „Wzmocnienie głośności”, nie działają w wideo chronionym przez DRM, np. w serwisach Netflix i Disney+, ani tam, gdzie strona je blokuje.
 
 JAK ZACZĄĆ
-1. Otwórz witrynę z wideo, np. platformę streamingową, serwis informacyjny lub blog.
-2. Naciśnij `T`, aby włączyć tryb kinowy. Upewnij się, że nie piszesz właśnie w polu tekstowym.
-3. Użyj kontrolek odtwarzacza lub skrótów: `C` włącza i wyłącza napisy, `Left` i `Right` przewijają, a konfigurowalne skróty przechodzą klatka po klatce.
-4. Na obsługiwanych platformach włącz Rich Theater Experience w oknie rozszerzenia lub w ustawieniach.
-5. Naciśnij ponownie `Escape` lub `T`, aby wyjść z trybu kinowego.
+Po instalacji otwórz stronę z wideo i naciśnij T (nie podczas pisania w polu tekstowym). Shift+T przełącza między kilkoma wideo; aby wyjść z trybu kinowego, naciśnij T lub Escape. Możesz też dodać opcjonalny przycisk na wideo (beta) albo włączyć AutoTheater, aby tryb kinowy uruchamiał się automatycznie w serwisach z włączoną funkcją Rich Theater Experience, po odliczaniu, które można anulować. Rozszerzenie możesz wyłączyć na dowolnej stronie w oknie rozszerzenia na pasku narzędzi. Opcjonalna krótka konfiguracja zapyta, jak lubisz oglądać.
+
+PRYWATNOŚĆ, BEZPŁATNIE I OPEN SOURCE
+Nic o Tobie ani o tym, co oglądasz, nie trafia do twórcy ani do żadnych postronnych podmiotów trzecich. Nie ma analityki. Rozszerzenie potrzebuje dostępu do wszystkich witryn, aby znajdować wideo, ale nie prowadzi listy odwiedzanych przez Ciebie stron. Niektóre funkcje pobierają napisy i podglądy bezpośrednio z serwisu, który oglądasz. Ustawienia, w tym wykluczone strony i języki zapisane osobno dla każdej strony, mogą się synchronizować przez konto przeglądarki. Polityka prywatności znajduje się w Ustawieniach, w sekcji „O rozszerzeniu”.
+Theater Mode Everywhere jest bezpłatne i zawsze takie będzie. To projekt open source na licencji MIT.
+
+Rozszerzenie nie jest powiązane z wymienionymi tu serwisami ani przez nie rekomendowane.
 
 ## Suggested tags
-wideo, tryb kinowy, tryb teatralny, wideo html5, pełny ekran, obraz w obrazie, wzmocnienie głośności, skróty klawiszowe, youtube, vimeo, napisy, streaming, twitch, netflix, crunchyroll
+youtube, twitch, streaming, chat

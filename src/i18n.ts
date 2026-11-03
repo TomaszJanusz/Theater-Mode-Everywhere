@@ -24,7 +24,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   videoActivatorTitle: "Video launcher",
   videoActivatorDescription: "Show a small button on the left edge of a video when you point at it. Click it to enter theater mode. On some services with Rich Theater Experience, the button is built into the service’s interface.",
   extensionName: 'Theater Mode Everywhere — One player to rule them all',
-  extensionDescription: 'Expand any HTML5 video to fill the browser. Use custom controls, subtitles, audio effects and integrations with video services.',
+  extensionDescription: 'Press T to enter theater mode and fill the window. Subtitles and Volume Boost, plus chat and skip buttons on popular services.',
   cwsPromoBeforeLabel: 'BEFORE',
   cwsPromoAfterLabel: 'AFTER',
   cwsPromoPlayerUiLabel: 'Player UI',

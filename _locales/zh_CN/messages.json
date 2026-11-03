@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "将任意 HTML5 视频放大至整个浏览器窗口。使用自定义控件、字幕、音频效果，并与各类视频服务集成。"
+    "message": "按 T 键进入剧场模式，视频铺满整个窗口。提供字幕和音量增强，在部分热门服务上还有视频旁的聊天和跳过按钮。"
   },
   "cwsPromoBeforeLabel": {
     "message": "之前"
