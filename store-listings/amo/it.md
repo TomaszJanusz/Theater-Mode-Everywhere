@@ -4,48 +4,52 @@
 Theater Mode Everywhere
 
 ## Summary
-Espandi ogni video HTML5 nel browser. Usa controlli, sottotitoli, effetti audio e integrazioni con i servizi video.
+Premi T: modalità cinema a tutta finestra. Sottotitoli e Amplificazione volume, più chat e pulsanti Salta sui servizi popolari.
 
 ## Description
-Theater Mode Everywhere ingrandisce i player HTML5 fino a riempire l'intera finestra del browser e offre un'esperienza da cinema comoda, senza intestazioni, barre laterali, commenti e consigli.
+Premi T per entrare in modalità cinema: il video riempie la finestra del browser, senza intestazioni, barre laterali, commenti o contenuti consigliati che ti distraggano.
 
-Guarda tutorial, dirette, video e clip brevi con controlli di riproduzione personalizzati. Usa sottotitoli, scorciatoie da tastiera, adattamento del video, effetti audio e controlli del volume, oltre a funzioni aggiuntive sulle piattaforme supportate.
+Theater Mode Everywhere funziona con i player video della maggior parte dei siti web, compresi i video incorporati in altre pagine.
 
-Rich Theater Experience (RTE) offre integrazioni più approfondite con servizi online popolari. Su YouTube aggiunge la chat accanto all'immagine, su Netflix e Disney+ i pulsanti per saltare le intro e la navigazione al prossimo episodio, e su Crunchyroll titoli, capitoli dedicati alle intro e ai titoli di coda, e selezione dei sottotitoli. A seconda del servizio, l'estensione può mostrare titoli, sottotitoli, capitoli, miniature di anteprima, pulsanti per saltare, la navigazione al prossimo episodio e informazioni aggiuntive sulla timeline. Le capacità variano da una piattaforma all'altra. L'elenco completo dei servizi supportati si trova nelle impostazioni dell'estensione.
+IN BREVE
+- Controlli semplici sulla maggior parte dei siti: sottotitoli, velocità e Amplificazione volume facoltativa fino al 300%.
+- Rimuovi le bande nere con Riempi o Allunga, oppure sposta il video in alto per fare spazio ai sottotitoli.
+- Rich Theater Experience offre funzioni aggiuntive su YouTube, Netflix, Disney+ e Crunchyroll: chat accanto al video, pulsanti per saltare, capitoli e anteprime.
+- Gratis, open source e senza analytics: nulla su di te o su ciò che guardi viene inviato allo sviluppatore.
+
+FUNZIONI EXTRA SUI SERVIZI POPOLARI
+Rich Theater Experience (sperimentale) porta in modalità cinema le funzioni di ogni servizio. Attivala o disattivala per ciascun servizio nel popup della barra degli strumenti o in Impostazioni.
+- YouTube: chat accanto al video (in diretta o in replay), capitoli, anteprime sulla timeline, momenti più riprodotti («Most Replayed»), tracce audio e video consigliati a riproduzione finita.
+- Netflix: pulsanti Salta intro e Prossimo episodio, più tracce audio doppiate, originali e con audiodescrizione.
+- Disney+: pulsanti Salta e Prossimo episodio, più tracce audio, tra cui l'audiodescrizione.
+- Crunchyroll: marcatori di intro e titoli di coda, anteprime, pulsanti Salta e Prossimo episodio, nonché la scelta dei sottotitoli (i sottotitoli impressi nel video restano attivi).
+Altri servizi supportati:
+- Vimeo: capitoli, anteprime e video successivo in una raccolta.
+- Patreon: sottotitoli, capitoli e anteprime.
+- SOOP (sooplive.com): chat accanto al video e nome dello streamer nel titolo; nelle registrazioni, capitoli e registrazione precedente e successiva.
+- Bilibili: sottotitoli (alcuni richiedono l'accesso a Bilibili), capitoli, anteprime, playlist e video consigliati a riproduzione finita.
+- Bilibili.tv: sottotitoli, anteprime, marcatori di intro e finale, e pulsanti Salta e Prossimo episodio negli episodi.
+- Tencent Video / WeTV: sottotitoli, anteprime e l'episodio successivo.
+- iQIYI (iq.com): titoli di serie ed episodi, sottotitoli e tracce audio, marcatori di intro e finale, e l'episodio precedente e successivo.
+- Rakuten Viki: tutte le lingue dei sottotitoli dell'episodio, tracce audio negli episodi doppiati, anteprime e pulsanti Salta intro e Prossimo episodio.
+- Twitch: chat accanto al video (in diretta o in replay), più anteprime e sottotitoli nelle trasmissioni passate.
 
 FUNZIONI PRINCIPALI
-- Modalità immersiva con un solo tasto: premi `T` per ingrandire subito il video attivo alle dimensioni del browser. Premi di nuovo o `Escape` per tornare indietro. Se nella pagina ci sono più video, usa `Shift+T` per passare dall'uno all'altro. Fai doppio clic sull'immagine per entrare o uscire dallo schermo intero senza lasciare la modalità cinema.
-- Supporto sottotitoli migliorato: scegli una traccia direttamente in modalità cinema, attiva e disattiva i sottotitoli con il tasto `C` e regola carattere, dimensione, colore, ombra, sfondo e opacità. L'estensione ricorda la tua lingua preferita separatamente per ogni sito web.
-- Rich Theater Experience: attiva integrazioni aggiuntive con servizi supportati. Le funzioni disponibili dipendono dal servizio e si gestiscono con un interruttore per ogni servizio nel popup dell'estensione o nelle impostazioni.
-- Chat accanto all'immagine: su YouTube con Rich Theater Experience, tieni la chat live o il replay della chat accanto al video o sotto di esso, e mostrala o nascondila con `Alt+R`.
-- Una timeline più ricca: salta tra i capitoli, guarda le anteprime prima di spostarti e vedi i momenti più riprodotti di YouTube («Most Replayed»). I marcatori di SponsorBlock, se è installato, possono comparire sulla timeline di YouTube.
-- Pulsanti per saltare e prossimi episodi: dove il servizio li offre, salta intro, titoli di coda e riepiloghi o le pubblicità di YouTube, e passa al video o all'episodio precedente o successivo.
-- Adattamento del video e layout rialzato: premi `Z` o usa il pulsante nel player per alternare Adatta, Riempi e Allunga e rimuovere le bande nere senza altre estensioni. Scegli il layout rialzato (`Shift+L`) per spostare l'immagine in alto e usare lo spazio sotto di essa per i sottotitoli.
-- Eleganti controlli personalizzati: barra dei controlli moderna con il titolo del video, pannelli verticali per volume e velocità di riproduzione, tooltip semitrasparenti e indicatori del tempo trascorso e rimanente. Tieni i controlli sempre visibili con `Shift+H`.
-- Effetti audio: Amplificazione volume (fino al 300%), Potenziamento voce, Riduci suoni forti e Bassi nelle impostazioni del player, elaborati con la Web Audio API solo mentre un effetto è attivo. Non disponibili sui contenuti protetti da DRM.
-- HUD visivo: eleganti overlay animati quando cambi il volume, ti sposti nel video o alterni riproduzione e pausa.
-- AutoTheater (Rich Theater Experience): entra automaticamente in modalità cinema quando parte un video supportato, con un breve conto alla rovescia che puoi annullare con un clic o con `Esc`.
-- Pulsante sul video (BETA, disattivato per impostazione predefinita): un piccolo pulsante su un video in pausa per entrare in modalità cinema con un clic. Su YouTube con Rich Theater Experience si trova nella barra degli strumenti del player.
-- Supporto Shadow DOM: trova e ingrandisce i player nascosti nei moderni shadow root, migliorando la compatibilità con più siti.
-- Scorciatoie e impostazioni personalizzate: configura i tasti per attivare la modalità cinema, spostarti nel video, gestire i sottotitoli, ridimensionarli e avanzare fotogramma per fotogramma. Le impostazioni segnalano le scorciatoie in conflitto e la guida nel player ti permette di controllarle tutte. Scegli la lingua, il colore di accento, Contrasto elevato, Riduci trasparenza e Riduci movimento.
-- Elenco delle esclusioni: escludi domini specifici dal popup nella barra del browser o dalla pagina delle opzioni per evitare conflitti con il layout nativo della pagina.
-
-DOVE E COME FUNZIONA
-- Video HTML5 universale: funziona con i normali elementi video HTML5 del web, compresi i player inseriti nello Shadow DOM.
-- Player incorporati: rileva e ingrandisce i video incorporati nei frame, come i player di YouTube o di altre piattaforme video.
-- Sottotitoli HTML5: mostra le tracce di sottotitoli HTML5 standard in un overlay dedicato della modalità cinema, così puoi personalizzarne l'aspetto.
-- Integrazioni con le piattaforme: oltre a quelli citati all'inizio di questa descrizione, RTE supporta anche molte altre piattaforme video, comprese quelle di creator, di anime e quelle asiatiche, con playlist, titoli, sottotitoli, capitoli e ingresso automatico in modalità cinema. Le funzioni disponibili dipendono dal servizio e dal video.
-- Trasmissioni in diretta: riconosce le trasmissioni IN DIRETTA e, se il servizio offre una finestra DVR, ti permette di riavvolgere la registrazione e tornare al momento attuale.
-- Servizi protetti da DRM: alcune piattaforme limitano l'accesso al player, quindi alcune funzioni, come gli effetti audio, potrebbero non essere disponibili.
-- Privacy: Non sei il prodotto. L'estensione non invia allo sviluppatore informazioni su di te o su ciò che guardi. Le impostazioni possono essere sincronizzate tramite l'account del browser. L'informativa sulla privacy completa è disponibile in Impostazioni, alla voce Informazioni.
-- Gratuita e open source: Theater Mode Everywhere è gratuita e lo sarà sempre, e il suo codice sorgente è aperto.
+- Adattamento video: Z alterna Adatta, Riempi (ritaglia i bordi) e Allunga. Sugli schermi più alti del video, il layout In alto (Maiuscole+L) lo porta in cima, con i sottotitoli nello spazio sotto.
+- Sottotitoli e audio: scegli le tracce audio e dei sottotitoli, attiva o disattiva i sottotitoli con C e personalizza carattere, dimensione, colore e sfondo. L'estensione ricorda le tue lingue.
+- Effetti audio facoltativi: Amplificazione volume fino al 300%, Potenziamento voce, Riduci suoni forti e Bassi.
+- Tastiera (in modalità cinema): tasti per la velocità come su YouTube, tieni premuto Freccia destra per la velocità 2x, virgola e punto per scorrere di 0,04 secondi alla volta, W, A, S e D per muoverti tra i controlli. H elenca tutte le scorciatoie e ognuna si può cambiare.
+- Controlli e aspetto: titolo del video, cursori di volume e velocità e, quando il video finisce, una schermata Riproduci di nuovo. Maiuscole+H mantiene i controlli sempre visibili. Scegli un colore di accento o attiva Contrasto elevato, Riduci trasparenza o Riduci movimento. 15 lingue dell'interfaccia.
+Nota: le funzioni variano in base al servizio e al video. Gli effetti audio, compresa l'Amplificazione volume, non funzionano sui video protetti da DRM, come quelli di Netflix e Disney+, né dove un sito li blocca.
 
 COME INIZIARE
-1. Apri un sito di video, come una piattaforma di streaming, un sito di notizie o un blog.
-2. Premi `T` per entrare in modalità cinema. Assicurati di non stare scrivendo in una casella di testo.
-3. Usa i controlli del player o le scorciatoie: `C` attiva e disattiva i sottotitoli, `Left` e `Right` ti spostano nel video e le scorciatoie configurabili per i fotogrammi avanzano fotogramma per fotogramma.
-4. Sulle piattaforme supportate, attiva Rich Theater Experience nel popup dell'estensione o nelle impostazioni.
-5. Premi di nuovo `Escape` o `T` per uscire dalla modalità cinema.
+Dopo l'installazione, apri una pagina con un video e premi T (non mentre scrivi in un campo di testo). Maiuscole+T passa da un video all'altro; con T o Escape esci dalla modalità cinema. Puoi anche aggiungere un pulsante facoltativo sui video (beta) oppure attivare AutoTheater per entrare in modalità cinema in automatico sui servizi con Rich Theater Experience attiva, dopo un conto alla rovescia che puoi annullare. Puoi disattivare l'estensione su qualsiasi sito dal popup della barra degli strumenti. Una breve configurazione facoltativa ti chiede come ti piace guardare i video.
+
+PRIVACY, GRATUITÀ E OPEN SOURCE
+Nulla su di te o su ciò che guardi arriva allo sviluppatore né ad alcuna terza parte estranea. Non ci sono analytics. L'estensione ha bisogno di accedere a tutti i siti web per trovare i video, ma non conserva alcun elenco delle pagine che visiti. Alcune funzioni caricano sottotitoli e anteprime direttamente dal servizio che stai guardando. Le impostazioni, compresi i siti esclusi e le lingue per sito, possono essere sincronizzate tramite il tuo account del browser. L'informativa sulla privacy è in Impostazioni, alla voce Informazioni.
+Theater Mode Everywhere è gratuita e lo resterà sempre. È open source con licenza MIT.
+
+Non affiliata né approvata dai servizi citati in questa pagina.
 
 ## Suggested tags
-video, modalità cinema, modalità teatro, video html5, schermo intero, picture in picture, potenziamento volume, scorciatoie da tastiera, youtube, vimeo, sottotitoli, streaming, twitch, netflix, crunchyroll
+youtube, twitch, streaming, chat

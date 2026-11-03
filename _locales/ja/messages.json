@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "あらゆる HTML5 ビデオをブラウザいっぱいに拡大。独自のコントロール、字幕、オーディオエフェクト、動画サービスとの連携を利用できます。"
+    "message": "T キーでシアターモードに入り、動画をウィンドウいっぱいに表示します。字幕と音量ブーストのほか、人気サービスではチャットやスキップボタンも使えます。"
   },
   "cwsPromoBeforeLabel": {
     "message": "適用前"
