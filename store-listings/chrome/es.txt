@@ -1,6 +1,6 @@
 Theater Mode Everywhere te libera, con una sola tecla, de todo lo que te distrae en la página. Con TME, disfrutas más de tus vídeos. La extensión deja que el vídeo ocupe todo el espacio de la pestaña de tu navegador. Es un único reproductor para tus vídeos, que funciona igual de una web a otra. No te preocupes por las funciones propias de tu servicio de streaming favorito: hay muchas posibilidades de que ya las admitamos :-)
 
-Es lo que se conoce como modo cine. Para probarlo, pulsa T en cualquier página con un vídeo.
+Es lo que se conoce como modo cine. Para probarlo, pulsa T en una página con un vídeo.
 
 EN RESUMEN
 - Controles sencillos que funcionan igual en la mayoría de los sitios: subtítulos, velocidad y Amplificación de volumen opcional, hasta el 300%.

@@ -1,6 +1,6 @@
 Theater Mode Everywhere befreit dich mit nur einer Taste von allem, was auf einer Seite ablenkt. Mit TME wird das Videoschauen einfach schöner. Die Erweiterung lässt das Video den ganzen Platz in deinem Browsertab einnehmen. Das ist ein einheitlicher Player für deine Videos quer durchs Web. Mach dir keine Sorgen um die besonderen Funktionen deines liebsten Streamingdienstes: Die Chancen stehen gut, dass wir sie unterstützen :-)
 
-Diese Ansicht heißt Kinomodus. Drücke T auf einer beliebigen Seite mit einem Video, um ihn auszuprobieren.
+Diese Ansicht heißt Kinomodus. Drücke T auf einer Seite mit einem Video, um ihn auszuprobieren.
 
 KURZ GESAGT
 - Einfache Steuerung, die auf den meisten Websites gleich funktioniert: Untertitel, Geschwindigkeit und eine optionale Lautstärkeverstärkung bis 300 %.

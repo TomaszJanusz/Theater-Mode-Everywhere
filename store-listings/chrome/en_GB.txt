@@ -1,6 +1,6 @@
 Theater Mode Everywhere lets you free yourself from the distracting things on a page with a single key. With TME, watching videos gets better. The extension lets the video fill the entire space of your browser tab. It is one consistent player for video across the web. Don't worry about the unique features of your favourite streaming service: there's a good chance we support them :-)
 
-This view is called theatre mode. Press T on any video page to try it.
+This view is called theatre mode. Press T on a video page to try it.
 
 TL;DR
 - Simple controls that work the same on most sites: subtitles, speed and optional Volume Boost up to 300%.

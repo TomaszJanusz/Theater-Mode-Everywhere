@@ -9,7 +9,7 @@ Regardez vos vidéos en plus grand et sans distraction sur la plupart des sites.
 ## Description
 Theater Mode Everywhere vous libère, d'une seule touche, de tout ce qui vous distrait sur la page. Avec TME, regarder des vidéos devient plus agréable. L'extension permet à la vidéo d'occuper tout l'espace de votre onglet. C'est un seul et même lecteur pour vos vidéos, d'un site à l'autre. Pas d'inquiétude pour les fonctions propres à votre service de streaming préféré : il y a de fortes chances que nous les prenions en charge :-)
 
-C'est ce qu'on appelle le mode cinéma. Pour l'essayer, ouvrez n'importe quelle page contenant une vidéo et appuyez sur T.
+C'est ce qu'on appelle le mode cinéma. Pour l'essayer, ouvrez une page contenant une vidéo et appuyez sur T.
 
 EN BREF
 - Des commandes simples, identiques sur la plupart des sites : sous-titres, vitesse et Amplificateur de volume facultatif jusqu'à 300 %.

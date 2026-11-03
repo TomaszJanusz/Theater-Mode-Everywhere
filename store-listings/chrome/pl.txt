@@ -1,6 +1,6 @@
 Theater Mode Everywhere pozwala Ci za pomocą jednego klawisza uwolnić się od rozpraszających rzeczy na stronie. Z TME Twoje doświadczenie z oglądania filmów będzie lepsze. To rozszerzenie pozwala na wypełnienie całej przestrzeni karty materiałem wideo. Jest to jednolity player dla filmów na różnych stronach internetowych. Nie martw się o unikalne funkcje Twojego ulubionego serwisu VOD – jest spora szansa, że to obsługujemy :-)
 
-Taki widok nazywamy trybem kinowym. Naciśnij T na dowolnej stronie z filmem, aby go wypróbować.
+Taki widok nazywamy trybem kinowym. Naciśnij T na stronie z filmem, aby go wypróbować.
 
 W SKRÓCIE
 - Proste sterowanie, takie samo na większości stron: napisy, prędkość i opcjonalne „Wzmocnienie głośności” do 300%.

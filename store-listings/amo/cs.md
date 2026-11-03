@@ -9,7 +9,7 @@ Na většině webů sledujte videa ve větším zobrazení a bez rozptylování.
 ## Description
 Theater Mode Everywhere vám jedinou klávesou umožní zbavit se rušivých věcí na stránce. S TME se vám na videa bude dívat lépe. Rozšíření nechá video vyplnit celý prostor karty prohlížeče. Je to jednotný přehrávač pro videa na různých webech. Nedělejte si starosti s jedinečnými funkcemi vaší oblíbené streamovací služby – je slušná šance, že je podporujeme :-)
 
-Tomuto zobrazení se říká režim kina. Stiskněte T na kterékoli stránce s videem a vyzkoušejte si ho.
+Tomuto zobrazení se říká režim kina. Stiskněte T na stránce s videem a vyzkoušejte si ho.
 
 V KOSTCE
 - Jednoduché ovládání, které funguje stejně na většině webů: titulky, rychlost a volitelné Zesílení hlasitosti až na 300 %.
