@@ -209,12 +209,12 @@ export function createControls(
   
     // The ended curtain turns play into Replay while it shows.
     let ended = false;
-    // Pausing a live stream without a seekable window gives up its position, so the button stops it.
-    let liveLocked = false;
+    // A host without rewind in a live stream stops it rather than pausing (see PlaybackWindow.stopsOnPause).
+    let stopsOnPause = false;
     const playAction = () => {
       if (ended) return 'replay';
       if (video.paused) return 'play';
-      return liveLocked ? 'stop' : 'pause';
+      return stopsOnPause ? 'stop' : 'pause';
     };
     bindCustomTooltip(playPauseBtn, () => `${t(playAction())} ${shortcutKeys(ui().shortcuts.playPause)}`);
 
@@ -370,10 +370,11 @@ export function createControls(
       const locked = playback.live && !playback.seekable;
       const canJumpToLive = playback.live && playback.seekable;
       const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, playback);
-      const key = `${playback.live}:${locked}:${behindLive}:${canJumpToLive}`;
+      const stops = playback.stopsOnPause === true;
+      const key = `${playback.live}:${locked}:${behindLive}:${canJumpToLive}:${stops}`;
       if (key === liveChromeKey) return { live: playback.live, behindLive, canJumpToLive };
       liveChromeKey = key;
-      liveLocked = locked;
+      stopsOnPause = stops;
       paintPlayButton();
       elapsedReadout.classList.toggle('theater-time-live', playback.live);
       elapsedReadout.classList.toggle('theater-time-live-behind', behindLive);

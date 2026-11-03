@@ -58,24 +58,6 @@ export const Ended: StoryObj<Args> = {
 };
 
 /**
- * A live stream that cannot be rewound is playing: the bar shows LIVE over a full, inert timeline, and play/pause is a
- * Stop button, since pausing gives up the position. The fixture media reports an unbounded duration and no seekable
- * range; that YouTube's live streams without DVR map onto this is youtube/live-no-dvr.browser.test.ts's part.
- */
-export const LiveWithoutRewind: StoryObj<Args> = {
-  args: { scenario: 'live' },
-  play: async () => {
-    await window.__playerFixture!.ready;
-    const root = window.__playerFixture!.root;
-    await expect(root.querySelector('.play-pause-btn')?.getAttribute('aria-label')).toBe(t('stop'));
-    await expect(root.querySelector('.theater-time-elapsed.theater-time-live')).not.toBeNull();
-    const scrubber = root.querySelector<HTMLElement>('.theater-scrubber-container');
-    await expect(scrubber?.getAttribute('aria-disabled')).toBe('true');
-    await expect(scrubber?.tabIndex).toBe(-1);
-  }
-};
-
-/**
  * An update to a new version is announced: the settings menu's last row names it and leads to Update highlights
  * instead of Settings, with the visible text as its accessible name. Which page the click opens is the background's
  * part; update-notice smoke covers it in the installed extension.

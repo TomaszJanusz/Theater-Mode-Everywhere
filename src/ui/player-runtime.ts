@@ -299,11 +299,11 @@ function sessionSurface(): PlaybackSurface | null {
   return null;
 }
 
-/** Pausing a live stream without a seekable window stops it; the play button says so too. */
+/** A host without rewind in a live stream stops it rather than pausing; the play button says so too. */
 function triggerPlaybackIndicator(action: 'play' | 'pause'): void {
   const surface = sessionSurface();
-  const timeline = action === 'pause' && surface ? playbackWindow(surface) : null;
-  hud.triggerPlaybackIndicator(timeline?.live && !timeline.seekable ? 'stop' : action);
+  const stops = action === 'pause' && surface && playbackWindow(surface).stopsOnPause;
+  hud.triggerPlaybackIndicator(stops ? 'stop' : action);
 }
 
 /** The surface whose speed the shortcuts may change: the speed button hides for live playback, and they follow it. */

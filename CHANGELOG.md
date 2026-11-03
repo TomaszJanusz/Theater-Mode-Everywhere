@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- On YouTube live streams that cannot be rewound, the progress bar shows LIVE and cannot be dragged, the seek keys do nothing, and play/pause is a Stop button that resumes at the live edge, as on YouTube. Before, seeking back left a spinner turning and play/pause could fall out of step with the video. Other live streams without rewind also show Stop.
+- On YouTube live streams that cannot be rewound, the progress bar shows LIVE and cannot be dragged, the seek keys do nothing, and play/pause is a Stop button that resumes at the live edge, as on YouTube. Before, seeking back left a spinner turning and play/pause could fall out of step with the video.
 
 ## [2.1.0] - 2026-11-02
 

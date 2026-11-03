@@ -283,6 +283,7 @@ describe('playback window', () => {
         const window = playbackWindow(video);
         assert.equal(window.live, true);
         assert.equal(window.seekable, false);
+        assert.equal(window.stopsOnPause, true, 'play/pause stops, as YouTube\'s does');
         assert.equal(timeToRatio(recorded.currentTime, window), 1);
         assert.equal(isAtLiveEdge(0, window), true);
         assert.equal(seekBy(video, -5), false);
@@ -394,6 +395,7 @@ describe('playback window', () => {
     const window = playbackWindow(fakeVideo({ duration: Number.POSITIVE_INFINITY }));
     assert.equal(window.live, true);
     assert.equal(window.seekable, false);
+    assert.equal(window.stopsOnPause, false, 'only a host that offers no rewind turns pause into stop');
     assert.equal(timeToRatio(0, window), 1);
     assert.equal(isAtLiveEdge(0, window), true);
   });

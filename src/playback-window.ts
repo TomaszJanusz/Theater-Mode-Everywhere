@@ -29,6 +29,8 @@ export type PlaybackWindow = {
   duration: number;
   seekable: boolean;
   live: boolean;
+  /** The host offers no rewind in this live stream (a provider's `liveBounds` returned false): pausing stops it. */
+  stopsOnPause?: boolean;
 };
 
 export type PlaybackWindowOptions = {
@@ -151,7 +153,8 @@ function liveWindow(video: HTMLVideoElement): PlaybackWindow {
     end: 0,
     duration: 0,
     seekable: false,
-    live: true
+    live: true,
+    stopsOnPause: hostBounds === false
   };
 }
 

@@ -36,7 +36,7 @@ aria-label="Seek slider" aria-valuemin="0" aria-valuemax="2157" aria-valuenow="2
     playVideo: () => {
       window.hostCommands.push('playVideo');
       if (!video.getAttribute('src')) video.src = '/vod.webm';
-      video.play();
+      video.play().catch(() => {});
     }
   });
 </script>`;
