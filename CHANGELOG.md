@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- When your saved subtitle language fails to load on its first try, such as on YouTube, the Subtitles row in the corner notice keeps showing its spinner while the one automatic retry runs, instead of flashing "Couldn't load" first. "Couldn't load" appears only when the retry fails too.
 - Twitch chat beside the picture no longer cuts off the end of messages, the message box and its buttons when the chat is narrower than Twitch's own minimum: live and replay chat now wrap to the chat's width. The narrowest chat is now 300 px instead of 280, so the narrowest YouTube chat fits without being cut off.
 - On Twitch past broadcasts that have closed captions, theater mode now lists them as Closed Captions in the subtitle menu and shows them over the picture, above the controls, when you pick them. Before, they were left out of the menu and Twitch's own captions drew below the window where nothing showed. While the menu says Off, captions Twitch remembers from earlier videos stay hidden in theater; Twitch's own caption setting is left as it was. Twitch live streams still offer no captions in the menu.
 - In theater mode on large pages such as YouTube, the controls bar now appears on the first mouse move after a pause and hides after idle without the brief hitch it used to cause; the pointer still disappears over the video while idle.
