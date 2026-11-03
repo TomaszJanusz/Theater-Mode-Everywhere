@@ -1508,6 +1508,9 @@ section h2 {
 /* The dialog scroll lock removes the viewport scrollbar; a reserved gutter keeps the page from shifting. */
 html { scrollbar-gutter: stable; }
 
+/* The highlights are long-form prose: wider than the shared "wide" dialog so each item takes fewer lines. */
+.te-dialog:has(.whats-new-content) { --te-dialog-wide-width: 850px; }
+
 .whats-new-announcement { min-height: 0; }
 .whats-new-content {
   display: flex;
@@ -1516,6 +1519,25 @@ html { scrollbar-gutter: stable; }
   text-align: start;
 }
 .whats-new-content > * { margin: 0; }
+
+.whats-new-content kbd {
+  display: inline-block;
+  min-inline-size: 1.6em;
+  box-sizing: border-box;
+  padding: 2px 5px;
+  border: 1px solid #3f3f46;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background-color: #27272a;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+  color: #f4f4f5;
+  font: inherit;
+  font-size: 0.85em;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
 
 .whats-new-lead {
   font-size: inherit;
