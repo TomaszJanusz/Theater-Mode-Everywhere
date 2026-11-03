@@ -213,6 +213,7 @@ type YoutubePlayer = Element & {
   setSize?: (width: number, height: number) => void;
   seekTo?: (time: number, allowSeekAhead: boolean) => void;
   seekToLiveHead?: () => void;
+  getProgressState?: () => { allowSeeking?: boolean } | null;
 };
 
 /** Hover and inline previews: their player responses never describe the viewer's video. */
@@ -751,6 +752,8 @@ export function handleYoutubeMediaSeek(detail: { live?: boolean; time?: number }
       }
       return true;
     }
+    // A live stream without DVR: a far seekTo can empty the player. Consume the request so nothing seeks natively.
+    if (player?.getProgressState?.()?.allowSeeking === false) return true;
     if (typeof detail.time === 'number' && Number.isFinite(detail.time) && typeof player?.seekTo === 'function') {
       const videoEl = video instanceof HTMLVideoElement ? video : null;
       const html5Now = videoEl ? videoEl.currentTime : NaN;

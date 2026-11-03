@@ -20,10 +20,10 @@ export function hostIsAtLiveHead(video: HTMLVideoElement): boolean {
   return providers().some((provider) => provider.isAtLiveHead?.(video) === true);
 }
 
-export function readHostLiveBounds(video: HTMLVideoElement): TimelineBounds | null {
+export function readHostLiveBounds(video: HTMLVideoElement): TimelineBounds | false | null {
   for (const provider of providers()) {
     const bounds = provider.liveBounds?.(video);
-    if (bounds) return bounds;
+    if (bounds != null) return bounds;
   }
   return null;
 }

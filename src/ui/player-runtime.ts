@@ -74,6 +74,7 @@ import {
 } from '../playlist-nav';
 import {
   cancelPendingSeekResume,
+  playbackWindow,
   seekBy,
   seekToMediaTime
 } from '../playback-window';
@@ -230,7 +231,6 @@ const {
   triggerSeekIndicator,
   triggerVolumeIndicator,
   triggerStatusIndicator,
-  triggerPlaybackIndicator,
   dismissPlaybackIndicator,
   triggerCaptionHud,
   updateLanguageHud,
@@ -297,6 +297,13 @@ function sessionSurface(): PlaybackSurface | null {
   if (providerPlayback && session.element === providerPlayback.surface.element) return providerPlayback.surface;
   if (session.element instanceof HTMLVideoElement) return nativePlaybackSurface(session.element);
   return null;
+}
+
+/** Pausing a live stream without a seekable window stops it; the play button says so too. */
+function triggerPlaybackIndicator(action: 'play' | 'pause'): void {
+  const surface = sessionSurface();
+  const timeline = action === 'pause' && surface ? playbackWindow(surface) : null;
+  hud.triggerPlaybackIndicator(timeline?.live && !timeline.seekable ? 'stop' : action);
 }
 
 /** The surface whose speed the shortcuts may change: the speed button hides for live playback, and they follow it. */

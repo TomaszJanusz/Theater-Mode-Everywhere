@@ -566,6 +566,10 @@
   "pause": {
     "message": "Pause"
   },
+  "stop": {
+    "message": "Stop",
+    "description": "Play/pause button label while a live stream that cannot be rewound plays: pausing gives up its position, so the button stops playback."
+  },
   "replay": {
     "message": "Replay",
     "description": "Button that plays the video again from the start once it has ended; it replaces Play on the player controls and also sits in the middle of the black end screen."

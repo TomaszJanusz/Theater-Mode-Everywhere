@@ -564,6 +564,9 @@
   "pause": {
     "message": "Pausa"
   },
+  "stop": {
+    "message": "Interrompi"
+  },
   "replay": {
     "message": "Riproduci di nuovo",
     "description": "Button that plays the video again from the start once it has ended; it replaces Play on the player controls and also sits in the middle of the black end screen."

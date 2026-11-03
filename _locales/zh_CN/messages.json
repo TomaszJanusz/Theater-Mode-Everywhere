@@ -564,6 +564,9 @@
   "pause": {
     "message": "暂停"
   },
+  "stop": {
+    "message": "停止"
+  },
   "replay": {
     "message": "重播",
     "description": "Button that plays the video again from the start once it has ended; it replaces Play on the player controls and also sits in the middle of the black end screen."

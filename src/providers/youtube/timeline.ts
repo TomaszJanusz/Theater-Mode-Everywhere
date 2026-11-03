@@ -128,6 +128,14 @@ function youtubeIsAtLiveHead(video: HTMLVideoElement): boolean {
   return Boolean(badge && badge.classList.contains('ytp-live-badge-is-livehead'));
 }
 
+// A live stream without DVR keeps a full progress bar whose container YouTube disables; the media still
+// reports the whole stream as seekable, and a far seek can leave the player unstarted.
+function youtubeLiveSeekDisabled(video: HTMLVideoElement): boolean {
+  const player = youtubePlayerFor(video);
+  const container = player ? youtubePlayerControl(player, '.ytp-progress-bar-container') : null;
+  return container?.getAttribute('aria-disabled') === 'true';
+}
+
 function canSeekYoutubeLive(video: HTMLVideoElement): boolean {
   return youtubeLiveHint(video) && Boolean(youtubePlayerFor(video));
 }
@@ -152,6 +160,7 @@ export const youtubeTimeline: ProviderTimeline = {
   liveHint: youtubeLiveHint,
   isAtLiveHead: youtubeIsAtLiveHead,
   liveBounds(video) {
+    if (youtubeLiveSeekDisabled(video)) return false;
     return youtubeDvrBounds(video) ?? youtubeLiveHeadBounds(video);
   },
   mediaSeek: youtubeMediaSeek,

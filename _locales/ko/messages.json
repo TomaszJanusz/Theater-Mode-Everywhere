@@ -564,6 +564,9 @@
   "pause": {
     "message": "일시정지"
   },
+  "stop": {
+    "message": "정지"
+  },
   "replay": {
     "message": "다시 재생",
     "description": "Button that plays the video again from the start once it has ended; it replaces Play on the player controls and also sits in the middle of the black end screen."

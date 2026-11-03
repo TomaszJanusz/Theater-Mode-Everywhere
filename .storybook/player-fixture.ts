@@ -17,14 +17,14 @@ import { beginStage } from './stage-owner';
 
 // Menus that the production bar pins open on click. Volume and speed open on hover or focus, which tests drive with real input.
 // `update` is the settings menu while an update is announced.
-export const SCENARIOS = ['watching', 'settings', 'update', 'captions', 'help', 'ended'] as const;
+export const SCENARIOS = ['watching', 'settings', 'update', 'captions', 'help', 'ended', 'live'] as const;
 export type Scenario = typeof SCENARIOS[number];
 
 export interface PlayerEnvironment { locale: string; backdrop: string; reduceMotion: string }
 
 /** Fixed position in the two-second clip, so every capture shows the same decoded frame. */
 const MEDIA_TIME = 1;
-const MENU_TRIGGER: Record<Exclude<Scenario, 'watching' | 'help' | 'ended'>, string> = {
+const MENU_TRIGGER: Record<Exclude<Scenario, 'watching' | 'help' | 'ended' | 'live'>, string> = {
   settings: '.player-settings-btn', update: '.player-settings-btn', captions: '.cc-btn'
 };
 /** A fixed announcement, so the menu label does not follow the manifest's version. */
@@ -175,6 +175,7 @@ export class PlayerFixture {
     if (revision !== this.revision || this.disposed) return;
     await this.showPlayback(this.scenario === 'ended');
     if (revision !== this.revision || this.disposed) return;
+    this.showLive(this.scenario === 'live');
     // The background's write as the runtime sees it: a storage change it follows live.
     void this.stub.chrome.storage.local.set({ [PENDING_UPDATE_KEY]: this.scenario === 'update' ? FIXTURE_UPDATE : undefined });
     this.showScenario(this.scenario);
@@ -202,6 +203,29 @@ export class PlayerFixture {
     }
   }
 
+  /**
+   * A live stream that cannot be rewound, playing: unbounded duration and no seekable range, as a generic HTML5 live
+   * stream or a YouTube live without DVR presents it. The element stays paused on MEDIA_TIME, so the frame holds still.
+   */
+  private showLive(live: boolean): void {
+    const win = this.window;
+    const video = win.document.querySelector('video')!;
+    const media = video as unknown as Record<'duration' | 'seekable' | 'paused', unknown>;
+    if (live === Object.hasOwn(video, 'duration')) return;
+    if (live) {
+      const empty = win.document.createElement('video').seekable;
+      Object.defineProperty(video, 'duration', { configurable: true, get: () => Infinity });
+      Object.defineProperty(video, 'seekable', { configurable: true, get: () => empty });
+      Object.defineProperty(video, 'paused', { configurable: true, get: () => false });
+    } else {
+      delete media.duration;
+      delete media.seekable;
+      delete media.paused;
+    }
+    video.dispatchEvent(new win.Event('durationchange'));
+    video.dispatchEvent(new win.Event(live ? 'play' : 'pause'));
+  }
+
   private showScenario(scenario: Scenario): void {
     // The shortcuts help is a dialog, not a menu: it opens from the help button and closes with its own button.
     const help = this.root.querySelector<HTMLElement>('.theater-help-overlay');
@@ -213,9 +237,9 @@ export class PlayerFixture {
     help?.querySelector<HTMLElement>('.te-dialog-close')?.click();
     // Production menus exclude each other: opening one closes another, so only a menu to retire needs a click.
     for (const trigger of this.root.querySelectorAll<HTMLElement>('[aria-expanded="true"]')) {
-      if (scenario === 'watching' || scenario === 'ended' || !trigger.matches(MENU_TRIGGER[scenario])) trigger.click();
+      if (scenario === 'watching' || scenario === 'ended' || scenario === 'live' || !trigger.matches(MENU_TRIGGER[scenario])) trigger.click();
     }
-    if (scenario === 'watching' || scenario === 'ended') return;
+    if (scenario === 'watching' || scenario === 'ended' || scenario === 'live') return;
     const trigger = this.root.querySelector<HTMLElement>(MENU_TRIGGER[scenario]);
     if (!trigger) throw new Error(`Player fixture: no control for ${scenario}`);
     if (trigger.getAttribute('aria-expanded') !== 'true') trigger.click();

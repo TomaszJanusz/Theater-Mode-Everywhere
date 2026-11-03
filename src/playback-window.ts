@@ -139,18 +139,12 @@ function boundsWindow(bounds: { start: number; end: number }): PlaybackWindow {
 
 function liveWindow(video: HTMLVideoElement): PlaybackWindow {
   const hostBounds = readHostLiveBounds(video);
-  if (hostBounds) return boundsWindow(hostBounds);
-  const bounds = seekableBounds(video);
-  if (bounds) return boundsWindow(bounds);
-  const duration = finiteDuration(video);
-  if (duration != null) {
-    return {
-      start: 0,
-      end: duration,
-      duration,
-      seekable: true,
-      live: true
-    };
+  // A host without DVR may still report the whole stream as seekable media.
+  if (hostBounds !== false) {
+    const bounds = hostBounds ?? seekableBounds(video);
+    if (bounds) return boundsWindow(bounds);
+    const duration = finiteDuration(video);
+    if (duration != null) return boundsWindow({ start: 0, end: duration });
   }
   return {
     start: 0,
@@ -328,15 +322,16 @@ export function cancelPendingSeekResume(video: HTMLVideoElement): void {
 
 export function seekToMediaTime(media: HTMLVideoElement | PlaybackSurface, time: number): void {
   if (isPlaybackSurface(media) && !media.capabilities.nativeMedia) {
-    const surfaceWindow = playbackWindow(media);
-    const target = surfaceWindow.seekable ? clampToWindow(time, surfaceWindow) : time;
+    const target = clampToWindow(time, playbackWindow(media));
     notifyMediaSeekRequest(media, target);
     media.currentTime = target;
     return;
   }
   const video = nativeVideoOf(media) || media as HTMLVideoElement;
   const window = playbackWindow(video);
-  const target = window.seekable ? clampToWindow(time, window) : time;
+  // A live stream without a seekable window has nowhere to go; a request would only stall some hosts.
+  if (window.live && !window.seekable) return;
+  const target = clampToWindow(time, window);
   // Hosts such as Disney+ may transiently expose a paused HTMLMediaElement
   // while they buffer a seek. Keep the original playback intent across a
   // burst of arrow-key seeks, rather than treating the second keypress as a
