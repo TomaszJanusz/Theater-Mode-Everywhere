@@ -529,10 +529,10 @@
     "message": "Avancer d'une image"
   },
   "frameStepBackward004": {
-    "message": "Reculer d'une image (0,04 s)"
+    "message": "Reculer d'une image"
   },
   "frameStepForward004": {
-    "message": "Avancer d'une image (0,04 s)"
+    "message": "Avancer d'une image"
   },
   "decreasePlaybackSpeed": {
     "message": "Ralentir la lecture"

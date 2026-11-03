@@ -529,10 +529,10 @@
     "message": "Avançar um quadro"
   },
   "frameStepBackward004": {
-    "message": "Voltar um quadro (0,04s)"
+    "message": "Voltar um quadro"
   },
   "frameStepForward004": {
-    "message": "Avançar um quadro (0,04s)"
+    "message": "Avançar um quadro"
   },
   "decreasePlaybackSpeed": {
     "message": "Diminuir velocidade de reprodução"

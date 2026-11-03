@@ -529,10 +529,10 @@
     "message": "1フレーム進む"
   },
   "frameStepBackward004": {
-    "message": "1フレーム戻る (0.04秒)"
+    "message": "1フレーム戻る"
   },
   "frameStepForward004": {
-    "message": "1フレーム進む (0.04秒)"
+    "message": "1フレーム進む"
   },
   "decreasePlaybackSpeed": {
     "message": "再生速度を下げる"

@@ -20,7 +20,7 @@ FONCTIONS PRINCIPALES
 - Ajustement de la vidéo : Z fait défiler Ajuster, Remplir (rogne les bords) et Étirer. Sur les écrans plus hauts que la vidéo, l'option En haut (Majuscule+L) la fait monter, avec les sous-titres dans l'espace en dessous.
 - Sous-titres et audio : choisissez vos sous-titres et vos pistes audio, activez ou désactivez les sous-titres avec C, et personnalisez la police, la taille, la couleur et l'arrière-plan. Vos langues sont mémorisées.
 - Effets audio facultatifs : Amplificateur de volume jusqu'à 300 %, Amplification des voix, Réduire les sons forts et Basses.
-- Clavier (en mode cinéma) : les mêmes touches de vitesse que sur YouTube, Flèche vers la droite maintenue pour lire en 2x, virgule et point pour reculer ou avancer par pas de 0,04 seconde, et W, A, S et D pour se déplacer entre les commandes. H affiche tous les raccourcis, tous modifiables.
+- Clavier (en mode cinéma) : les mêmes touches de vitesse que sur YouTube, Flèche vers la droite maintenue pour lire en 2x, virgule et point pour reculer ou avancer image par image, et W, A, S et D pour se déplacer entre les commandes. H affiche tous les raccourcis, tous modifiables.
 - Commandes et apparence : le titre de la vidéo, des curseurs de volume et de vitesse, et un écran Revoir à la fin de la vidéo. Majuscule+H maintient les commandes affichées. Choisissez une couleur d'accentuation, ou activez Contraste élevé, Réduire la transparence ou Réduire les animations. 15 langues d'interface.
 Remarque : les fonctions varient selon le service et la vidéo. Les effets audio, dont l'Amplificateur de volume, ne fonctionnent pas sur les vidéos protégées par DRM, comme celles de Netflix et Disney+, ni lorsqu'un site les bloque.
 

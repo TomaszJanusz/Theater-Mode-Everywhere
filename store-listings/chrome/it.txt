@@ -20,7 +20,7 @@ FUNZIONI PRINCIPALI
 - Adattamento video: Z alterna Adatta, Riempi (ritaglia i bordi) e Allunga. Sugli schermi più alti del video, il layout In alto (Maiuscole+L) lo porta in cima, con i sottotitoli nello spazio sotto.
 - Sottotitoli e audio: scegli le tracce audio e dei sottotitoli, attiva o disattiva i sottotitoli con C e personalizza carattere, dimensione, colore e sfondo. L'estensione ricorda le tue lingue.
 - Effetti audio facoltativi: Amplificazione volume fino al 300%, Potenziamento voce, Riduci suoni forti e Bassi.
-- Tastiera (in modalità cinema): tasti per la velocità come su YouTube, tieni premuto Freccia destra per la velocità 2x, virgola e punto per scorrere di 0,04 secondi alla volta, W, A, S e D per muoverti tra i controlli. H elenca tutte le scorciatoie e ognuna si può cambiare.
+- Tastiera (in modalità cinema): tasti per la velocità come su YouTube, tieni premuto Freccia destra per la velocità 2x, virgola e punto per scorrere fotogramma per fotogramma, W, A, S e D per muoverti tra i controlli. H elenca tutte le scorciatoie e ognuna si può cambiare.
 - Controlli e aspetto: titolo del video, cursori di volume e velocità e, quando il video finisce, una schermata Riproduci di nuovo. Maiuscole+H mantiene i controlli sempre visibili. Scegli un colore di accento o attiva Contrasto elevato, Riduci trasparenza o Riduci movimento. 15 lingue dell'interfaccia.
 Nota: le funzioni variano in base al servizio e al video. Gli effetti audio, compresa l'Amplificazione volume, non funzionano sui video protetti da DRM, come quelli di Netflix e Disney+, né dove un sito li blocca.
 

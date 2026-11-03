@@ -38,7 +38,7 @@ FUNCIONES PRINCIPALES
 - Ajuste del vídeo: Z alterna entre Ajustar, Rellenar (recorta los bordes) y Estirar. En pantallas más altas que el vídeo, la disposición Arriba (Mayúsculas+L) lo sube y deja los subtítulos en el espacio de abajo.
 - Subtítulos y audio: elige las pistas de subtítulos y de audio, activa o desactiva los subtítulos con C y personaliza la fuente, el tamaño, el color y el fondo. La extensión recuerda tus idiomas.
 - Efectos de audio opcionales: Amplificación de volumen hasta el 300%, Realce de voz, Reducir sonidos fuertes y Graves.
-- Teclado (en el modo cine): teclas de velocidad como las de YouTube, mantén pulsada Flecha derecha para reproducir a 2x, coma y punto para avanzar o retroceder en pasos de 0,04 segundos, y W, A, S y D para moverte entre los controles. H muestra todos los atajos, que puedes cambiar a tu gusto.
+- Teclado (en el modo cine): teclas de velocidad como las de YouTube, mantén pulsada Flecha derecha para reproducir a 2x, coma y punto para avanzar o retroceder fotograma a fotograma, y W, A, S y D para moverte entre los controles. H muestra todos los atajos, que puedes cambiar a tu gusto.
 - Controles y apariencia: el título del vídeo, deslizadores de volumen y velocidad, y una pantalla Volver a ver cuando termina el vídeo. Mayúsculas+H fija los controles en pantalla. Elige un color de acento, Contraste alto, Reducir transparencia o Reducir movimiento. 15 idiomas de interfaz.
 Nota: las funciones varían según el servicio y el vídeo. Los efectos de audio, incluida la Amplificación de volumen, no funcionan en vídeos con protección DRM, como Netflix y Disney+, ni donde un sitio los bloquee.
 

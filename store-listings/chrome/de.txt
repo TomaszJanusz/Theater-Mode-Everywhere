@@ -20,7 +20,7 @@ HAUPTFUNKTIONEN
 - Videoanpassung: Z schaltet zwischen Einpassen, Füllen (schneidet die Ränder ab) und Strecken um. Auf Bildschirmen, die höher sind als das Video, schiebt das Layout „Oben“ (Umschalttaste+L) das Video nach oben, und die Untertitel erscheinen im Bereich darunter.
 - Untertitel und Tonspuren: Wähle sie aus, schalte Untertitel mit C ein oder aus und passe Schriftart, Größe, Farbe und Hintergrund an. Deine Sprachen werden gespeichert.
 - Optionale Audioeffekte: Lautstärkeverstärkung bis 300 %, Sprachverstärkung, „Laute Töne reduzieren“ und Bass.
-- Tastatur (im Kinomodus): Geschwindigkeitstasten wie bei YouTube, Pfeil nach rechts gedrückt halten für 2x Tempo, Komma und Punkt für Schritte von 0,04 Sekunden sowie W, A, S und D zum Wechseln zwischen den Steuerelementen. H listet alle Tastenkürzel auf; sie lassen sich alle ändern.
+- Tastatur (im Kinomodus): Geschwindigkeitstasten wie bei YouTube, Pfeil nach rechts gedrückt halten für 2x Tempo, Komma und Punkt zum Weiterschalten Bild für Bild sowie W, A, S und D zum Wechseln zwischen den Steuerelementen. H listet alle Tastenkürzel auf; sie lassen sich alle ändern.
 - Steuerung und Darstellung: Videotitel, Regler für Lautstärke und Geschwindigkeit sowie ein Bildschirm „Erneut abspielen“, wenn das Video endet. Umschalttaste+H hält die Steuerung sichtbar. Wähle eine Akzentfarbe oder aktiviere „Hoher Kontrast“, „Transparenz reduzieren“ oder „Bewegung reduzieren“. Die Oberfläche gibt es in 15 Sprachen.
 Hinweis: Die Funktionen hängen vom Dienst und vom Video ab. Audioeffekte, auch die Lautstärkeverstärkung, funktionieren nicht bei DRM-geschützten Videos, etwa bei Netflix und Disney+, oder wenn eine Website sie blockiert.
 

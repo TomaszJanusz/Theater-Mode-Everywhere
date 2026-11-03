@@ -20,7 +20,7 @@ KEY FEATURES
 - Video fit: Z switches between Fit, Fill (crops the edges) and Stretch. On screens taller than the video, Raised (Shift+L) moves it up, with subtitles in the space below.
 - Subtitles and audio: pick subtitle and audio tracks, turn subtitles on or off with C, and style the font, size, colour and background. Your languages are remembered.
 - Optional sound effects: Volume Boost up to 300%, Voice boost, Reduce loud sounds and Bass.
-- Keyboard (in theatre mode): YouTube-style speed keys, hold Right arrow for 2x speed, comma and full stop for 0.04-second steps, and W, A, S and D to move between controls. H lists every shortcut; all can be changed.
+- Keyboard (in theatre mode): YouTube-style speed keys, hold Right arrow for 2x speed, comma and full stop to step frame by frame, and W, A, S and D to move between controls. H lists every shortcut; all can be changed.
 - Controls and look: the video title, volume and speed sliders, and a Replay screen when the video ends. Shift+H keeps the controls on screen. Choose an accent colour, High contrast, Reduce transparency or Reduce motion. 15 interface languages.
 Note: features vary by service and video. Sound effects, including Volume Boost, do not work on DRM-protected video, such as Netflix and Disney+, or where a site blocks them.
 
