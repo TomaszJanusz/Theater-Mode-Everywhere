@@ -4,21 +4,21 @@
 Theater Mode Everywhere
 
 ## Summary
-Pulsa T y entra en modo cine a toda ventana. Subtítulos y Amplificación de volumen; en servicios populares, chat y botones de salto.
+Disfruta de tus vídeos en grande y sin distracciones en la mayoría de las webs. Pulsa T y el vídeo ocupa toda la ventana.
 
 ## Description
-Pulsa T para entrar en el modo cine: el vídeo ocupa toda la ventana del navegador, sin encabezados, barras laterales, comentarios ni recomendaciones que te distraigan.
+Theater Mode Everywhere te libera, con una sola tecla, de todo lo que te distrae en la página. Con TME, disfrutas más de tus vídeos. La extensión deja que el vídeo ocupe todo el espacio de la pestaña de tu navegador. Es un único reproductor para tus vídeos, que funciona igual de una web a otra. No te preocupes por las funciones propias de tu servicio de streaming favorito: hay muchas posibilidades de que ya las admitamos :-)
 
-Theater Mode Everywhere funciona con los reproductores de vídeo de la mayoría de los sitios web, incluidos los vídeos incrustados en otras páginas.
+Es lo que se conoce como modo cine. Para probarlo, pulsa T en cualquier página con un vídeo.
 
 EN RESUMEN
-- Controles sencillos en la mayoría de los sitios: subtítulos, velocidad y Amplificación de volumen opcional, hasta el 300%.
+- Controles sencillos que funcionan igual en la mayoría de los sitios: subtítulos, velocidad y Amplificación de volumen opcional, hasta el 300%.
 - Elimina las barras negras con Rellenar o Estirar, o sube el vídeo para dejar sitio a los subtítulos.
-- Rich Theater Experience añade funciones extra en YouTube, Netflix, Disney+ y Crunchyroll: chat junto al vídeo, botones para saltar, capítulos y vistas previas.
+- Rich Theater Experience añade funciones extra en YouTube, Netflix, Disney+ y Crunchyroll: chat junto al vídeo, botones para saltar, capítulos y vistas previas en la línea de tiempo.
 - Gratis, de código abierto y sin analíticas: no se envía al desarrollador nada sobre ti ni sobre lo que ves.
 
 FUNCIONES EXTRA EN SERVICIOS POPULARES
-Rich Theater Experience (experimental) incorpora al modo cine funciones propias de cada servicio. Actívala o desactívala para cada servicio en la ventana emergente de la barra de herramientas o en Configuración.
+Rich Theater Experience (experimental) mantiene disponibles en el modo cine las funciones propias de cada servicio. Actívala o desactívala para cada servicio en la ventana emergente de la barra de herramientas o en Configuración.
 - YouTube: chat junto al vídeo (en directo o en la repetición), capítulos, vistas previas en la línea de tiempo, los momentos «Most Replayed», pistas de audio y vídeos recomendados cuando termina el vídeo.
 - Netflix: botones Saltar introducción y Siguiente episodio, además de pistas de doblaje, originales y de audiodescripción.
 - Disney+: botones Saltar y Siguiente episodio, además de pistas de audio, incluida la audiodescripción.
@@ -43,7 +43,7 @@ FUNCIONES PRINCIPALES
 Nota: las funciones varían según el servicio y el vídeo. Los efectos de audio, incluida la Amplificación de volumen, no funcionan en vídeos con protección DRM, como Netflix y Disney+, ni donde un sitio los bloquee.
 
 CÓMO EMPEZAR
-Tras instalar la extensión, abre una página con un vídeo y pulsa T (no mientras escribes en un campo de texto). Mayúsculas+T cambia entre varios vídeos; T o Escape sirven para salir del modo cine. También puedes añadir un botón opcional sobre los vídeos (beta) o activar AutoTheater para entrar en el modo cine automáticamente en los servicios donde hayas activado Rich Theater Experience, tras una cuenta atrás que puedes cancelar. Desactiva la extensión en el sitio que quieras desde la ventana emergente de la barra de herramientas. Una breve configuración opcional te pregunta cómo te gusta ver los vídeos.
+Tras instalar la extensión, abre una página con un vídeo y pulsa T (no mientras escribes en un campo de texto). Mayúsculas+T cambia entre varios vídeos; T o Escape sirven para salir del modo cine. También puedes añadir un botón opcional de modo cine sobre los vídeos (beta) o activar AutoTheater para entrar en el modo cine automáticamente en los servicios donde hayas activado Rich Theater Experience, tras una cuenta atrás que puedes cancelar. Desactiva la extensión en el sitio que quieras desde la ventana emergente de la barra de herramientas. Una breve configuración opcional te pregunta cómo te gusta ver los vídeos.
 
 PRIVACIDAD, GRATIS Y DE CÓDIGO ABIERTO
 Nada sobre ti ni sobre lo que ves llega al desarrollador ni a ningún tercero ajeno. No hay analíticas. La extensión necesita acceso a todos los sitios web para encontrar vídeos, pero no guarda ninguna lista de las páginas que visitas. Algunas funciones cargan subtítulos y vistas previas directamente desde el servicio que estás viendo. La configuración, incluidos los sitios excluidos y los idiomas de cada sitio, puede sincronizarse a través de tu cuenta del navegador. La política de privacidad está en Configuración, dentro de Acerca de.

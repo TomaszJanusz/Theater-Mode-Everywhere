@@ -4,21 +4,21 @@
 Theater Mode Everywhere
 
 ## Summary
-Touche T : mode cinéma pleine fenêtre. Sous-titres et Amplificateur de volume ; chat et boutons Passer sur les services populaires.
+Regardez vos vidéos en plus grand et sans distraction sur la plupart des sites. Appuyez sur T et la vidéo remplit la fenêtre.
 
 ## Description
-Appuyez sur T pour passer en mode cinéma : la vidéo remplit la fenêtre du navigateur, sans en-têtes, barres latérales, commentaires ni recommandations pour vous distraire.
+Theater Mode Everywhere vous libère, d'une seule touche, de tout ce qui vous distrait sur la page. Avec TME, regarder des vidéos devient plus agréable. L'extension permet à la vidéo d'occuper tout l'espace de votre onglet. C'est un seul et même lecteur pour vos vidéos, d'un site à l'autre. Pas d'inquiétude pour les fonctions propres à votre service de streaming préféré : il y a de fortes chances que nous les prenions en charge :-)
 
-Theater Mode Everywhere fonctionne avec les lecteurs vidéo de la plupart des sites Web, y compris les vidéos intégrées à d'autres pages.
+C'est ce qu'on appelle le mode cinéma. Pour l'essayer, ouvrez n'importe quelle page contenant une vidéo et appuyez sur T.
 
 EN BREF
-- Des commandes simples sur la plupart des sites : sous-titres, vitesse et Amplificateur de volume facultatif jusqu'à 300 %.
+- Des commandes simples, identiques sur la plupart des sites : sous-titres, vitesse et Amplificateur de volume facultatif jusqu'à 300 %.
 - Supprimez les bandes noires avec Remplir ou Étirer, ou déplacez la vidéo vers le haut pour laisser de la place aux sous-titres.
-- Rich Theater Experience ajoute des extras sur YouTube, Netflix, Disney+ et Crunchyroll : chat à côté de la vidéo, boutons Passer, chapitres et aperçus.
+- Rich Theater Experience ajoute des extras sur YouTube, Netflix, Disney+ et Crunchyroll : chat à côté de la vidéo, boutons Passer, chapitres et aperçus sur la chronologie.
 - Gratuit, open source, sans analytics : rien sur vous ni sur ce que vous regardez n'est envoyé au développeur.
 
 FONCTIONS SUPPLÉMENTAIRES SUR LES SERVICES POPULAIRES
-Rich Theater Experience (expérimental) apporte, en mode cinéma, des fonctions propres à chaque service. Activez-le ou désactivez-le service par service dans la fenêtre contextuelle de la barre d'outils ou dans Paramètres.
+Rich Theater Experience (expérimental) conserve, en mode cinéma, les fonctions propres à chaque service. Activez-le ou désactivez-le service par service dans la fenêtre contextuelle de la barre d'outils ou dans Paramètres.
 - YouTube : chat à côté de la vidéo (en direct ou en rediffusion), chapitres, aperçus sur la chronologie, passages « Most Replayed », pistes audio et vidéos recommandées à la fin de la lecture.
 - Netflix : boutons Passer l'intro et Épisode suivant, ainsi que des pistes audio doublées, en version originale et avec audiodescription.
 - Disney+ : boutons Passer et Épisode suivant, ainsi que des pistes audio, dont l'audiodescription.
@@ -43,7 +43,7 @@ FONCTIONS PRINCIPALES
 Remarque : les fonctions varient selon le service et la vidéo. Les effets audio, dont l'Amplificateur de volume, ne fonctionnent pas sur les vidéos protégées par DRM, comme celles de Netflix et Disney+, ni lorsqu'un site les bloque.
 
 COMMENT DÉMARRER
-Après l'installation, ouvrez une page contenant une vidéo et appuyez sur T (sauf si vous écrivez dans un champ de texte). Majuscule+T permet de passer d'une vidéo à l'autre quand il y en a plusieurs ; pour quitter le mode cinéma, appuyez sur T ou Échappement. Vous pouvez aussi ajouter un bouton facultatif sur les vidéos (bêta), ou activer AutoTheater pour entrer automatiquement en mode cinéma sur les services où Rich Theater Experience est activé, après un compte à rebours que vous pouvez annuler. Désactivez l'extension sur n'importe quel site depuis la fenêtre contextuelle de la barre d'outils. Une courte configuration facultative vous demande comment vous aimez regarder vos vidéos.
+Après l'installation, ouvrez une page contenant une vidéo et appuyez sur T (sauf si vous écrivez dans un champ de texte). Majuscule+T permet de passer d'une vidéo à l'autre quand il y en a plusieurs ; pour quitter le mode cinéma, appuyez sur T ou Échappement. Vous pouvez aussi ajouter un bouton facultatif de mode cinéma sur les vidéos (bêta), ou activer AutoTheater pour entrer automatiquement en mode cinéma sur les services où Rich Theater Experience est activé, après un compte à rebours que vous pouvez annuler. Désactivez l'extension sur n'importe quel site depuis la fenêtre contextuelle de la barre d'outils. Une courte configuration facultative vous demande comment vous aimez regarder vos vidéos.
 
 CONFIDENTIALITÉ, GRATUITÉ ET OPEN SOURCE
 Rien sur vous ni sur ce que vous regardez n'est envoyé au développeur ni à aucun tiers sans rapport avec l'extension. L'extension n'utilise aucun outil d'analytics. Elle a besoin d'accéder à tous les sites Web pour repérer les vidéos, mais ne garde aucune liste des pages que vous visitez. Certaines fonctions chargent les sous-titres et les aperçus directement depuis le service que vous regardez. Les paramètres, y compris les sites exclus et les langues par site, peuvent être synchronisés via votre compte de navigateur. La politique de confidentialité se trouve dans Paramètres, sous À propos.

@@ -4,21 +4,21 @@
 Theater Mode Everywhere
 
 ## Summary
-Pressione T: o vídeo ocupa a janela no modo cinema. Legendas e Amplificação de volume; chat e botões de pular em serviços populares.
+Assista a vídeos em tamanho maior e sem distrações na maioria dos sites. Pressione T e o vídeo ocupa toda a janela.
 
 ## Description
-Pressione T para entrar no modo cinema: o vídeo ocupa toda a janela do navegador, sem cabeçalhos, barras laterais, comentários nem recomendações para distrair você.
+O Theater Mode Everywhere deixa você se livrar, com uma única tecla, de tudo o que distrai na página. Com o TME, assistir a vídeos fica melhor. A extensão faz o vídeo ocupar todo o espaço da aba do navegador. É um só player, sempre igual, para os seus vídeos pela web. Não se preocupe com os recursos exclusivos do seu serviço de streaming favorito: há uma boa chance de a gente ter suporte para eles :-)
 
-O Theater Mode Everywhere funciona com os players de vídeo da maioria dos sites, inclusive com vídeos incorporados em outras páginas.
+Essa forma de assistir se chama modo cinema. Pressione T em qualquer página com vídeo para experimentar.
 
 EM RESUMO
-- Controles simples na maioria dos sites: legendas, velocidade e Amplificação de volume opcional de até 300%.
+- Controles simples, que funcionam do mesmo jeito na maioria dos sites: legendas, velocidade e Amplificação de volume opcional de até 300%.
 - Remova as barras pretas com Preencher ou Esticar, ou mova o vídeo para cima, abrindo espaço para as legendas.
-- O Rich Theater Experience traz extras no YouTube, na Netflix, no Disney+ e na Crunchyroll: chat ao lado do vídeo, botões de pular, capítulos e prévias.
+- O Rich Theater Experience traz extras no YouTube, na Netflix, no Disney+ e na Crunchyroll: chat ao lado do vídeo, botões de pular, capítulos e prévias na linha do tempo.
 - Gratuito, de código aberto e sem ferramentas de análise: nada sobre você nem sobre o que você assiste é enviado ao desenvolvedor.
 
 RECURSOS EXTRAS EM SERVIÇOS POPULARES
-O Rich Theater Experience (experimental) leva recursos de cada serviço para o modo cinema. Ative ou desative para cada serviço no pop-up da barra de ferramentas ou em Configurações.
+O Rich Theater Experience (experimental) mantém disponíveis no modo cinema os recursos próprios de cada serviço. Ative ou desative para cada serviço no pop-up da barra de ferramentas ou em Configurações.
 - YouTube: chat ao lado do vídeo (ao vivo ou em replay), capítulos, prévias na linha do tempo, momentos “Most Replayed”, faixas de áudio e vídeos recomendados quando o vídeo termina.
 - Netflix: botões Pular abertura e Próximo episódio, além de faixas dubladas, originais e com audiodescrição.
 - Disney+: botões Pular e Próximo episódio, além de faixas de áudio, inclusive com audiodescrição.
@@ -43,7 +43,7 @@ PRINCIPAIS RECURSOS
 Observação: os recursos variam conforme o serviço e o vídeo. Os efeitos de áudio, inclusive a Amplificação de volume, não funcionam em vídeos protegidos por DRM, como os da Netflix e do Disney+, nem onde um site os bloqueia.
 
 COMO COMEÇAR
-Depois de instalar, abra uma página com um vídeo e pressione T (não enquanto estiver digitando em um campo de texto). Shift+T alterna entre vários vídeos; T ou Escape sai do modo cinema. Você também pode adicionar um botão opcional nos vídeos (beta) ou ativar o AutoTheater para entrar no modo cinema automaticamente nos serviços com o Rich Theater Experience ativado, após uma contagem regressiva que você pode cancelar. Desative a extensão em qualquer site pelo pop-up da barra de ferramentas. Uma configuração inicial rápida e opcional pergunta como você prefere assistir.
+Depois de instalar, abra uma página com um vídeo e pressione T (não enquanto estiver digitando em um campo de texto). Shift+T alterna entre vários vídeos; T ou Escape sai do modo cinema. Você também pode adicionar um botão opcional do modo cinema nos vídeos (beta) ou ativar o AutoTheater para entrar no modo cinema automaticamente nos serviços com o Rich Theater Experience ativado, após uma contagem regressiva que você pode cancelar. Desative a extensão em qualquer site pelo pop-up da barra de ferramentas. Uma configuração inicial rápida e opcional pergunta como você prefere assistir.
 
 PRIVACIDADE, GRATUITO E DE CÓDIGO ABERTO
 Nada sobre você nem sobre o que você assiste vai para o desenvolvedor ou para qualquer terceiro sem relação com a extensão. Não há ferramentas de análise. A extensão precisa de acesso a todos os sites para encontrar vídeos, mas não mantém uma lista das páginas que você visita. Alguns recursos carregam legendas e prévias diretamente do serviço que você assiste. As configurações, inclusive os sites excluídos e os idiomas por site, podem ser sincronizadas pela conta do navegador. A política de privacidade está em Configurações, em Sobre.
