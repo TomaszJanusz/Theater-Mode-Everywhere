@@ -33,6 +33,7 @@ const SERVICE_PACKS: Record<string, string[]> = {
 
 // Every supported-service brand with its transliterations, normalized to the
 // name used in SERVICE_PACKS. WeTV is detected on its own and belongs to no pack.
+// Bilibili.tv is a separate service from Bilibili; the Bilibili pattern skips it.
 const SERVICE_BRANDS: Array<[brand: string, pattern: RegExp]> = [
   ['YouTube', /YouTube|يوتيوب|ユーチューブ|유튜브|Ютуб|Ютюб/i],
   ['Twitch', /Twitch|تويتش|ツイッチ|트위치|Твитч|Твіч/i],
@@ -41,10 +42,21 @@ const SERVICE_BRANDS: Array<[brand: string, pattern: RegExp]> = [
   ['Crunchyroll', /Crunchyroll|كرانشي ?رول|クランチロール|크런치롤|Кранчиролл|Кранчіролл/i],
   ['Vimeo', /Vimeo|فيميو|ビメオ|비메오|Вимео|Вімео/i],
   ['Patreon', /Patreon|باتريون|パトレオン|패트리온|Патреон/i],
-  ['Bilibili', /Bilibili|بيلي ?بيلي|ビリビリ|빌리빌리|Билибили|Білібілі|哔哩哔哩/i],
+  ['Bilibili', /Bilibili(?!\.tv)|بيلي ?بيلي|ビリビリ|빌리빌리|Билибили|Білібілі|哔哩哔哩/i],
+  ['Bilibili.tv', /Bilibili\.tv/i],
   ['腾讯视频', /腾讯|Tencent|腾訊/i],
-  ['WeTV', /WeTV/i]
+  ['WeTV', /WeTV/i],
+  ['SOOP', /\bSOOP\b/i],
+  ['iQIYI', /iQIYI|爱奇艺/i],
+  ['Rakuten Viki', /\bViki\b/i]
 ];
+
+// AMO allows at most 10 tags, chosen from its fixed list.
+const AMO_MAX_TAGS = 10;
+
+function brandsIn(text: string): string[] {
+  return SERVICE_BRANDS.filter(([, pattern]) => pattern.test(text)).map(([brand]) => brand);
+}
 
 function listingLocales(root: string, extension: string): string[] {
   return readdirSync(root, { withFileTypes: true })
@@ -70,6 +82,25 @@ function amoSection(content: string, heading: string): string {
   const section = sections.find((text) => text.startsWith(`${heading}\n`));
   assert.ok(section, `missing AMO section ${heading}`);
   return section.slice(heading.length).trim();
+}
+
+// The AMO description is the Chrome text with one contiguous block of lines
+// replaced (the "full list is in Settings" line by the "Also supported:" block).
+// Everything before and after the block must be identical, line for line.
+function replacedBlock(chromeLong: string, amoDescription: string) {
+  const chrome = chromeLong.trim().split('\n');
+  const amo = amoDescription.trim().split('\n');
+  let head = 0;
+  while (head < chrome.length && head < amo.length && chrome[head] === amo[head]) head += 1;
+  let tail = 0;
+  while (tail < chrome.length - head && tail < amo.length - head
+    && chrome[chrome.length - 1 - tail] === amo[amo.length - 1 - tail]) tail += 1;
+  return {
+    before: chrome.slice(0, head),
+    chrome: chrome.slice(head, chrome.length - tail),
+    amo: amo.slice(head, amo.length - tail),
+    after: chrome.slice(chrome.length - tail)
+  };
 }
 
 function headings(content: string): string[] {
@@ -121,14 +152,44 @@ describe('store listings', () => {
     }
   });
 
-  it('keeps the AMO name, summary and description aligned with the locale messages and long description', () => {
+  it('keeps the AMO name and summary aligned with the locale messages', () => {
     for (const locale of locales) {
       const messages = readCatalog(locale);
       const amo = readAmo(locale);
       assert.equal(amoSection(amo, 'Name'), messages.extensionNameCompact?.message,
         `${locale}: AMO name differs from extensionNameCompact`);
       assert.equal(amoSection(amo, 'Summary'), messages.extensionDescription?.message, `${locale}: summary differs`);
-      assert.equal(amoSection(amo, 'Description'), readChromeLong(locale).trim(), `${locale}: description differs`);
+    }
+  });
+
+  it('builds the AMO description from the Chrome text by replacing only the services line', () => {
+    for (const locale of locales) {
+      const block = replacedBlock(readChromeLong(locale), amoSection(readAmo(locale), 'Description'));
+      assert.equal(block.chrome.length, 1, `${locale}: AMO must replace exactly one Chrome line`);
+      assert.ok(block.chrome[0] && !block.chrome[0].startsWith('- '), `${locale}: the replaced Chrome line must be the pointer to Settings`);
+      assert.ok(block.amo.length >= 2, `${locale}: the AMO block needs a label and service lines`);
+      assert.ok(block.amo.every((line) => line.trim()), `${locale}: the AMO block must not contain blank lines`);
+      assert.ok(!block.amo[0]!.startsWith('- '), `${locale}: the AMO block must open with the "Also supported:" label line`);
+      assert.ok(block.amo.slice(1).every((line) => line.startsWith('- ')), `${locale}: every AMO block line after the label must be a "- " service line`);
+      assert.ok(block.before.at(-1)?.startsWith('- '), `${locale}: the AMO block must follow the pack's service lines`);
+      assert.equal(block.after[0], '', `${locale}: the AMO block must end right before the blank line preceding the next section`);
+    }
+  });
+
+  it('names every supported service in the AMO description', () => {
+    for (const locale of locales) {
+      const { amo } = replacedBlock(readChromeLong(locale), amoSection(readAmo(locale), 'Description'));
+      const named = new Set([...SERVICE_PACKS[locale]!, ...brandsIn(amo.join('\n'))]);
+      const missing = SERVICE_BRANDS.map(([brand]) => brand).filter((brand) => !named.has(brand));
+      assert.deepEqual(missing, [], `${locale}: AMO description does not name ${missing.join(', ')}`);
+    }
+  });
+
+  it('suggests at most 10 non-empty AMO tags', () => {
+    for (const locale of locales) {
+      const tags = amoSection(readAmo(locale), 'Suggested tags').split(',').map((tag) => tag.trim());
+      assert.ok(tags.every(Boolean), `${locale}: empty AMO tag`);
+      assert.ok(tags.length <= AMO_MAX_TAGS, `${locale}: ${tags.length} AMO tags, the limit is ${AMO_MAX_TAGS}`);
     }
   });
 
@@ -142,8 +203,7 @@ describe('store listings', () => {
     }
     for (const locale of locales) {
       const text = readChromeLong(locale);
-      const found = SERVICE_BRANDS.filter(([, pattern]) => pattern.test(text)).map(([brand]) => brand);
-      assert.deepEqual(found.sort(), [...SERVICE_PACKS[locale]].sort(), `${locale}: service names differ from the pack`);
+      assert.deepEqual(brandsIn(text).sort(), [...SERVICE_PACKS[locale]].sort(), `${locale}: service names differ from the pack`);
     }
   });
 
