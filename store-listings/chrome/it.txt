@@ -1,15 +1,15 @@
-Premi T per entrare in modalità cinema: il video riempie la finestra del browser, senza intestazioni, barre laterali, commenti o contenuti consigliati che ti distraggano.
+Theater Mode Everywhere ti libera, con un solo tasto, da tutto ciò che ti distrae sulla pagina. Con TME, guardare video diventa più bello. L'estensione lascia che il video occupi tutto lo spazio della scheda del browser. È un unico player per i tuoi video, uguale da un sito all'altro. Non preoccuparti delle funzioni particolari del tuo servizio di streaming preferito: ci sono buone probabilità che le supportiamo :-)
 
-Theater Mode Everywhere funziona con i player video della maggior parte dei siti web, compresi i video incorporati in altre pagine.
+Questa vista si chiama modalità cinema. Per provarla, premi T su una pagina con un video.
 
 IN BREVE
-- Controlli semplici sulla maggior parte dei siti: sottotitoli, velocità e Amplificazione volume facoltativa fino al 300%.
+- Controlli semplici che funzionano allo stesso modo sulla maggior parte dei siti: sottotitoli, velocità e Amplificazione volume facoltativa fino al 300%.
 - Rimuovi le bande nere con Riempi o Allunga, oppure sposta il video in alto per fare spazio ai sottotitoli.
-- Rich Theater Experience offre funzioni aggiuntive su YouTube, Netflix, Disney+ e Crunchyroll: chat accanto al video, pulsanti per saltare, capitoli e anteprime.
+- Rich Theater Experience offre funzioni aggiuntive su YouTube, Netflix, Disney+ e Crunchyroll: chat accanto al video, pulsanti per saltare, capitoli e anteprime sulla timeline.
 - Gratis, open source e senza analytics: nulla su di te o su ciò che guardi viene inviato allo sviluppatore.
 
 FUNZIONI EXTRA SUI SERVIZI POPOLARI
-Rich Theater Experience (sperimentale) porta in modalità cinema le funzioni di ogni servizio. Attivala o disattivala per ciascun servizio nel popup della barra degli strumenti o in Impostazioni.
+Rich Theater Experience (sperimentale) mantiene disponibili in modalità cinema le funzioni proprie di ogni servizio. Attivala o disattivala per ciascun servizio nel popup della barra degli strumenti o in Impostazioni.
 - YouTube: chat accanto al video (in diretta o in replay), capitoli, anteprime sulla timeline, momenti più riprodotti («Most Replayed»), tracce audio e video consigliati a riproduzione finita.
 - Netflix: pulsanti Salta intro e Prossimo episodio, più tracce audio doppiate, originali e con audiodescrizione.
 - Disney+: pulsanti Salta e Prossimo episodio, più tracce audio, tra cui l'audiodescrizione.
@@ -25,7 +25,7 @@ FUNZIONI PRINCIPALI
 Nota: le funzioni variano in base al servizio e al video. Gli effetti audio, compresa l'Amplificazione volume, non funzionano sui video protetti da DRM, come quelli di Netflix e Disney+, né dove un sito li blocca.
 
 COME INIZIARE
-Dopo l'installazione, apri una pagina con un video e premi T (non mentre scrivi in un campo di testo). Maiuscole+T passa da un video all'altro; con T o Escape esci dalla modalità cinema. Puoi anche aggiungere un pulsante facoltativo sui video (beta) oppure attivare AutoTheater per entrare in modalità cinema in automatico sui servizi con Rich Theater Experience attiva, dopo un conto alla rovescia che puoi annullare. Puoi disattivare l'estensione su qualsiasi sito dal popup della barra degli strumenti. Una breve configurazione facoltativa ti chiede come ti piace guardare i video.
+Dopo l'installazione, apri una pagina con un video e premi T (non mentre scrivi in un campo di testo). Maiuscole+T passa da un video all'altro; con T o Escape esci dalla modalità cinema. Puoi anche aggiungere un pulsante facoltativo della modalità cinema sui video (beta) oppure attivare AutoTheater per entrare in modalità cinema in automatico sui servizi con Rich Theater Experience attiva, dopo un conto alla rovescia che puoi annullare. Puoi disattivare l'estensione su qualsiasi sito dal popup della barra degli strumenti. Una breve configurazione facoltativa ti chiede come ti piace guardare i video.
 
 PRIVACY, GRATUITÀ E OPEN SOURCE
 Nulla su di te o su ciò che guardi arriva allo sviluppatore né ad alcuna terza parte estranea. Non ci sono analytics. L'estensione ha bisogno di accedere a tutti i siti web per trovare i video, ma non conserva alcun elenco delle pagine che visiti. Alcune funzioni caricano sottotitoli e anteprime direttamente dal servizio che stai guardando. Le impostazioni, compresi i siti esclusi e le lingue per sito, possono essere sincronizzate tramite il tuo account del browser. L'informativa sulla privacy è in Impostazioni, alla voce Informazioni.

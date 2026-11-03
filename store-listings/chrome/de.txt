@@ -1,15 +1,15 @@
-Drücke T, um in den Kinomodus zu wechseln: Das Video füllt dein Browserfenster, ohne ablenkende Kopfzeilen, Seitenleisten, Kommentare und Empfehlungen.
+Theater Mode Everywhere befreit dich mit nur einer Taste von allem, was auf einer Seite ablenkt. Mit TME wird das Videoschauen einfach schöner. Die Erweiterung lässt das Video den ganzen Platz in deinem Browsertab einnehmen. Das ist ein einheitlicher Player für deine Videos quer durchs Web. Mach dir keine Sorgen um die besonderen Funktionen deines liebsten Streamingdienstes: Die Chancen stehen gut, dass wir sie unterstützen :-)
 
-Theater Mode Everywhere funktioniert mit den Video-Playern der meisten Websites, auch mit Videos, die in andere Seiten eingebettet sind.
+Diese Ansicht heißt Kinomodus. Drücke T auf einer Seite mit einem Video, um ihn auszuprobieren.
 
 KURZ GESAGT
-- Einfache Steuerung auf den meisten Websites: Untertitel, Geschwindigkeit und eine optionale Lautstärkeverstärkung bis 300 %.
+- Einfache Steuerung, die auf den meisten Websites gleich funktioniert: Untertitel, Geschwindigkeit und eine optionale Lautstärkeverstärkung bis 300 %.
 - Schwarze Balken mit Füllen oder Strecken entfernen oder das Video nach oben schieben, damit die Untertitel Platz haben.
-- Rich Theater Experience bringt Extras für YouTube, Twitch, Netflix und Disney+: Chat neben dem Video, Schaltflächen zum Überspringen, Kapitel und Vorschauen.
+- Rich Theater Experience bringt Extras für YouTube, Twitch, Netflix und Disney+: Chat neben dem Video, Schaltflächen zum Überspringen, Kapitel und Vorschauen auf der Zeitleiste.
 - Kostenlos, Open Source, keine Analytics: Nichts über dich oder das, was du dir ansiehst, wird an den Entwickler gesendet.
 
 ZUSATZFUNKTIONEN FÜR BELIEBTE DIENSTE
-Rich Theater Experience (experimentell) bringt Funktionen der jeweiligen Dienste in den Kinomodus. Sie lässt sich für jeden Dienst im Popup der Symbolleiste oder in den Einstellungen ein- und ausschalten.
+Rich Theater Experience (experimentell) sorgt dafür, dass die eigenen Funktionen des jeweiligen Dienstes auch im Kinomodus verfügbar bleiben. Sie lässt sich für jeden Dienst im Popup der Symbolleiste oder in den Einstellungen ein- und ausschalten.
 - YouTube: Chat neben dem Video (live oder als Replay), Kapitel, Vorschauen auf der Zeitleiste, „Most Replayed“-Momente, Tonspuren und empfohlene Videos, wenn das Video endet.
 - Twitch: Chat neben dem Video (live oder als Replay), dazu Vorschauen und Untertitel bei früheren Übertragungen.
 - Netflix: Schaltflächen „Intro überspringen“ und „Nächste Folge“, dazu Tonspuren in der Synchronfassung, im Original und mit Audiodeskription.
@@ -25,7 +25,7 @@ HAUPTFUNKTIONEN
 Hinweis: Die Funktionen hängen vom Dienst und vom Video ab. Audioeffekte, auch die Lautstärkeverstärkung, funktionieren nicht bei DRM-geschützten Videos, etwa bei Netflix und Disney+, oder wenn eine Website sie blockiert.
 
 SO FÄNGST DU AN
-Öffne nach der Installation eine Seite mit einem Video und drücke T (nicht, während du in ein Textfeld tippst). Umschalttaste+T wechselt zwischen mehreren Videos; mit T oder Escape verlässt du den Kinomodus. Du kannst auch eine optionale Schaltfläche auf Videos hinzufügen (Beta) oder AutoTheater einschalten: Auf Diensten mit aktivierter Rich Theater Experience wechselt die Erweiterung dann nach einem Countdown, den du abbrechen kannst, automatisch in den Kinomodus. Für jede Website kannst du die Erweiterung im Popup der Symbolleiste ausschalten. Eine optionale kurze Einrichtung fragt, wie du am liebsten Videos ansiehst.
+Öffne nach der Installation eine Seite mit einem Video und drücke T (nicht, während du in ein Textfeld tippst). Umschalttaste+T wechselt zwischen mehreren Videos; mit T oder Escape verlässt du den Kinomodus. Du kannst auch eine optionale Kinomodus-Schaltfläche auf Videos hinzufügen (Beta) oder AutoTheater einschalten: Auf Diensten mit aktivierter Rich Theater Experience wechselt die Erweiterung dann nach einem Countdown, den du abbrechen kannst, automatisch in den Kinomodus. Für jede Website kannst du die Erweiterung im Popup der Symbolleiste ausschalten. Eine optionale kurze Einrichtung fragt, wie du am liebsten Videos ansiehst.
 
 DATENSCHUTZ, KOSTENLOS UND OPEN SOURCE
 Nichts über dich oder das, was du dir ansiehst, geht an den Entwickler oder an unbeteiligte Dritte. Es gibt keine Analytics. Die Erweiterung braucht Zugriff auf alle Websites, um Videos zu finden, führt aber keine Liste der Seiten, die du besuchst. Manche Funktionen laden Untertitel und Vorschauen direkt vom Dienst, den du ansiehst. Einstellungen, auch ausgeschlossene Websites und Sprachen pro Website, können über dein Browserkonto synchronisiert werden. Die Datenschutzerklärung findest du in den Einstellungen unter „Über“.

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The short description shown on the browser's extension page and in the stores is reworded in all 16 languages and no longer mentions HTML5. The store descriptions are shorter, open with a quick summary, and the Firefox listing now names every supported service.
+- The short description shown on the browser's extension page and in the stores is reworded in all 16 languages and no longer mentions HTML5. The store descriptions are shorter, open with a warm, personal introduction to theater mode, and the Firefox listing now names every supported service.
 
 ## [2.1.0] - 2026-11-02
 

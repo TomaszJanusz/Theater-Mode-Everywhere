@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "按 T 键进入剧场模式，视频铺满整个窗口。提供字幕和音量增强，在部分热门服务上还有视频旁的聊天和跳过按钮。"
+    "message": "在大多数网站上，都能把视频放大来看，不再分心。按下 T 键，视频就会铺满整个窗口。"
   },
   "cwsPromoBeforeLabel": {
     "message": "之前"

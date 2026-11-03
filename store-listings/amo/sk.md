@@ -4,21 +4,21 @@
 Theater Mode Everywhere
 
 ## Summary
-Stlačte T: režim kina a video vyplní okno. Titulky, Zosilnenie hlasitosti, v obľúbených službách aj chat a tlačidlá na preskočenie.
+Na väčšine webov sledujte videá vo väčšom zobrazení a bez rozptyľovania. Stlačte T a video vyplní okno.
 
 ## Description
-Stlačte T a vstúpte do režimu kina: video vyplní okno prehliadača bez hlavičiek, bočných panelov, komentárov či odporúčaní, ktoré by vás rozptyľovali.
+Theater Mode Everywhere vám jediným klávesom umožní zbaviť sa rušivých vecí na stránke. S TME sa vám budú videá pozerať lepšie. Rozšírenie nechá video vyplniť celý priestor karty prehliadača. Je to jednotný prehrávač pre videá na rôznych weboch. Nerobte si starosti s jedinečnými funkciami vašej obľúbenej streamovacej služby – je slušná šanca, že ich podporujeme :-)
 
-Theater Mode Everywhere funguje s prehrávačmi videa na väčšine webov vrátane videí vložených do iných stránok.
+Tomuto zobrazeniu sa hovorí režim kina. Stlačte T na stránke s videom a vyskúšajte si ho.
 
 V SKRATKE
-- Jednoduché ovládanie na väčšine webov: titulky, rýchlosť prehrávania a voliteľné Zosilnenie hlasitosti až na 300 %.
+- Jednoduché ovládanie, ktoré funguje rovnako na väčšine webov: titulky, rýchlosť prehrávania a voliteľné Zosilnenie hlasitosti až na 300 %.
 - Čierne pásy odstránite režimom Vyplniť alebo Roztiahnuť, prípadne posuniete video nahor, aby ste uvoľnili miesto na titulky.
-- Rich Theater Experience pridáva ďalšie funkcie v službách YouTube, Twitch, Netflix a Disney+: chat vedľa videa, tlačidlá na preskočenie, kapitoly a náhľady.
+- Rich Theater Experience pridáva ďalšie funkcie v službách YouTube, Twitch, Netflix a Disney+: chat vedľa videa, tlačidlá na preskočenie, kapitoly a náhľady na časovej osi.
 - Zadarmo, s otvoreným zdrojovým kódom a bez analytiky: vývojárovi sa neposiela nič o vás ani o tom, čo sledujete.
 
 ĎALŠIE FUNKCIE V OBĽÚBENÝCH SLUŽBÁCH
-Rich Theater Experience (experimentálne) prináša funkcie jednotlivých služieb priamo do režimu kina. Zapnúť alebo vypnúť ho môžete pre každú službu zvlášť v okne rozšírenia na lište prehliadača alebo v Nastaveniach.
+Rich Theater Experience (experimentálne) zaistí, že vlastné funkcie jednotlivých služieb zostanú dostupné aj v režime kina. Zapnúť alebo vypnúť ho môžete pre každú službu zvlášť v okne rozšírenia na lište prehliadača alebo v Nastaveniach.
 - YouTube: chat vedľa videa (pri vysielaní naživo aj v zázname), kapitoly, náhľady na časovej osi, momenty „Most Replayed“, zvukové stopy a odporúčané videá po skončení prehrávania.
 - Twitch: chat vedľa videa (pri vysielaní naživo aj v zázname), ale aj náhľady a titulky pri záznamoch minulých vysielaní.
 - Netflix: tlačidlá Preskočiť úvod a Ďalší diel, ale aj dabované a pôvodné zvukové stopy a stopy so zvukovým opisom.
@@ -43,7 +43,7 @@ HLAVNÉ FUNKCIE
 Poznámka: funkcie sa líšia podľa služby a videa. Zvukové efekty vrátane Zosilnenia hlasitosti nefungujú pri videách chránených DRM, napríklad v službách Netflix a Disney+, ani tam, kde ich web blokuje.
 
 AKO ZAČAŤ
-Po inštalácii otvorte stránku s videom a stlačte T (nie počas písania do textového poľa). Shift+T prepína medzi viacerými videami; T alebo Escape režim kina ukončí. Môžete tiež pridať voliteľné tlačidlo na videách (beta) alebo zapnúť AutoTheater, aby rozšírenie v službách so zapnutým Rich Theater Experience vstúpilo do režimu kina automaticky po odpočítavaní, ktoré môžete zrušiť. Rozšírenie vypnete na ľubovoľnom webe v okne rozšírenia na lište prehliadača. Voliteľné krátke úvodné nastavenie sa opýta, ako sledujete videá najradšej.
+Po inštalácii otvorte stránku s videom a stlačte T (nie počas písania do textového poľa). Shift+T prepína medzi viacerými videami; T alebo Escape režim kina ukončí. Môžete tiež pridať voliteľné tlačidlo režimu kina na videách (beta) alebo zapnúť AutoTheater, aby rozšírenie v službách so zapnutým Rich Theater Experience vstúpilo do režimu kina automaticky po odpočítavaní, ktoré môžete zrušiť. Rozšírenie vypnete na ľubovoľnom webe v okne rozšírenia na lište prehliadača. Voliteľné krátke úvodné nastavenie sa opýta, ako sledujete videá najradšej.
 
 SÚKROMIE, ZADARMO A S OTVORENÝM KÓDOM
 Nič o vás ani o tom, čo sledujete, sa neodosiela vývojárovi ani žiadnej nesúvisiacej tretej strane. Rozšírenie nepoužíva žiadnu analytiku. Na vyhľadanie videí potrebuje prístup ku všetkým webom, no nevedie zoznam stránok, ktoré navštevujete. Niektoré funkcie načítavajú titulky a náhľady priamo zo služby, ktorú sledujete. Nastavenia vrátane vylúčených webov a jazykov pre jednotlivé weby možno synchronizovať cez účet prehliadača. Zásady ochrany súkromia nájdete v Nastaveniach v časti O rozšírení.
