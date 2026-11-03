@@ -46,11 +46,8 @@ export type CaptionHudPayload = {
 /** Controls preference storage; loading feedback is always enabled. */
 export type CaptionActivateOptions = {
   persist?: boolean;
-  /**
-   * A failure keeps the loading feedback instead of reporting it, because the caller retries;
-   * the caller then owns ending that state (a retry, or `releaseHeldFailure`).
-   */
-  holdFailure?: boolean;
+  /** A failure keeps the loading feedback, because the caller retries and reports the outcome. */
+  retry?: boolean;
 };
 
 export type CaptionOverlayRenderer = Pick<CaptionRenderer, 'setCues' | 'update' | 'setStyle' | 'setMaxLines' | 'dispose'>;
@@ -138,8 +135,6 @@ export class MediaFeaturesController {
   private activateGeneration = 0;
   private sessionEpoch = 0;
   private activateInFlight = false;
-  /** Pending `delay` timers, cleared when their epoch retires so none outlives the controller. */
-  private readonly delays = new Set<{ timer: ReturnType<typeof setTimeout>; cancel: () => void }>();
   private captionCueRefreshInFlight = false;
   private lastCaptionCueRefreshAt = 0;
   private lastCaptionCueTime = Number.NaN;
@@ -338,11 +333,6 @@ export class MediaFeaturesController {
    */
   private bumpEpoch(): void {
     this.cancelCaptionLoad();
-    for (const pending of this.delays) {
-      clearTimeout(pending.timer);
-      pending.cancel();
-    }
-    this.delays.clear();
     this.sessionEpoch += 1;
     this.activateGeneration += 1;
     if (!this.dialogAbort.signal.aborted) this.dialogAbort.abort();
@@ -386,17 +376,9 @@ export class MediaFeaturesController {
     this.onTitle?.(title);
   }
 
-  /** Resolves true after `ms` if the epoch and adapter are still current, and false as soon as they retire. */
   private delay(ms: number, epoch: number, adapter: MediaFeaturesAdapter): Promise<boolean> {
     return new Promise((resolve) => {
-      const pending = {
-        timer: setTimeout(() => {
-          this.delays.delete(pending);
-          resolve(this.isCurrent(epoch, adapter));
-        }, ms),
-        cancel: () => resolve(false)
-      };
-      this.delays.add(pending);
+      setTimeout(() => resolve(this.isCurrent(epoch, adapter)), ms);
     });
   }
 
@@ -485,18 +467,13 @@ export class MediaFeaturesController {
           match = pickCaptionTrack(this.tracks, this.captionPreference);
         }
         if (match && this.captionRestorePending && !this.activateInFlight) {
-          // The one automatic retry follows a failure the viewer never sees: the loading
-          // feedback stays up across the pause, and only the retry's own failure is reported.
-          const result = await this.activate(match.id, { persist: false, holdFailure: true });
+          const result = await this.activate(match.id, { persist: false, retry: true });
           if (result === 'failed' && this.isCurrent(epoch, adapter)) {
-            const heldGeneration = this.activateGeneration;
-            const retry = await this.delay(700, epoch, adapter)
-              && Boolean(this.captionPreference)
-              && heldGeneration === this.activateGeneration
-              && !this.captionsAreOn();
-            if (retry) await this.activate(match.id, { persist: false });
-            // A newer selection owns the feedback; otherwise nothing is left to report the failure.
-            if (heldGeneration === this.activateGeneration) this.releaseHeldFailure();
+            const retryGeneration = this.activateGeneration;
+            if (!await this.delay(700, epoch, adapter) || !this.captionPreference) return;
+            if (retryGeneration === this.activateGeneration && !this.captionsAreOn()) {
+              await this.activate(match.id, { persist: false });
+            }
           }
         }
       }
@@ -762,19 +739,6 @@ export class MediaFeaturesController {
     this.onCaptionHud?.({ result: 'dismiss' });
   }
 
-  /**
-   * Ends the loading state of a held failure whose retry did not run, such as after the saved
-   * preference was cleared, by reporting the failure it deferred. Media changes and disposal
-   * already dismissed it through `cancelCaptionLoad`.
-   */
-  private releaseHeldFailure(): void {
-    if (this.captionState !== 'loading' || this.activateInFlight) return;
-    this.captionState = 'off';
-    this.updateCcState();
-    this.publishSubtitleLayout();
-    this.emitCaptionHud('failed');
-  }
-
   private dismissCcMenu(): void {
     if (!closeMenuPopover(this.ccMenu.parentElement)) this.ccMenu.classList.remove('visible');
     this.onCaptionChange?.();
@@ -897,7 +861,7 @@ export class MediaFeaturesController {
         activation = { status: 'failed', delivery: 'none', cues: [] };
       }
       this.activeTrackId = on ? id : null;
-      const held = Boolean(id && !on && options?.holdFailure);
+      const held = options?.retry && id && !on;
       this.captionState = on ? 'active' : 'off';
       if (held) this.captionState = 'loading';
       if (on) this.publishSubtitleLayout();

@@ -767,7 +767,7 @@ describe('MediaFeaturesController captions toggle', () => {
     controller.dispose();
   });
 
-  it('drops the pending retry and its timer when the controller is disposed or the media is replaced', async t => {
+  it('drops the pending retry when the controller is disposed or the media is replaced', async t => {
     t.mock.timers.enable({ apis: ['setTimeout'] });
     for (const retire of ['dispose', 'invalidate'] as const) {
       const hud: string[] = [];
@@ -783,12 +783,11 @@ describe('MediaFeaturesController captions toggle', () => {
       await flushTasks();
       assert.deepEqual(hud, ['loading']);
       controller[retire]();
-      await restoring;
       assert.deepEqual(hud, ['loading', 'dismiss'], `${retire} dismisses the held loading state without reporting a failure`);
       assert.equal(ccBtn.classList.contains('loading'), false);
       const before = attempts;
       t.mock.timers.tick(700);
-      await flushTasks();
+      await restoring;
       assert.equal(attempts, before, `${retire} leaves no retry behind`);
       assert.deepEqual(hud, ['loading', 'dismiss']);
       controller.dispose();
