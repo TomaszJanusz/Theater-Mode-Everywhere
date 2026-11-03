@@ -20,7 +20,7 @@ HLAVNÉ FUNKCIE
 - Prispôsobenie obrazu: klávesom Z prepínate medzi režimami Prispôsobiť, Vyplniť (oreže okraje) a Roztiahnuť. Na obrazovkách vyšších než video rozloženie Hore (Shift+L) posunie video nahor a titulky sa zobrazia v priestore pod ním.
 - Titulky a zvuk: vyberajte titulky a zvukové stopy, zapínajte a vypínajte titulky klávesom C a upravujte písmo, veľkosť, farbu a pozadie. Rozšírenie si pamätá vaše jazyky.
 - Voliteľné zvukové efekty: Zosilnenie hlasitosti až na 300 %, Zvýraznenie hlasu, Stíšenie hlasných zvukov a Basy.
-- Klávesnica (v režime kina): klávesy na zmenu rýchlosti ako na YouTube, podržaním klávesu Šípka doprava prehrávate rýchlosťou 2x, klávesmi čiarka a bodka sa posúvate v krokoch po 0,04 sekundy a klávesmi W, A, S a D sa presúvate medzi ovládacími prvkami. H zobrazí všetky skratky a každú z nich môžete zmeniť.
+- Klávesnica (v režime kina): klávesy na zmenu rýchlosti ako na YouTube, podržaním klávesu Šípka doprava prehrávate rýchlosťou 2x, klávesmi čiarka a bodka sa posúvate po snímkach a klávesmi W, A, S a D sa presúvate medzi ovládacími prvkami. H zobrazí všetky skratky a každú z nich môžete zmeniť.
 - Ovládanie a vzhľad: názov videa, posuvníky hlasitosti a rýchlosti a obrazovka Prehrať znova po skončení videa. Shift+H ponechá ovládanie stále na obrazovke. Vyberte si farbu zvýraznenia, Vysoký kontrast, Obmedziť priehľadnosť alebo Obmedziť pohyb. 15 jazykov rozhrania.
 Poznámka: funkcie sa líšia podľa služby a videa. Zvukové efekty vrátane Zosilnenia hlasitosti nefungujú pri videách chránených DRM, napríklad v službách Netflix a Disney+, ani tam, kde ich web blokuje.
 

@@ -531,10 +531,10 @@
     "message": "Frame Step Forward"
   },
   "frameStepBackward004": {
-    "message": "Frame Step Backward (0.04s)"
+    "message": "Frame Step Backward"
   },
   "frameStepForward004": {
-    "message": "Frame Step Forward (0.04s)"
+    "message": "Frame Step Forward"
   },
   "decreasePlaybackSpeed": {
     "message": "Decrease Playback Speed"

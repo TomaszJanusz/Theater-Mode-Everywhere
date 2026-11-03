@@ -38,7 +38,7 @@ PRINCIPAIS RECURSOS
 - Ajuste do vídeo: a tecla Z alterna entre Ajustar, Preencher (corta as bordas) e Esticar. Em telas mais altas que o vídeo, a opção No topo (Shift+L) move o vídeo para cima, com as legendas no espaço abaixo.
 - Legendas e áudio: escolha faixas de legendas e de áudio, ative ou desative as legendas com C e personalize fonte, tamanho, cor e fundo. Seus idiomas ficam salvos.
 - Efeitos de áudio opcionais: Amplificação de volume de até 300%, Realce de voz, Reduzir sons altos e Graves.
-- Teclado (no modo cinema): teclas de velocidade como as do YouTube, segure Seta para a direita para reproduzir em 2x, vírgula e ponto para passos de 0,04 segundo e W, A, S e D para se mover entre os controles. H lista todos os atalhos, que podem ser personalizados.
+- Teclado (no modo cinema): teclas de velocidade como as do YouTube, segure Seta para a direita para reproduzir em 2x, vírgula e ponto para avançar quadro a quadro e W, A, S e D para se mover entre os controles. H lista todos os atalhos, que podem ser personalizados.
 - Controles e visual: o título do vídeo, controles deslizantes de volume e de velocidade, além da tela Reproduzir novamente quando o vídeo termina. Shift+H mantém os controles na tela. Escolha uma cor de destaque, Alto contraste, Reduzir transparência ou Reduzir movimento. 15 idiomas de interface.
 Observação: os recursos variam conforme o serviço e o vídeo. Os efeitos de áudio, inclusive a Amplificação de volume, não funcionam em vídeos protegidos por DRM, como os da Netflix e do Disney+, nem onde um site os bloqueia.
 

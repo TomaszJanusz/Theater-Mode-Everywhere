@@ -529,10 +529,10 @@
     "message": "前进一帧"
   },
   "frameStepBackward004": {
-    "message": "后退一帧（0.04 秒）"
+    "message": "后退一帧"
   },
   "frameStepForward004": {
-    "message": "前进一帧（0.04 秒）"
+    "message": "前进一帧"
   },
   "decreasePlaybackSpeed": {
     "message": "降低播放速度"

@@ -529,10 +529,10 @@
     "message": "Fotogramma successivo"
   },
   "frameStepBackward004": {
-    "message": "Fotogramma precedente (0,04s)"
+    "message": "Fotogramma precedente"
   },
   "frameStepForward004": {
-    "message": "Fotogramma successivo (0,04s)"
+    "message": "Fotogramma successivo"
   },
   "decreasePlaybackSpeed": {
     "message": "Riduci velocità di riproduzione"

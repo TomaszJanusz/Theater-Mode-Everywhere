@@ -529,10 +529,10 @@
     "message": "خطوة إطار للأمام"
   },
   "frameStepBackward004": {
-    "message": "إطار للخلف (0.04 ثانية)"
+    "message": "إطار للخلف"
   },
   "frameStepForward004": {
-    "message": "إطار للأمام (0.04 ثانية)"
+    "message": "إطار للأمام"
   },
   "decreasePlaybackSpeed": {
     "message": "خفض سرعة التشغيل"

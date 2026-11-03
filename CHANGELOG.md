@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The volume and speed sliders now look and behave alike, with the same marker for 100% and 1x. Scrolling or using the volume keys always stops at 100% before going into boost, and stops there again on the way back down.
 - YouTube's integration now loads only on YouTube pages (youtube.com, youtube-nocookie.com and youtu.be, including YouTube players embedded in other sites), so every other site loads about 90 KB less extension script. YouTube features work as before.
 - Play and Pause now show as one large icon in the round plate the buffering indicator uses, with no text; screen readers still announce "Play" or "Pause". While a video buffers, pressing Play leaves the buffering indicator turning, and pressing Pause shows the Pause icon for the usual time before the indicator returns if the video is still loading.
+- The frame step shortcuts in Settings are now labelled Frame Step Backward and Frame Step Forward in every language, without a seconds figure, and the store listings describe the comma and period keys as stepping frame by frame: the step is always one frame, whatever the video's frame rate.
 
 ### Fixed
 

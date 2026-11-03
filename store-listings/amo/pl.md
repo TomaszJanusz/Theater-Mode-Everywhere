@@ -38,7 +38,7 @@ NAJWAŻNIEJSZE FUNKCJE
 - Dopasowanie wideo: klawisz Z przełącza między „Dopasuj”, „Wypełnij” (przycina brzegi) i „Rozciągnij”. Na ekranach wyższych niż wideo układ „U góry” (Shift+L) przesuwa je w górę, a napisy mieszczą się w wolnym miejscu poniżej.
 - Napisy i dźwięk: wybierz ścieżki napisów i dźwięku, włączaj i wyłączaj napisy klawiszem C, a także ustaw krój pisma, rozmiar, kolor i tło. Wybrane języki są zapamiętywane.
 - Opcjonalne efekty audio: „Wzmocnienie głośności” do 300%, „Wzmocnienie głosu”, „Ściszanie głośnych dźwięków” i „Bas”.
-- Klawiatura (w trybie kinowym): skróty zmiany prędkości jak na YouTube, przytrzymanie klawisza Strzałka w prawo włącza odtwarzanie 2x, przecinek i kropka przesuwają o 0,04 s, a W, A, S i D pozwalają przechodzić między kontrolkami. H wyświetla wszystkie skróty; każdy można zmienić.
+- Klawiatura (w trybie kinowym): skróty zmiany prędkości jak na YouTube, przytrzymanie klawisza Strzałka w prawo włącza odtwarzanie 2x, przecinek i kropka przesuwają klatka po klatce, a W, A, S i D pozwalają przechodzić między kontrolkami. H wyświetla wszystkie skróty; każdy można zmienić.
 - Sterowanie i wygląd: tytuł wideo, suwaki głośności i prędkości oraz ekran „Odtwórz ponownie” po zakończeniu odtwarzania. Shift+H przypina sterowanie na ekranie. Wybierz kolor akcentu, „Wysoki kontrast”, „Ogranicz przezroczystość” lub „Ogranicz animacje”. Interfejs w 15 językach.
 Uwaga: funkcje różnią się zależnie od serwisu i wideo. Efekty audio, w tym „Wzmocnienie głośności”, nie działają w wideo chronionym przez DRM, np. w serwisach Netflix i Disney+, ani tam, gdzie strona je blokuje.
 
