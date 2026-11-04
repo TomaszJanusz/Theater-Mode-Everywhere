@@ -52,6 +52,7 @@ function youtubeLiveVideo(init: {
   seekable?: Array<{ start: number; end: number }>;
   wall?: { min: number; max: number; now: number };
   liveHead?: boolean;
+  seekDisabled?: boolean;
 }): HTMLVideoElement & {
   setYoutubeLive: (next: { currentTime?: number; liveHead?: boolean; wall?: { min: number; max: number; now: number } }) => void;
 } {
@@ -68,6 +69,8 @@ function youtubeLiveVideo(init: {
       return null;
     }
   };
+  // A live stream without DVR: YouTube disables the bar's container.
+  const container = { getAttribute: (name: string) => (init.seekDisabled && name === 'aria-disabled' ? 'true' : null) };
   const badge = {
     offsetParent: {},
     classList: {
@@ -77,6 +80,7 @@ function youtubeLiveVideo(init: {
   const player = {
     classList: { contains: (name: string) => name === 'ytp-livebadge-color' },
     querySelector: (selector: string) => {
+      if (selector.includes('progress-bar-container')) return container;
       if (selector.includes('progress-bar')) return state.wall ? bar : null;
       if (selector.includes('live-badge')) return badge;
       return null;
@@ -263,6 +267,42 @@ describe('playback window', () => {
     }
   });
 
+  it('locks a YouTube live without DVR even though the media reports the stream as seekable', () => {
+    const previousWindow = (globalThis as { window?: unknown }).window;
+    const dispatched: unknown[] = [];
+    (globalThis as { window?: { dispatchEvent: (event: Event) => boolean } }).window = {
+      dispatchEvent: (event: Event) => dispatched.push(event) > 0
+    };
+    try {
+      // Recorded on NBC News NOW (B9i_01yEgt0) and a low-latency camera (FNXBYz_iKpY), 2026-11-03.
+      for (const recorded of [
+        { duration: 5754.556, currentTime: 2163.452, wall: { min: 0, max: 2157, now: 2157 } },
+        { duration: 50_400.012, currentTime: 46_826.079, wall: { min: 669_564, max: 712_763, now: 712_763 } }
+      ]) {
+        const video = youtubeLiveVideo({ ...recorded, liveHead: true, seekDisabled: true });
+        const window = playbackWindow(video);
+        assert.equal(window.live, true);
+        assert.equal(window.seekable, false);
+        assert.equal(window.stopsOnPause, true, 'play/pause stops, as YouTube\'s does');
+        assert.equal(timeToRatio(recorded.currentTime, window), 1);
+        assert.equal(isAtLiveEdge(0, window), true);
+        assert.equal(seekBy(video, -5), false);
+        seekToMediaTime(video, recorded.currentTime - 600);
+        assert.equal(video.currentTime, recorded.currentTime);
+        assert.equal(displayMediaTime(video), recorded.currentTime);
+        assert.deepEqual(dispatched, [], 'no seek reaches the host');
+        // The same stream with DVR keeps its seekable window.
+        assert.equal(playbackWindow(youtubeLiveVideo({ ...recorded, liveHead: true })).seekable, true);
+      }
+    } finally {
+      if (previousWindow === undefined) {
+        delete (globalThis as { window?: unknown }).window;
+      } else {
+        (globalThis as { window?: unknown }).window = previousWindow;
+      }
+    }
+  });
+
   it('treats the YouTube live-head badge as the edge when the progress bar is missing', () => {
     const video = youtubeLiveVideo({
       duration: 50_390,
@@ -355,6 +395,7 @@ describe('playback window', () => {
     const window = playbackWindow(fakeVideo({ duration: Number.POSITIVE_INFINITY }));
     assert.equal(window.live, true);
     assert.equal(window.seekable, false);
+    assert.equal(window.stopsOnPause, false, 'only a host that offers no rewind turns pause into stop');
     assert.equal(timeToRatio(0, window), 1);
     assert.equal(isAtLiveEdge(0, window), true);
   });
@@ -433,7 +474,8 @@ describe('playback window', () => {
     assert.equal(video.currentTime, 80);
     const live = fakeVideo({ duration: Number.POSITIVE_INFINITY, currentTime: 10 });
     assert.equal(seekBy(live, -5), false);
-    assert.equal(live.currentTime, 10);
+    seekToMediaTime(live, 3);
+    assert.equal(live.currentTime, 10, 'a live stream without a seekable window ignores direct seeks too');
   });
 
   it('jumps seekable live to the live edge', () => {

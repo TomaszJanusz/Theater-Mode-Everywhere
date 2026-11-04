@@ -24,10 +24,13 @@ const meta: Meta<HudArgs> = {
 };
 export default meta;
 
-/** Play and pause are a pictogram alone in the buffering plate's circle; the word goes to the live region. */
-function playback(action: 'play' | 'pause') {
-  return hudStory<HudArgs & { action: 'play' | 'pause' }>((h, _s, args) => h.triggerPlaybackIndicator(args.action), {
-    args: { action }, argTypes: { action: { control: 'select', options: ['play', 'pause'] } },
+/**
+ * Play, pause and stop (pausing a live stream that cannot be rewound) are a pictogram alone in the buffering plate's
+ * circle; the word goes to the live region.
+ */
+function playback(action: 'play' | 'pause' | 'stop') {
+  return hudStory<HudArgs & { action: 'play' | 'pause' | 'stop' }>((h, _s, args) => h.triggerPlaybackIndicator(args.action), {
+    args: { action }, argTypes: { action: { control: 'select', options: ['play', 'pause', 'stop'] } },
     play: async ({ args }) => {
       await expect(overlay()?.dataset.playbackAction).toBe(args.action);
       await expect(overlay()?.querySelector('svg.playback-hud-icon')).not.toBeNull();
@@ -115,6 +118,7 @@ function bass(level: AudioSettings['bass']) {
 
 export const Playback = playback('play');
 export const Pause = playback('pause');
+export const Stop = playback('stop');
 export const LoadingPlate = loadingPlate;
 export const Volume = volume(0.65);
 export const BoostedVolume = volume(1.25, 'up', true);

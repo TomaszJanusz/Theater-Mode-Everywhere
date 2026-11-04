@@ -30,6 +30,7 @@ import { MINIPLAYER_SURFACE } from '../video-candidates';
 import { installYouTubeAudio } from './audio-main';
 import { YOUTUBE_HARVEST_EVENT, youtubeEvents } from './events';
 import { youtubeHarvestTarget } from './harvest-target';
+import { seekForbiddenInMain } from './playback-main';
 import { youtubePlayerControl } from './player-controls';
 import { installYouTubeQueueNavigation } from './queue-main';
 import {
@@ -751,6 +752,8 @@ export function handleYoutubeMediaSeek(detail: { live?: boolean; time?: number }
       }
       return true;
     }
+    // A live stream without DVR: consume the request, so neither YouTube nor the media element seeks.
+    if (video instanceof HTMLVideoElement && seekForbiddenInMain(video)) return true;
     if (typeof detail.time === 'number' && Number.isFinite(detail.time) && typeof player?.seekTo === 'function') {
       const videoEl = video instanceof HTMLVideoElement ? video : null;
       const html5Now = videoEl ? videoEl.currentTime : NaN;

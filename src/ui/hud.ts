@@ -112,9 +112,11 @@ export const STATUS_HUD_UNMUTE_ICON = `
 `;
 
 /** Drawn in the loading ring's 48px content box, filled in the plate's ink; the play triangle sits a little right of centre to look centred. */
+const PLAYBACK_HUD_SVG = '<svg xmlns="http://www.w3.org/2000/svg" class="playback-hud-icon" viewBox="0 0 48 48" width="48" height="48" fill="currentColor"';
 const PLAYBACK_HUD_ICONS = {
-  play: '<svg xmlns="http://www.w3.org/2000/svg" class="playback-hud-icon" viewBox="0 0 48 48" width="48" height="48" fill="currentColor" stroke="currentColor" stroke-width="6" stroke-linejoin="round"><path d="M15.5 10 36 24 15.5 38Z"/></svg>',
-  pause: '<svg xmlns="http://www.w3.org/2000/svg" class="playback-hud-icon" viewBox="0 0 48 48" width="48" height="48" fill="currentColor"><rect x="8.75" y="5" width="11.5" height="38" rx="5.75"/><rect x="27.75" y="5" width="11.5" height="38" rx="5.75"/></svg>'
+  play: `${PLAYBACK_HUD_SVG} stroke="currentColor" stroke-width="6" stroke-linejoin="round"><path d="M15.5 10 36 24 15.5 38Z"/></svg>`,
+  pause: `${PLAYBACK_HUD_SVG}><rect x="8.75" y="5" width="11.5" height="38" rx="5.75"/><rect x="27.75" y="5" width="11.5" height="38" rx="5.75"/></svg>`,
+  stop: `${PLAYBACK_HUD_SVG}><rect x="7" y="7" width="34" height="34" rx="6"/></svg>`
 } as const;
 
 function renderConfirmation(overlay: HTMLElement, icon: string, text: string, textClass = ''): void {
@@ -340,7 +342,7 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
    * takes the centre for the usual time instead, because a ring that keeps turning would read as a pause that
    * did not register; it comes back afterwards when the media is still waiting (shadow.css).
    */
-  function triggerPlaybackIndicator(action: 'play' | 'pause'): void {
+  function triggerPlaybackIndicator(action: keyof typeof PLAYBACK_HUD_ICONS): void {
     if (!ctx.session.element) return;
 
     const existing = ctx.queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
