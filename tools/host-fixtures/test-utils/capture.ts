@@ -6,11 +6,11 @@ import type { Page } from 'playwright';
 
 import { parseTargets } from '../../live-e2e/config';
 import { FIXTURE_BYTE_BUDGET, FIXTURE_FORMAT, parseHostFixture, type FixtureService, type HostFixture, type RecordedMedia, type RecordedPlayback } from '../format';
-import { inspectScript, type PageInspection } from '../page-inspect';
 import { recipeFor, type FixtureRecipe } from '../recipes';
 import { BASE_ATTRIBUTES, findLeaks, sanitizeMedia, sanitizePlayback, sanitizeTree } from '../sanitize';
 
 import { openRecipePage, withInstalledChromium } from './live';
+import { inspectPage } from './page-eval';
 
 // Usage: tsx tools/host-fixtures/test-utils/capture.ts <recipe> (--url <public page> | --page-type <LIVE_E2E_TARGETS id>)
 //          [--extension dist/chrome-unpacked] [--out test/host-fixtures]
@@ -85,7 +85,7 @@ const readPlayback = (page: Page): Promise<RecordedPlayback | null> => page.eval
 async function capture(page: Page, target: string, from: FixtureRecipe): Promise<{ fixture: HostFixture; identifying: string[] }> {
   const { blocked } = await openRecipePage(page, target, from);
   if (blocked) throw new Error(`environment: ${blocked}; nothing recorded`);
-  const inspection = await page.evaluate(inspectScript({ probes: from.probes, keepDepth: from.keepDepth, maxChildren: from.maxChildren, attributes: [...BASE_ATTRIBUTES, ...from.opaque] })) as PageInspection;
+  const inspection = await inspectPage(page, { probes: from.probes, keepDepth: from.keepDepth, maxChildren: from.maxChildren, attributes: [...BASE_ATTRIBUTES, ...from.opaque] });
   const media = await probeMedia(page, from.service);
   const playback = await readPlayback(page);
   const hostVersion = from.hostVersion ? text(await page.evaluate(from.hostVersion)) : null;

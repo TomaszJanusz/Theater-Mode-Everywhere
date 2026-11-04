@@ -1,11 +1,11 @@
 import type { Page } from 'playwright';
 
 import { compareSignatures, type DriftResult } from '../drift';
-import type { HostFixture, Signature } from '../format';
-import { signatureScript } from '../page-inspect';
+import type { HostFixture } from '../format';
 import type { FixtureRecipe } from '../recipes';
 
 import { openRecipePage } from './live';
+import { readPageSignature } from './page-eval';
 
 /**
  * Opens the recipe's page as the capture did and compares its probe signature with the
@@ -19,7 +19,7 @@ export async function checkDrift(page: Page, url: string, fixture: HostFixture, 
   } catch (error) {
     return { fixture: fixture.id, status: 'failed', detail: `page never settled: ${error instanceof Error ? error.message.split('\n')[0] : String(error)}` };
   }
-  const live = await page.evaluate(signatureScript(recipe.probes)) as Signature;
+  const live = await readPageSignature(page, recipe.probes);
   const drift = compareSignatures(fixture.signature, live);
   return drift.length ? { fixture: fixture.id, status: 'failed', detail: drift.join('\n') } : { fixture: fixture.id, status: 'passed' };
 }
