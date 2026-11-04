@@ -178,17 +178,23 @@ function freePort(): Promise<number> {
   });
 }
 
+const HEX_ONLY = /^(?:[0-9a-f]{2})*$/;
+
 /**
  * Evaluates in the background page over RDP; results travel as JSON so values round-trip like Playwright's.
- * The debugger evaluates source text, so the argument is shipped percent-encoded (a charset that cannot
- * leave its string literal) and parsed inside rather than spliced in as code.
+ * The debugger evaluates source text and takes no arguments, so the argument is shipped as UTF-8 hex,
+ * checked to contain nothing else, and decoded and parsed inside rather than spliced in as code.
  */
 function backgroundOver(remote: FirefoxRemote, consoleActor: string, origin: string): ExtensionBackground {
   return {
     url: () => `${origin}_generated_background_page.html`,
     async evaluate<R, A>(fn: (arg: A) => R | Promise<R>, arg?: A): Promise<R> {
-      const encoded = arg === undefined ? null : encodeURIComponent(JSON.stringify(arg));
-      const argument = encoded === null ? '' : `JSON.parse(decodeURIComponent("${encoded}"))`;
+      let argument = '';
+      if (arg !== undefined) {
+        const hex = Buffer.from(JSON.stringify(arg), 'utf8').toString('hex');
+        if (!HEX_ONLY.test(hex)) throw new Error('The evaluation argument did not encode to hexadecimal.');
+        argument = `JSON.parse(new TextDecoder().decode(Uint8Array.from("${hex}".match(/../g) ?? [], pair => parseInt(pair, 16))))`;
+      }
       const json = await remote.evaluateString(consoleActor, `(async () => JSON.stringify({ value: await (${fn})(${argument}) }))()`);
       return (JSON.parse(json) as { value: R }).value;
     }

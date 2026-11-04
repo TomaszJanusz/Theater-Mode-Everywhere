@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { chromium, type Page } from 'playwright';
 
+import { waitFor } from '../../cpu-suite/processes';
 import { classifyPage } from '../../live-e2e/classify';
 import { collectSignals } from '../../live-e2e/test-utils/signals';
 import type { FixtureRecipe } from '../recipes';
@@ -12,7 +13,6 @@ import { readPageSignature } from './page-eval';
 
 const NAVIGATION_TIMEOUT_MS = 30_000;
 const SETTLE_TIMEOUT_MS = 15_000;
-const SIGNATURE_POLL_MS = 300;
 
 /** The installed unpacked Chromium build in a throwaway profile, as the live E2E lane runs it. */
 export async function withInstalledChromium<T>(extensionDir: string, viewport: FixtureRecipe['viewport'], use: (page: Page) => Promise<T>): Promise<T> {
@@ -66,14 +66,13 @@ export async function openRecipePage(page: Page, url: string, recipe: FixtureRec
     await page.waitForSelector(recipe.prepare.until, { state: 'attached', timeout: SETTLE_TIMEOUT_MS });
   }
   // Hosts slide panels in after mounting them: wait until two polls see the same signature.
-  const deadline = Date.now() + SETTLE_TIMEOUT_MS;
   let previous = '';
-  for (;;) {
+  const settled = async (): Promise<boolean> => {
     const current = JSON.stringify(await readPageSignature(page, recipe.probes));
-    if (current === previous) break;
-    if (Date.now() >= deadline) throw new Error(`The page layout kept changing for ${SETTLE_TIMEOUT_MS} ms.`);
+    const same = current === previous;
     previous = current;
-    await page.waitForTimeout(SIGNATURE_POLL_MS);
-  }
+    return same;
+  };
+  await waitFor(settled, SETTLE_TIMEOUT_MS).catch(() => { throw new Error(`The page layout kept changing for ${SETTLE_TIMEOUT_MS} ms.`); });
   return { blocked: null };
 }
