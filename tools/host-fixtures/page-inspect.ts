@@ -2,7 +2,7 @@ import type { Signature } from './format';
 
 /**
  * Code that runs inside a page (the live host, or a rendered fixture). Playwright serializes
- * each function with `toString()` and passes its one argument as data, so a function may only
+ * the function with `toString()` and passes its one argument as data, so a function may only
  * use that argument and the DOM. Run them through `test-utils/page-eval`.
  */
 export interface RawNode { tag: string; attrs: Record<string, string>; style: string; children: RawNode[] }
@@ -22,37 +22,45 @@ export interface PageInspection {
   identifying: string[];
 }
 
-/** The provider-relevant facts of the probes (see `ProbeState`); identical for a live page and its rendered fixture. */
-export function readSignature(probes: Record<string, string>): Signature {
-  const first = new Map<string, Element | null>();
-  const signature: Signature = {};
-  for (const [name, selector] of Object.entries(probes)) {
-    const matches = document.querySelectorAll(selector);
-    first.set(name, matches[0] ?? null);
-    const element = matches[0];
-    const rect = element?.getBoundingClientRect();
-    const transform = element ? getComputedStyle(element).transform : 'none';
-    signature[name] = {
-      count: Math.min(matches.length, 2) as 0 | 1 | 2,
-      rendered: Boolean(rect && rect.width > 0 && rect.height > 0),
-      transformed: transform !== 'none' && transform !== '',
-      within: []
-    };
-  }
-  for (const [name, element] of first) {
-    if (!element) continue;
-    signature[name].within = [...first].filter(([other, node]) => other !== name && node && node !== element && node.contains(element)).map(([other]) => other).sort();
-  }
-  return signature;
-}
-
 export const SKIPPED_TAGS = ['script', 'style', 'link', 'meta', 'noscript', 'template', 'head', 'title', 'base'];
 /** What `inspectHostPage` takes: the page cannot see this module's constants. */
-export type InspectArgument = InspectOptions & { skippedTags: readonly string[] };
+export interface InspectArgument extends InspectOptions {
+  skippedTags: readonly string[];
+  /** False reads only the signature, which is all a settle poll needs. */
+  withTree: boolean;
+}
 export type PageTree = Omit<PageInspection, 'signature'>;
 
-/** Trims the document to the probes, their ancestors and a few descendants, with layout inlined. */
-export function inspectHostPage(options: InspectArgument): PageTree {
+/**
+ * Reads the probe signature and, when asked, trims the document to the probes, their ancestors and a few
+ * descendants, with layout inlined. One synchronous pass, so both describe the same page state; the signature is
+ * the provider-relevant facts of the probes (see `ProbeState`), identical for a live page and its rendered fixture.
+ */
+export function inspectHostPage(options: InspectArgument): { signature: Signature; tree: PageTree | null } {
+  const readSignature = (probes: Record<string, string>): Signature => {
+    const first = new Map<string, Element | null>();
+    const signature: Signature = {};
+    for (const [name, selector] of Object.entries(probes)) {
+      const matches = document.querySelectorAll(selector);
+      first.set(name, matches[0] ?? null);
+      const element = matches[0];
+      const rect = element?.getBoundingClientRect();
+      const transform = element ? getComputedStyle(element).transform : 'none';
+      signature[name] = {
+        count: Math.min(matches.length, 2) as 0 | 1 | 2,
+        rendered: Boolean(rect && rect.width > 0 && rect.height > 0),
+        transformed: transform !== 'none' && transform !== '',
+        within: []
+      };
+    }
+    for (const [name, element] of first) {
+      if (!element) continue;
+      signature[name].within = [...first].filter(([other, node]) => other !== name && node && node !== element && node.contains(element)).map(([other]) => other).sort();
+    }
+    return signature;
+  };
+  const signature = readSignature(options.probes);
+  if (!options.withTree) return { signature, tree: null };
   const keep = new Set<Element>();
   const expand = new Map<Element, number>();
   for (const selector of Object.values(options.probes)) {
@@ -104,5 +112,5 @@ export function inspectHostPage(options: InspectArgument): PageTree {
   const titleParts = [document.title, document.querySelector('meta[property="og:title"]')?.getAttribute('content') ?? '']
     .flatMap(title => title.split(/ [-|•·–—] /));
   const identifying = [...location.pathname.split('/'), ...query.values(), ...titleParts].map(part => part.trim()).filter(part => part.length >= 3);
-  return { dom: serialize(document.body, 0), identifying: [...new Set(identifying)] };
+  return { signature, tree: { dom: serialize(document.body, 0), identifying: [...new Set(identifying)] } };
 }

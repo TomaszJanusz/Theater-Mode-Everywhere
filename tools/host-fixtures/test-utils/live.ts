@@ -66,13 +66,17 @@ export async function openRecipePage(page: Page, url: string, recipe: FixtureRec
     await page.waitForSelector(recipe.prepare.until, { state: 'attached', timeout: SETTLE_TIMEOUT_MS });
   }
   // Hosts slide panels in after mounting them: wait until two polls see the same signature.
+  // `page.evaluate` has no timeout, so a stalled page must not hold a read past the settle budget.
+  const budget = AbortSignal.timeout(SETTLE_TIMEOUT_MS);
+  const expired = new Promise<never>((_, reject) => budget.addEventListener('abort', () => reject(new Error(`The page stopped answering for ${SETTLE_TIMEOUT_MS} ms.`)), { once: true }));
+  expired.catch(() => {});
   let previous = '';
   const settled = async (): Promise<boolean> => {
-    const current = JSON.stringify(await readPageSignature(page, recipe.probes));
+    const current = JSON.stringify(await Promise.race([readPageSignature(page, recipe.probes), expired]));
     const same = current === previous;
     previous = current;
     return same;
   };
-  await waitFor(settled, SETTLE_TIMEOUT_MS).catch(() => { throw new Error(`The page layout kept changing for ${SETTLE_TIMEOUT_MS} ms.`); });
+  await waitFor(settled, SETTLE_TIMEOUT_MS);
   return { blocked: null };
 }
