@@ -5,9 +5,9 @@ import { it } from 'node:test';
 import { chromium, firefox } from 'playwright';
 
 import { committedFixture } from '../../../tools/host-fixtures/committed';
-import { signatureScript } from '../../../tools/host-fixtures/page-inspect';
 import { RECIPES } from '../../../tools/host-fixtures/recipes';
 import { fixtureDocument } from '../../../tools/host-fixtures/render';
+import { readPageSignature } from '../../../tools/host-fixtures/test-utils/page-eval';
 import { bundleModules } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { selectTestEngines } from '../../test-utils/test-engines';
@@ -24,7 +24,7 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
     const context = await shared.newContext(t, { viewport: fixture.viewport });
     const page = await context.newPage();
     await page.setContent(fixtureDocument(fixture));
-    assert.deepEqual(await page.evaluate(signatureScript(RECIPES[fixture.id].probes)), fixture.signature);
+    assert.deepEqual(await readPageSignature(page, RECIPES[fixture.id].probes), fixture.signature);
     await page.addScriptTag({ content: bundle });
     const report = await page.evaluate(`(() => {
       const controls = document.querySelector('.ytp-right-controls');

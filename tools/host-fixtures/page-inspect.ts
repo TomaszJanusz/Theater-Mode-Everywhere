@@ -1,9 +1,9 @@
 import type { Signature } from './format';
 
 /**
- * Code that runs inside a page (the live host, or a rendered fixture). Each function is
- * serialized with `toString()`, so it may only use its arguments, the DOM and `readSignature`
- * (which the scripts below define next to it).
+ * Code that runs inside a page (the live host, or a rendered fixture). Playwright serializes
+ * each function with `toString()` and passes its one argument as data, so a function may only
+ * use that argument and the DOM. Run them through `test-utils/page-eval`.
  */
 export interface RawNode { tag: string; attrs: Record<string, string>; style: string; children: RawNode[] }
 export interface InspectOptions {
@@ -46,10 +46,13 @@ export function readSignature(probes: Record<string, string>): Signature {
   return signature;
 }
 
-const SKIPPED_TAGS = ['script', 'style', 'link', 'meta', 'noscript', 'template', 'head', 'title', 'base'];
+export const SKIPPED_TAGS = ['script', 'style', 'link', 'meta', 'noscript', 'template', 'head', 'title', 'base'];
+/** What `inspectHostPage` takes: the page cannot see this module's constants. */
+export type InspectArgument = InspectOptions & { skippedTags: readonly string[] };
+export type PageTree = Omit<PageInspection, 'signature'>;
 
 /** Trims the document to the probes, their ancestors and a few descendants, with layout inlined. */
-export function inspectHostPage(options: InspectOptions): PageInspection {
+export function inspectHostPage(options: InspectArgument): PageTree {
   const keep = new Set<Element>();
   const expand = new Map<Element, number>();
   for (const selector of Object.values(options.probes)) {
@@ -89,7 +92,7 @@ export function inspectHostPage(options: InspectOptions): PageInspection {
       let extra = 0;
       for (const child of element.children) {
         const tagName = child.tagName.toLowerCase();
-        if (SKIPPED_TAGS.includes(tagName) || ours(child)) continue;
+        if (options.skippedTags.includes(tagName) || ours(child)) continue;
         const own = expand.get(child);
         if (keep.has(child)) children.push(serialize(child, own ?? Math.max(depth - 1, 0)));
         else if (depth > 0 && extra < options.maxChildren) { extra += 1; children.push(serialize(child, depth - 1)); }
@@ -101,11 +104,5 @@ export function inspectHostPage(options: InspectOptions): PageInspection {
   const titleParts = [document.title, document.querySelector('meta[property="og:title"]')?.getAttribute('content') ?? '']
     .flatMap(title => title.split(/ [-|•·–—] /));
   const identifying = [...location.pathname.split('/'), ...query.values(), ...titleParts].map(part => part.trim()).filter(part => part.length >= 3);
-  return { dom: serialize(document.body, 0), signature: readSignature(options.probes), identifying: [...new Set(identifying)] };
+  return { dom: serialize(document.body, 0), identifying: [...new Set(identifying)] };
 }
-
-// Scripts for `page.evaluate`: tsx wraps named functions in `__name()`, which a page lacks.
-const script = (entry: string, argument: unknown): string =>
-  `(() => { globalThis.__name = target => target; const readSignature = ${readSignature.toString()}; const SKIPPED_TAGS = ${JSON.stringify(SKIPPED_TAGS)}; return (${entry})(${JSON.stringify(argument)}); })()`;
-export const inspectScript = (options: InspectOptions): string => script(inspectHostPage.toString(), options);
-export const signatureScript = (probes: Record<string, string>): string => script('readSignature', probes);

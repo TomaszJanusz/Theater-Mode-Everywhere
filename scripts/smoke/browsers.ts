@@ -178,13 +178,18 @@ function freePort(): Promise<number> {
   });
 }
 
-/** Evaluates in the background page over RDP; results travel as JSON so values round-trip like Playwright's. */
+/**
+ * Evaluates in the background page over RDP; results travel as JSON so values round-trip like Playwright's.
+ * The debugger evaluates source text, so the argument is shipped percent-encoded (a charset that cannot
+ * leave its string literal) and parsed inside rather than spliced in as code.
+ */
 function backgroundOver(remote: FirefoxRemote, consoleActor: string, origin: string): ExtensionBackground {
   return {
     url: () => `${origin}_generated_background_page.html`,
     async evaluate<R, A>(fn: (arg: A) => R | Promise<R>, arg?: A): Promise<R> {
-      const call = `(${fn})(${arg === undefined ? '' : JSON.stringify(arg)})`;
-      const json = await remote.evaluateString(consoleActor, `(async () => JSON.stringify({ value: await ${call} }))()`);
+      const encoded = arg === undefined ? null : encodeURIComponent(JSON.stringify(arg));
+      const argument = encoded === null ? '' : `JSON.parse(decodeURIComponent("${encoded}"))`;
+      const json = await remote.evaluateString(consoleActor, `(async () => JSON.stringify({ value: await (${fn})(${argument}) }))()`);
       return (JSON.parse(json) as { value: R }).value;
     }
   };
