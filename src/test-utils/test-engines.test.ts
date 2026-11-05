@@ -25,9 +25,17 @@ it('selects labelled browser entries without changing their labels', () => {
 });
 
 it('skips an engine-tied case only when an explicit selection leaves its engine out', () => {
-  // Unset is the local, nightly and release default: nothing may be skipped.
-  assert.equal(skipUnlessEngine('chromium', undefined), false);
-  assert.equal(skipUnlessEngine('firefox', undefined), false);
+  // An undefined value falls back to the environment, which a CI engine lane sets.
+  const previous = process.env.THEATER_TEST_ENGINES;
+  try {
+    delete process.env.THEATER_TEST_ENGINES;
+    // Unset is the local, nightly and release default: nothing may be skipped.
+    assert.equal(skipUnlessEngine('chromium', undefined), false);
+    assert.equal(skipUnlessEngine('firefox', undefined), false);
+  } finally {
+    if (previous === undefined) delete process.env.THEATER_TEST_ENGINES;
+    else process.env.THEATER_TEST_ENGINES = previous;
+  }
   assert.equal(skipUnlessEngine('chromium', 'chromium'), false);
   assert.equal(skipUnlessEngine('firefox', 'chromium,firefox'), false);
   assert.equal(skipUnlessEngine('chromium', 'firefox'), 'needs chromium; THEATER_TEST_ENGINES=firefox');

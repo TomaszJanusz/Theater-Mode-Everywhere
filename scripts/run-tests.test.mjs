@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -274,4 +275,16 @@ test('selected static-preview tests build once before workers; other selections 
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+// CI's browser lanes pass --no-components and leave every component file to the Vitest `components` project, so that
+// project must include exactly what discovery finds. Listing needs no browser.
+test('the Vitest components project includes every component test discovery finds', () => {
+  const manifest = createRequire(import.meta.url).resolve('vitest/package.json');
+  const bin = JSON.parse(readFileSync(manifest, 'utf8')).bin;
+  const listed = JSON.parse(execFileSync(process.execPath, [join(dirname(manifest), typeof bin === 'string' ? bin : bin.vitest),
+    'list', '--filesOnly', '--json', '--project', 'components', '--config', 'vitest.config.ts'], { cwd: repoRoot, encoding: 'utf8' }));
+  const files = [...new Set(listed.map(({ file }) => file.slice(repoRoot.length).split('\\').join('/')))].sort();
+  assert.deepEqual(files, discoverTests(repoRoot).filter(file => file.endsWith('.component.test.ts')));
+  assert.ok(files.length > 0);
 });
