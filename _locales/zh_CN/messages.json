@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "将任意 HTML5 视频放大至整个浏览器窗口。使用自定义控件、字幕、音频效果，并与各类视频服务集成。"
+    "message": "在大多数网站上，都能把视频放大来看，不再分心。按下 T 键，视频就会铺满整个窗口。"
   },
   "cwsPromoBeforeLabel": {
     "message": "之前"
@@ -529,10 +529,10 @@
     "message": "前进一帧"
   },
   "frameStepBackward004": {
-    "message": "后退一帧（0.04 秒）"
+    "message": "后退一帧"
   },
   "frameStepForward004": {
-    "message": "前进一帧（0.04 秒）"
+    "message": "前进一帧"
   },
   "decreasePlaybackSpeed": {
     "message": "降低播放速度"
@@ -563,6 +563,9 @@
   },
   "pause": {
     "message": "暂停"
+  },
+  "stop": {
+    "message": "停止"
   },
   "replay": {
     "message": "重播",

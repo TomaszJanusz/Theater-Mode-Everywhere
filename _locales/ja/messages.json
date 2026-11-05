@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "あらゆる HTML5 ビデオをブラウザいっぱいに拡大。独自のコントロール、字幕、オーディオエフェクト、動画サービスとの連携を利用できます。"
+    "message": "ほとんどのウェブサイトで、動画をもっと大きく、気を散らさずに楽しめます。T キーを押すだけで、動画がウィンドウいっぱいに広がります。"
   },
   "cwsPromoBeforeLabel": {
     "message": "適用前"
@@ -529,10 +529,10 @@
     "message": "1フレーム進む"
   },
   "frameStepBackward004": {
-    "message": "1フレーム戻る (0.04秒)"
+    "message": "1フレーム戻る"
   },
   "frameStepForward004": {
-    "message": "1フレーム進む (0.04秒)"
+    "message": "1フレーム進む"
   },
   "decreasePlaybackSpeed": {
     "message": "再生速度を下げる"
@@ -563,6 +563,9 @@
   },
   "pause": {
     "message": "一時停止"
+  },
+  "stop": {
+    "message": "停止"
   },
   "replay": {
     "message": "もう一度再生",

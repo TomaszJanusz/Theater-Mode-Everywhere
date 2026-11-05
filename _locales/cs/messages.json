@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Zvětšete libovolné HTML5 video na celé okno. Vlastní ovládání, titulky, zvukové efekty a integrace s videoslužbami."
+    "message": "Na většině webů sledujte videa ve větším zobrazení a bez rozptylování. Stiskněte T a video vyplní okno."
   },
   "cwsPromoBeforeLabel": {
     "message": "PŘED"
@@ -529,10 +529,10 @@
     "message": "Další snímek"
   },
   "frameStepBackward004": {
-    "message": "Předchozí snímek (0,04 s)"
+    "message": "Předchozí snímek"
   },
   "frameStepForward004": {
-    "message": "Další snímek (0,04 s)"
+    "message": "Další snímek"
   },
   "decreasePlaybackSpeed": {
     "message": "Snížit rychlost přehrávání"
@@ -563,6 +563,9 @@
   },
   "pause": {
     "message": "Pozastavit"
+  },
+  "stop": {
+    "message": "Zastavit"
   },
   "replay": {
     "message": "Přehrát znovu",

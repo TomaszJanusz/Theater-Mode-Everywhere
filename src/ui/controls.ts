@@ -209,16 +209,22 @@ export function createControls(
   
     // The ended curtain turns play into Replay while it shows.
     let ended = false;
+    // A host without rewind in a live stream stops it rather than pausing (see PlaybackWindow.stopsOnPause).
+    let stopsOnPause = false;
     const playAction = () => {
       if (ended) return 'replay';
-      return video.paused ? 'play' : 'pause';
+      if (video.paused) return 'play';
+      return stopsOnPause ? 'stop' : 'pause';
     };
     bindCustomTooltip(playPauseBtn, () => `${t(playAction())} ${shortcutKeys(ui().shortcuts.playPause)}`);
 
-    const playIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-    const pauseIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
-
-    const playIcons = { play: playIcon, pause: pauseIcon, replay: REPLAY_ICON };
+    const filledIcon = (shapes: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">${shapes}</svg>`;
+    const playIcons = {
+      play: filledIcon('<polygon points="5 3 19 12 5 21 5 3"/>'),
+      pause: filledIcon('<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'),
+      stop: filledIcon('<rect x="5" y="5" width="14" height="14" rx="2"/>'),
+      replay: REPLAY_ICON
+    };
     const paintPlayButton = () => {
       const action = playAction();
       setIcon(playPauseBtn, playIcons[action]);
@@ -229,13 +235,8 @@ export function createControls(
       executeCommand({ type: 'PLAY_PAUSE' });
     });
 
-    const previousIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-        <rect x="4" y="3" width="2.2" height="18" rx="0.4"></rect>
-        <path d="M19 4 8.5 12 19 20z"></path>
-      </svg>
-    `;
-    const nextIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M5 4 15.5 12 5 20z"/><rect x="17.8" y="3" width="2.2" height="18" rx="0.4"/></svg>';
+    const previousIcon = filledIcon('<rect x="4" y="3" width="2.2" height="18" rx="0.4"/><path d="M19 4 8.5 12 19 20z"/>');
+    const nextIcon = filledIcon('<path d="M5 4 15.5 12 5 20z"/><rect x="17.8" y="3" width="2.2" height="18" rx="0.4"/>');
 
     const previousBtn = document.createElement('button');
     previousBtn.type = 'button';
@@ -369,9 +370,12 @@ export function createControls(
       const locked = playback.live && !playback.seekable;
       const canJumpToLive = playback.live && playback.seekable;
       const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, playback);
-      const key = `${playback.live}:${locked}:${behindLive}:${canJumpToLive}`;
+      const stops = playback.stopsOnPause === true;
+      const key = `${playback.live}:${locked}:${behindLive}:${canJumpToLive}:${stops}`;
       if (key === liveChromeKey) return { live: playback.live, behindLive, canJumpToLive };
       liveChromeKey = key;
+      stopsOnPause = stops;
+      paintPlayButton();
       elapsedReadout.classList.toggle('theater-time-live', playback.live);
       elapsedReadout.classList.toggle('theater-time-live-behind', behindLive);
       elapsedReadout.classList.toggle('theater-time-live-jump', behindLive);
@@ -1374,6 +1378,8 @@ export function createControls(
       if (Number.isFinite(video.duration)) void mediaFeatures.refresh();
     };
     const onMediaReset = () => {
+      // Reloading playing media pauses it without a pause event.
+      paintPlayButton();
       requestedSeek = null;
       cancelTooltipFrame();
       fullscreenRecovery.invalidate();

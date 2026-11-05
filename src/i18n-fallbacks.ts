@@ -109,6 +109,7 @@ export const SHARED_I18N_FALLBACKS: Record<string, string> = {
   resetToDefault: 'Reset to default',
   play: 'Play',
   pause: 'Pause',
+  stop: 'Stop',
   previousVideo: 'Previous',
   backToStart: 'Back to start',
   nextVideo: 'Next',

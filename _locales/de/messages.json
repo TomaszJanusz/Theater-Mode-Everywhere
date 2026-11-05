@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Vergrößere HTML5-Videos im Browserfenster. Nutze eigene Steuerungen, Untertitel, Audioeffekte und Integrationen mit Videodiensten."
+    "message": "Schau dir Videos auf den meisten Websites größer und ohne Ablenkung an. Drücke T, und das Video füllt dein Fenster."
   },
   "cwsPromoBeforeLabel": {
     "message": "VORHER"
@@ -529,10 +529,10 @@
     "message": "Ein Bild vor"
   },
   "frameStepBackward004": {
-    "message": "Ein Bild zurück (0,04 s)"
+    "message": "Ein Bild zurück"
   },
   "frameStepForward004": {
-    "message": "Ein Bild vor (0,04 s)"
+    "message": "Ein Bild vor"
   },
   "decreasePlaybackSpeed": {
     "message": "Wiedergabe verlangsamen"
@@ -563,6 +563,9 @@
   },
   "pause": {
     "message": "Pause"
+  },
+  "stop": {
+    "message": "Stopp"
   },
   "replay": {
     "message": "Erneut abspielen",

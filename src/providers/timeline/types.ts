@@ -22,7 +22,8 @@ export type HostSeekDispatch = {
 export type ProviderTimeline = {
   liveHint?(video: HTMLVideoElement): boolean;
   isAtLiveHead?(video: HTMLVideoElement): boolean;
-  liveBounds?(video: HTMLVideoElement): TimelineBounds | null;
+  /** `false`: the host forbids seeking in this live stream (no DVR), whatever the media's seekable ranges say. */
+  liveBounds?(video: HTMLVideoElement): TimelineBounds | false | null;
   vodDuration?(video: HTMLVideoElement): number | null;
   readClock?(video: HTMLVideoElement | null): number | null;
   observeClock?(

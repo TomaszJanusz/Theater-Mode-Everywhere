@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Expand any HTML5 video to fill the browser. Use custom controls, subtitles, audio effects and integrations with video services."
+    "message": "Watch videos bigger and without distractions on most websites. Press T and the video fills your window."
   },
   "cwsPromoBeforeLabel": {
     "message": "BEFORE"
@@ -529,10 +529,10 @@
     "message": "Frame Step Forward"
   },
   "frameStepBackward004": {
-    "message": "Frame Step Backward (0.04s)"
+    "message": "Frame Step Backward"
   },
   "frameStepForward004": {
-    "message": "Frame Step Forward (0.04s)"
+    "message": "Frame Step Forward"
   },
   "decreasePlaybackSpeed": {
     "message": "Decrease Playback Speed"
@@ -563,6 +563,9 @@
   },
   "pause": {
     "message": "Pause"
+  },
+  "stop": {
+    "message": "Stop"
   },
   "replay": {
     "message": "Replay",

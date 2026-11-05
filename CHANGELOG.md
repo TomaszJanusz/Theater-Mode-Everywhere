@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The short description shown on the browser's extension page and in the stores is reworded in all 16 languages and no longer mentions HTML5. The store descriptions are shorter, open with a warm, personal introduction to theater mode, and the Firefox listing now names every supported service.
+
+### Fixed
+
+- On YouTube live streams that cannot be rewound, the progress bar shows LIVE and cannot be dragged, the seek keys do nothing, and play/pause is a Stop button that resumes at the live edge, as on YouTube. Before, seeking back left a spinner turning and play/pause could fall out of step with the video.
+
 ## [2.1.0] - 2026-11-02
 
 ### Added
@@ -56,9 +64,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The volume and speed sliders now look and behave alike, with the same marker for 100% and 1x. Scrolling or using the volume keys always stops at 100% before going into boost, and stops there again on the way back down.
 - YouTube's integration now loads only on YouTube pages (youtube.com, youtube-nocookie.com and youtu.be, including YouTube players embedded in other sites), so every other site loads about 90 KB less extension script. YouTube features work as before.
 - Play and Pause now show as one large icon in the round plate the buffering indicator uses, with no text; screen readers still announce "Play" or "Pause". While a video buffers, pressing Play leaves the buffering indicator turning, and pressing Pause shows the Pause icon for the usual time before the indicator returns if the video is still loading.
+- The frame step shortcuts in Settings are now labelled Frame Step Backward and Frame Step Forward in every language, without a seconds figure, and the store listings describe the comma and period keys as stepping frame by frame: the step is always one frame, whatever the video's frame rate.
 
 ### Fixed
 
+- When your saved subtitle language fails to load on its first try, such as on YouTube, the Subtitles row in the corner notice keeps showing its spinner while the one automatic retry runs, instead of flashing "Couldn't load" first. "Couldn't load" appears only when the retry fails too.
 - Twitch chat beside the picture no longer cuts off the end of messages, the message box and its buttons when the chat is narrower than Twitch's own minimum: live and replay chat now wrap to the chat's width. The narrowest chat is now 300 px instead of 280, so the narrowest YouTube chat fits without being cut off.
 - On Twitch past broadcasts that have closed captions, theater mode now lists them as Closed Captions in the subtitle menu and shows them over the picture, above the controls, when you pick them. Before, they were left out of the menu and Twitch's own captions drew below the window where nothing showed. While the menu says Off, captions Twitch remembers from earlier videos stay hidden in theater; Twitch's own caption setting is left as it was. Twitch live streams still offer no captions in the menu.
 - In theater mode on large pages such as YouTube, the controls bar now appears on the first mouse move after a pause and hides after idle without the brief hitch it used to cause; the pointer still disappears over the video while idle.

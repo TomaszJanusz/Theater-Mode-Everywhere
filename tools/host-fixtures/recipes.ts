@@ -19,6 +19,11 @@ export interface FixtureRecipe extends Omit<InspectOptions, 'attributes'>, Omit<
   viewport: { width: number; height: number };
   /** Present once the host has rendered what the probes describe. */
   ready: string;
+  /**
+   * Selector that must also be laid out with a size before the probes are read. For hosts that
+   * attach their controls early and show them later: a read in between records them as absent.
+   */
+  laidOut?: string;
   /** Host words in URLs and titles that identify nothing (routes, the service's name). */
   publicWords: readonly string[];
   /** Page expression for the host's build id, if it exposes one. */
@@ -75,6 +80,9 @@ export const RECIPES: Record<string, FixtureRecipe> = {
     viewport: { width: 1600, height: 900 },
     // The watch component stamps its video id after the player's controls exist.
     ready: `ytd-watch-flexy[video-id] ${YOUTUBE_AUTOPLAY_TOGGLE}`,
+    // The player creates its controls while loading and lays them out only once it is ready (or
+    // never, behind an in-player error): the toggle's own box is the sign the controls are up.
+    laidOut: YOUTUBE_AUTOPLAY_TOGGLE,
     probes: {
       flexy: 'ytd-watch-flexy[video-id]',
       player: YOUTUBE_PLAYER_SELECTOR,

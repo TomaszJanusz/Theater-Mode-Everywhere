@@ -46,6 +46,8 @@ export type CaptionHudPayload = {
 /** Controls preference storage; loading feedback is always enabled. */
 export type CaptionActivateOptions = {
   persist?: boolean;
+  /** A failure keeps the loading feedback, because the caller retries and reports the outcome. */
+  retry?: boolean;
 };
 
 export type CaptionOverlayRenderer = Pick<CaptionRenderer, 'setCues' | 'update' | 'setStyle' | 'setMaxLines' | 'dispose'>;
@@ -465,7 +467,7 @@ export class MediaFeaturesController {
           match = pickCaptionTrack(this.tracks, this.captionPreference);
         }
         if (match && this.captionRestorePending && !this.activateInFlight) {
-          const result = await this.activate(match.id, { persist: false });
+          const result = await this.activate(match.id, { persist: false, retry: true });
           if (result === 'failed' && this.isCurrent(epoch, adapter)) {
             const retryGeneration = this.activateGeneration;
             if (!await this.delay(700, epoch, adapter) || !this.captionPreference) return;
@@ -859,7 +861,9 @@ export class MediaFeaturesController {
         activation = { status: 'failed', delivery: 'none', cues: [] };
       }
       this.activeTrackId = on ? id : null;
+      const held = options?.retry && id && !on;
       this.captionState = on ? 'active' : 'off';
+      if (held) this.captionState = 'loading';
       if (on) this.publishSubtitleLayout();
       this.usingOverlayCaptions = on && activation.delivery === 'overlay';
       this.renderer.setCues(this.usingOverlayCaptions ? activation.cues : []);
@@ -882,7 +886,7 @@ export class MediaFeaturesController {
       this.onCaptionChange?.();
       const result = !id ? 'off' : on ? 'on' : 'failed';
       if (refresh && on) this.onCaptionHud?.({ result: 'dismiss' });
-      else this.emitCaptionHud(result);
+      else if (!held) this.emitCaptionHud(result);
       return result;
     } finally {
       this.activateInFlight = false;

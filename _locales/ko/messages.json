@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "모든 HTML5 영상을 브라우저 가득 확대합니다. 맞춤 컨트롤, 자막, 오디오 효과, 동영상 서비스 연동을 사용해 보세요."
+    "message": "대부분의 웹사이트에서 영상을 더 크게, 방해받지 않고 감상하세요. T 키를 누르면 영상이 창을 가득 채웁니다."
   },
   "cwsPromoBeforeLabel": {
     "message": "적용 전"
@@ -529,10 +529,10 @@
     "message": "다음 프레임"
   },
   "frameStepBackward004": {
-    "message": "프레임 뒤로 (0.04초)"
+    "message": "프레임 뒤로"
   },
   "frameStepForward004": {
-    "message": "프레임 앞으로 (0.04초)"
+    "message": "프레임 앞으로"
   },
   "decreasePlaybackSpeed": {
     "message": "재생 속도 낮추기"
@@ -563,6 +563,9 @@
   },
   "pause": {
     "message": "일시정지"
+  },
+  "stop": {
+    "message": "정지"
   },
   "replay": {
     "message": "다시 재생",

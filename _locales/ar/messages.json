@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "كبّر أي فيديو HTML5 ليملأ المتصفح. استخدم عناصر تحكم مخصصة وترجمات ومؤثرات صوتية وتكاملًا مع خدمات الفيديو."
+    "message": "شاهد الفيديوهات في معظم المواقع بحجم أكبر ودون ما يشتّت انتباهك. اضغط T ليملأ الفيديو النافذة."
   },
   "cwsPromoBeforeLabel": {
     "message": "قبل"
@@ -529,10 +529,10 @@
     "message": "خطوة إطار للأمام"
   },
   "frameStepBackward004": {
-    "message": "إطار للخلف (0.04 ثانية)"
+    "message": "إطار للخلف"
   },
   "frameStepForward004": {
-    "message": "إطار للأمام (0.04 ثانية)"
+    "message": "إطار للأمام"
   },
   "decreasePlaybackSpeed": {
     "message": "خفض سرعة التشغيل"
@@ -563,6 +563,9 @@
   },
   "pause": {
     "message": "إيقاف مؤقت"
+  },
+  "stop": {
+    "message": "إيقاف"
   },
   "replay": {
     "message": "إعادة التشغيل",

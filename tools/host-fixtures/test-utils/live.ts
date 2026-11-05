@@ -4,10 +4,12 @@ import path from 'node:path';
 
 import { chromium, type Page } from 'playwright';
 
+import { waitFor } from '../../cpu-suite/processes';
 import { classifyPage } from '../../live-e2e/classify';
 import { collectSignals } from '../../live-e2e/test-utils/signals';
-import { signatureScript } from '../page-inspect';
 import type { FixtureRecipe } from '../recipes';
+
+import { readPageSignature } from './page-eval';
 
 const NAVIGATION_TIMEOUT_MS = 30_000;
 const SETTLE_TIMEOUT_MS = 15_000;
@@ -45,19 +47,36 @@ export async function openRecipePage(page: Page, url: string, recipe: FixtureRec
   const verdict = classifyPage(await collectSignals(page, status));
   if (verdict.kind !== 'ok') return { blocked: `${verdict.kind.replace('-', ' ')} (${verdict.reason})` };
   await page.waitForSelector(recipe.ready, { state: 'attached', timeout: SETTLE_TIMEOUT_MS });
+  if (recipe.laidOut) {
+    try {
+      await page.waitForFunction(selector => {
+        const rect = document.querySelector(selector)?.getBoundingClientRect();
+        return Boolean(rect && rect.width > 0 && rect.height > 0);
+      }, recipe.laidOut, { timeout: SETTLE_TIMEOUT_MS });
+    } catch (error) {
+      // The first check ran at domcontentloaded; a bot check or ad that the host shows inside the
+      // player only exists now, and it is why the controls never appeared.
+      const late = classifyPage(await collectSignals(page, status));
+      if (late.kind !== 'ok') return { blocked: `${late.kind.replace('-', ' ')} (${late.reason})` };
+      throw error;
+    }
+  }
   if (recipe.prepare) {
     await page.click(recipe.prepare.click, { timeout: SETTLE_TIMEOUT_MS });
     await page.waitForSelector(recipe.prepare.until, { state: 'attached', timeout: SETTLE_TIMEOUT_MS });
   }
   // Hosts slide panels in after mounting them: wait until two polls see the same signature.
-  // The reader is installed through the debugger protocol: Trusted Types and CSP forbid eval in the page.
-  await page.evaluate(`(() => { window.__teSignature = () => JSON.stringify(${signatureScript(recipe.probes)}); })()`);
-  await page.waitForFunction(() => {
-    const state = window as unknown as { __teSignature: () => string; __teLastSignature?: string };
-    const current = state.__teSignature();
-    const settled = state.__teLastSignature === current;
-    state.__teLastSignature = current;
-    return settled;
-  }, undefined, { polling: 300, timeout: SETTLE_TIMEOUT_MS });
+  // `page.evaluate` has no timeout, so a stalled page must not hold a read past the settle budget.
+  const budget = AbortSignal.timeout(SETTLE_TIMEOUT_MS);
+  const expired = new Promise<never>((_, reject) => budget.addEventListener('abort', () => reject(new Error(`The page stopped answering for ${SETTLE_TIMEOUT_MS} ms.`)), { once: true }));
+  expired.catch(() => {});
+  let previous = '';
+  const settled = async (): Promise<boolean> => {
+    const current = JSON.stringify(await Promise.race([readPageSignature(page, recipe.probes), expired]));
+    const same = current === previous;
+    previous = current;
+    return same;
+  };
+  await waitFor(settled, SETTLE_TIMEOUT_MS);
   return { blocked: null };
 }

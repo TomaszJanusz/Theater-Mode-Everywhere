@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Espandi ogni video HTML5 nel browser. Usa controlli, sottotitoli, effetti audio e integrazioni con i servizi video."
+    "message": "Guarda i tuoi video in grande e senza distrazioni sulla maggior parte dei siti. Premi T e il video riempie la finestra."
   },
   "cwsPromoBeforeLabel": {
     "message": "PRIMA"
@@ -529,10 +529,10 @@
     "message": "Fotogramma successivo"
   },
   "frameStepBackward004": {
-    "message": "Fotogramma precedente (0,04s)"
+    "message": "Fotogramma precedente"
   },
   "frameStepForward004": {
-    "message": "Fotogramma successivo (0,04s)"
+    "message": "Fotogramma successivo"
   },
   "decreasePlaybackSpeed": {
     "message": "Riduci velocità di riproduzione"
@@ -563,6 +563,9 @@
   },
   "pause": {
     "message": "Pausa"
+  },
+  "stop": {
+    "message": "Interrompi"
   },
   "replay": {
     "message": "Riproduci di nuovo",

@@ -6,7 +6,7 @@
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Agrandissez les vidéos HTML5 dans le navigateur. Profitez de commandes, sous-titres, effets audio et intégrations de services vidéo."
+    "message": "Regardez vos vidéos en plus grand et sans distraction sur la plupart des sites. Appuyez sur T et la vidéo remplit la fenêtre."
   },
   "cwsPromoBeforeLabel": {
     "message": "AVANT"
@@ -529,10 +529,10 @@
     "message": "Avancer d'une image"
   },
   "frameStepBackward004": {
-    "message": "Reculer d'une image (0,04 s)"
+    "message": "Reculer d'une image"
   },
   "frameStepForward004": {
-    "message": "Avancer d'une image (0,04 s)"
+    "message": "Avancer d'une image"
   },
   "decreasePlaybackSpeed": {
     "message": "Ralentir la lecture"
@@ -563,6 +563,9 @@
   },
   "pause": {
     "message": "Pause"
+  },
+  "stop": {
+    "message": "Arrêter"
   },
   "replay": {
     "message": "Revoir",

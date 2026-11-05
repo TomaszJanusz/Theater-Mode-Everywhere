@@ -3,6 +3,7 @@ import { providerRuntime } from '../provider-api';
 import { youtubeChat } from './chat';
 import { youtubeEvents } from './events';
 import { youtubeHarvest } from './harvest';
+import { installYoutubePlayback, youtubeHostPlayback } from './playback-main';
 import { fetchTimedtextWithPot, handleYoutubeMediaSeek, installYoutubeMain, isAllowedTimedtextUrl, probeYoutube } from './player-main';
 import { youtubeWatchPlayback } from './watch-playback';
 
@@ -16,6 +17,10 @@ if (services) api?.register({
   // Timedtext needs the page's proof-of-origin token, which only YouTube's own player can mint.
   pageFetch: url => isAllowedTimedtextUrl(url) ? fetchTimedtextWithPot(url) : null,
   seek: handleYoutubeMediaSeek,
+  hostPlayback: youtubeHostPlayback,
   probe: probeYoutube,
-  install: () => installYoutubeMain(services.fetchPageMedia)
+  install() {
+    installYoutubePlayback();
+    installYoutubeMain(services.fetchPageMedia);
+  }
 });

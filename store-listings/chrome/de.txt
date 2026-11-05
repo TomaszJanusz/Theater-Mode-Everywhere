@@ -1,39 +1,34 @@
-Theater Mode Everywhere vergrößert HTML5-Player so, dass sie das gesamte Browserfenster ausfüllen, und bietet ein komfortables Kinoerlebnis ohne Kopfzeilen, Seitenleisten, Kommentare und Empfehlungen.
+Theater Mode Everywhere befreit dich mit nur einer Taste von allem, was auf einer Seite ablenkt. Mit TME wird das Videoschauen einfach schöner. Die Erweiterung lässt das Video den ganzen Platz in deinem Browsertab einnehmen. Das ist ein einheitlicher Player für deine Videos quer durchs Web. Mach dir keine Sorgen um die besonderen Funktionen deines liebsten Streamingdienstes: Die Chancen stehen gut, dass wir sie unterstützen :-)
 
-Sehen Sie sich Tutorials, Streams, Videos und kurze Clips mit eigenen Wiedergabesteuerungen an. Nutzen Sie Untertitel, Tastenkürzel, Bildanpassung, Audioeffekte und Lautstärkeregler sowie zusätzliche Funktionen auf unterstützten Plattformen.
+Diese Ansicht heißt Kinomodus. Drücke T auf einer Seite mit einem Video, um ihn auszuprobieren.
 
-Die Rich Theater Experience (RTE) bietet tiefere Integrationen mit beliebten Onlinediensten. Auf YouTube und Twitch fügt sie einen Chat neben dem Bild hinzu, und bei Netflix und Disney+ Überspringen-Schaltflächen für Intros und die Navigation zur nächsten Folge. Je nach Dienst kann die Erweiterung Titel, Untertitel, Kapitel, Vorschaubilder, Überspringen-Schaltflächen, die Navigation zur nächsten Folge und zusätzliche Informationen auf der Zeitleiste anzeigen. Der Funktionsumfang variiert je nach Plattform. Die vollständige Liste der unterstützten Dienste finden Sie in den Einstellungen der Erweiterung.
+KURZ GESAGT
+- Einfache Steuerung, die auf den meisten Websites gleich funktioniert: Untertitel, Geschwindigkeit und eine optionale Lautstärkeverstärkung bis 300 %.
+- Schwarze Balken mit Füllen oder Strecken entfernen oder das Video nach oben schieben, damit die Untertitel Platz haben.
+- Rich Theater Experience bringt Extras für YouTube, Twitch, Netflix und Disney+: Chat neben dem Video, Schaltflächen zum Überspringen, Kapitel und Vorschauen auf der Zeitleiste.
+- Kostenlos, Open Source, keine Analytics: Nichts über dich oder das, was du dir ansiehst, wird an den Entwickler gesendet.
+
+ZUSATZFUNKTIONEN FÜR BELIEBTE DIENSTE
+Rich Theater Experience (experimentell) sorgt dafür, dass die eigenen Funktionen des jeweiligen Dienstes auch im Kinomodus verfügbar bleiben. Sie lässt sich für jeden Dienst im Popup der Symbolleiste oder in den Einstellungen ein- und ausschalten.
+- YouTube: Chat neben dem Video (live oder als Replay), Kapitel, Vorschauen auf der Zeitleiste, „Most Replayed“-Momente, Tonspuren und empfohlene Videos, wenn das Video endet.
+- Twitch: Chat neben dem Video (live oder als Replay), dazu Vorschauen und Untertitel bei früheren Übertragungen.
+- Netflix: Schaltflächen „Intro überspringen“ und „Nächste Folge“, dazu Tonspuren in der Synchronfassung, im Original und mit Audiodeskription.
+- Disney+: Schaltflächen „Überspringen“ und „Nächste Folge“, dazu Tonspuren, auch mit Audiodeskription.
+Die vollständige Liste der Dienste findest du in den Einstellungen.
 
 HAUPTFUNKTIONEN
-- Immersiver Ein-Tasten-Modus: Drücken Sie `T`, um das aktive Video sofort auf die Größe des Browserfensters zu vergrößern. Drücken Sie die Taste erneut oder `Escape`, um zurückzukehren. Sind mehrere Videos auf der Seite, wechseln Sie mit `Shift+T` zwischen ihnen. Doppelklicken Sie auf das Bild, um den Vollbildmodus zu starten oder zu beenden, ohne den Theatermodus zu verlassen.
-- Bessere Untertitelunterstützung: Wählen Sie eine Untertitelspur direkt im Kinomodus aus, schalten Sie Untertitel mit der Taste `C` ein und aus und passen Sie Schriftart, Größe, Farbe, Schatten, Hintergrund und Deckkraft an. Die Erweiterung merkt sich Ihre bevorzugte Sprache für jede Website separat.
-- Rich Theater Experience: Aktivieren Sie zusätzliche Integrationen mit unterstützten Diensten. Die verfügbaren Funktionen hängen vom Dienst ab und lassen sich für jeden Dienst einzeln im Popup der Erweiterung oder in den Einstellungen ein- und ausschalten.
-- Chat neben dem Bild: Auf Twitch und YouTube mit Rich Theater Experience bleibt der Live-Chat oder Chat-Replay neben oder unter dem Video sichtbar. Mit `Alt+R` blenden Sie ihn ein oder aus.
-- Eine umfangreichere Zeitleiste: Wechseln Sie zwischen Kapiteln, sehen Sie vor dem Spulen Vorschaubilder und auf YouTube die am häufigsten wiedergegebenen Stellen („Most Replayed“). Installierte SponsorBlock-Markierungen können auf der YouTube-Zeitleiste angezeigt werden.
-- Überspringen-Schaltflächen und nächste Folgen: Wo der Dienst sie anbietet, überspringen Sie Intros, Abspänne und Rückblicke oder YouTube-Werbung und wechseln zum vorherigen oder nächsten Video bzw. zur nächsten Folge.
-- Bildanpassung und angehobenes Layout: Drücken Sie `Z` oder nutzen Sie die Schaltfläche im Player, um zwischen Einpassen, Füllen und Strecken umzuschalten und schwarze Balken ohne zusätzliche Erweiterung zu entfernen. Mit dem angehobenen Layout (`Shift+L`) rückt das Bild nach oben und der Platz darunter wird für Untertitel genutzt.
-- Elegante eigene Steuerelemente: moderne Steuerleiste mit Videotitel, vertikalen Lautstärke- und Geschwindigkeitsreglern, halbtransparenten Tooltips sowie Anzeigen für verstrichene und verbleibende Zeit. Mit `Shift+H` bleiben die Steuerelemente immer sichtbar.
-- Audioeffekte: Lautstärkeverstärkung (bis zu 300 %), Sprachverstärkung, „Laute Töne reduzieren“ und Bass in den Player-Einstellungen. Sie werden nur mit der Web Audio API verarbeitet, solange ein Effekt aktiv ist. Bei DRM-geschützten Medien nicht verfügbar.
-- Visuelles HUD: Elegante animierte Einblendungen beim Ändern der Lautstärke, Spulen und Umschalten zwischen Wiedergabe und Pause.
-- AutoTheater (Rich Theater Experience): Wechselt automatisch in den Theatermodus, sobald ein unterstütztes Video startet. Ein kurzer Countdown lässt sich per Klick oder mit `Esc` abbrechen.
-- Video-Schaltfläche (BETA, standardmäßig aus): eine kleine Schaltfläche auf einem pausierten Video, um mit einem Klick in den Theatermodus zu wechseln. Auf YouTube mit Rich Theater Experience sitzt sie in der Player-Symbolleiste.
-- Shadow-DOM-Unterstützung: Findet und vergrößert Player, die in modernen Shadow Roots verborgen sind, und verbessert so die Kompatibilität mit mehr Websites.
-- Eigene Tastenkürzel und Einstellungen: Legen Sie Tasten fest, um den Theatermodus umzuschalten, zu spulen, Untertitel zu verwalten, ihre Größe zu ändern und Bild für Bild weiterzuschalten. Die Einstellungen warnen vor doppelt belegten Tastenkürzeln, und die Hilfe im Player zeigt alle auf einen Blick. Wählen Sie Sprache, Akzentfarbe, Hohen Kontrast, Transparenz reduzieren und Bewegung reduzieren.
-- Ausschlussliste: Schließen Sie bestimmte Domains über das Popup in der Browserleiste oder die Optionsseite aus, um Konflikte mit dem nativen Seitenlayout zu vermeiden.
+- Videoanpassung: Z schaltet zwischen Einpassen, Füllen (schneidet die Ränder ab) und Strecken um. Auf Bildschirmen, die höher sind als das Video, schiebt das Layout „Oben“ (Umschalttaste+L) das Video nach oben, und die Untertitel erscheinen im Bereich darunter.
+- Untertitel und Tonspuren: Wähle sie aus, schalte Untertitel mit C ein oder aus und passe Schriftart, Größe, Farbe und Hintergrund an. Deine Sprachen werden gespeichert.
+- Optionale Audioeffekte: Lautstärkeverstärkung bis 300 %, Sprachverstärkung, „Laute Töne reduzieren“ und Bass.
+- Tastatur (im Kinomodus): Geschwindigkeitstasten wie bei YouTube, Pfeil nach rechts gedrückt halten für 2x Tempo, Komma und Punkt zum Weiterschalten Bild für Bild sowie W, A, S und D zum Wechseln zwischen den Steuerelementen. H listet alle Tastenkürzel auf; sie lassen sich alle ändern.
+- Steuerung und Darstellung: Videotitel, Regler für Lautstärke und Geschwindigkeit sowie ein Bildschirm „Erneut abspielen“, wenn das Video endet. Umschalttaste+H hält die Steuerung sichtbar. Wähle eine Akzentfarbe oder aktiviere „Hoher Kontrast“, „Transparenz reduzieren“ oder „Bewegung reduzieren“. Die Oberfläche gibt es in 15 Sprachen.
+Hinweis: Die Funktionen hängen vom Dienst und vom Video ab. Audioeffekte, auch die Lautstärkeverstärkung, funktionieren nicht bei DRM-geschützten Videos, etwa bei Netflix und Disney+, oder wenn eine Website sie blockiert.
 
-WO UND WIE ES FUNKTIONIERT
-- Universelles HTML5-Video: Funktioniert mit Standard-HTML5-Videoelementen im Web, einschließlich Playern im Shadow DOM.
-- Eingebettete Player: Erkennt und vergrößert Videos, die in Frames eingebettet sind, z. B. YouTube-Player oder Player anderer Videoplattformen.
-- HTML5-Untertitel: Zeigt Standard-HTML5-Untertitelspuren in einem eigenen Overlay des Kinomodus an, sodass Sie ihr Erscheinungsbild anpassen können.
-- Plattformintegrationen: Außer den am Anfang dieser Beschreibung genannten Diensten unterstützt die RTE auch viele weitere Videoplattformen, darunter Creator-Plattformen, Anime-Plattformen und asiatische Plattformen, mit Wiedergabelisten, Titeln, Untertiteln, Kapiteln und automatischem Wechsel in den Theatermodus. Der Funktionsumfang hängt vom Dienst und vom Video ab.
-- Live-Übertragungen: Erkennt LIVE-Übertragungen und ermöglicht es Ihnen, die Aufzeichnung zurückzuspulen und zum aktuellen Moment zurückzukehren, wenn der Dienst ein DVR-Fenster bereitstellt.
-- DRM-geschützte Dienste: Einige Plattformen schränken den Zugriff auf den Player ein, sodass manche Funktionen, etwa Audioeffekte, dort möglicherweise nicht verfügbar sind.
-- Datenschutz: Sie sind nicht das Produkt. Die Erweiterung sendet keine Informationen über Sie oder das, was Sie sehen, an den Entwickler. Einstellungen können über Ihr Browserkonto synchronisiert werden. Die vollständige Datenschutzerklärung finden Sie in den Einstellungen unter „Info“.
-- Kostenlos und Open Source: Theater Mode Everywhere ist kostenlos und bleibt es auch, der Quellcode ist offen.
+SO FÄNGST DU AN
+Öffne nach der Installation eine Seite mit einem Video und drücke T (nicht, während du in ein Textfeld tippst). Umschalttaste+T wechselt zwischen mehreren Videos; mit T oder Escape verlässt du den Kinomodus. Du kannst auch eine optionale Kinomodus-Schaltfläche auf Videos hinzufügen (Beta) oder AutoTheater einschalten: Auf Diensten mit aktivierter Rich Theater Experience wechselt die Erweiterung dann nach einem Countdown, den du abbrechen kannst, automatisch in den Kinomodus. Für jede Website kannst du die Erweiterung im Popup der Symbolleiste ausschalten. Eine optionale kurze Einrichtung fragt, wie du am liebsten Videos ansiehst.
 
-SO FANGEN SIE AN
-1. Öffnen Sie eine Videoseite, z. B. eine Streaming-Plattform, eine Nachrichtenseite oder einen Blog.
-2. Drücken Sie `T`, um in den Kinomodus zu wechseln. Achten Sie darauf, dass Sie nicht gerade in ein Textfeld schreiben.
-3. Nutzen Sie die Player-Steuerelemente oder Tastenkürzel: `C` schaltet Untertitel ein und aus, `Left` und `Right` spulen, und die konfigurierbaren Tasten für Einzelbilder gehen Bild für Bild.
-4. Aktivieren Sie auf unterstützten Plattformen die Rich Theater Experience im Popup der Erweiterung oder in den Einstellungen.
-5. Drücken Sie erneut `Escape` oder `T`, um den Theatermodus zu verlassen.
+DATENSCHUTZ, KOSTENLOS UND OPEN SOURCE
+Nichts über dich oder das, was du dir ansiehst, geht an den Entwickler oder an unbeteiligte Dritte. Es gibt keine Analytics. Die Erweiterung braucht Zugriff auf alle Websites, um Videos zu finden, führt aber keine Liste der Seiten, die du besuchst. Manche Funktionen laden Untertitel und Vorschauen direkt vom Dienst, den du ansiehst. Einstellungen, auch ausgeschlossene Websites und Sprachen pro Website, können über dein Browserkonto synchronisiert werden. Die Datenschutzerklärung findest du in den Einstellungen unter „Über“.
+Theater Mode Everywhere ist kostenlos und wird es immer bleiben. Es ist Open Source und steht unter der MIT-Lizenz.
+
+Steht in keiner Verbindung zu den hier genannten Diensten und wird von ihnen nicht gebilligt.
