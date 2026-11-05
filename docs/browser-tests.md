@@ -351,8 +351,9 @@ This deliberately broad infrastructure rule avoids a per-test exception list;
 UI/provider-only changes use Chromium on PRs. Reviewed prose-only changes retain
 the existing inexpensive CI pass.
 
-PR and release Firefox smoke remain non-blocking (`continue-on-error` on the smoke step
-of the `smoke-firefox` job; a failed setup still fails the job and `check`) but never
+PR and release Firefox smoke remain non-blocking (`continue-on-error` on the smoke step;
+on PRs that step has its own `smoke-firefox` job, whose failed setup still fails the job
+and `check`, while release runs it inside the `release` job) but never
 pass silently: a failure adds a warning annotation and a job-summary line, and a
 pass adds a summary line. TME-112 owns making it blocking after ten consecutive
 green CI runs of the installed-extension path.
