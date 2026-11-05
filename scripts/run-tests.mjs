@@ -42,7 +42,8 @@ export function isBrowserTest(file) {
 // partitions the lane itself, so every shard is balanced by measured seconds and no file can fall between two splits.
 // Greedy longest-first: each file goes to the lightest shard. Unmeasured files weigh the median measured one, so a new
 // test only unbalances a shard, never drops out. `overhead` is non-test work the workflow runs in a shard (Storybook).
-// Every shard computes the same partition from the same inputs and runs its files heaviest first.
+// Every shard computes the same partition from the same inputs. Longest-first decides which shard holds a file; it is
+// not an execution order, since the Node CLI runner does not promise to start files in the order it is given them.
 export function balanceShard(files, costs, index, total) {
   const known = files.map(file => costs.files[file]).filter(seconds => seconds !== undefined).sort((a, b) => a - b);
   const fallback = known.length === 0 ? 1 : known[Math.floor(known.length / 2)];
@@ -54,7 +55,7 @@ export function balanceShard(files, costs, index, total) {
     shards[lightest].push(file);
     loads[lightest] += weight(file);
   }
-  // Heaviest first: the runner starts files in this order, so the long ones never begin last and stretch the tail.
+  // Listed heaviest first, but the runner may start them in another order; balance comes from membership alone.
   return shards[index - 1];
 }
 
@@ -66,17 +67,23 @@ export function parseShardCosts(text) {
   return costs;
 }
 
-export function planRun(discovered, args, classify = file => file.endsWith('.browser.test.ts') || isComponentTest(file), costs) {
-  const flags = [];
-  const selectors = [];
-  let lane = 'all';
+function parseRunArgs(args) {
+  const parsed = { flags: [], selectors: [], lane: 'all', components: true };
   for (const arg of args) {
     if (arg === '--') continue;
-    if (arg.startsWith('--lane=')) { lane = arg.slice(7); continue; }
-    (arg.startsWith('-') ? flags : selectors).push(arg);
+    if (arg.startsWith('--lane=')) parsed.lane = arg.slice(7);
+    // CI runs every component file on both engines in one Storybook step instead (see ci.yml).
+    else if (arg === '--no-components') parsed.components = false;
+    else (arg.startsWith('-') ? parsed.flags : parsed.selectors).push(arg);
   }
-  if (!['all', 'unit', 'browser'].includes(lane)) throw new Error(`Unknown test lane: ${lane}`);
-  const laneFiles = discovered.filter(file => lane === 'all' || (lane === 'browser') === classify(file));
+  if (!['all', 'unit', 'browser'].includes(parsed.lane)) throw new Error(`Unknown test lane: ${parsed.lane}`);
+  return parsed;
+}
+
+export function planRun(discovered, args, classify = file => file.endsWith('.browser.test.ts') || isComponentTest(file), costs) {
+  const { flags, selectors, lane, components } = parseRunArgs(args);
+  const laneFiles = discovered.filter(file => (lane === 'all' || (lane === 'browser') === classify(file))
+    && (components || !isComponentTest(file)));
   let files = selectors.length === 0
     ? laneFiles
     : laneFiles.filter(file => selectors.some(selector => file === selector || file.includes(selector)));

@@ -94,6 +94,11 @@ test('component tests run once in Vitest, in the browser lane, with translated f
   assert.deepEqual(planRun(all, ['--lane=unit']).vitest.files, []);
   assert.deepEqual(planRun(all, ['--lane=browser']).vitest.files, ['src/ui/menu.component.test.ts']);
   assert.deepEqual(planRun(all, ['--lane=browser']).tsx.files, ['src/y/bar.browser.test.ts']);
+  // CI lanes leave component files to the Storybook step's complete both-engine pass; nothing else changes.
+  const withoutComponents = planRun(all, ['--lane=browser', '--no-components', '--test-shard=1/1'], undefined, { files: {} });
+  assert.deepEqual(withoutComponents.vitest.files, []);
+  assert.deepEqual(withoutComponents.tsx, { files: ['src/y/bar.browser.test.ts'], flags: [] });
+  assert.throws(() => planRun(all, ['--no-components', 'menu']), /No test file matches: menu/);
 
   const root = mkdtempSync(join(tmpdir(), 'run-tests-vitest-'));
   try {

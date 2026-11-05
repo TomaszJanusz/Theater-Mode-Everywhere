@@ -187,9 +187,10 @@ there, so a stalled check fails instead of hanging.
 | `build`, `static` | One production build; `pnpm lint`, `pnpm typecheck` and `pnpm verify:bundles` against it (which includes the shared bundle size ratchet). |
 | `boundaries`, `css-and-unused` | `pnpm check:boundaries`, `pnpm check:shared-hosts`, `pnpm lint:css`; Knip is reported only (`pnpm check:unused`). |
 | `unit` | `pnpm test --lane=unit` on the selection. |
-| `browser-chromium` | Three shards of `pnpm test --lane=browser` on Chromium, balanced by measured file cost (below); shard 1 also runs `pnpm storybook:test`. |
-| `browser-firefox` | Three shards of `pnpm test --lane=browser` on Firefox, only when `ci-changes.mjs` selects it, balanced by measured file cost (below); shard 1 also runs `pnpm storybook:test` for Firefox. |
-| `smoke` | Chromium smoke when shipped inputs are affected; Firefox smoke with the installed extension when Firefox is selected. |
+| `browser-chromium` | Three shards of `pnpm test --lane=browser --no-components` on Chromium, balanced by measured file cost (below); shard 1 also runs `pnpm storybook:test`, which includes every component test on both engines. |
+| `browser-firefox` | Three shards of `pnpm test --lane=browser --no-components` on Firefox without the Chromium-only cases, only when `ci-changes.mjs` selects it, balanced by measured file cost (below); shard 1 also runs the Storybook stories and component cases for Firefox. |
+| `smoke` | Chromium smoke when shipped inputs are affected. |
+| `smoke-firefox` | Firefox smoke with the installed extension, beside `smoke`, when Firefox is selected. |
 
 ## Booting the player in a test
 
@@ -220,7 +221,10 @@ at 150 lines per file and four properties per exported `*Options` interface.
 player runtime, MAIN world, video, providers or network; those paths stay in
 `*.browser.test.ts`, smoke and real-host checks. `pnpm test` dispatches them to Vitest in
 the browser lane, so selectors, `--files-from`, `--test-name-pattern` (as `-t`),
-`--test-shard` and `--report-dir` work as for other files:
+`--test-shard` and `--report-dir` work as for other files. CI passes `--no-components` to
+its browser lanes because the Chromium lane's `pnpm storybook:test` step already runs every
+component file on both engines (the `components` Vitest project), also on PRs without the
+Firefox lane:
 
 ```sh
 pnpm test surfaces.component
@@ -297,9 +301,15 @@ use `.browser.test.ts` or `.component.test.ts`, or import Playwright (including 
 Selectors and Node test flags work within either lane. Without `--lane`, all
 tests run. `THEATER_TEST_ENGINES` selects parameterized browser cases; unset means
 both engines, preserving local, nightly and release coverage. Comma-separated `chromium`
-and `firefox` are accepted; empty, duplicate or unknown values fail. Existing
-cases explicitly tied to Chromium still use Chromium in either browser lane;
-the switch does not claim to port those cases to Firefox.
+and `firefox` are accepted; empty, duplicate or unknown values fail. Cases tied to
+one engine (they launch Chromium directly, load the installed extension, use CDP or
+`openAudioRenderer()`) take `skip: skipUnlessEngine('chromium')`
+([`test-engines.ts`](../src/test-utils/test-engines.ts)) on the test or its suite:
+an explicit selection without that engine skips them with the reason, and unset
+skips nothing. In CI the Firefox lane runs only when the required Chromium lane
+runs the same selection, so these cases still run once, in their engine's lane.
+Gate the case that needs the engine, not a file whose other cases are
+parameterized.
 
 **Shards.** `--test-shard=<i>/<n>` splits a lane. With `--shard-costs=<table>` the runner itself partitions the
 lane's files (node:test and Vitest alike) greedily by seconds, so shards finish together
@@ -324,7 +334,7 @@ with verification and smoke. Both browser lanes build the extension themselves (
 their tests rather than download it: a download is 2 s, but waiting for the `build` job delayed the
 lanes' start by about 33 s, which was on the critical path. A few browser files load the installed
 extension (`dist/chrome-unpacked`: `page-fetch`, the Tencent wasm and bilibili.tv runtime files, all
-Chromium-only, so they run in whichever lane shard holds them). `installedBuildReady`
+Chromium-only, so they run in the Chromium lane and in unrestricted runs). `installedBuildReady`
 ([`installed-build.ts`](../src/test-utils/installed-build.ts)) skips such a test locally with
 `run pnpm build`, but throws when `CI` or `GITHUB_ACTIONS` is set, so a lane that loses the
 build fails instead of reporting them as skipped. Nightly and release build before
@@ -341,7 +351,8 @@ This deliberately broad infrastructure rule avoids a per-test exception list;
 UI/provider-only changes use Chromium on PRs. Reviewed prose-only changes retain
 the existing inexpensive CI pass.
 
-PR and release Firefox smoke remain non-blocking (`continue-on-error`) but never
+PR and release Firefox smoke remain non-blocking (`continue-on-error` on the smoke step
+of the `smoke-firefox` job; a failed setup still fails the job and `check`) but never
 pass silently: a failure adds a warning annotation and a job-summary line, and a
 pass adds a summary line. TME-112 owns making it blocking after ten consecutive
 green CI runs of the installed-extension path.
