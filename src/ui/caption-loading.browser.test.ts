@@ -7,6 +7,7 @@ import { chromium, type Page } from 'playwright';
 
 import { bootPlayer, bundlePlayer, enterTheater } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
+import { skipUnlessEngine } from '../test-utils/test-engines';
 
 const shared = sharedTestBrowser(chromium);
 
@@ -79,7 +80,7 @@ async function screenshot(page: Page, filename: string): Promise<void> {
   await page.screenshot({ path: path.join(directory, filename) });
 }
 
-describe('caption loading browser regressions', () => {
+describe('caption loading browser regressions', { skip: skipUnlessEngine('chromium') }, () => {
   it('shows saved-caption loading in the real player, pulses both colors, handles reduced motion and failures', async t => {
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
     const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
@@ -191,7 +192,7 @@ describe('caption loading browser regressions', () => {
   });
 });
 
-describe('caption options dialog close button', () => {
+describe('caption options dialog close button', { skip: skipUnlessEngine('chromium') }, () => {
   for (const method of ['X button', 'Escape'] as const) {
     it(`closes with the ${method} like a dismissal, keeping playback and theater and restoring focus`, async t => {
       if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }

@@ -14,6 +14,7 @@ import { isVimeoShowcaseStepHref } from './providers/vimeo/navigation';
 import { youtubePreviousRestarts } from './providers/youtube/navigation';
 import { PROVIDER_ENTRIES, bundleModules } from './test-utils/player-boot';
 import { sharedTestBrowser } from './test-utils/test-browser';
+import { skipUnlessEngine } from './test-utils/test-engines';
 
 const shared = sharedTestBrowser(chromium);
 
@@ -264,7 +265,7 @@ describe('playlist navigation availability', () => {
   });
 });
 
-describe('playlist navigation DOM', () => {
+describe('playlist navigation DOM', { skip: skipUnlessEngine('chromium') }, () => {
   it('reads the host markup observed on YouTube, PeerTube, Dailymotion, and Vimeo', async t => {
     let executable = '';
     try {

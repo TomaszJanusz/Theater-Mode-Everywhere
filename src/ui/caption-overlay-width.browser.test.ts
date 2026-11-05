@@ -5,10 +5,11 @@ import { chromium } from 'playwright';
 
 import { playerStylesheets } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
+import { skipUnlessEngine } from '../test-utils/test-engines';
 
 const shadowCss = playerStylesheets().ui;
 
-describe('caption overlay width', () => {
+describe('caption overlay width', { skip: skipUnlessEngine('chromium') }, () => {
   const shared = sharedTestBrowser(chromium);
 
   it('wraps within the video frame, not within half of it', async t => {

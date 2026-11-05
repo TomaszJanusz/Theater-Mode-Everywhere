@@ -6,7 +6,7 @@ import { it } from 'node:test';
 import { sharedEngineBrowsers } from './test-utils/engine-browsers';
 import { bundleModules } from './test-utils/player-boot';
 import { readStylesheet } from './test-utils/styles';
-import { testEngines } from './test-utils/test-engines';
+import { skipUnlessEngine, testEngines } from './test-utils/test-engines';
 
 const bundle = bundleModules([
   "export { buildWhatsNewContent, WHATS_NEW_RELEASES } from './whatsNew-content';",
@@ -18,7 +18,7 @@ const catalogs = Object.fromEntries(['en', 'pl', 'ar'].map(locale => [locale,
   JSON.parse(readFileSync(new URL(`../_locales/${locale}/messages.json`, import.meta.url), 'utf8'))
 ]));
 
-it('renders static English semantic content safely and refreshes localized dialog labels in place', { timeout: 30_000 }, async t => {
+it('renders static English semantic content safely and refreshes localized dialog labels in place', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
   const page = await (await browsers.chromium.newContext(t)).newPage();
   await page.setContent('<html><body><button id="opener">Open</button></body></html>');
   await page.evaluate('window.__name = value => value');
@@ -113,7 +113,7 @@ it('renders static English semantic content safely and refreshes localized dialo
   assert.equal(await page.locator('#opener').evaluate(el => el === document.activeElement), true);
 });
 
-it('shows 2.0 below 2.1, each with its own thanks, to someone who never saw the 2.0 highlights', { timeout: 30_000 }, async t => {
+it('shows 2.0 below 2.1, each with its own thanks, to someone who never saw the 2.0 highlights', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
   const page = await (await browsers.chromium.newContext(t)).newPage();
   await page.setContent('<html><body></body></html>');
   await page.evaluate('window.__name = value => value');

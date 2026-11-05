@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 import { sharedTestBrowser } from '../../src/test-utils/test-browser';
+import { skipUnlessEngine } from '../../src/test-utils/test-engines';
 
 import { PROBE_SCRIPT, installConsentHandler, launchBrowser, openSettings, navigateSpa, readPlayer, seekFragment, toggleTheater, type Session } from './browser';
 import { measure } from './measurement';
@@ -17,7 +18,7 @@ const media = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
 const available = existsSync(chromium.executablePath());
 const shared = sharedTestBrowser(chromium);
 
-it('browser fixture binds graphs to media, reads focus and observes same-document transitions', { skip: !available, timeout: 30000 }, async t => {
+it('browser fixture binds graphs to media, reads focus and observes same-document transitions', { skip: skipUnlessEngine('chromium') || !available, timeout: 30000 }, async t => {
   const context = await shared.newContext(t, { viewport: { width: 1440, height: 900 } });
   const browser = context.browser()!;
   await context.addInitScript({ content: PROBE_SCRIPT });
@@ -97,7 +98,7 @@ it('browser fixture binds graphs to media, reads focus and observes same-documen
   assert.notEqual(replaced.videoToken, token); assert.equal(replaced.video!.graph, null);
 });
 it('headed setup failure closes its context and owned Xvfb; repeated cleanup is safe', {
-  skip: !available || process.platform !== 'linux', timeout: 30000
+  skip: skipUnlessEngine('chromium') || !available || process.platform !== 'linux', timeout: 30000
 }, async () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'cpu-suite-browser-'));
   const resources = new Resources(); let captured: Session | null = null;

@@ -10,7 +10,7 @@ import { sharedEngineBrowsers } from '../src/test-utils/engine-browsers';
 import { assertLocalized, readCatalog } from '../src/test-utils/language-audit';
 import { bundleQueryModules } from '../src/test-utils/query-bundle';
 import { readStylesheet } from '../src/test-utils/styles';
-import { selectTestEngines } from '../src/test-utils/test-engines';
+import { selectTestEngines, skipUnlessEngine } from '../src/test-utils/test-engines';
 
 const root = path.resolve(__dirname, '..');
 const bundles = Promise.all(["import '../options/options';", "import '../popup/popup';"].map(entry => bundleQueryModules([entry])));
@@ -52,7 +52,7 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
 
 const browsers = sharedEngineBrowsers();
 
-it('Settings groups AutoTheater and accessibility, persists countdown choices, and fits narrow layouts', { timeout: 30_000 }, async t => {
+it('Settings groups AutoTheater and accessibility, persists countdown choices, and fits narrow layouts', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
   const context = await browsers.chromium.newContext(t);
   try {
     const page = await context.newPage();
@@ -101,7 +101,7 @@ async function switchTo(page: Page, locale: string): Promise<void> {
   await page.waitForFunction(locale => document.documentElement.lang === locale, locale.replace('_', '-'));
 }
 
-it('Settings catalog audit relabels all five tabs and dynamic exclusions (2 rows) without reload', { timeout: 30_000 }, async t => {
+it('Settings catalog audit relabels all five tabs and dynamic exclusions (2 rows) without reload', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
   const context = await browsers.chromium.newContext(t);
   try {
     const page = await context.newPage();
@@ -222,7 +222,7 @@ it('Settings catalog audit relabels all five tabs and dynamic exclusions (2 rows
 });
 
 // Only the empty-exclusions copy differs from the full audit above, so it needs no tab-by-tab replay.
-it('Settings catalog audit relabels the empty exclusions list', { timeout: 30_000 }, async t => {
+it('Settings catalog audit relabels the empty exclusions list', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
   const context = await browsers.chromium.newContext(t);
   try {
     const page = await context.newPage();
@@ -234,7 +234,7 @@ it('Settings catalog audit relabels the empty exclusions list', { timeout: 30_00
   } finally { await context.close(); }
 });
 
-it('Settings Language row links to the translation issue form for the selected language', { timeout: 30_000 }, async t => {
+it('Settings Language row links to the translation issue form for the selected language', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
   const context = await browsers.chromium.newContext(t);
   try {
     const page = await context.newPage();
@@ -252,7 +252,7 @@ it('Settings Language row links to the translation issue form for the selected l
 });
 
 for (const url of ['chrome://extensions', '', 'https://example.com/watch', 'https://child.example.com/watch', 'https://youtube.com/watch']) {
-  it(`popup catalog audit refreshes dynamic domain/status (${url || 'no tab'})`, { timeout: 30_000 }, async t => {
+  it(`popup catalog audit refreshes dynamic domain/status (${url || 'no tab'})`, { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
     const context = await browsers.chromium.newContext(t);
     try {
       const page = await context.newPage();
