@@ -6,6 +6,7 @@ import { chromium, type Page } from 'playwright';
 
 import { PROVIDER_ENTRIES, bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
+import { skipUnlessEngine } from '../test-utils/test-engines';
 
 const PLAY = 'https://www.disneyplus.com/pl-pl/play/0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8';
 const WATCH = 'https://www.crunchyroll.com/pl/watch/GPWUKZGZX/maomao';
@@ -14,7 +15,7 @@ const disneyBundle = bundleModules(["export * from './providers/disney/service-a
 const crunchyBundle = bundleModules(["export * from './providers/crunchyroll/service-actions';"], 'TeCrunchyActions');
 const shared = sharedTestBrowser(chromium);
 
-describe('disney and crunchyroll service actions', () => {
+describe('disney and crunchyroll service actions', { skip: skipUnlessEngine('chromium') }, () => {
   it('reads Disney skip, up-next, and end-card controls from open shadow roots', async (t) => {
     const { chromium } = await import('playwright');
     let executable = '';
@@ -373,7 +374,7 @@ async function fixture(t: TestContext, url: string, html: string): Promise<Page>
   return page;
 }
 
-describe('YouTube and Bilibili service action providers', { skip: !existsSync(chromium.executablePath()) }, () => {
+describe('YouTube and Bilibili service action providers', { skip: skipUnlessEngine('chromium') || !existsSync(chromium.executablePath()) }, () => {
   it('proxies only available YouTube ad skips, including modern, legacy and embedded controls', async t => {
     const page = await fixture(t, 'https://www.youtube.com/watch?v=video1', '<div id="movie_player" class="html5-video-player ad-showing"><video></video></div>');
     try {

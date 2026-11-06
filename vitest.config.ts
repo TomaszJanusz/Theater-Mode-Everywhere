@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 import { parseTestEngines } from './src/test-utils/test-engines';
 
@@ -26,7 +26,10 @@ export default defineConfig({
         optimizeDeps: { include: ['vitest/browser'] },
         test: {
           name: 'components',
-          include: ['src/**/*.component.test.ts'],
+          // The files scripts/run-tests.mjs discovers (anywhere but node_modules, dist and coverage): CI's lanes pass
+          // --no-components, so a file this project missed would run nowhere. run-tests.test.mjs compares the two.
+          include: ['**/*.component.test.ts'],
+          exclude: [...configDefaults.exclude, '**/dist/**', '**/coverage/**'],
           setupFiles: ['src/test-utils/component-setup.ts'],
           // Focus, keyboard input and fullscreen activation belong to one page at a time; files side by side steal them from each other.
           fileParallelism: false,

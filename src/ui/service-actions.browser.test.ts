@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 
 import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
+import { skipUnlessEngine } from '../test-utils/test-engines';
 
 const PAGE_CSS = playerStylesheets().page;
 // This fixture mounts the player UI in the light DOM, where the shadow root's `:host` marker is the document root.
@@ -60,7 +61,7 @@ type NetflixReport = {
   sameWatchQuery: boolean;
 };
 
-describe('service action CTA', () => {
+describe('service action CTA', { skip: skipUnlessEngine('chromium') }, () => {
   const shared = sharedTestBrowser(chromium);
 
   it('renders and activates an arbitrary provider through the shared action contract', async t => {

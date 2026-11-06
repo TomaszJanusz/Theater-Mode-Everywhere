@@ -11,7 +11,7 @@ import { installChromeStub } from '../test-utils/chrome-stub';
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { playerStylesheets } from '../test-utils/player-boot';
 import { bundleQueryModules } from '../test-utils/query-bundle';
-import { testEngines } from '../test-utils/test-engines';
+import { skipUnlessEngine, testEngines } from '../test-utils/test-engines';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CSS = playerStylesheets().ui;
@@ -119,7 +119,7 @@ async function freezeClock(page: Page): Promise<void> {
 }
 
 describe('scrubber tooltip', () => {
-  it('captures time, chapter, sprite and edge positioning in Chromium', { timeout: 60_000 }, async t => {
+  it('captures time, chapter, sprite and edge positioning in Chromium', { skip: skipUnlessEngine('chromium'), timeout: 60_000 }, async t => {
     const page = await (await browsers.chromium.newContext(t, { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 })).newPage();
     await boot(page);
     for (const [name, value, ratio] of [

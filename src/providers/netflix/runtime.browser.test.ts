@@ -5,12 +5,13 @@ import { chromium } from 'playwright';
 
 import { bundleModules, playerStylesheets } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
+import { skipUnlessEngine } from '../../test-utils/test-engines';
 
 /** The module under `src/` as an IIFE global; MAIN runtime and startup retain manifest order. */
 const compile = (module: string, globalName: string) => bundleModules([`export * from './${module}';`], globalName);
 const esbuildBundle = () => bundleModules(["import './entries/main-world';", "import './providers/netflix/main-entry';", "import './entries/main-world-start';"], 'NetflixMainWorld');
 
-describe('netflix runtime browser regressions', () => {
+describe('netflix runtime browser regressions', { skip: skipUnlessEngine('chromium') }, () => {
   const shared = sharedTestBrowser(chromium);
 
   it('hides ancestor videos, rebinds after a style-only hide, restores mask longhands, and boots MAIN without a player id', async (t) => {

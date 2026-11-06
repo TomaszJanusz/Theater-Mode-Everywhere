@@ -5,7 +5,7 @@ import type { Page } from 'playwright';
 
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
-import { testEngines } from '../test-utils/test-engines';
+import { skipUnlessEngine, testEngines } from '../test-utils/test-engines';
 
 import { clockLabels, TIME_DIGIT_STAGGER_MS } from './time-readout';
 
@@ -48,7 +48,7 @@ async function mountBar(page: Page): Promise<void> {
 }
 
 describe('split time readout', () => {
-  it('keeps the scrubber still while digits and the duration toggle change', async (t) => {
+  it('keeps the scrubber still while digits and the duration toggle change', { skip: skipUnlessEngine('chromium') }, async (t) => {
     const page = await (await browsers.chromium.newContext(t, { viewport: { width: 900, height: 400 } })).newPage();
     await mountBar(page);
 
@@ -93,7 +93,7 @@ describe('split time readout', () => {
     }
   });
 
-  it('rolls a changed digit in the clock color and settles sharp', async (t) => {
+  it('rolls a changed digit in the clock color and settles sharp', { skip: skipUnlessEngine('chromium') }, async (t) => {
     const page = await (await browsers.chromium.newContext(t, { viewport: { width: 900, height: 400 } })).newPage();
     await mountBar(page);
     await page.evaluate(`window.paint('1:23:45', '-0:36:15', false)`);

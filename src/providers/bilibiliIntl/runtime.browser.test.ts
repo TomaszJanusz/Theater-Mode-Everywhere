@@ -8,6 +8,7 @@ import { chromium, type BrowserContext, type Page } from 'playwright';
 
 import { CHROMIUM_BUILD, installedBuildReady } from '../../test-utils/installed-build';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
+import { skipUnlessEngine } from '../../test-utils/test-engines';
 
 const EXTENSION = CHROMIUM_BUILD;
 const PAGE_URL = 'https://www.bilibili.tv/en/play/1053337';
@@ -596,7 +597,7 @@ async function hoverScrubber(page: Page, ratio: number): Promise<void> {
   await page.locator('.theater-scrubber-tooltip.visible').waitFor();
 }
 
-describe('bilibili.tv extension runtime', () => {
+describe('bilibili.tv extension runtime', { skip: skipUnlessEngine('chromium') }, () => {
   it('reads hydrated page state on the first T, then the next episode', async (t) => {
     if (!installedBuildReady(t, ['manifest.json', 'content.js', 'mainWorld.js'])) return;
     const hits: Hit[] = [];

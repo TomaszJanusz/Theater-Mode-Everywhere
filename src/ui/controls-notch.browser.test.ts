@@ -3,13 +3,13 @@ import { describe, it } from 'node:test';
 
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { playerStylesheets } from '../test-utils/player-boot';
-import { testEngines } from '../test-utils/test-engines';
+import { skipUnlessEngine, testEngines } from '../test-utils/test-engines';
 
 const UI_CSS = playerStylesheets().ui;
 const browsers = sharedEngineBrowsers();
 
 describe('player bar notch', () => {
-  it('drops the open trigger onto the bar’s bottom border without moving the icon', async (t) => {
+  it('drops the open trigger onto the bar’s bottom border without moving the icon', { skip: skipUnlessEngine('chromium') }, async (t) => {
     const page = await (await browsers.chromium.newContext(t, { viewport: { width: 900, height: 400 } })).newPage();
     await page.setContent(`<div class="theater-controls-wrapper visible" style="position:fixed;left:40px;bottom:40px;width:640px">
       <div class="theater-controls-row">

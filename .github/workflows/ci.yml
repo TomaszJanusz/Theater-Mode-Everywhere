@@ -244,12 +244,15 @@ jobs:
         timeout-minutes: 3
         env:
           CI: true
-      - name: Storybook components Chromium
+      # All Vitest projects: stories and component cases in Chromium, and every `*.component.test.ts` in both engines
+      # (THEATER_TEST_ENGINES is unset here). This is the PR's one complete component pass, also when the Firefox lane is
+      # off, so neither browser lane runs component files again (`--no-components`).
+      - name: Storybook and component tests
         if: matrix.shard == 1
         run: pnpm storybook:test
         timeout-minutes: 5
       - name: Browser tests Chromium
-        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/3 --shard-costs=scripts/test-shard-costs.chromium.json --report-dir=test-reports
+        run: pnpm test --lane=browser --no-components --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/3 --shard-costs=scripts/test-shard-costs.chromium.json --report-dir=test-reports
         timeout-minutes: 10
         env:
           THEATER_TEST_ENGINES: chromium
@@ -289,7 +292,8 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      # Many browser tests launch Chromium whatever THEATER_TEST_ENGINES selects, so this lane needs it too.
+      # Chromium-only cases skip here (skipUnlessEngine), but some files still check the Chromium executable before
+      # their Firefox cases; with the prebuilt image this only verifies it.
       - name: Set up dependencies and browsers
         uses: $/.github/actions/setup
         timeout-minutes: 4
@@ -302,23 +306,25 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: test-selection
-      # The installed-extension cases in the browser files (page-fetch, tencent and bilibili.tv runtimes) load
-      # dist/chrome-unpacked on either engine's lane; a lane without it fails them instead of skipping. Building
-      # here (about 8 s) rather than downloading the `build` job's artifact keeps the lane from waiting for that job,
-      # which delayed its start by about 33 s for a 2 s download.
+      # The installed-extension cases (page-fetch, tencent and bilibili.tv runtimes) are Chromium-only and skip here,
+      # but tools/cpu-suite/resource.browser.test.ts runs Firefox against the built bundles and skips silently without
+      # them. Building here (about 8 s) rather than downloading the `build` job's artifact keeps the lane from waiting
+      # for that job, which delayed its start by about 33 s for a 2 s download.
       - name: Build extension
         run: pnpm build
         timeout-minutes: 3
         env:
           CI: true
-      - name: Storybook components Firefox
+      # Stories and component cases in Firefox; component files already ran on both engines in the Chromium lane.
+      - name: Storybook Firefox
         if: matrix.shard == 1
-        run: pnpm storybook:test
+        run: pnpm storybook:test --project stories --project component-cases
         timeout-minutes: 5
         env:
           STORYBOOK_BROWSER: firefox
+      # THEATER_TEST_ENGINES=firefox also skips the Chromium-only cases; the required Chromium lane runs the same selection.
       - name: Browser tests Firefox
-        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/3 --shard-costs=scripts/test-shard-costs.firefox.json --report-dir=test-reports
+        run: pnpm test --lane=browser --no-components --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/3 --shard-costs=scripts/test-shard-costs.firefox.json --report-dir=test-reports
         timeout-minutes: 10
         env:
           THEATER_TEST_ENGINES: firefox
@@ -353,12 +359,11 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Set up dependencies and browsers
+      - name: Set up dependencies and Chromium
         uses: $/.github/actions/setup
         timeout-minutes: 4
         with:
-          engines: ${{ needs.changes.outputs.firefox != 'false' && 'chromium firefox' || 'chromium' }}
-          audio: ${{ needs.changes.outputs.firefox != 'false' && 'true' || 'false' }}
+          engines: chromium
           prebuilt: 'true'
       - name: Download build
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -369,9 +374,42 @@ jobs:
         if: needs.changes.outputs.smoke != 'false'
         run: xvfb-run --auto-servernum pnpm smoke:chromium
         timeout-minutes: 5
+
+  # Beside `smoke` rather than after it, so it no longer lengthens that job. Only its smoke step is advisory
+  # (continue-on-error); setup and download failures fail the job, and `check` requires the job when Firefox is
+  # selected, as it required `smoke` before the split.
+  smoke-firefox:
+    needs: [changes, image, build]
+    if: needs.changes.outputs.run != 'false' && needs.changes.outputs.firefox != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: ${{ needs.image.outputs.ref }} # zizmor: ignore[unpinned-images] pinned by digest in the image job
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    env:
+      # Firefox refuses to start when $HOME (the runner's /github/home) is not owned by the user running it.
+      HOME: /root
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Set up dependencies and Firefox
+        uses: $/.github/actions/setup
+        timeout-minutes: 4
+        with:
+          engines: firefox
+          audio: 'true'
+          prebuilt: 'true'
+      - name: Download build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: extension-build
+          path: dist/
       - name: Smoke Firefox
         id: firefox-smoke
-        if: needs.changes.outputs.firefox != 'false'
         # Installs the built extension as a temporary add-on. Advisory until it has passed 10 consecutive CI runs (TME-112); the next step keeps a failure visible.
         continue-on-error: true
         run: xvfb-run --auto-servernum pnpm smoke:firefox
@@ -393,7 +431,7 @@ jobs:
   check:
     # Preserve the existing aggregate status name for external consumers.
     if: always()
-    needs: [changes, image, boundaries, css-and-unused, build, static, unit, browser-chromium, browser-firefox, smoke]
+    needs: [changes, image, boundaries, css-and-unused, build, static, unit, browser-chromium, browser-firefox, smoke, smoke-firefox]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -408,7 +446,9 @@ jobs:
           const required = ['image', 'boundaries', 'css-and-unused', 'build', 'static', 'unit', 'browser-chromium', 'smoke'];
           if (process.env.RUN_CHECKS !== 'false') {
             for (const name of required) if (needs[name].result !== 'success') failed.push([name, needs[name]]);
-            if (needs.changes.outputs.firefox !== 'false' && needs['browser-firefox'].result !== 'success') failed.push(['browser-firefox', needs['browser-firefox']]);
+            if (needs.changes.outputs.firefox !== 'false') {
+              for (const name of ['browser-firefox', 'smoke-firefox']) if (needs[name].result !== 'success') failed.push([name, needs[name]]);
+            }
           }
           console.log(Object.entries(needs).map(([name, job]) => `${name}: ${job.result}`).join('\n'));
           if (failed.length) process.exitCode = 1;
