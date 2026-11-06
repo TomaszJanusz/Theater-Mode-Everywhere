@@ -20,13 +20,15 @@ const image = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www
 
 /**
  * The provider's own extraction runs on the recorded host DOM (fixture evidence, not a live capture); only the covers
- * are replaced, so the story never contacts Bilibili's image hosts. `panelOnly` drops the sidebar cards, leaving what the
- * ending panel alone carries: a title and a cover.
+ * are replaced, so the story never contacts Bilibili's image hosts, and the links move to the story's own origin, which
+ * stands in for Bilibili's. `panelOnly` drops the sidebar cards, leaving what the ending panel alone carries: a title and
+ * a cover, and no verified link.
  */
 function items(panelOnly: boolean): EndScreenItem[] {
   const host = new DOMParser().parseFromString(recorded, 'text/html').body;
   if (panelOnly) host.querySelector('.recommend-list-v1')?.remove();
-  return readBilibiliEndTiles(host, host).map(({ item }) => ({ ...item, thumbnailUrl: image }));
+  return readBilibiliEndTiles(host, host).map(({ item }) => ({ ...item, thumbnailUrl: image,
+    href: item.href && new URL(new URL(item.href).pathname, location.href).href }));
 }
 
 function render({ recommendations, panelOnly }: Args): HTMLElement {
@@ -58,13 +60,14 @@ export default meta;
 
 /** Uploader, views and duration come from the sidebar card that matches each panel tile. */
 export const RecordedTiles: StoryObj<Args> = { play: async () => {
-  await waitFor(() => expect(queryPlayerUi('.theater-end-screen')?.querySelectorAll('button').length).toBe(3));
+  await waitFor(() => expect(queryPlayerUi('.theater-end-screen')?.querySelectorAll('a.theater-end-screen-tile').length).toBe(3));
   await expect(queryPlayerUi('.theater-end-screen-channel')?.textContent).toBe('ammmx');
   await expect(queryPlayerUi('.theater-end-screen-duration')?.textContent).toBe('00:15');
 } };
 
+/** Without a matching card there is no verified link: the tiles stay buttons and look the same. */
 export const PanelTitleAndCoverOnly: StoryObj<Args> = { args: { panelOnly: true }, play: async () => {
-  await waitFor(() => expect(queryPlayerUi('.theater-end-screen')?.querySelectorAll('button').length).toBe(3));
+  await waitFor(() => expect(queryPlayerUi('.theater-end-screen')?.querySelectorAll('button.theater-end-screen-tile').length).toBe(3));
   await expect(queryPlayerUi('.theater-end-screen-channel')).toBeNull();
 } };
 

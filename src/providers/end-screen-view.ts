@@ -7,6 +7,7 @@ import type { ProviderSettingsStore } from './settings';
 /** Host-owned text and URLs a provider extracted from the links its host rendered. */
 export interface EndScreenItem {
   id: string;
+  /** The item's absolute page URL on the host page's own origin; it makes the tile a real link. */
   href?: string;
   kind: 'video' | 'playlist';
   title: string;
@@ -29,7 +30,21 @@ export interface SuggestionSource {
 /** Provider-only fallback: these bytes never join content.js or mainWorld.js. */
 export const recommendationsLabel = () => translateMessage({ providerShowRecommendations: 'Show recommendations' }, 'providerShowRecommendations');
 
-/** One activation path: a real button gives Enter/Space and pointer the same host command. */
+/** Only an http(s) URL on the page's own origin becomes a link: never a script, data or foreign URL. */
+function linkHref(href: string | undefined): string | null {
+  try {
+    const url = new URL(href ?? '');
+    return /^https?:$/.test(url.protocol) && url.origin === location.origin ? url.href : null;
+  } catch { return null; }
+}
+
+/** Browser-owned clicks: new tab or window, download. The context menu and middle click never fire `click`. */
+const opensElsewhere = (event: MouseEvent) => event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey;
+
+/**
+ * One activation path: a plain click and Enter (Space too on a button tile) run the same host command. A tile with a
+ * valid `href` is a real link, so the browser keeps its own new-tab, context-menu and status-bar behaviour.
+ */
 export function renderEndScreen(source: SuggestionSource, label: string, scope: DisposableScope): HTMLElement | null {
   const snapshot = source.read();
   if (!snapshot?.items.length) return null;
@@ -41,9 +56,11 @@ export function renderEndScreen(source: SuggestionSource, label: string, scope: 
   style.textContent = css;
   grid.append(style);
   for (const item of snapshot.items.slice(0, 3)) {
-    const tile = document.createElement('button');
+    const href = linkHref(item.href);
+    // Firefox and Safari on macOS skip plain links on Tab by default; tabIndex keeps the tile one tab stop like a button.
+    const tile: HTMLElement = href ? Object.assign(document.createElement('a'), { href, rel: 'noopener noreferrer', tabIndex: 0 })
+      : Object.assign(document.createElement('button'), { type: 'button' });
     tile.className = 'theater-end-screen-tile';
-    tile.type = 'button';
     const picture = document.createElement('span');
     picture.className = 'theater-end-screen-picture';
     // The duration is repeated after the visible text for the accessible name, title first.
@@ -68,7 +85,10 @@ export function renderEndScreen(source: SuggestionSource, label: string, scope: 
     text(item.channel, 'theater-end-screen-channel', tile);
     text(item.meta, 'theater-end-screen-meta', tile);
     text(item.durationText, 'theater-sr-only', tile);
+    // Bound to the tile, not the mount scope: a click on a link left behind must never fall through to navigation.
     tile.addEventListener('click', event => {
+      if (href && opensElsewhere(event)) return;
+      event.preventDefault();
       if (event.detail) tile.blur();
       // Removed nodes can still receive a queued click; the provider checks the visit again too.
       if (scope.isDisposed || !tile.isConnected || source.read()?.mediaId !== snapshot.mediaId) return;
@@ -128,7 +148,7 @@ export function mountEndScreenSettings(
     grid?.remove();
     grid = settings.loaded && input.checked ? renderEndScreen(source, label, scope) : null;
     if (grid) container.insertBefore(grid, row);
-    if (focused) (grid?.querySelector('button') ?? input).focus();
+    if (focused) (grid?.querySelector<HTMLElement>('.theater-end-screen-tile') ?? input).focus();
   };
   scope.listen(input, 'click', event => { if (event.detail) input.blur(); });
   scope.listen(input, 'change', () => {

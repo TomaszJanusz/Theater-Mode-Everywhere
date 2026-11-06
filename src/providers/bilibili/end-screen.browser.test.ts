@@ -90,6 +90,7 @@ describe('Bilibili end tiles and autoplay (recorded DOM fixture, not live host e
       await host('clear()');
       assert.equal(extracted.length, 3, 'three of the four panel tiles');
       assert.equal(extracted[0].id, ids[0]);
+      assert.equal(extracted[0].href, `https://www.bilibili.com/video/${ids[0]}/`);
       assert.match(extracted[0].durationText!, /^\d{1,2}(:\d{2}){1,2}$/);
       assert.ok(extracted[0].channel && extracted[0].meta, 'the sidebar card supplies the uploader and the views');
       assert.match(extracted[0].thumbnailUrl!, /^https:\/\/i\d\.hdslb\.com\//);
@@ -109,9 +110,10 @@ describe('Bilibili end tiles and autoplay (recorded DOM fixture, not live host e
       assert.equal(await page.locator('.theater-service-action').count(), 0);
       assert.equal(page.url(), url, 'cancelling does not navigate');
       const first = tiles.first();
-      const name = await first.evaluate(button => button.textContent);
+      const name = await first.evaluate(tile => tile.textContent);
       assert.ok(name!.includes(extracted[0].title) && name!.includes(extracted[0].channel!) && name!.includes(extracted[0].durationText!));
       assert.equal(await first.locator('img').getAttribute('src'), extracted[0].thumbnailUrl);
+      assert.equal(await first.getAttribute('href'), extracted[0].href, 'a tile matched to a sidebar card is its video link');
 
       // The switch outlives its tiles and is independent of autoplay.
       const switchInput = page.locator('.theater-recommendations-setting input');
