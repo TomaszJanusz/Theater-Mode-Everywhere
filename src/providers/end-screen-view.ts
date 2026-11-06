@@ -38,6 +38,9 @@ function linkHref(href: string | undefined): string | null {
   } catch { return null; }
 }
 
+/** The recommendation each rendered tile shows, so a rebuild can keep focus on it. */
+const tileIds = new WeakMap<Element, string>();
+
 /** Browser-owned clicks: new tab or window, download. The context menu and middle click never fire `click`. */
 const opensElsewhere = (event: MouseEvent) => event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey;
 
@@ -85,15 +88,24 @@ export function renderEndScreen(source: SuggestionSource, label: string, scope: 
     text(item.channel, 'theater-end-screen-channel', tile);
     text(item.meta, 'theater-end-screen-meta', tile);
     text(item.durationText, 'theater-sr-only', tile);
+    // Removed nodes can still receive a queued click; the provider checks the visit again too. A link left from an
+    // older snapshot opens nothing, here or in a new tab, and drops its href so its context menu offers none.
+    const current = (event: MouseEvent) => {
+      if (!scope.isDisposed && tile.isConnected && source.read()?.mediaId === snapshot.mediaId) return true;
+      tile.removeAttribute('href');
+      event.preventDefault();
+      return false;
+    };
     // Bound to the tile, not the mount scope: a click on a link left behind must never fall through to navigation.
     tile.addEventListener('click', event => {
-      if (href && opensElsewhere(event)) return;
+      const live = current(event);
+      if (live && href && opensElsewhere(event)) return;
       event.preventDefault();
       if (event.detail) tile.blur();
-      // Removed nodes can still receive a queued click; the provider checks the visit again too.
-      if (scope.isDisposed || !tile.isConnected || source.read()?.mediaId !== snapshot.mediaId) return;
-      if (!source.activate(item.id, snapshot.mediaId)) grid.remove();
+      if (live && !source.activate(item.id, snapshot.mediaId)) grid.remove();
     });
+    if (href) for (const type of ['auxclick', 'contextmenu'] as const) tile.addEventListener(type, current);
+    tileIds.set(tile, item.id);
     grid.append(tile);
   }
   return grid;
@@ -144,11 +156,13 @@ export function mountEndScreenSettings(
     const key = JSON.stringify(settings.loaded && input.checked ? snapshot : null);
     if (key === previous) return;
     previous = key;
-    const focused = grid?.matches(':focus-within');
+    // Focus stays on the same recommendation when it remains, else moves to the first tile or the switch.
+    const focused = grid?.matches(':focus-within') ? tileIds.get(grid.querySelector(':focus')!) ?? '' : undefined;
     grid?.remove();
     grid = settings.loaded && input.checked ? renderEndScreen(source, label, scope) : null;
     if (grid) container.insertBefore(grid, row);
-    if (focused) (grid?.querySelector<HTMLElement>('.theater-end-screen-tile') ?? input).focus();
+    const tiles = [...grid?.querySelectorAll<HTMLElement>('.theater-end-screen-tile') ?? []];
+    if (focused !== undefined) (tiles.find(tile => tileIds.get(tile) === focused) ?? tiles[0] ?? input).focus();
   };
   scope.listen(input, 'click', event => { if (event.detail) input.blur(); });
   scope.listen(input, 'change', () => {
