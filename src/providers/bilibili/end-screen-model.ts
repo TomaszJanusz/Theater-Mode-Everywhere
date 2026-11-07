@@ -51,7 +51,8 @@ export function readBilibiliEndTiles(root: ParentNode, doc: ParentNode, limit = 
     const background = /^url\(["']?(.*?)["']?\)$/.exec(element.querySelector<HTMLElement>('.bpx-player-ending-related-item-img')?.style.backgroundImage ?? '')?.[1] ?? '';
     const id = card?.id ?? `tile-${index}`;
     if (result.some(entry => entry.item.id === id)) continue;
-    result.push({ element, item: { id, kind: 'video', title, thumbnailUrl: normalizeBilibiliCover(background) ?? card?.cover,
+    // The canonical page of the matching card's BV id; a panel-only tile has no verified link.
+    result.push({ element, item: { id, href: card && `${ORIGIN}/video/${card.id}/`, kind: 'video', title, thumbnailUrl: normalizeBilibiliCover(background) ?? card?.cover,
       channel: card?.uploader, meta: card?.views, durationText: card?.durationText } });
     if (result.length === limit) break;
   }

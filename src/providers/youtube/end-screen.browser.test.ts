@@ -20,7 +20,8 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
   for (const engine of testEngines()) {
     const browser = sharedTestBrowser(({ chromium, firefox })[engine]);
     it(`end-only display, native SPA activation, stale visits, autoplay, RTE and cleanup in ${engine}`, { timeout: 60_000 }, async t => {
-      const page = await (await browser.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
+      const context = await browser.newContext(t, { viewport: { width: 1280, height: 720 } });
+      const page = await context.newPage();
       page.setDefaultTimeout(8000);
       // The recorded URLs remain intact; fixture checks never contact the thumbnail CDN.
       await page.route('https://*.ytimg.com/**', route => route.fulfill({ contentType: 'image/svg+xml',
@@ -126,12 +127,24 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
       })()`), true);
       assert.equal(page.url(), url, 'a click queued from the old mount cannot navigate');
       await page.locator('.theater-end-screen-tile').first().waitFor();
+      // Each tile is the video's link: the browser opens modified and middle clicks itself, the page and theater stay.
+      const link = page.locator('.theater-end-screen-tile').first();
+      assert.equal(await link.getAttribute('href'), extracted[0].href);
+      assert.equal(await link.getAttribute('rel'), 'noopener noreferrer');
+      await context.route('https://www.youtube.com/**', route => route.fulfill({ contentType: 'text/html', body: '<title>Opened</title>' }));
+      for (const options of [{ modifiers: ['ControlOrMeta'] }, { button: 'middle' }] satisfies Array<Parameters<typeof link.click>[0]>) {
+        const [opened] = await Promise.all([context.waitForEvent('page'), link.click(options)]);
+        await opened.waitForURL(extracted[0].href!);
+        await opened.close();
+        assert.equal(page.url(), url, `${JSON.stringify(options)} leaves the page`);
+        assert.equal(await page.locator('.theater-end-screen-tile').count(), 3);
+      }
       await page.locator('.theater-end-screen-tile').first().click();
       await page.waitForURL('**v=YQ8wOO9bvps');
       assert.equal(await page.locator('html.theater-everywhere-html-active').count(), 1, 'native fixture SPA navigation preserves theater');
       await page.locator('.theater-end-screen').waitFor({ state: 'detached' });
-      // Exercise the real runtime's keyboard capture in both worlds, not just native button behavior.
-      for (const [key, id, index] of [['Enter', 'rXnu-4_vDaY', 1], ['Space', 'YQ8wOO9bvps', 0]] as const) {
+      // Exercise the real runtime's keyboard capture in both worlds, not just native link behavior.
+      for (const [key, id, index] of [['Enter', 'rXnu-4_vDaY', 1], ['Enter', 'YQ8wOO9bvps', 0]] as const) {
         await end();
         await page.locator('.theater-end-screen-tile').nth(index).focus();
         await page.keyboard.press(key);
