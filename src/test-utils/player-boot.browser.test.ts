@@ -4,6 +4,7 @@ import { chromium } from 'playwright';
 import { emitStorageChange, installChromeStub } from './chrome-stub';
 import { bundleModules, bundlePlayer } from './player-boot';
 import { sharedTestBrowser } from './test-browser';
+import { skipUnlessEngine } from './test-engines';
 
 describe('player boot helpers', () => {
   const shared = sharedTestBrowser(chromium);
@@ -16,7 +17,7 @@ describe('player boot helpers', () => {
     assert.notEqual(bundleModules(entry, 'A'), bundleModules(entry, 'B'));
   });
 
-  it('stubs chrome.storage areas with callback and promise reads, writes that notify, only the surface production uses, and manual notifications', async t => {
+  it('stubs chrome.storage areas with callback and promise reads, writes that notify, only the surface production uses, and manual notifications', { skip: skipUnlessEngine('chromium') }, async t => {
     const page = await (await shared.newContext(t)).newPage();
     await page.goto('about:blank');
     await installChromeStub(page, { sync: { a: 1 }, local: { b: 2 } });

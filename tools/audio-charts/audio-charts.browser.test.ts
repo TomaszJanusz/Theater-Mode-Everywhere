@@ -6,11 +6,12 @@ import type { Browser } from 'playwright';
 import {
   BASS_BANDS, BASS_SCENE, STEREO_BANDS, STEREO_SCENE, db, openAudioRenderer, settings, type Render
 } from '../../src/test-utils/audio-render';
+import { skipUnlessEngine } from '../../src/test-utils/test-engines';
 
 import { MARKERS, renderPage } from './page';
 import { measureEffects, type Panel } from './spectra';
 
-describe('audio effect charts', () => {
+describe('audio effect charts', { skip: skipUnlessEngine('chromium') }, () => {
   let browser: Browser | null = null;
   let render: Render | null = null;
   let panels: Panel[] = [];

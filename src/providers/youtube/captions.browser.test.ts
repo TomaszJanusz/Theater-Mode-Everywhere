@@ -6,6 +6,7 @@ import { chromium, type Page } from 'playwright';
 
 import { bundleModules } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
+import { skipUnlessEngine } from '../../test-utils/test-engines';
 
 const chromiumBrowser = sharedTestBrowser(chromium);
 
@@ -66,7 +67,7 @@ async function ready(page: Page): Promise<void> {
 }
 
 // Runs the actual event bridge and host calls rather than a separate lifecycle model.
-describe('YouTube captions request lifecycle', () => {
+describe('YouTube captions request lifecycle', { skip: skipUnlessEngine('chromium') }, () => {
   it('acknowledges completion only after applying the requested track', async t => {
     if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
     const context = await chromiumBrowser.newContext(t);
@@ -188,7 +189,7 @@ describe('YouTube captions request lifecycle', () => {
   });
 });
 
-describe('YouTube captions on the parked miniplayer player', () => {
+describe('YouTube captions on the parked miniplayer player', { skip: skipUnlessEngine('chromium') }, () => {
   const parked = async (page: Page): Promise<void> => {
     await setup(page, { body: PARKED, url: 'https://www.youtube.com/' });
     await page.evaluate("window.__responseId = 'aaaaaaaaaaa'");

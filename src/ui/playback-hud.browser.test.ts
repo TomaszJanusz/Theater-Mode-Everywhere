@@ -6,7 +6,7 @@ import type { Page } from 'playwright';
 
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { bootPlayer, enterTheater } from '../test-utils/player-boot';
-import { testEngines } from '../test-utils/test-engines';
+import { skipUnlessEngine, testEngines } from '../test-utils/test-engines';
 import { canvasVideoFixture } from '../test-utils/video-fixtures';
 
 const browsers = sharedEngineBrowsers();
@@ -170,7 +170,7 @@ describe('playback HUD browser regressions', () => {
     });
   }
 
-  it('shows the play/pause HUD for the control, the video surface, and the shortcut', async t => {
+  it('shows the play/pause HUD for the control, the video surface, and the shortcut', { skip: skipUnlessEngine('chromium') }, async t => {
     const page = await (await browsers.chromium.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));

@@ -1,4 +1,4 @@
-import { testEngines } from '../test-utils/test-engines';
+import { skipUnlessEngine, testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -72,7 +72,7 @@ async function snapshot(page: Page, name: string): Promise<void> {
 
 describe('pinned controls geometry', () => {
   const pinned = sharedTestBrowser(chromium);
-  it('docks to the view and reserves the measured height across fit, caption, direction and fullscreen states in chromium', { timeout: 60_000 }, async t => {
+  it('docks to the view and reserves the measured height across fit, caption, direction and fullscreen states in chromium', { skip: skipUnlessEngine('chromium'), timeout: 60_000 }, async t => {
     const page = await (await pinned.newContext(t, { viewport: { width: 1280, height: 900 } })).newPage();
     await page.route('http://playback-chrome.test/**', route => route.fulfill(
       new URL(route.request().url()).pathname === '/en.vtt'

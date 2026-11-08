@@ -8,6 +8,7 @@ import { chromium, type BrowserContext, type Page } from 'playwright';
 
 import { closeInstallSetup } from '../../../scripts/smoke/first-run-setup';
 import { CHROMIUM_BUILD, installedBuildReady } from '../../test-utils/installed-build';
+import { skipUnlessEngine } from '../../test-utils/test-engines';
 
 import { PAGE_URL, VIDEO_PAGE, PLAYER_HTML, FRAME_HTML, PLAIN_HTML } from './test-utils/wasm-fixture';
 
@@ -18,7 +19,7 @@ async function dismissDialog(page: Page): Promise<void> {
   if (await button.count()) await button.first().click();
 }
 
-describe('tencent wasm theater runtime', () => {
+describe('tencent wasm theater runtime', { skip: skipUnlessEngine('chromium') }, () => {
   it('drives the fake player from the page and from the wasm frame', async (t) => {
     if (!installedBuildReady(t, ['manifest.json', 'content.js', 'mainWorld.js'])) return;
     const userData = mkdtempSync(path.join(tmpdir(), 'te-wasm-'));

@@ -8,8 +8,9 @@ import {
   BASS_BANDS, BASS_SCENE, LEVELING_OPTIONS, STEREO_BANDS, STEREO_SCENE, db, openAudioRenderer, settings,
   type Render, type RenderOptions
 } from '../test-utils/audio-render';
+import { skipUnlessEngine } from '../test-utils/test-engines';
 
-describe('audio graph', () => {
+describe('audio graph', { skip: skipUnlessEngine('chromium') }, () => {
   let browser: Browser | null = null;
   let renderer: Render | null = null;
   before(async () => {

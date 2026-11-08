@@ -8,7 +8,7 @@ import type { ChatState } from '../chat';
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { PROVIDER_ENTRIES, bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import type { sharedTestBrowser } from '../test-utils/test-browser';
-import { testEngines } from '../test-utils/test-engines';
+import { skipUnlessEngine, testEngines } from '../test-utils/test-engines';
 
 declare global {
   interface Window {
@@ -1060,7 +1060,7 @@ describe('native chat browser session', () => {
     });
   }
 
-  it('keeps YouTube chat in place while docking, resizing, remembering width, and restoring the page', { timeout: 120_000 }, async t => {
+  it('keeps YouTube chat in place while docking, resizing, remembering width, and restoring the page', { skip: skipUnlessEngine('chromium'), timeout: 120_000 }, async t => {
     const browser = pagesOf(browsers.chromium, t);
     const { page, read } = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('visible') }, { width: 1280, height: 800 });
     await boot(page);
@@ -1242,7 +1242,7 @@ describe('native chat browser session', () => {
     assert.deepEqual(pageErrors(page), []);
   });
 
-  it('keeps Twitch chat input and menu keys in the native column without pausing the video', { timeout: 120_000 }, async t => {
+  it('keeps Twitch chat input and menu keys in the native column without pausing the video', { skip: skipUnlessEngine('chromium'), timeout: 120_000 }, async t => {
     const browser = pagesOf(browsers.chromium, t);
     const { page, read } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
     await boot(page);
@@ -1359,7 +1359,7 @@ describe('native chat browser session', () => {
     assert.deepEqual(pageErrors(page), []);
   });
 
-  it('exposes the chat toggle before YouTube mounts a frame and opens it with Alt+R', { timeout: 120_000 }, async t => {
+  it('exposes the chat toggle before YouTube mounts a frame and opens it with Alt+R', { skip: skipUnlessEngine('chromium'), timeout: 120_000 }, async t => {
     const browser = pagesOf(browsers.chromium, t);
     const { page } = await openPage(browser, {url:YOUTUBE_WATCH,youtube:youtubeDocument('none')}, {width:1280,height:800});
     await page.evaluate(() => {
@@ -1398,7 +1398,7 @@ describe('native chat browser session', () => {
     assert.deepEqual(pageErrors(page),[]);
   });
 
-  it('leaves ordinary videos alone, adopts a late chat, and rebinds when that root is replaced', { timeout: 120_000 }, async t => {
+  it('leaves ordinary videos alone, adopts a late chat, and rebinds when that root is replaced', { skip: skipUnlessEngine('chromium'), timeout: 120_000 }, async t => {
     const browser = pagesOf(browsers.chromium, t);
     const absent = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('none') }, { width: 1280, height: 800 });
     // Capture controller timers before boot, then observe absence across two
@@ -1523,7 +1523,7 @@ describe('native chat browser session', () => {
     assert.deepEqual(pageErrors(delayed.page), []);
   });
 
-  it('shares theme options and retains independent preferences for Twitch and YouTube', { timeout: 120_000 }, async t => {
+  it('shares theme options and retains independent preferences for Twitch and YouTube', { skip: skipUnlessEngine('chromium'), timeout: 120_000 }, async t => {
     const browser = pagesOf(browsers.chromium, t);
     const themeOptions = [
       { value: 'light', text: 'Light' },
@@ -1694,7 +1694,7 @@ describe('native chat browser session', () => {
     assert.equal(layout.state?.width, 440, JSON.stringify(layout.state));
     assert.deepEqual(pageErrors(page), []);
   });
-  it('flushes pending chat preferences on theater exit and immediate page reload', { timeout: 60_000 }, async t => {
+  it('flushes pending chat preferences on theater exit and immediate page reload', { skip: skipUnlessEngine('chromium'), timeout: 60_000 }, async t => {
     const browser = pagesOf(browsers.chromium, t);
     for (const provider of ['youtube', 'twitch'] as const) {
       for (const ending of ['exit', 'reload'] as const) {
@@ -1746,7 +1746,7 @@ describe('native chat browser session', () => {
     }
   });
 
-  it('keeps native service popovers clickable above the video and TME settings button regardless of insertion order', {timeout: 60000}, async t => {
+  it('keeps native service popovers clickable above the video and TME settings button regardless of insertion order', { skip: skipUnlessEngine('chromium'), timeout: 60000 }, async t => {
     const browser = pagesOf(browsers.chromium, t);
     for (const provider of ['twitch', 'youtube', 'youtube-dialog'] as const) {
       const { page } = await openPage(browser, {url: provider === 'twitch' ? TWITCH_CHANNEL : YOUTUBE_WATCH,

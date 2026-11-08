@@ -11,7 +11,7 @@ import { bootPlayer, bundlePlayer, enterTheater } from '../../test-utils/player-
 import { bundleQueryModules } from '../../test-utils/query-bundle';
 import { readStylesheet } from '../../test-utils/styles';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
-import { selectTestEngines } from '../../test-utils/test-engines';
+import { selectTestEngines, skipUnlessEngine } from '../../test-utils/test-engines';
 
 const ROOT = path.resolve(import.meta.dirname, '../../..');
 const MEDIA = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
@@ -136,7 +136,7 @@ for (const name of selectTestEngines(['Chromium', 'Firefox'] as const, name => n
   });
 }
 
-it('observes only the bar or shallow insertion point; releases stale callbacks', { timeout: 30000 }, async t => {
+it('observes only the bar or shallow insertion point; releases stale callbacks', { skip: skipUnlessEngine('chromium'), timeout: 30000 }, async t => {
   const page = await (await browsers.Chromium.newContext(t)).newPage();
   await boot(page, false);
   assert.equal(await markers(page).count(), 0);
@@ -162,7 +162,7 @@ it('observes only the bar or shallow insertion point; releases stale callbacks',
   assert.equal(await markers(page).count(), 0);
 });
 
-it('Features switch has an accessible name, defaults on and persists through shared storage', { timeout: 30000 }, async t => {
+it('Features switch has an accessible name, defaults on and persists through shared storage', { skip: skipUnlessEngine('chromium'), timeout: 30000 }, async t => {
   const page = await (await browsers.Chromium.newContext(t, { viewport: { width: 1200, height: 900 } })).newPage();
   const options = await bundleQueryModules(["import '../options/options';"]);
   const html = readFileSync(path.join(ROOT, 'options/options.html'), 'utf8').replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
@@ -185,7 +185,7 @@ it('Features switch has an accessible name, defaults on and persists through sha
   await page.screenshot({ path: '/tmp/tme57-features-switch.png' });
 });
 
-it('uses shallow childList observations, coalesces rebuilds, suppresses identical content and suspends when hidden', { timeout: 30000 }, async t => {
+it('uses shallow childList observations, coalesces rebuilds, suppresses identical content and suspends when hidden', { skip: skipUnlessEngine('chromium'), timeout: 30000 }, async t => {
   const page = await (await browsers.Chromium.newContext(t)).newPage();
   await boot(page, false);
   await page.evaluate(`
@@ -241,7 +241,7 @@ it('uses shallow childList observations, coalesces rebuilds, suppresses identica
   await page.waitForFunction('sourceDisconnects > beforeExit');
 });
 
-it('supports the existing YouTube embed player surface', { timeout: 30000 }, async t => {
+it('supports the existing YouTube embed player surface', { skip: skipUnlessEngine('chromium'), timeout: 30000 }, async t => {
   const page = await (await browsers.Chromium.newContext(t)).newPage();
   await boot(page, true, true, '/embed/first');
   await markers(page).first().waitFor();

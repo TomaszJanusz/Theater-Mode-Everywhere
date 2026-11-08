@@ -4,8 +4,11 @@ import { existsSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { chromium, type BrowserType } from 'playwright';
 import { sharedTestBrowser } from './test-browser';
+import { skipUnlessEngine } from './test-engines';
 
-for (const fixture of ['browser-timeout', 'shared-browser-timeout']) it(`${fixture}: timeout fails and exits without an orphan transport`, { timeout: 45_000 }, async t => {
+// The child fixtures launch Chromium whatever THEATER_TEST_ENGINES selects (they inherit this environment), so these
+// cases and the real-browser isolation case below follow the Chromium selection; the fake-browser teardown cases always run.
+for (const fixture of ['browser-timeout', 'shared-browser-timeout']) it(`${fixture}: timeout fails and exits without an orphan transport`, { skip: skipUnlessEngine('chromium'), timeout: 45_000 }, async t => {
   if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
   const env = { ...process.env };
   // The child is an independent runner, rather than another worker of this test.
@@ -43,7 +46,7 @@ for (const fixture of ['browser-timeout', 'shared-browser-timeout']) it(`${fixtu
 });
 
 const shared = sharedTestBrowser(chromium);
-it('shared browser contexts isolate cookies, local storage, routes and pages', { timeout: 30_000 }, async t => {
+it('shared browser contexts isolate cookies, local storage, routes and pages', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
   const first = await shared.newContext(t);
   const second = await shared.newContext(t);
   assert.equal(first.browser(), second.browser(), 'the browser process is reused');

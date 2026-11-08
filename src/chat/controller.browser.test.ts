@@ -6,7 +6,7 @@ import { chromium, firefox, type Page } from 'playwright';
 
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { PROVIDER_ENTRIES, bundleModules } from '../test-utils/player-boot';
-import { testEngines } from '../test-utils/test-engines';
+import { skipUnlessEngine, testEngines } from '../test-utils/test-engines';
 
 const bundle = (): string => bundleModules([...PROVIDER_ENTRIES, "export * from './chat/index';"], 'NativeChat');
 
@@ -171,7 +171,7 @@ describe('native chat controller', () => {
     });
   }
 
-  it('preserves Twitch VOD replay without replacing it with the live channel chat', async t => {
+  it('preserves Twitch VOD replay without replacing it with the live channel chat', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, `<div class="right-column" data-a-target="right-column-chat-bar">
       <div class="video-chat"><div class="video-chat__message-list-wrapper"></div></div>
@@ -192,7 +192,7 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('rejects an empty YouTube replay frame when the native shell reports unavailability', async t => {
+  it('rejects an empty YouTube replay frame when the native shell reports unavailability', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, `<ytd-watch-flexy video-id="AbCdEfGhIjK">
       <ytd-live-chat-frame id="chat" collapsed hide-chat-frame>
@@ -204,7 +204,7 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('opens a Polish YouTube archive card before its replay frame mounts', async t => {
+  it('opens a Polish YouTube archive card before its replay frame mounts', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, `<ytd-watch-flexy video-id="AbCdEfGhIjK">
       <yt-video-metadata-carousel-view-model aria-label="Ponowne odtwarzanie czatu na żywo">
@@ -223,7 +223,7 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('detects the current Twitch or YouTube chat and ignores chat documents, mismatches, and new embeds', async t => {
+  it('detects the current Twitch or YouTube chat and ignores chat documents, mismatches, and new embeds', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     // Each chat is registered only on its own host: the probe runs on both, and each half reads its own.
     const html = `${TWITCH}${YOUTUBE}<iframe id="foreign" src="https://www.youtube.com/live_chat?v=ZZZZZZZZZZZ"></iframe>`;
@@ -324,7 +324,7 @@ describe('native chat controller', () => {
     }
   });
 
-  it('opens a YouTube chat from its metadata card before an iframe exists, without repeated native clicks', async t => {
+  it('opens a YouTube chat from its metadata card before an iframe exists, without repeated native clicks', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, `<ytd-watch-flexy video-id="AbCdEfGhIjK"><yt-video-metadata-carousel-view-model role="button" aria-label="Czat na żywo"><button>Otwórz panel</button></yt-video-metadata-carousel-view-model></ytd-watch-flexy>`);
     try {
@@ -359,7 +359,7 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('opens collapsed components only on an explicit toggle despite a saved open preference', async t => {
+  it('opens collapsed components only on an explicit toggle despite a saved open preference', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     for (const provider of ['youtube', 'twitch']) {
       const html = provider === 'youtube'
@@ -399,7 +399,7 @@ describe('native chat controller', () => {
     }
   });
 
-  it('rejects disabled, unrelated and stale YouTube activation cards, detects late cards, and permits explicit retries', async t => {
+  it('rejects disabled, unrelated and stale YouTube activation cards, detects late cards, and permits explicit retries', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, `<ytd-watch-flexy video-id="AbCdEfGhIjK"><yt-video-metadata-carousel-view-model role="button" aria-label="Chapters"><button>Open panel</button></yt-video-metadata-carousel-view-model><yt-video-metadata-carousel-view-model id="card" role="button" aria-label="Live chat"><button disabled>Open panel</button></yt-video-metadata-carousel-view-model></ytd-watch-flexy>`);
     try {
@@ -423,7 +423,7 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('shows and hides the original Twitch node without moving it, reloading it, or scanning each message', async t => {
+  it('shows and hides the original Twitch node without moving it, reloading it, or scanning each message', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, TWITCH, TWITCH_CHANNEL);
     try {
@@ -615,7 +615,7 @@ describe('native chat controller', () => {
     }
   });
 
-  it('keeps a collapsed native chat hidden despite a saved open preference and clamps its width', async t => {
+  it('keeps a collapsed native chat hidden despite a saved open preference and clamps its width', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, `<div id="layout" style="width:800px"><div class="right-column" data-a-target="right-column-chat-bar" id="column" style="width:0"><section data-test-selector="chat-room-component-layout"><div class="chat-shell chat-shell__expanded"></div></section></div></div>`, TWITCH_CHANNEL);
     try {
@@ -650,7 +650,7 @@ describe('native chat controller', () => {
 
   // Twitch's zero-width column around a translated shell: twitch-recorded.browser.test.ts, on recordings of the live host.
 
-  it('preserves a YouTube frame and reveals #secondary while messages inside #chat do not rescan', async t => {
+  it('preserves a YouTube frame and reveals #secondary while messages inside #chat do not rescan', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, YOUTUBE);
     try {
@@ -737,7 +737,7 @@ describe('native chat controller', () => {
     }
   });
 
-  it('docks to the bottom under 900px and finds a chat that mounts later', async t => {
+  it('docks to the bottom under 900px and finds a chat that mounts later', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, '<div id="layout" style="width:800px"></div>', TWITCH_CHANNEL, { width: 899, height: 700 });
     try {
@@ -791,7 +791,7 @@ describe('native chat controller', () => {
     }
   });
 
-  it('adopts YouTube programmatic chat frames and rejects stale watch identities', async t => {
+  it('adopts YouTube programmatic chat frames and rejects stale watch identities', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, `<ytd-watch-flexy video-id="AbCdEfGhIjK"><div id="secondary">
       <ytd-live-chat-frame id="chat"><iframe id="chatframe"></iframe></ytd-live-chat-frame>
@@ -825,7 +825,7 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('keeps native inert state and rebinds a Twitch component inside the same column', async t => {
+  it('keeps native inert state and rebinds a Twitch component inside the same column', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, TWITCH, TWITCH_CHANNEL);
     try {
@@ -852,7 +852,7 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('treats native chat, service portals, and chat documents as chat events and ignores the rest of the page', async t => {
+  it('treats native chat, service portals, and chat documents as chat events and ignores the rest of the page', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const watch = await (await browsers.chromium.newContext(t)).newPage();
     const twitch = await (await browsers.chromium.newContext(t)).newPage();
@@ -959,7 +959,7 @@ describe('native chat controller', () => {
     }
   });
 
-  it('uses the complete Twitch palette and falls back safely on unrecognized YouTube CSS', async t => {
+  it('uses the complete Twitch palette and falls back safely on unrecognized YouTube CSS', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const twitch = await pageWith(t, TWITCH, TWITCH_CHANNEL);
     const youtube = await pageWith(t, YOUTUBE);
@@ -1061,7 +1061,7 @@ describe('native chat controller', () => {
       await youtube.close();
     }
   });
-  it('qualifies both YouTube palettes, preserves the composer, and restores native appearance on CSS or document replacement', async t => {
+  it('qualifies both YouTube palettes, preserves the composer, and restores native appearance on CSS or document replacement', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, YOUTUBE);
     try {
@@ -1379,7 +1379,7 @@ describe('native chat controller', () => {
     }
   });
 
-  it('notices a detached or retargeted chat surface from mutations alone, within one structure tick, with no timer', async t => {
+  it('notices a detached or retargeted chat surface from mutations alone, within one structure tick, with no timer', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const youtubeHref = 'https://www.youtube.com/watch?v=AbCdEfGhIjK';
     const cases = [
@@ -1439,7 +1439,7 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('follows a Twitch route change through the host history event, not by polling', async t => {
+  it('follows a Twitch route change through the host history event, not by polling', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const cases = [
       { name: 'twitch', html: TWITCH, from: 'https://www.twitch.tv/SomeChannel', to: 'https://www.twitch.tv/OtherChannel', event: 'theater-everywhere-twitch-navigate' }
@@ -1467,7 +1467,7 @@ describe('native chat controller', () => {
     }
   });
 
-  it('keeps the stage size variables following the viewport on pages without chat', async t => {
+  it('keeps the stage size variables following the viewport on pages without chat', { skip: skipUnlessEngine('chromium') }, async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(t, '<div id="layout"></div>');
     try {
