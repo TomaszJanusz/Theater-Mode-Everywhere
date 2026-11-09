@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 
 import { bundleModules } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
+import { skipUnlessEngine } from '../../test-utils/test-engines';
 
 import { twitchHarvestSnapshotMatchesPage } from './harvest';
 
@@ -34,7 +35,7 @@ describe('Twitch harvest snapshot binding', () => {
   });
 });
 
-it('preserves Twitch transport replacements and decorated promises while harvesting response metadata', async t => {
+it('preserves Twitch transport replacements and decorated promises while harvesting response metadata', { skip: skipUnlessEngine('chromium') }, async t => {
   // The manifest's MAIN order on Twitch in one script: runtime, Twitch's entry, then start.
   const content = bundleModules(["import './entries/main-world';", "import './providers/twitch/main';",
     "import './entries/main-world-start';", "export { readTwitchSnapshot } from './providers/twitch/harvest';"], 'TwitchMain');

@@ -5,10 +5,11 @@ import { chromium } from 'playwright';
 
 import { bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
+import { skipUnlessEngine } from '../test-utils/test-engines';
 
 const bundle = bundleModules(["export { createToolbar } from './ui/toolbar'; export { PlayerSession } from './core/player-session';"], 'DockTest');
 
-describe('caption dock frame and cached geometry lifecycle', () => {
+describe('caption dock frame and cached geometry lifecycle', { skip: skipUnlessEngine('chromium') }, () => {
   const shared = sharedTestBrowser(chromium);
 
   it('coalesces bursts, measures media once, refreshes changed overlays, and cancels on teardown', async t => {

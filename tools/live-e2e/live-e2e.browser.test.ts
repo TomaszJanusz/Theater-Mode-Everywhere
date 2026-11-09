@@ -7,6 +7,7 @@ import { chromium } from 'playwright';
 
 import { bootPlayer } from '../../src/test-utils/player-boot';
 import { sharedTestBrowser } from '../../src/test-utils/test-browser';
+import { skipUnlessEngine } from '../../src/test-utils/test-engines';
 import { canvasVideoFixture } from '../../src/test-utils/video-fixtures';
 
 import type { Target } from './model';
@@ -39,7 +40,7 @@ before(async () => {
 });
 after(() => new Promise<void>(resolve => server.close(() => resolve())));
 
-describe('live E2E harness on local fixtures', () => {
+describe('live E2E harness on local fixtures', { skip: skipUnlessEngine('chromium') }, () => {
   const shared = sharedTestBrowser(chromium);
 
   it('passes every capability on a generic player page', async t => {

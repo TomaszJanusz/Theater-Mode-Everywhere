@@ -6,7 +6,7 @@ import { chromium, firefox, type Page } from 'playwright';
 
 import { PROVIDER_ENTRIES, bundleModules } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
-import { selectTestEngines } from '../../test-utils/test-engines';
+import { selectTestEngines, skipUnlessEngine } from '../../test-utils/test-engines';
 
 const chromiumBrowser = sharedTestBrowser(chromium);
 
@@ -302,7 +302,7 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
   });
 }
 
-it('bridges private YouTube data into a genuine Chromium isolated world', async t => {
+it('bridges private YouTube data into a genuine Chromium isolated world', { skip: skipUnlessEngine('chromium') }, async t => {
   if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
   const context = await chromiumBrowser.newContext(t);
   try {

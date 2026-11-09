@@ -10,7 +10,7 @@ import { chromium, firefox } from 'playwright';
 import { CHROMIUM_BUILD, installedBuildReady } from '../test-utils/installed-build';
 import { PROVIDER_ENTRIES, bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
-import { selectTestEngines } from '../test-utils/test-engines';
+import { selectTestEngines, skipUnlessEngine } from '../test-utils/test-engines';
 
 const exports = [
   "export { installMainWorldRuntime } from './platform/main-world-runtime';",
@@ -209,7 +209,7 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
 
 // Diagnostic requester in the installed extension's actual isolated world. This
 // checks the production MAIN listener and port transfer, not just a shared realm.
-it('chromium: installed MAIN broker replies privately to the extension isolated world', { timeout: 60_000 }, async t => {
+it('chromium: installed MAIN broker replies privately to the extension isolated world', { skip: skipUnlessEngine('chromium'), timeout: 60_000 }, async t => {
   const extension = CHROMIUM_BUILD;
   if (!installedBuildReady(t, ['manifest.json', 'content.js', 'mainWorld.js'])) return;
   if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }

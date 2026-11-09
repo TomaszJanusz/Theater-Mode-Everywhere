@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import { chromium } from 'playwright';
 
 import { sharedTestBrowser } from '../../src/test-utils/test-browser';
+import { skipUnlessEngine } from '../../src/test-utils/test-engines';
 
 import { committedFixture } from './committed';
 import type { FixtureNode, HostFixture } from './format';
@@ -30,7 +31,7 @@ const HIDE_CONTROLS = '<style id="hide-controls">.ytp-right-controls { display: 
 const LATE_NOTICE = '<p id="late" hidden>Sign in to confirm you’re not a bot</p>';
 const withHiddenControls = (extra = ''): string => fixtureDocument(youtube).replace('</body>', `${HIDE_CONTROLS}${extra}</body>`);
 
-describe('host drift check', () => {
+describe('host drift check', { skip: skipUnlessEngine('chromium') }, () => {
   const shared = sharedTestBrowser(chromium);
   const check = async (t: Parameters<typeof shared.newContext>[0], served: string) => {
     const context = await shared.newContext(t, { viewport: recorded.viewport });

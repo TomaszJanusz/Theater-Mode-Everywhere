@@ -6,6 +6,7 @@ import { chromium, type Page } from 'playwright';
 
 import { bundleModules } from '../src/test-utils/player-boot';
 import { sharedTestBrowser } from '../src/test-utils/test-browser';
+import { skipUnlessEngine } from '../src/test-utils/test-engines';
 
 const BUNDLE = bundleModules(["import { setupSettingsTabs } from '../options/tabs'; window.setupSettingsTabs = setupSettingsTabs;"]);
 
@@ -31,7 +32,7 @@ async function open(page: Page, hash: string): Promise<string[]> {
 const visiblePanels = (page: Page) =>
   page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('[role="tabpanel"]')).filter((p) => !p.hidden).map((p) => p.id));
 
-describe('settings tabs', () => {
+describe('settings tabs', { skip: skipUnlessEngine('chromium') }, () => {
   const shared = sharedTestBrowser(chromium);
 
   async function withPage(t: TestContext, run: (page: Page) => Promise<void>): Promise<void> {

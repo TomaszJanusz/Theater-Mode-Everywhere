@@ -47,7 +47,7 @@ test('browser lanes run in the pinned CI image and keep the release path on apt 
   const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   const setup = readFileSync(new URL('../.github/actions/setup/action.yml', import.meta.url), 'utf8');
   const release = readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
-  for (const lane of ['browser-chromium', 'browser-firefox', 'smoke']) {
+  for (const lane of ['browser-chromium', 'browser-firefox', 'smoke', 'smoke-firefox']) {
     const job = ci.split(`\n  ${lane}:\n`)[1].split(/\n {2}[\w-]+:\n/)[0];
     assert.match(job, /needs: \[changes, image/);
     assert.match(job, /image: \$\{\{ needs\.image\.outputs\.ref \}\}/);
@@ -62,4 +62,19 @@ test('browser lanes run in the pinned CI image and keep the release path on apt 
   assert.match(setup, /safe\.directory/);
   // Release has no container and no CI image: it must not opt into the prebuilt path.
   assert.doesNotMatch(release, /prebuilt|container:/);
+});
+
+test('Firefox smoke runs beside Chromium smoke, advisory only in its smoke step', () => {
+  const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const job = name => ci.split(`\n  ${name}:\n`)[1].split(/\n {2}[\w-]+:\n/)[0];
+  assert.doesNotMatch(job('smoke'), /smoke:firefox/);
+  const firefox = job('smoke-firefox');
+  assert.match(firefox, /needs: \[changes, image, build\]/);
+  assert.match(firefox, /if: needs\.changes\.outputs\.run != 'false' && needs\.changes\.outputs\.firefox != 'false'/);
+  // Only the smoke step may fail without failing the job; setup and download failures still fail `check`.
+  assert.equal(firefox.match(/continue-on-error: true/g)?.length, 1);
+  assert.match(firefox.split('id: firefox-smoke\n')[1].split('- name:')[0], /continue-on-error: true/);
+  const check = job('check');
+  assert.match(check, /needs: \[[^\]]*\bsmoke-firefox\]/);
+  assert.match(check, /for \(const name of \['browser-firefox', 'smoke-firefox'\]\)/);
 });

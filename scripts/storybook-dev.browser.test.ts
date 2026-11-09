@@ -150,7 +150,9 @@ for (const engine of testEngines()) {
     await manager.getByRole('button', { name: 'Run tests', exact: true }).filter({ hasText: 'Run tests' }).click();
     await manager.getByRole('button', { name: 'Stop test run', exact: true }).waitFor();
     // Test output precedes coverage reporting. Only the completed manager state proves the run succeeded.
-    await manager.getByRole('button', { name: 'Start test run', exact: true }).waitFor();
+    // The panel runs every story; in a loaded Firefox lane that outlasted Playwright's 30 s default, so the
+    // test's own timeout bounds this wait and its diagnostic names the phase.
+    await manager.getByRole('button', { name: 'Start test run', exact: true }).waitFor({ timeout: 0 });
     await manager.getByRole('button', { name: 'Component tests passed', exact: true }).waitFor();
     // Every story in the catalog runs, so the panel reports the count asserted above.
     assert.match(await manager.locator('body').innerText(), new RegExp(`Test run finished\\. ${stories.length} components passed\\.`));

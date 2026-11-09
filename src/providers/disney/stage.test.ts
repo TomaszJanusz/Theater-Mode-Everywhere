@@ -7,8 +7,9 @@ import { chromium } from 'playwright';
 import { bundleModules } from '../../test-utils/player-boot';
 import { readStylesheet } from '../../test-utils/styles';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
+import { skipUnlessEngine } from '../../test-utils/test-engines';
 
-describe('Disney theater captions', () => {
+describe('Disney theater captions', { skip: skipUnlessEngine('chromium') }, () => {
   const shared = sharedTestBrowser(chromium);
 
   it('injects caption CSS when Disney creates the timed-text region after theater mounts', async t => {

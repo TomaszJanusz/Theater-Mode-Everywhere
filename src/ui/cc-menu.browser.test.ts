@@ -5,11 +5,12 @@ import { chromium } from 'playwright';
 
 import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
+import { skipUnlessEngine } from '../test-utils/test-engines';
 
 const POPOVER = bundleModules(["export { bindMenuPopover } from './ui/menu-popover';"], 'PopoverTest');
 const UI_CSS = playerStylesheets().ui;
 
-describe('caption language menu', () => {
+describe('caption language menu', { skip: skipUnlessEngine('chromium') }, () => {
   const shared = sharedTestBrowser(chromium);
 
   it('keeps scrolled language rows below the title bar', async (t) => {
