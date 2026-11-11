@@ -6,9 +6,11 @@ import {
   selectCaptionTrackOption,
   signYoutubeCaptionUrl,
   timedtextHasPot,
+  timedtextTrackRequest,
   timedtextVideoId,
   youtubePageVideoId,
-  type CachedTimedtext
+  type CachedTimedtext,
+  type CaptionTrackRequest
 } from '../../media-features/youtube-caption-url';
 import { findYoutubeChapterMarkers } from '../../media-features/parsers/youtube-chapters';
 import {
@@ -205,7 +207,7 @@ function isAuxiliaryYoutubePlayer(el: Element | null): boolean {
 }
 
 type YoutubePlayer = Element & {
-  getOption?: (module: string, option: string) => unknown;
+  getOption?: (module: string, option: string, params?: Record<string, unknown>) => unknown;
   setOption?: (module: string, option: string, value: Record<string, unknown>) => void;
   loadModule?: (module: string) => void;
   unloadModule?: (module: string) => void;
@@ -368,7 +370,8 @@ function invalidateYoutubeCaptions(): void {
 }
 
 function playerCaptionTracks(player: YoutubePlayer): Record<string, unknown>[] {
-  const list = typeof player.getOption === 'function' ? player.getOption('captions', 'tracklist') : null;
+  // Without includeAsr the list leaves out auto-generated tracks, and the player ignores a partial ASR track.
+  const list = typeof player.getOption === 'function' ? player.getOption('captions', 'tracklist', { includeAsr: true }) : null;
   return Array.isArray(list) ? list.flatMap((value) => {
     const track = youtubeRecord(value);
     return track && typeof track.languageCode === 'string'
@@ -376,13 +379,8 @@ function playerCaptionTracks(player: YoutubePlayer): Record<string, unknown>[] {
   }) : [];
 }
 
-function captionTrackFromPlayer(
-  player: YoutubePlayer,
-  languageCode: string | null,
-  kind: string | null,
-  translationCode: string | null
-): Record<string, unknown> | null {
-  return selectCaptionTrackOption(playerCaptionTracks(player), languageCode, kind, translationCode);
+function captionTrackFromPlayer(player: YoutubePlayer, request: CaptionTrackRequest): Record<string, unknown> | null {
+  return selectCaptionTrackOption(playerCaptionTracks(player), request);
 }
 
 function waitMs(ms: number): Promise<void> {
@@ -423,12 +421,7 @@ function captionRequestIsCurrent(player: YoutubePlayer | null, generation: numbe
     && (typeof player.getPlayerResponse === 'function' ? youtubeResponseVideoId(player.getPlayerResponse()) : null) === responseId;
 }
 
-async function ensureYoutubeCaptions(
-  languageCode: string | null,
-  kind: string | null,
-  translationCode: string | null,
-  forceReset = false
-): Promise<boolean> {
+async function ensureYoutubeCaptions(request: CaptionTrackRequest, forceReset = false): Promise<boolean> {
   const generation = ++captionOperation;
   const player = findYoutubePlayer();
   if (!player) return false;
@@ -448,7 +441,7 @@ async function ensureYoutubeCaptions(
   await waitForCaptionTracklist(player, current);
   if (!current()) return false;
   try {
-    const track = captionTrackFromPlayer(player, languageCode, kind, translationCode);
+    const track = captionTrackFromPlayer(player, request);
     if (track && typeof player.setOption === 'function') {
       player.setOption('captions', 'track', track);
       return true;
@@ -577,18 +570,7 @@ export async function fetchTimedtextWithPot(url: string): Promise<string | null>
   if (requestedVideoId ? !describesExpected(expected, requestedVideoId) : expected.strict && !expected.id) return null;
 
   captionMintInFlight = (async () => {
-    let languageCode: string | null = null;
-    let kind: string | null = null;
-    let translationCode: string | null = null;
-    try {
-      const parsed = new URL(url, window.location.href);
-      languageCode = parsed.searchParams.get('lang');
-      kind = parsed.searchParams.get('kind');
-      translationCode = parsed.searchParams.get('tlang');
-    } catch {
-      languageCode = null;
-    }
-    if (!await ensureYoutubeCaptions(languageCode, kind, translationCode, true)) return null;
+    if (!await ensureYoutubeCaptions(timedtextTrackRequest(url), true)) return null;
     return waitForCachedBody(url, 8000);
   })();
 
@@ -860,12 +842,12 @@ export function installYoutubeMain(pageMedia: NonNullable<typeof fetchPageMedia>
         return;
       }
       if (request.enabled) {
-        void ensureYoutubeCaptions(
-          request.language ?? null,
-          request.kind ?? null,
-          request.translation ?? null,
-          true
-        ).then(respond, () => respond(false));
+        void ensureYoutubeCaptions({
+          languageCode: request.language ?? null,
+          kind: request.kind ?? null,
+          translationCode: request.translation ?? null,
+          name: null
+        }, true).then(respond, () => respond(false));
         return;
       } else {
         disableYoutubeCaptions();

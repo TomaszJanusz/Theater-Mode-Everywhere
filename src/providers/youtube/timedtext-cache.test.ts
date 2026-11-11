@@ -137,4 +137,28 @@ describe('timedtext body cache', () => {
     assert.equal(cache.retainedStringLength(), active.length);
     assert.equal(cache.find(trackUrl('keep', 'en')), active);
   });
+  it('answers each track of one language only with its own body', () => {
+    // The player loads a broadcast's CC1 on its own; the menu's auto-generated track must not get that body.
+    const track = (params: string) => `https://www.youtube.com/api/timedtext?v=pbfskD7GRFk&caps=asr&${params}&fmt=json3`;
+    const cache = createTimedtextBodyCache();
+    cache.notePageVideo('pbfskD7GRFk');
+    const put = (params: string, body: string) => {
+      const record = createTimedtextCacheRecord(`${track(params)}&pot=TOKEN&c=WEB`, body);
+      assert.ok(record);
+      assert.equal(cache.put(record), 'stored');
+    };
+    put('lang=en&name=CC1', 'CC1 body, longer than the others');
+    put('lang=en&name=DTVCC1', 'DTVCC1 body, also long');
+    assert.equal(cache.find(track('kind=asr&lang=en')), null);
+    assert.equal(cache.find(track('lang=en')), null);
+    put('kind=asr&lang=en', 'asr');
+    put('lang=en&name=', 'unnamed');
+    assert.equal(cache.find(track('kind=asr&lang=en')), 'asr');
+    assert.equal(cache.find(track('lang=en')), 'unnamed');
+    assert.equal(cache.find(track('lang=en&name=CC1')), 'CC1 body, longer than the others');
+    assert.equal(cache.find(track('lang=en&name=DTVCC1')), 'DTVCC1 body, also long');
+    assert.equal(cache.trackCount(), 4);
+    // A player request naming only its interface language still serves any track of that language.
+    assert.ok(cache.find('https://www.youtube.com/api/timedtext?v=pbfskD7GRFk&caps=asr&hl=en&fmt=json3'));
+  });
 });
