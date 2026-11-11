@@ -250,21 +250,19 @@ function parseYoutubeSrv3(input: string): CaptionCue[] {
     const start = startMs / 1000;
     const end = (startMs + durationMs) / 1000;
     const inner = match[2] || '';
-    const words = wordsFromSrv3Spans(start, end, inner);
-    // Word spans carry their own spacing; only other tags stand for a space.
-    pushCue(cues, start, end, inner.replace(/<\/?s\b[^>]*>/gi, ''), words);
+    // Word spans carry their own spacing, so the text keeps their contents and what lies between them.
+    const pieces: TimedPiece[] = [];
+    let text = '';
+    let rest = 0;
+    for (const span of inner.matchAll(/<s\b([^>]*)>([\s\S]*?)<\/s>/gi)) {
+      text += inner.slice(rest, span.index) + span[2];
+      rest = span.index + span[0].length;
+      pieces.push({ offsetMs: optionalNumber(attrValue(span[1], 't')), raw: span[2] });
+    }
+    const words = timedWords(start, end, pieces);
+    pushCue(cues, start, end, text + inner.slice(rest), words.length >= 2 ? words : undefined);
   }
   return cues;
-}
-
-function wordsFromSrv3Spans(start: number, end: number, inner: string): CaptionWord[] | undefined {
-  const spans = [...inner.matchAll(/<s\b([^>]*)>([\s\S]*?)<\/s>/gi)];
-  if (spans.length < 2) return undefined;
-  const timed = timedWords(start, end, spans.map((span) => ({
-    offsetMs: optionalNumber(attrValue(span[1] || '', 't')),
-    raw: span[2] || ''
-  })));
-  return timed.length >= 2 ? timed : undefined;
 }
 
 type TimedPiece = { offsetMs: number | null; raw: string };
