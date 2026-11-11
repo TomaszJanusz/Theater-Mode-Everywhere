@@ -78,6 +78,23 @@ describe('caption word pieces', () => {
     assert.deepEqual(shape(json3([{ utf8: 'end' }, { utf8: '\n', tOffsetMs: 100 }, { utf8: 'next', tOffsetMs: 300 }])), ['end', 'next']);
   });
 
+  it('keeps a space that lies between srv3 spans', () => {
+    const [cue] = parseCaptionPayload('<timedtext format="3"><body><p t="1000" d="3000"><s>Hello</s> <s t="500">world</s></p></body></timedtext>');
+    assert.equal(cue?.text, 'Hello world');
+    assert.deepEqual(shape(cue), ['Hello', 'world']);
+  });
+
+  it('separates words where markup or an entity shows a space', () => {
+    assert.deepEqual(shape(json3([{ utf8: 'Hello<br>' }, { utf8: 'world', tOffsetMs: 500 }])), ['Hello', 'world']);
+    assert.deepEqual(shape(json3([{ utf8: 'Hello' }, { utf8: '<br/>world', tOffsetMs: 500 }])), ['Hello', 'world']);
+    assert.deepEqual(shape(json3([{ utf8: 'Hello&nbsp;' }, { utf8: 'world', tOffsetMs: 500 }])), ['Hello', 'world']);
+    assert.deepEqual(shape(json3([{ utf8: 'Hello' }, { utf8: '&#32;world', tOffsetMs: 500 }])), ['Hello', 'world']);
+    const [srv3] = parseCaptionPayload('<timedtext format="3"><body><p t="1000" d="3000"><s>Hello&#32;</s><s t="500">world</s></p></body></timedtext>');
+    assert.deepEqual(shape(srv3), ['Hello', 'world']);
+    // An entity that is not a space still joins, as the shown text has no space there.
+    assert.deepEqual(shape(json3([{ utf8: 'R&amp;' }, { utf8: 'D', tOffsetMs: 500 }])), ['R&', '+D']);
+  });
+
   it('reads srv3 spans the same way', () => {
     const [cue] = parseCaptionPayload('<timedtext format="3"><body><p t="1000" d="3000"><s>CE</s><s t="33">RT</s><s t="300"> H</s><s t="333">E.</s></p></body></timedtext>');
     assert.deepEqual(shape(cue), ['CE', '+RT', 'H', '+E.']);

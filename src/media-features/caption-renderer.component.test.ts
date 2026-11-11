@@ -43,6 +43,16 @@ describe('caption overlay words', () => {
     }
   });
 
+  test('keeps the space between srv3 spans and after a line break', () => {
+    const [spans] = parseCaptionPayload('<timedtext format="3"><body><p t="1000" d="3000"><s>Hello</s> <s t="500">world</s></p></body></timedtext>');
+    const [broken] = parseCaptionPayload(JSON.stringify({ events: [{ tStartMs: 1000, dDurationMs: 3000, segs: [{ utf8: 'Hello<br>' }, { utf8: 'world', tOffsetMs: 500 }] }] }));
+    for (const cue of [spans, broken]) {
+      const lines = show([cue], 1.2);
+      expect(lines.map(text)).toEqual(['Hello world']);
+      renderer?.dispose();
+    }
+  });
+
   test('keeps auto-generated words one space apart', () => {
     const cues = parseCaptionPayload(JSON.stringify(recorded.tracks.asr.body));
     const lines = show(cues, 88);
