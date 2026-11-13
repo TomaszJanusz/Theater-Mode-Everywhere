@@ -41,6 +41,7 @@ function sameTrack(left: CachedTimedtext, right: CachedTimedtext): boolean {
     && left.lang === right.lang
     && left.tlang === right.tlang
     && left.kind === right.kind
+    && left.name === right.name
     && left.fmt === right.fmt;
 }
 

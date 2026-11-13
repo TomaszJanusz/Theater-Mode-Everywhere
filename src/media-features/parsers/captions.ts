@@ -250,24 +250,45 @@ function parseYoutubeSrv3(input: string): CaptionCue[] {
     const start = startMs / 1000;
     const end = (startMs + durationMs) / 1000;
     const inner = match[2] || '';
-    const words = wordsFromSrv3Spans(start, end, inner);
-    pushCue(cues, start, end, inner, words);
+    // Word spans carry their own spacing. The text keeps their contents and what lies between them, which
+    // leads the next span's piece so a space there still separates its words.
+    const pieces: TimedPiece[] = [];
+    let text = '';
+    let rest = 0;
+    for (const span of inner.matchAll(/<s\b([^>]*)>([\s\S]*?)<\/s>/gi)) {
+      const raw = inner.slice(rest, span.index) + span[2];
+      text += raw;
+      rest = span.index + span[0].length;
+      pieces.push({ offsetMs: optionalNumber(attrValue(span[1], 't')), raw });
+    }
+    pushCue(cues, start, end, text + inner.slice(rest), timedWords(start, end, pieces));
   }
   return cues;
 }
 
-function wordsFromSrv3Spans(start: number, end: number, inner: string): CaptionWord[] | undefined {
-  const spans = [...inner.matchAll(/<s\b([^>]*)>([\s\S]*?)<\/s>/gi)];
-  if (spans.length < 2) return undefined;
+type TimedPiece = { offsetMs: number | null; raw: string };
+
+/**
+ * Words from a host's timed pieces: a word, a part of one, or punctuation. Only a space in the shown text
+ * separates words, so a piece with none before it continues the previous word. One word is no word timing.
+ */
+function timedWords(start: number, end: number, pieces: TimedPiece[]): CaptionWord[] | undefined {
   const words: CaptionWord[] = [];
-  for (const span of spans) {
-    const offsetMs = optionalNumber(attrValue(span[1] || '', 't')) ?? 0;
-    const text = sanitizeCaptionText(span[2] || '');
+  let spaced = false;
+  for (const piece of pieces) {
+    // Between two letters, sanitizing keeps one space at each edge where markup, an entity or whitespace
+    // shows one (a line break, &nbsp;) and trims nothing else.
+    const shown = sanitizeCaptionText(`x${piece.raw}x`);
+    const text = shown.slice(1, -1).trim();
+    // A piece that shows only a space, such as a line break, separates its neighbours.
+    spaced ||= shown[1] === ' ';
     if (!text) continue;
-    words.push({ start: start + offsetMs / 1000, end, text });
+    const word: CaptionWord = { start: start + (piece.offsetMs ?? 0) / 1000, end, text };
+    if (words[0] && !spaced) word.joinsPrevious = true;
+    words.push(word);
+    spaced = shown.at(-2) === ' ';
   }
-  const timed = assignWordEnds(words, end);
-  return timed.length >= 2 ? timed : undefined;
+  return words[1] ? assignWordEnds(words, end) : undefined;
 }
 
 function parseJson3(input: string): CaptionCue[] {
@@ -327,16 +348,9 @@ function wordsFromJson3Segs(
   end: number,
   segs: Array<{ utf8?: string; tOffsetMs?: number }>
 ): CaptionWord[] | undefined {
-  const words: CaptionWord[] = [];
-  for (const seg of segs) {
-    const text = sanitizeCaptionText(seg.utf8 || '');
-    if (!text) continue;
+  const timed = timedWords(start, end, segs.map((seg) => {
     const offsetMs = Number(seg.tOffsetMs);
-    const wordStart = start + (Number.isFinite(offsetMs) ? offsetMs / 1000 : 0);
-    words.push({ start: wordStart, end, text });
-  }
-  const timed = assignWordEnds(words, end);
-  if (timed.length < 2) return undefined;
-  if (!timed.some((word) => word.start > timed[0].start + 0.05)) return undefined;
-  return timed;
+    return { offsetMs: Number.isFinite(offsetMs) ? offsetMs : null, raw: seg.utf8 || '' };
+  }));
+  return timed?.some((word) => word.start > timed[0].start + 0.05) ? timed : undefined;
 }
