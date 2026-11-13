@@ -139,9 +139,9 @@ describe('player settings action order', () => {
           };
           // Background APIs live in a separate scope; content scripts only get messaging.
           new Function('chrome', ${JSON.stringify(BACKGROUND_BUNDLE)})({
-            runtime, action: { async setBadgeText() {} },
+            runtime, action: { async setBadgeText() {} }, alarms: { onAlarm: ignore, async clear() {}, async create() {} },
             tabs: { onActivated: ignore, onUpdated: ignore, async query() { return []; }, async create({ url }) { calls.push(url); } },
-            storage: { onChanged: ignore, local: { async get() { return {}; } } }
+            storage: { onChanged: ignore, local: { async get() { return {}; } }, session: { async get() { return {}; } } }
           });
           Object.assign(chrome, { runtime: {
             sendMessage(message, reply) {

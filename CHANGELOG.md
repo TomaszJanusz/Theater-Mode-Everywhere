@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Sleep timer in the player's settings menu: choose 15, 30, 45, 60, 90 or 120 minutes, or Off, and playback pauses when the time is up. One timer covers the whole browser profile: it can be set, changed or turned off from any tab, and when it runs out it pauses whatever is playing in theater mode in every tab, without starting anything that was paused. While it runs, a small moon with the minutes left sits next to the settings button and opens the setting when clicked. A browser restart turns it off.
+
 ### Changed
 
 - The short description shown on the browser's extension page and in the stores is reworded in all 16 languages and no longer mentions HTML5. The store descriptions are shorter, open with a warm, personal introduction to theater mode, and the Firefox listing now names every supported service.

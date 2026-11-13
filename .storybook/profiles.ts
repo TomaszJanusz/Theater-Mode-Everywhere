@@ -29,6 +29,8 @@ export function environment(locale: Language = 'en', backdrop: 'dark' | 'light' 
 export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args']> = {
   'components-volume-control--open': () => ({}),
   'components-speed-control--open': () => ({}),
+  // A longer German unit and a right-to-left bar with Arabic text beside the moon.
+  'components-sleep-timer-chip--running': () => ({}),
   'components-control-button-tooltip--above': () => ({ tooltip: 'exitTheaterModeTooltip' }),
   // Arabic previously exercised backward seek, German forward seek.
   'components-hud--seek': locale => ({ direction: locale === 'ar' ? 'left' : 'right' }),

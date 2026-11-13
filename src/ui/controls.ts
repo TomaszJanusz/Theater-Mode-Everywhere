@@ -37,7 +37,10 @@ import { observeChromeVisibility } from './chrome-visibility';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { mountEndedCurtain, REPLAY_ICON } from './ended-curtain';
 import { createFullscreenRecovery } from './fullscreen-recovery';
-import { AUDIO_SETTING_ICONS, createLoadingPlate, ensureLoadingRing, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
+import {
+  AUDIO_SETTING_ICONS, createLoadingPlate, ensureLoadingRing, PICTURE_LAYOUT_ICON, strokeIcon, SWITCH_VIDEO_SHAPE, VIDEO_FIT_SHAPES,
+  VOLUME_BOOST_ICONS
+} from './hud';
 import { bindMenuPopover, playerChromeExpanded } from './menu-popover';
 import { beginPicturePress, clearPictureDismiss } from './picture-dismiss';
 import { togglePictureInPicture } from './picture-in-picture';
@@ -48,6 +51,7 @@ import { waitForSeekCompletion } from './seek-completion';
 import { mountServiceActionCta } from './service-actions';
 import { shortcutMarkup } from './shortcut-display';
 import { AUDIO_SHORTCUTS, shortcutDisplayEnv } from './shortcuts';
+import { mountSleepTimer } from './sleep-timer';
 import { createSpeedControl } from './speed-control';
 import { exitSpinner } from './spinner-exit';
 import { clockLabels, renderLiveBadge, renderTimeReadout } from './time-readout';
@@ -474,7 +478,7 @@ export function createControls(
 
     bindCustomTooltip(pipBtn, () => t('pictureInPictureTooltip', shortcutKeys(ui().shortcuts.togglePiP)));
 
-    setIcon(pipBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><rect x="13" y="11" width="7" height="7" rx="1" ry="1"></rect></svg>`);
+    setIcon(pipBtn, strokeIcon('<rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><rect x="13" y="11" width="7" height="7" rx="1" ry="1"/>', 18));
     const syncPipButton = () => {
       const active = native != null && document.pictureInPictureElement === native;
       pipBtn.classList.toggle('active', active);
@@ -493,16 +497,8 @@ export function createControls(
       return document.fullscreenElement ? t('exitFullscreen') : t('fullscreenTooltip', shortcutKeys(ui().shortcuts.toggleFullscreen));
     });
 
-    const enterFullscreenIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-      </svg>
-    `;
-    const exitFullscreenIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 14h6v6m10-6h-6v6M4 10h6V4m10 6h-6V4"></path>
-      </svg>
-    `;
+    const enterFullscreenIcon = strokeIcon('<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>', 18);
+    const exitFullscreenIcon = strokeIcon('<path d="M4 14h6v6m10-6h-6v6M4 10h6V4m10 6h-6V4"/>', 18);
 
     const syncFullscreenButton = () => {
       const active = Boolean(document.fullscreenElement);
@@ -577,7 +573,7 @@ export function createControls(
       return t('exitTheaterModeTooltip', [toggle ? shortcutKeys(toggle) : `<kbd>${t('shortcutUnassigned')}</kbd>`, shortcutKeys(exit || 'Escape')]);
     });
 
-    setIcon(closeBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="4" x2="4" y2="20"></line><line x1="4" y1="4" x2="20" y2="20"></line></svg>`);
+    setIcon(closeBtn, strokeIcon('<line x1="20" y1="4" x2="4" y2="20"/><line x1="4" y1="4" x2="20" y2="20"/>', 18));
     closeBtn.addEventListener('click', () => {
       exitTheaterMode();
     });
@@ -657,7 +653,7 @@ export function createControls(
       return t('subtitlesTooltip', shortcutKeys(ui().shortcuts.toggleCaptions));
     });
 
-    setIcon(ccBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M10 9H8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2"></path><path d="M10 9H8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2" transform="translate(8 0)"></path></svg>`);
+    setIcon(ccBtn, strokeIcon('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 9H8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2"/><path d="M10 9H8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2" transform="translate(8 0)"/>', 18));
 
     const handleTrackChange = () => {
       void mediaFeatures.refresh();
@@ -751,15 +747,7 @@ export function createControls(
     fitBtn.className = 'video-fit-btn';
     fitBtn.hidden = !video.capabilities.objectFit;
     const updateFitButtonIcon = () => {
-      setIcon(fitBtn, `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
-          <path d="M16 3h3a2 2 0 0 1 2 2v3"></path>
-          <path d="M8 21H5a2 2 0 0 1-2-2v-3"></path>
-          <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
-          <rect x="8" y="8" width="8" height="8" rx="1"></rect>
-        </svg>
-      `);
+      setIcon(fitBtn, strokeIcon(VIDEO_FIT_SHAPES, 16, 2.5));
     };
     updateFitButtonIcon();
     const fitRow = video.capabilities.objectFit
@@ -858,11 +846,7 @@ export function createControls(
     if (videosOnPage.length > 1) {
       const switchVideoBtn = document.createElement('button');
       switchVideoBtn.className = 'theater-control-btn switch-video-btn';
-      setIcon(switchVideoBtn, `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-        </svg>
-      `);
+      setIcon(switchVideoBtn, strokeIcon(SWITCH_VIDEO_SHAPE, 16, 2.5));
       switchVideoBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         settings.close();
@@ -879,7 +863,7 @@ export function createControls(
 
     mountNativeChatControls(ctx, controlsScope, rightSec, settings.panel, bindCustomTooltip);
 
-    rightSec.append(settings.container);
+    rightSec.append(mountSleepTimer(ctx, settings, controlsScope, bindCustomTooltip), settings.container);
 
     const pinBtn = document.createElement('div');
     pinBtn.className = 'controls-visibility-toggle';
@@ -901,13 +885,7 @@ export function createControls(
     // Help Button (Keyboard shortcuts listing)
     const helpBtn = document.createElement('button');
     helpBtn.className = 'theater-control-btn help-btn';
-    setIcon(helpBtn, `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-      </svg>
-    `);
+    setIcon(helpBtn, strokeIcon('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>', 16, 2.5));
     helpBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       showHelpOverlay();
@@ -920,7 +898,7 @@ export function createControls(
     const autoTheaterBtn = document.createElement('div');
     autoTheaterBtn.className = 'auto-theater-btn';
     autoTheaterBtn.title = t('autoEnterTheaterDescription');
-    setIcon(autoTheaterBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="m10 8 6 4-6 4z"/></svg>`);
+    setIcon(autoTheaterBtn, strokeIcon('<path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="m10 8 6 4-6 4z"/>', 16));
     // An unavailable row keeps its aria-disabled arrows focusable, so the reason stays discoverable.
     const autoTheaterRow = settings.addStepperRow(autoTheaterBtn, t('autoEnterTheaterTitle'), 'player',
       { onStep: direction => executeCommand({ type: 'STEP_AUTO_THEATER', direction }) });
@@ -943,19 +921,7 @@ export function createControls(
     const extensionSettingsBtn = document.createElement('button');
     extensionSettingsBtn.type = 'button';
     extensionSettingsBtn.className = 'theater-control-btn extension-settings-btn';
-    setIcon(extensionSettingsBtn, `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 21v-7"></path>
-        <path d="M4 10V3"></path>
-        <path d="M12 21v-9"></path>
-        <path d="M12 8V3"></path>
-        <path d="M20 21v-5"></path>
-        <path d="M20 12V3"></path>
-        <path d="M2 14h4"></path>
-        <path d="M10 8h4"></path>
-        <path d="M18 16h4"></path>
-      </svg>
-    `);
+    setIcon(extensionSettingsBtn, strokeIcon('<path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/>', 16, 2.5));
     extensionSettingsBtn.addEventListener('click', (event) => {
       event.stopPropagation();
       settings.close();

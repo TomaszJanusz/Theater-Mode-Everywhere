@@ -5,7 +5,7 @@ import { type BrowserContext, type Page } from 'playwright';
 
 import { defaultMediaProviderFlags, mediaProviderFlagStorageKeys, mediaProviderFlagStorageUpdate } from '../../src/media-features/provider-flags';
 
-import { fail, extensionWorker, timeScenario } from './helpers';
+import { fail, extensionWorker, timeScenario, waitForPlayer } from './helpers';
 export async function assertRteSettings(context: BrowserContext): Promise<void> {
   return timeScenario('assertRteSettings', { syncWrites: 4 }, async () => {
     const worker = await extensionWorker(context);
@@ -126,5 +126,53 @@ export async function assertPictureLayout(page: Page, context: BrowserContext): 
     await page.keyboard.press('Escape'); // Close settings while keeping the session active.
     await page.setViewportSize({ width: 1280, height: 720 });
     console.log('smoke layout: installed defaults, saved preference and live options/shortcut sharing passed');
+  });
+}
+
+const sleepTimerPlaying = '(() => { const video = document.querySelector("video#player"); return video.readyState >= 2 && !video.paused; })()';
+
+async function enterPlayingTheater(page: Page): Promise<void> {
+  await page.waitForFunction(sleepTimerPlaying);
+  await page.locator('video#player').click();
+  await page.keyboard.press('t');
+  await page.locator('.theater-controls-wrapper').waitFor();
+}
+
+/**
+ * The installed background owns the profile's sleep timer: one set from a tab's settings menu shows in another
+ * tab, and when it runs out the alarm pauses the tab still playing, not the one already paused. The deadline is
+ * moved into the past in session storage instead of waiting the 15 minutes. The caller reloads `page` afterwards.
+ */
+export async function assertSleepTimer(page: Page, context: BrowserContext, origin: string): Promise<void> {
+  await timeScenario('assertSleepTimer', { syncWrites: 0 }, async () => {
+    const background = await extensionWorker(context);
+    const other = await context.newPage();
+    try {
+      await enterPlayingTheater(page);
+      await page.locator('.player-settings-btn').click();
+      await page.locator('.sleep-timer-btn .theater-stepper-btn[data-direction="1"]').click();
+      await page.locator('.sleep-timer-chip:not([hidden])').waitFor();
+      await other.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
+      await waitForPlayer(other);
+      await enterPlayingTheater(other);
+      const chips = await Promise.all([page, other].map(tab => tab.locator('.sleep-timer-chip:not([hidden])').textContent()));
+      if (!chips[0] || chips[0] !== chips[1]) fail(`Sleep timer chips differ across tabs: ${JSON.stringify(chips)}`);
+
+      await page.evaluate('document.querySelector("video#player").pause()');
+      await background.evaluate(async () => {
+        const { sleepTimer } = await chrome.storage.session.get('sleepTimer');
+        if (!sleepTimer) throw new Error('No sleep timer in session storage');
+        await chrome.storage.session.set({ sleepTimer: { ...sleepTimer, deadline: Date.now() - 1 } });
+        await chrome.alarms.create('sleep-timer', { when: Date.now() + 1 });
+      });
+      await other.waitForFunction('document.querySelector("video#player").paused', undefined, { timeout: 60_000 });
+      await other.locator('.sleep-timer-chip').waitFor({ state: 'hidden' });
+      if (await page.evaluate(sleepTimerPlaying)) fail('The sleep timer started a paused video.');
+      if (await background.evaluate(async () => Object.keys(await chrome.storage.session.get(null)).length)) {
+        fail('The sleep timer stayed in session storage after it fired.');
+      }
+    } finally {
+      await other.close();
+    }
   });
 }
