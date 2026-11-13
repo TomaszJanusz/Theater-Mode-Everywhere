@@ -1,3 +1,4 @@
+import { SLEEP_TIMER_ACTION } from '../core/sleep-timer';
 import { installPlan, SETUP_HASH, SETUP_STATE_KEY } from '../first-run-setup';
 import { ACK_UPDATE_ACTION, isOpenOptionsRequest, type OptionsSection } from '../protocol/options-page';
 import { loadLanguageCatalog } from '../platform/locale-catalog';
@@ -10,6 +11,7 @@ import {
   removeLegacyYoutubeExclusion
 } from '../platform/legacy-youtube-exclusion';
 import { isAllowedBrokerFetchUrl, MAX_CAPTION_BYTES } from '../platform/media-url-policy';
+import { createSleepTimerOwner } from '../platform/sleep-timer-owner';
 import {
   OBSOLETE_LOCAL_KEYS, OBSOLETE_LOCAL_PREFIX, OBSOLETE_SYNC_KEYS, PENDING_UPDATE_KEY,
   pendingAfterInstall, resolvePendingUpdate
@@ -111,6 +113,34 @@ async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body
   }
 }
 
+/**
+ * The sleep timer is one per profile. Session storage drops it when the browser restarts and keeps it while this
+ * worker sleeps; the alarm wakes the worker at the deadline, and every start reconciles both (a restart left an alarm
+ * without a timer, or the alarm was missed while the deadline passed).
+ */
+const SLEEP_TIMER_KEY = 'sleepTimer';
+const sleepTimer = createSleepTimerOwner({
+  now: () => Date.now(),
+  read: async () => (await chrome.storage.session.get(SLEEP_TIMER_KEY))[SLEEP_TIMER_KEY],
+  write: timer => timer ? chrome.storage.session.set({ [SLEEP_TIMER_KEY]: timer }) : chrome.storage.session.remove(SLEEP_TIMER_KEY),
+  schedule: async when => {
+    if (when === null) await chrome.alarms.clear(SLEEP_TIMER_ACTION);
+    else await chrome.alarms.create(SLEEP_TIMER_ACTION, { when });
+  },
+  broadcast: async message => {
+    for (const tab of await chrome.tabs.query({})) {
+      // Pages without the player (browser pages, discarded tabs) have no receiver.
+      if (tab.id !== undefined) chrome.tabs.sendMessage(tab.id, message).catch(() => {});
+    }
+  }
+});
+const reconcileSleepTimer = () => sleepTimer.reconcile()
+  .catch(error => console.error('[Theater Everywhere] Could not update the sleep timer:', error));
+chrome.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name === SLEEP_TIMER_ACTION) void reconcileSleepTimer();
+});
+void reconcileSleepTimer();
+
 const shortcutUpdates = createShortcutUpdateQueue({
   read: async () => withShortcutDefaults((await chrome.storage.sync.get('shortcuts')).shortcuts),
   write: async shortcuts => { await chrome.storage.sync.set({ shortcuts }); }
@@ -196,6 +226,14 @@ chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.Mess
         console.error('[Theater Everywhere] Could not acknowledge the update:', error);
         sendResponse({ ok: false });
       });
+    return true;
+  }
+  if (message?.action === SLEEP_TIMER_ACTION) {
+    if (_sender.id !== chrome.runtime.id) return false;
+    sleepTimer.request(message.minutes).then(sendResponse, (error: unknown) => {
+      console.error('[Theater Everywhere] Could not update the sleep timer:', error);
+      sendResponse(null);
+    });
     return true;
   }
   if (message?.action === 'get-language-catalog') {

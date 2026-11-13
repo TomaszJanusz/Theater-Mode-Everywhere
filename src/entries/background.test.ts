@@ -14,7 +14,9 @@ const partialSetup = bundleModules([
 const CURRENT_VERSION = '2.1.0';
 const ignore = { addListener() {} };
 /** Start-up surface for tests about other messages: no announcement is stored. */
-const quiet = { action: { async setBadgeText() {} } };
+/** No sleep timer runs: the worker's start-up reconcile finds nothing to fire and clears no alarm it cares about. */
+const noSleepTimer = { onAlarm: ignore, async clear() {}, async create() {} };
+const quiet = { action: { async setBadgeText() {} }, alarms: noSleepTimer };
 const noAnnouncement = { async get() { return {}; } };
 const url = 'https://captions.twitch.tv/123/en/caption.vtt';
 type Reply = { ok: boolean; body?: string; error?: string };
@@ -25,7 +27,7 @@ function broker(fetcher: typeof fetch): () => Promise<Reply> {
     fetch: fetcher, URL, AbortController, TextDecoder, Uint8Array, setTimeout, clearTimeout, console,
     chrome: {
       ...quiet,
-      tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore, local: noAnnouncement },
+      tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore, local: noAnnouncement, session: noAnnouncement },
       runtime: { getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore, onStartup: ignore, onMessage: { addListener(fn: typeof listener) { listener = fn; } } }
     }
   });
@@ -101,10 +103,11 @@ function profile(version: string, local: Record<string, unknown> = {}, sync: Rec
         async setBadgeText({ text }: { text: string }) { badge.text = text; badgeWaiters.splice(0).forEach(resolve => resolve()); },
         async setBadgeBackgroundColor({ color }: { color: string }) { badge.color = color; }
       },
+      alarms: noSleepTimer,
       tabs: { onActivated: ignore, onUpdated: ignore, async query() { return []; }, async create({ url }: { url: string }) { opened.push(url); } },
       storage: {
         onChanged: { addListener(listener: (changes: object, area: string) => void) { storageListeners.push(listener); } },
-        local: area('local', local), sync: area('sync', sync)
+        local: area('local', local), sync: area('sync', sync), session: noAnnouncement
       },
       runtime: {
         id: 'extension', getURL: (file: string) => `chrome-extension://extension/${file}`,
@@ -203,7 +206,7 @@ it('opens only the manifest options page for valid requests from this extension'
     console: { error() {} },
     chrome: {
       ...quiet,
-      tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore, local: noAnnouncement },
+      tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore, local: noAnnouncement, session: noAnnouncement },
       runtime: {
         id: 'extension', getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore, onStartup: ignore,
         onMessage: { addListener(fn: typeof listener) { listener = fn; } },
@@ -250,7 +253,7 @@ it('opens Settings at the Shortcuts tab, reusing an open Settings tab', async ()
         async update(id: number, options: object) { calls.push(['update', id, options]); }
       },
       windows: { async update(id: number, options: object) { calls.push(['focus', id, options]); } },
-      storage: { onChanged: ignore, local: noAnnouncement },
+      storage: { onChanged: ignore, local: noAnnouncement, session: noAnnouncement },
       runtime: {
         id: 'extension', onInstalled: ignore, onStartup: ignore, getURL: (file: string) => `chrome-extension://extension/${file}`,
         getManifest: () => ({ version: CURRENT_VERSION, options_ui: { page: 'options/options.html' } }),
@@ -288,7 +291,7 @@ it('opens one Settings tab for rapid clicks and falls back to a new tab when the
         async update(id: number, options: object) { calls.push(['update', id, options]); if (closedSincePing) throw new Error('No tab with id'); }
       },
       windows: { async update(id: number, options: object) { calls.push(['focus', id, options]); } },
-      storage: { onChanged: ignore, local: noAnnouncement },
+      storage: { onChanged: ignore, local: noAnnouncement, session: noAnnouncement },
       runtime: {
         id: 'extension', onInstalled: ignore, onStartup: ignore, getURL: (file: string) => `chrome-extension://extension/${file}`,
         getManifest: () => ({ version: CURRENT_VERSION, options_ui: { page: 'options/options.html' } }),
@@ -363,4 +366,67 @@ it('keeps the plain install while a setup step is not ready', async () => {
   assert.deepEqual(fresh.opened, []);
   assert.deepEqual(Object.keys(fresh.sync).sort(), ['blacklist', 'shortcuts']);
   assert.equal('firstRunSetup' in fresh.local, false);
+});
+
+it('keeps the sleep timer in session storage, wakes by alarm and tells every tab, for this extension only', async () => {
+  let listener!: (message: unknown, sender: object, reply: (value: unknown) => void) => boolean;
+  let onAlarm!: (alarm: { name: string }) => void;
+  const session: Record<string, unknown> = {};
+  const alarms: Record<string, number> = {};
+  const sent: Array<[number, unknown]> = [];
+  let now = 1_000_000;
+  runInNewContext(bundle, {
+    console: { error() {} },
+    Date: { now: () => now },
+    chrome: {
+      ...quiet,
+      alarms: {
+        onAlarm: { addListener(fn: typeof onAlarm) { onAlarm = fn; } },
+        async create(name: string, { when }: { when: number }) { alarms[name] = when; },
+        async clear(name: string) { delete alarms[name]; }
+      },
+      tabs: {
+        onActivated: ignore, onUpdated: ignore,
+        async query() { return [{ id: 1 }, { id: 2 }, {}]; },
+        async sendMessage(id: number, message: unknown) {
+          if (id === 2) throw new Error('Receiving end does not exist');
+          sent.push([id, JSON.parse(JSON.stringify(message))]);
+        }
+      },
+      storage: {
+        onChanged: ignore, local: noAnnouncement,
+        session: {
+          async get(key: string) { return key in session ? { [key]: session[key] } : {}; },
+          async set(values: object) { Object.assign(session, values); },
+          async remove(key: string) { delete session[key]; }
+        }
+      },
+      runtime: {
+        id: 'extension', getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore, onStartup: ignore,
+        onMessage: { addListener(fn: typeof listener) { listener = fn; } }
+      }
+    }
+  });
+  // Values from the bundle's realm compare by shape.
+  const plain = (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown;
+  const send = (message: object, sender = { id: 'extension' }) => new Promise<unknown>((resolve, reject) => {
+    if (!listener(message, sender, value => resolve(plain(value)))) reject(new Error('not handled'));
+  });
+  await assert.rejects(send({ action: 'sleep-timer', minutes: 30 }, { id: 'foreign' }));
+  const timer = { minutes: 30, deadline: now + 30 * 60_000 };
+  assert.deepEqual(await send({ action: 'sleep-timer', minutes: 30 }), timer);
+  assert.deepEqual(plain(session), { sleepTimer: timer });
+  assert.deepEqual(alarms, { 'sleep-timer': timer.deadline });
+  // Tab 2 has no player and refuses; tab 1 still hears it.
+  assert.deepEqual(sent, [[1, { action: 'sleep-timer', timer }]]);
+
+  now = timer.deadline;
+  onAlarm({ name: 'other' });
+  onAlarm({ name: 'sleep-timer' });
+  // The reconcile runs on the owner's queue; a read after it settles behind it.
+  assert.equal(await send({ action: 'sleep-timer' }), null);
+  assert.deepEqual(sent.at(-1), [1, { action: 'sleep-timer', timer: null, fired: true }]);
+  assert.equal(sent.length, 2);
+  assert.deepEqual(session, {});
+  assert.deepEqual(alarms, {});
 });

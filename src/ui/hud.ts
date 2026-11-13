@@ -24,26 +24,16 @@ export const SEEK_HUD_MS = 650;
 export const CENTERED_HUD_ATTRIBUTE = 'data-centered-hud';
 export { createLoadingPlate, ensureLoadingRing, HUD_FADE_OUT_MS, HUD_PLATE_CLASS };
 
-export const STATUS_HUD_SWITCH_ICON = `
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-  </svg>
-`;
-
-export const STATUS_HUD_FIT_ICON = `
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
-    <path d="M16 3h3a2 2 0 0 1 2 2v3"></path>
-    <path d="M8 21H5a2 2 0 0 1-2-2v-3"></path>
-    <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
-    <rect x="8" y="8" width="8" height="8" rx="1"></rect>
-  </svg>
-`;
-
-/** Settings rows and their confirmation HUD draw one shape set at two sizes. */
-export function strokeIcon(shapes: string, size: number): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${shapes}</svg>`;
+/** Settings rows, control buttons and their confirmation HUD draw one shape set at each size they need. */
+export function strokeIcon(shapes: string, size: number, weight = 2): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="${weight}" stroke-linecap="round" stroke-linejoin="round">${shapes}</svg>`;
 }
+
+export const SWITCH_VIDEO_SHAPE = '<path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>';
+export const STATUS_HUD_SWITCH_ICON = strokeIcon(SWITCH_VIDEO_SHAPE, 28, 2.5);
+
+export const VIDEO_FIT_SHAPES = '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><rect x="8" y="8" width="8" height="8" rx="1"/>';
+export const STATUS_HUD_FIT_ICON = strokeIcon(VIDEO_FIT_SHAPES, 28, 2.5);
 
 const PICTURE_LAYOUT_SHAPES = '<rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6" y="6" width="12" height="7" rx="1"/><path d="M8 17h8"/>';
 export const PICTURE_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 16);
@@ -96,20 +86,17 @@ export const VOLUME_BOOST_ICONS = {
   hud: strokeIcon(VOLUME_BOOST_SHAPE, 28)
 };
 
-export const STATUS_HUD_MUTE_ICON = `
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-    <line x1="23" y1="9" x2="17" y2="15"></line>
-    <line x1="17" y1="9" x2="23" y2="15"></line>
-  </svg>
-`;
+// A crescent moon: the sleep timer's row, its control bar chip and the notice when it pauses.
+const SLEEP_TIMER_SHAPE = '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>';
+export const SLEEP_TIMER_ICONS = {
+  menu: strokeIcon(SLEEP_TIMER_SHAPE, 16),
+  hud: strokeIcon(SLEEP_TIMER_SHAPE, 28)
+};
 
-export const STATUS_HUD_UNMUTE_ICON = `
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-  </svg>
-`;
+const SPEAKER_SHAPE = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>';
+export const STATUS_HUD_MUTE_ICON = strokeIcon(`${SPEAKER_SHAPE}<line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>`, 28);
+
+export const STATUS_HUD_UNMUTE_ICON = strokeIcon(`${SPEAKER_SHAPE}<path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>`, 28);
 
 /** Drawn in the loading ring's 48px content box, filled in the plate's ink; the play triangle sits a little right of centre to look centred. */
 const PLAYBACK_HUD_SVG = '<svg xmlns="http://www.w3.org/2000/svg" class="playback-hud-icon" viewBox="0 0 48 48" width="48" height="48" fill="currentColor"';
@@ -270,21 +257,11 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     announcePlayerStatus(`${ctx.t('volumeLabel')}: ${pct}%`);
     let icon = '';
     if (muted || pct === 0) {
-      icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-      <line x1="23" y1="9" x2="17" y2="15"></line>
-      <line x1="17" y1="9" x2="23" y2="15"></line>
-    </svg>`;
+      icon = STATUS_HUD_MUTE_ICON;
     } else if (pct < 50) {
-      icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-    </svg>`;
+      icon = strokeIcon(`${SPEAKER_SHAPE}<path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>`, 28);
     } else {
-      icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-    </svg>`;
+      icon = STATUS_HUD_UNMUTE_ICON;
     }
 
     renderConfirmation(overlay, icon, `${pct}%`, action === 'up' ? 'zoom-in' : 'zoom-out');

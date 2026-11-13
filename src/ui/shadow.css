@@ -369,7 +369,7 @@
 }
 
 .theater-controls-left > .theater-control-btn > svg,
-.theater-controls-right > .theater-control-btn > svg,
+.theater-controls-right > .theater-control-btn:where(:not(.sleep-timer-chip)) > svg,
 .theater-volume-container > .theater-control-btn > svg,
 .theater-cc-menu-host > .theater-control-btn > svg,
 .theater-settings-container > .theater-control-btn > svg {
@@ -383,7 +383,6 @@
   border: 1px solid transparent !important;
   color: var(--appearance-ink, var(--text-primary, #f8fafc)) !important;
   cursor: pointer !important;
-  width: 32px !important;
   height: 32px !important;
   border-radius: 6px !important;
   display: flex !important;
@@ -391,7 +390,23 @@
   justify-content: center !important;
   transition: all 0.2s ease !important;
   outline: none !important;
+}
+
+/* Square icon buttons; the sleep timer chip sizes to its text. `:where` keeps the specificity of the rule above. */
+.theater-control-btn:where(:not(.sleep-timer-chip)) {
+  width: 32px !important;
   padding: 0 !important;
+}
+
+.sleep-timer-chip {
+  gap: 4px;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sleep-timer-chip > svg {
+  flex: none;
 }
 
 .theater-control-btn:hover,
@@ -487,7 +502,8 @@
   background: var(--appearance-surface, rgb(20, 20, 20)) !important;
 }
 
-.speed-btn {
+.speed-btn,
+.sleep-timer-chip {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 11px !important;
   font-weight: 700 !important;

@@ -1584,5 +1584,39 @@
   "setupSummaryOff": {
     "message": "オフ",
     "description": "Summary value of a switch that is off."
+  },
+  "sleepTimerLabel": {
+    "message": "スリープタイマー",
+    "description": "Player settings row that pauses playback in every tab after a chosen time."
+  },
+  "sleepTimerOff": {
+    "message": "オフ",
+    "description": "Value of the Sleep timer row when no timer runs."
+  },
+  "sleepTimerMinutes": {
+    "message": "$1分",
+    "description": "Time left until the sleep timer pauses playback, in whole minutes; shown in the control bar and the settings row. Keep it short.",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerUnderMinute": {
+    "message": "1分未満",
+    "description": "Time left in the last minute before the sleep timer pauses playback. Keep it as short as sleepTimerMinutes."
+  },
+  "sleepTimerPausesIn": {
+    "message": "スリープタイマー: 残り$1で一時停止",
+    "description": "Accessible name and tooltip of the sleep timer chip in the control bar; $1 is sleepTimerMinutes or sleepTimerUnderMinute.",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerPausedHud": {
+    "message": "スリープタイマーで一時停止しました",
+    "description": "Brief on-video notice when the sleep timer pauses playback."
   }
 }

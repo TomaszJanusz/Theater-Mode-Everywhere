@@ -155,6 +155,7 @@ import {
   STATUS_HUD_MUTE_ICON,
   STATUS_HUD_UNMUTE_ICON,
   audioHudIcon,
+  SLEEP_TIMER_ICONS,
   VOLUME_BOOST_ICONS
 } from './hud';
 import {
@@ -652,6 +653,12 @@ function executeCommand(command: PlayerCommand): void {
       break;
     case 'TOGGLE_HELP':
       toggleHelpOverlay();
+      break;
+    case 'SLEEP_TIMER_PAUSE':
+      // The shared play/pause path, so a provider that owns its host's pausing still does.
+      if (nextPlaybackAction() !== 'pause') break;
+      executeCommand({ type: 'PLAY_PAUSE' });
+      triggerStatusIndicator(t('sleepTimerPausedHud'), SLEEP_TIMER_ICONS.hud);
       break;
   }
 }

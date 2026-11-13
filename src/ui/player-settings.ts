@@ -263,5 +263,10 @@ export function createPlayerSettings(
     if (hidden && subviewReturn && row.contains(subviewReturn)) closeSubview(false);
     syncAudioSection();
   }
-  return { button, panel, container, close, addRow, addStepperRow, setAudioNote, setRowHidden, subview, openSubview, closeSubview };
+  /** Opens the rows (not a list) for a control outside the menu; a keyboard opening focuses `target`. */
+  function openAt(target: HTMLElement | undefined, keyboard: boolean) {
+    closeSubview(false);
+    popover.open(keyboard ? target : undefined);
+  }
+  return { button, panel, container, close, openAt, addRow, addStepperRow, setAudioNote, setRowHidden, subview, openSubview, closeSubview };
 }

@@ -35,7 +35,9 @@ export type PlayerCommand =
   | { type: 'STEP_AUTO_THEATER'; direction: 1 | -1 }
   | { type: 'TOGGLE_HELP' }
   | { type: 'TOGGLE_CONTROLS_PIN' }
-  | { type: 'STEP_CONTROLS_PIN'; direction: 1 | -1 };
+  | { type: 'STEP_CONTROLS_PIN'; direction: 1 | -1 }
+  /** Pauses media that is playing; never starts it. */
+  | { type: 'SLEEP_TIMER_PAUSE' };
 
 export class PlayerSession {
   private epoch = 0;

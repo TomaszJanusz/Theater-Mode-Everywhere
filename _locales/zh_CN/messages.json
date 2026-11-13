@@ -1584,5 +1584,39 @@
   "setupSummaryOff": {
     "message": "关闭",
     "description": "Summary value of a switch that is off."
+  },
+  "sleepTimerLabel": {
+    "message": "睡眠定时器",
+    "description": "Player settings row that pauses playback in every tab after a chosen time."
+  },
+  "sleepTimerOff": {
+    "message": "关闭",
+    "description": "Value of the Sleep timer row when no timer runs."
+  },
+  "sleepTimerMinutes": {
+    "message": "$1 分钟",
+    "description": "Time left until the sleep timer pauses playback, in whole minutes; shown in the control bar and the settings row. Keep it short.",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerUnderMinute": {
+    "message": "不到 1 分钟",
+    "description": "Time left in the last minute before the sleep timer pauses playback. Keep it as short as sleepTimerMinutes."
+  },
+  "sleepTimerPausesIn": {
+    "message": "睡眠定时器：$1后暂停",
+    "description": "Accessible name and tooltip of the sleep timer chip in the control bar; $1 is sleepTimerMinutes or sleepTimerUnderMinute.",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerPausedHud": {
+    "message": "睡眠定时器已暂停播放",
+    "description": "Brief on-video notice when the sleep timer pauses playback."
   }
 }
