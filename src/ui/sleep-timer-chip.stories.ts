@@ -24,7 +24,7 @@ let stage: { clock: ManualClock; opened: boolean[]; dispose: () => void } | unde
  */
 const meta: Meta<Args> = {
   title: 'Components/Sleep timer chip',
-  argTypes: { secondsLeft: { control: { type: 'number', min: 0, max: 7200, step: 30 } } },
+  argTypes: { secondsLeft: { control: { type: 'number', min: 0, max: 14400, step: 30 } } },
   args: { secondsLeft: 23 * 60 },
   render: ({ secondsLeft }) => renderPlayerBar(scope => {
     const clock = manualClock();

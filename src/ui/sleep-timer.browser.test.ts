@@ -134,6 +134,13 @@ describe('sleep timer across tabs', () => {
       await page.keyboard.press('Enter');
       await page.locator('.player-settings-btn[aria-expanded="true"]').waitFor({ state: 'attached' });
       assert.equal(await page.evaluate(focusedRow), true, 'a keyboard opening lands on the Sleep timer row');
+
+      // The longest option is four hours, shown in minutes like the others, and the row ends there.
+      for (let next = 0; next < 6; next++) await step(page, 1);
+      assert.equal((await chipShows(page, '240 min')).label, 'Sleep timer: pauses in 240 min');
+      const row = page.locator('.sleep-timer-btn');
+      assert.equal(await row.locator('.theater-stepper-segment').count(), 8);
+      assert.equal(await row.locator('.theater-stepper-btn[data-direction="1"]').getAttribute('aria-disabled'), 'true');
     });
   }
 });
