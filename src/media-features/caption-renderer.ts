@@ -103,7 +103,7 @@ export class CaptionRenderer {
       const state = classifyCaptionWord(cue.words!, index, time);
       span.className = `theater-caption-word is-${state}`;
       this.wordNodes.push({ cue, index, span, state });
-      span.textContent = index === 0 ? word.text : ` ${word.text}`;
+      span.textContent = index === 0 || word.joinsPrevious ? word.text : ` ${word.text}`;
       this.text.appendChild(span);
     });
   }

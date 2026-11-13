@@ -147,6 +147,10 @@ export type CachedTimedtext = {
   lang: string;
   tlang: string;
   kind: string;
+  /** Tells apart tracks of one language and kind, such as a broadcast's CC1 and DTVCC1. */
+  name: string;
+  /** The URL names its language, so its kind and name identify the track; the player's `hl`-only requests do not. */
+  identified: boolean;
   fmt: string;
   url: string;
   body: string;
@@ -160,6 +164,8 @@ export function createTimedtextCacheRecord(url: string, body: string): CachedTim
       lang: (parsed.searchParams.get('lang') || parsed.searchParams.get('hl') || '').toLowerCase(),
       tlang: parsed.searchParams.get('tlang')?.toLowerCase() || '',
       kind: parsed.searchParams.get('kind') || '',
+      name: parsed.searchParams.get('name') || '',
+      identified: Boolean(parsed.searchParams.get('lang')),
       fmt: parsed.searchParams.get('fmt') || '',
       url: parsed.toString(),
       body
@@ -176,12 +182,15 @@ function namedCodesCompatible(query: string, cached: string): boolean {
 
 /**
  * The player caches whichever track it last displayed. That body belongs to
- * one language and one translation target, even when the video id matches.
+ * one language and one translation target, even when the video id matches,
+ * and to one track of that language: ASR, an unnamed track or a named one
+ * such as a broadcast's CC1 are different captions.
  */
 function timedtextCacheCompatible(query: CachedTimedtext, item: CachedTimedtext): boolean {
   if (query.videoId && item.videoId !== query.videoId) return false;
   if (!namedCodesCompatible(query.lang, item.lang)) return false;
   if (!namedCodesCompatible(query.tlang, item.tlang)) return false;
+  if (query.identified && item.identified) return query.kind === item.kind && query.name === item.name;
   if (query.kind && item.kind && query.kind !== item.kind) return false;
   return true;
 }
@@ -212,26 +221,65 @@ function trackTranslationCode(track: Record<string, unknown>): string {
   return typeof code === 'string' ? code : '';
 }
 
+/** The track a timedtext request names. `name` is '' for an unnamed track, such as ASR, and null when left open. */
+export type CaptionTrackRequest = {
+  languageCode: string | null;
+  kind: string | null;
+  translationCode: string | null;
+  name: string | null;
+};
+
+/** Reads an absolute timedtext URL; codes keep their case, as the player's track objects need it. */
+export function timedtextTrackRequest(url: string): CaptionTrackRequest {
+  try {
+    const params = new URL(url).searchParams;
+    const languageCode = params.get('lang');
+    return {
+      languageCode,
+      kind: params.get('kind'),
+      translationCode: params.get('tlang'),
+      // A URL that names its language names its track too; without `name` it asks for the unnamed one.
+      name: languageCode ? params.get('name') || '' : null
+    };
+  } catch {
+    return { languageCode: null, kind: null, translationCode: null, name: null };
+  }
+}
+
+function trackField(track: Record<string, unknown>, key: string): string {
+  const value = track[key];
+  return typeof value === 'string' ? value : '';
+}
+
+/** The request's own track when the host lists it, else the tracks of its language (and kind, when listed). */
+function candidateTracks(
+  tracks: ReadonlyArray<Record<string, unknown>>,
+  { languageCode, kind, name }: CaptionTrackRequest
+): Record<string, unknown>[] {
+  if (!languageCode) return [];
+  const languageMatches = tracks.filter((track) => typeof track.languageCode === 'string'
+    && captionLanguagesCompatible(track.languageCode, languageCode));
+  if (name !== null) {
+    const exact = languageMatches.filter((track) => trackField(track, 'kind') === (kind || '') && trackField(track, 'name') === name);
+    if (exact.length > 0) return exact;
+  }
+  const kindMatches = kind ? languageMatches.filter((track) => track.kind === kind) : [];
+  return kindMatches.length > 0 ? kindMatches : languageMatches;
+}
+
 /**
  * Picks the host track for a timedtext request.
  * An unspecified language must not fall through to whichever track is first:
  * that writes the player’s saved caption language. A source-track request
- * also drops a translation the player left on the track object.
+ * also drops a translation the player left on the track object. Tracks of one
+ * language and kind, such as a broadcast's CC1 and DTVCC1, differ by name.
  */
 export function selectCaptionTrackOption(
   tracks: ReadonlyArray<Record<string, unknown>>,
-  languageCode: string | null,
-  kind: string | null,
-  translationCode: string | null
+  request: CaptionTrackRequest
 ): Record<string, unknown> | null {
-  const usable = tracks.filter((track) => typeof track.languageCode === 'string');
-  const languageMatches = languageCode
-    ? usable.filter((track) => captionLanguagesCompatible(String(track.languageCode), languageCode))
-    : [];
-  const kindMatches = kind
-    ? languageMatches.filter((track) => track.kind === kind)
-    : languageMatches;
-  const pool = kindMatches.length > 0 ? kindMatches : languageMatches;
+  const { languageCode, kind, translationCode } = request;
+  const pool = candidateTracks(tracks, request);
   if (translationCode) {
     const translated = pool.find((track) => captionLanguagesCompatible(trackTranslationCode(track), translationCode));
     if (translated) return translated;

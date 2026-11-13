@@ -37,7 +37,7 @@ import {
 } from './provider-flags';
 import { shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { YouTubeAdapter } from './youtube-adapter';
-import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
+import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextTrackRequest, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls } from './youtube-snapshot';
 
 describe('immediate provider titles', () => {
@@ -618,15 +618,36 @@ describe('youtube caption URL auth', () => {
       translationLanguage: { languageCode: 'pl', languageName: 'Polish' }
     };
     const american = { languageCode: 'en-US', kind: 'asr', vss_id: 'a.en' };
-    assert.equal(selectCaptionTrackOption([polishTranslation], null, 'asr', null), null);
-    const selected = selectCaptionTrackOption([polishTranslation, american], 'en', 'asr', null);
+    assert.equal(selectCaptionTrackOption([polishTranslation], { languageCode: null, kind: 'asr', translationCode: null, name: null }), null);
+    const selected = selectCaptionTrackOption([polishTranslation, american], { languageCode: 'en', kind: 'asr', translationCode: null, name: null });
     assert.equal(selected, american);
-    const stripped = selectCaptionTrackOption([polishTranslation], 'en', 'asr', null);
+    const stripped = selectCaptionTrackOption([polishTranslation], { languageCode: 'en', kind: 'asr', translationCode: null, name: null });
     assert.equal(stripped?.languageCode, 'en');
     assert.equal('translationLanguage' in (stripped || {}), false);
     assert.equal(polishTranslation.translationLanguage.languageCode, 'pl');
-    const translated = selectCaptionTrackOption([polishTranslation, american], 'en', 'asr', 'pl');
+    const translated = selectCaptionTrackOption([polishTranslation, american], { languageCode: 'en', kind: 'asr', translationCode: 'pl', name: null });
     assert.equal(translated, polishTranslation);
+  });
+
+  it('selects a named or auto-generated track among same-language tracks', () => {
+    // The player's own track list (with includeAsr) for a video that also carries broadcast captions.
+    const named = (name: string, vss: string) => ({ languageCode: 'en', kind: '', name, vss_id: vss });
+    const cc1 = named('CC1', '.en.uYU-mmqFLq8');
+    const dtvcc1 = named('DTVCC1', '.en.JkeT_87f4cc');
+    const asr = { languageCode: 'en', kind: 'asr', name: '', vss_id: 'a.en' };
+    const tracks = [cc1, dtvcc1, asr];
+    const pick = (list: Array<Record<string, unknown>>, params: string) =>
+      selectCaptionTrackOption(list, timedtextTrackRequest(`https://www.youtube.com/api/timedtext?v=pbfskD7GRFk&caps=asr&${params}&fmt=json3`));
+    assert.equal(pick(tracks, 'kind=asr&lang=en'), asr);
+    assert.equal(pick(tracks, 'lang=en&name=DTVCC1'), dtvcc1);
+    assert.equal(pick([asr, cc1, named('', '.en')], 'lang=en')?.vss_id, '.en');
+    // Without a listed match the language and kind still choose, as before.
+    assert.equal(pick(tracks, 'lang=en&name=CC3'), cc1);
+    assert.equal(pick([cc1, dtvcc1], 'kind=asr&lang=en'), cc1);
+    assert.deepEqual(timedtextTrackRequest('https://www.youtube.com/api/timedtext?v=abc&hl=en'),
+      { languageCode: null, kind: null, translationCode: null, name: null });
+    assert.deepEqual(timedtextTrackRequest('https://www.youtube.com/api/timedtext?v=abc&lang=en&kind=asr&tlang=zh-Hans'),
+      { languageCode: 'en', kind: 'asr', translationCode: 'zh-Hans', name: '' });
   });
 });
 

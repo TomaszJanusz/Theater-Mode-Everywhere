@@ -2,6 +2,11 @@ export type CaptionWord = {
   start: number;
   end: number;
   text: string;
+  /**
+   * No space separates this word from the one before it: the source split a word into timed pieces (broadcast
+   * captions arrive two characters at a time) or writes without spaces between words.
+   */
+  joinsPrevious?: boolean;
 };
 
 export type CaptionCue = {
