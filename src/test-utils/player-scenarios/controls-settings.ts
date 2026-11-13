@@ -260,7 +260,7 @@ export async function preparePinAndMenus(page: Page) {
     await page.keyboard.press('Tab');
     if (!await menu.locator(`.video-fit-btn [data-direction="${direction}"]`).evaluate(button => button.matches(':focus'))) fail('Tab skipped the video fit setting.');
   }
-  for (const [name, selector] of [['picture layout', '.picture-layout-btn'], ['controls visibility', '.controls-visibility-toggle']] as const) {
+  for (const [name, selector] of [['picture layout', '.picture-layout-btn'], ['sleep timer', '.sleep-timer-btn'], ['controls visibility', '.controls-visibility-toggle']] as const) {
     for (const direction of [-1, 1]) {
       await page.keyboard.press('Tab');
       if (!await menu.locator(`${selector} [data-direction="${direction}"]`).evaluate(button => button.matches(':focus'))) fail(`Tab skipped the ${name} setting.`);
