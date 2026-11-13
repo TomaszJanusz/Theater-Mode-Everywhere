@@ -48,6 +48,7 @@ import { waitForSeekCompletion } from './seek-completion';
 import { mountServiceActionCta } from './service-actions';
 import { shortcutMarkup } from './shortcut-display';
 import { AUDIO_SHORTCUTS, shortcutDisplayEnv } from './shortcuts';
+import { mountSleepTimer } from './sleep-timer';
 import { createSpeedControl } from './speed-control';
 import { exitSpinner } from './spinner-exit';
 import { clockLabels, renderLiveBadge, renderTimeReadout } from './time-readout';
@@ -879,7 +880,7 @@ export function createControls(
 
     mountNativeChatControls(ctx, controlsScope, rightSec, settings.panel, bindCustomTooltip);
 
-    rightSec.append(settings.container);
+    rightSec.append(mountSleepTimer(ctx, settings, controlsScope, bindCustomTooltip), settings.container);
 
     const pinBtn = document.createElement('div');
     pinBtn.className = 'controls-visibility-toggle';

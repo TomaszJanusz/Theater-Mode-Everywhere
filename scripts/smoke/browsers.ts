@@ -17,7 +17,7 @@ import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario
 import { assertNetflixProvider } from './netflix';
 import { assertPinStorage } from './pin-storage';
 import { assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, assertTwitchProvider, assertVimeoProvider, assertYoutubeProvider } from './providers';
-import { assertRteSettings, assertPictureLayout } from './settings';
+import { assertRteSettings, assertPictureLayout, assertSleepTimer } from './settings';
 import type { QuotaClock } from './sync-quota';
 import { installSyncQuota } from './sync-quota-guard';
 import { assertTencentProvider } from './tencent';
@@ -115,6 +115,12 @@ async function smokeSharedChromium(origin: string, unpackedDir: string, scenario
       await assertAutoTheater(page, context);
       return false;
     }
+    if (process.env.THEATER_SMOKE_SLEEP_TIMER_ONLY === '1') {
+      await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
+      await waitForPlayer(page);
+      await assertSleepTimer(page, context, origin);
+      return false;
+    }
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await assertInstalledStartup(page);
@@ -122,6 +128,10 @@ async function smokeSharedChromium(origin: string, unpackedDir: string, scenario
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await assertAudioWorld(page, context);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPlayer(page);
+    await assertSleepTimer(page, context, origin);
+    console.log('smoke:chromium sleep timer across tabs passed');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     if (process.env.THEATER_SMOKE_SHORTCUTS_ONLY !== '1') await assertPinStorage(page, context);
@@ -272,6 +282,12 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
       await assertUpdateNotice(page, origin, context, 'firefox');
       return;
     }
+    if (process.env.THEATER_SMOKE_SLEEP_TIMER_ONLY === '1') {
+      await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
+      await waitForPlayer(page);
+      await assertSleepTimer(page, context, origin);
+      return;
+    }
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await assertInstalledStartup(page);
@@ -280,6 +296,10 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
     await waitForPlayer(page);
     await assertStorageWorlds(page, context);
     console.log('smoke:firefox background storage reaches isolated and MAIN worlds');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPlayer(page);
+    await assertSleepTimer(page, context, origin);
+    console.log('smoke:firefox sleep timer across tabs passed');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await assertAudioWorld(page, context);

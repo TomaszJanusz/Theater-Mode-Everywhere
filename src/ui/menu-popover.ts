@@ -94,7 +94,11 @@ export function bindMenuPopover(options: {
   centerActiveIn?: string;
   onKeyboardOpen?: () => void;
   onChange?: () => void;
-}): { close: (restoreFocus?: boolean) => boolean } {
+}): {
+  close: (restoreFocus?: boolean) => boolean;
+  /** Opens pinned, as a click on the trigger does; a `focus` target is a keyboard opening at that control. */
+  open: (focus?: HTMLElement) => void;
+} {
   const { host, trigger, panel, scope } = options;
   host.classList.add('theater-menu');
   panel.classList.add('theater-menu-panel');
@@ -225,7 +229,15 @@ export function bindMenuPopover(options: {
   scope.listen(trigger, 'focusout', closeOnFocusLeave);
   scope.listen(window, 'resize', () => releaseMenuPosition(panel));
 
-  return { close };
+  return {
+    close,
+    open(focus) {
+      show(true, false);
+      if (!focus) return;
+      focus.focus({ preventScroll: true });
+      options.onKeyboardOpen?.();
+    }
+  };
 }
 
 /** How long a slider panel that only a pointer press keeps focused stays open once the pointer is away. */

@@ -96,6 +96,13 @@ export const VOLUME_BOOST_ICONS = {
   hud: strokeIcon(VOLUME_BOOST_SHAPE, 28)
 };
 
+// A crescent moon: the sleep timer's row, its control bar chip and the notice when it pauses.
+const SLEEP_TIMER_SHAPE = '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>';
+export const SLEEP_TIMER_ICONS = {
+  menu: strokeIcon(SLEEP_TIMER_SHAPE, 16),
+  hud: strokeIcon(SLEEP_TIMER_SHAPE, 28)
+};
+
 export const STATUS_HUD_MUTE_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
