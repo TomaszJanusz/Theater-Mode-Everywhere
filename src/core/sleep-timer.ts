@@ -1,5 +1,5 @@
 /** Off, then the durations the player settings offer, in minutes. */
-export const SLEEP_TIMER_MINUTES = [0, 15, 30, 45, 60, 90, 120] as const;
+export const SLEEP_TIMER_MINUTES = [0, 15, 30, 45, 60, 90, 120, 240] as const;
 
 /**
  * One message action both ways: a frame asks the background (`minutes` sets the timer, 0 turns it off, none reads

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { resolveSleepTimer, resolveSleepTimerRequest, sleepTimerMinutesLeft, type SleepTimerBroadcast } from '../core/sleep-timer';
+import {
+  resolveSleepTimer, resolveSleepTimerRequest, SLEEP_TIMER_MINUTES, sleepTimerMinutesLeft, type SleepTimerBroadcast
+} from '../core/sleep-timer';
 
 import { createSleepTimerOwner } from './sleep-timer-owner';
 
@@ -29,7 +31,9 @@ describe('sleep timer record', () => {
     }
     assert.equal(resolveSleepTimerRequest(0), 0);
     assert.equal(resolveSleepTimerRequest(120), 120);
-    for (const value of [undefined, -15, 16, '15', NaN]) assert.equal(resolveSleepTimerRequest(value), undefined);
+    assert.equal(resolveSleepTimerRequest(240), 240);
+    assert.deepEqual(resolveSleepTimer({ minutes: 240, deadline: 5 }), { minutes: 240, deadline: 5 });
+    for (const value of [undefined, -15, 16, 180, 480, '15', NaN]) assert.equal(resolveSleepTimerRequest(value), undefined);
   });
 
   it('counts whole minutes up, so a fresh timer reads its duration and the last minute reads 1', () => {
@@ -53,6 +57,18 @@ describe('sleep timer owner', () => {
     assert.deepEqual(state.stored, expected);
     assert.equal(state.alarm, expected.deadline);
     assert.deepEqual(state.sent, [{ action: 'sleep-timer', timer: expected }]);
+  });
+
+  it('offers Off, 15, 30, 45, 60, 90, 120 and 240 minutes, in that order', () => {
+    assert.deepEqual(SLEEP_TIMER_MINUTES, [0, 15, 30, 45, 60, 90, 120, 240]);
+  });
+
+  it('a four-hour timer wakes four hours from now and counts down from 240 minutes', async () => {
+    const { state, owner } = fakeBrowser();
+    const timer = await owner.request(240);
+    assert.deepEqual(timer, { minutes: 240, deadline: state.now + 240 * MINUTE });
+    assert.equal(state.alarm, state.now + 240 * MINUTE);
+    assert.equal(sleepTimerMinutesLeft(timer, state.now), 240);
   });
 
   it('a change restarts from now and Off clears the timer and its wake-up everywhere', async () => {
