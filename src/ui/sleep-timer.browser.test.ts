@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 
 import { chromium, type BrowserContext, type Page } from 'playwright';
 
-import type { SleepTimerBroadcast } from '../core/sleep-timer';
+import { SLEEP_TIMER_MINUTES, type SleepTimerBroadcast } from '../core/sleep-timer';
 import { createSleepTimerOwner } from '../platform/sleep-timer-owner';
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { CHROMIUM_BUILD, installedBuildReady } from '../test-utils/installed-build';
@@ -23,7 +23,7 @@ const MINUTE = 60_000;
 const MESSAGING = `(() => {
   const listeners = new Set();
   Object.assign(window.chrome.runtime, {
-    sendMessage: message => window.__sleepTimerRequest(message.minutes ?? null),
+    sendMessage: message => window.__sleepTimerRequest(message.minutes ?? null, Date.now()),
     onMessage: { addListener: fn => listeners.add(fn), removeListener: fn => listeners.delete(fn) }
   });
   window.__deliverSleepTimer = message => { for (const fn of [...listeners]) fn(message); };
@@ -104,6 +104,86 @@ describe('sleep timer across tabs', () => {
       assert.equal(await notice.textContent(), 'Paused by sleep timer');
       assert.equal(await tabA.locator('.theater-everywhere-volume-overlay .volume-hud-text', { hasText: 'Paused by sleep timer' }).count(), 0);
       for (const page of pages) await chip(page).waitFor({ state: 'hidden' });
+    });
+
+    it(`the row follows the countdown in both tabs and steps to the next option past the time left in ${engine}`, { timeout: 60_000 }, async t => {
+      const context = await browsers[engine].newContext(t, { viewport: { width: 1280, height: 720 } });
+      // Both tabs run on one fake wall clock that moves only when the test fast-forwards it.
+      await context.clock.install({ time: Date.UTC(2026, 10, 14, 23, 0) });
+      await context.clock.resume();
+      const pages: Page[] = [];
+      let now = 0;
+      let stored: unknown;
+      const owner = createSleepTimerOwner({
+        now: () => now, read: async () => stored, write: async timer => { stored = timer; }, schedule: async () => {},
+        broadcast: async message => {
+          await Promise.all(pages.map(page => page.evaluate(`window.__deliverSleepTimer(${JSON.stringify(message)})`)));
+        }
+      });
+      for (const url of ['http://sleep-row-a.test/', 'http://sleep-row-b.test/']) {
+        const page = await context.newPage();
+        await serveFixture(page, FIXTURE, url);
+        await bootPlayer(page, { settings: { keepControlsVisible: true } });
+        // The request carries the tab's clock, so the background's deadline is on the same fake timeline.
+        await page.exposeFunction('__sleepTimerRequest', (minutes: number | null, pageNow: number) => {
+          now = pageNow;
+          return owner.request(minutes ?? undefined);
+        });
+        await page.evaluate(MESSAGING);
+        await waitPlaying(page);
+        await enterTheater(page);
+        pages.push(page);
+      }
+      const [tabA, tabB] = pages;
+      const exactly = (text: string) => new RegExp(`^${text}$`);
+      const segment = (page: Page) => page.locator('.sleep-timer-btn .theater-stepper-segment[data-current="true"]')
+        .evaluate(current => [...current.parentElement!.children].indexOf(current) - 1);
+      const upBlocked = async (page: Page) =>
+        await page.locator('.sleep-timer-btn .theater-stepper-btn[data-direction="1"]').getAttribute('aria-disabled') === 'true';
+      /** The chip and the row both read the time left; the row lights the longest option that time covers. */
+      const shows = async (page: Page, left: string, option: number) => {
+        await page.locator('.sleep-timer-chip:not([hidden])').filter({ hasText: exactly(left) }).waitFor();
+        // The row lives in the menu, which may be closed: its value is still kept current.
+        await page.locator('.sleep-timer-btn .theater-stepper-value').filter({ hasText: exactly(left) }).waitFor({ state: 'attached' });
+        assert.equal(SLEEP_TIMER_MINUTES[await segment(page)], option, `${left} left lights ${option}`);
+      };
+
+      now = await tabA.evaluate('Date.now()') as number;
+      await owner.request(120);
+      await context.clock.fastForward(10 * MINUTE);
+      // 110 minutes left: the label is the time left, the 90 segment is lit, and up can still start 120.
+      for (const page of pages) await shows(page, '110 min', 90);
+      assert.equal(await upBlocked(tabB), false);
+
+      // Up starts the next option above the time left, fresh: 120, then from 120 left, 240, where up stops.
+      await step(tabA, 1);
+      for (const page of pages) await shows(page, '120 min', 120);
+      await step(tabB, 1);
+      for (const page of pages) await shows(page, '240 min', 240);
+      assert.equal(await upBlocked(tabA), true);
+
+      // Down starts the next option below; the lit segment follows the countdown in every tab.
+      await step(tabA, -1);
+      for (const page of pages) await shows(page, '120 min', 120);
+      await context.clock.fastForward(31 * MINUTE);
+      for (const page of pages) await shows(page, '89 min', 60);
+      await step(tabB, -1);
+      for (const page of pages) await shows(page, '60 min', 60);
+
+      // Time that passed without a minute tick (a hidden or throttled tab) is caught up when the menu opens.
+      await tabA.keyboard.press('Escape');
+      await tabA.locator('.player-settings-btn[aria-expanded="false"]').waitFor({ state: 'attached' });
+      await context.clock.setSystemTime(await tabA.evaluate('Date.now()') as number + 50 * MINUTE);
+      const value = tabA.locator('.sleep-timer-btn .theater-stepper-value');
+      assert.equal(await value.textContent(), '60 min', 'no timer fired, so the row has not moved yet');
+      await tabA.locator('.player-settings-btn').click();
+      // Under 15 minutes the first segment stays lit; down from there turns the timer off everywhere.
+      await shows(tabA, '10 min', 15);
+      await step(tabA, -1);
+      for (const page of pages) {
+        await chip(page).waitFor({ state: 'hidden' });
+        assert.equal(await page.locator('.sleep-timer-btn .theater-stepper-value').textContent(), 'Off');
+      }
     });
 
     it(`the chip opens the settings menu at the Sleep timer row, focusing it only from the keyboard in ${engine}`, { timeout: 60_000 }, async t => {

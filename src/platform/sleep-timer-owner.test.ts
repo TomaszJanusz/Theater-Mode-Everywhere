@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  resolveSleepTimer, resolveSleepTimerRequest, SLEEP_TIMER_MINUTES, sleepTimerMinutesLeft, type SleepTimerBroadcast
+  resolveSleepTimer, resolveSleepTimerRequest, SLEEP_TIMER_MINUTES, sleepTimerMinutesLeft, sleepTimerSegment, sleepTimerStep,
+  type SleepTimerBroadcast
 } from '../core/sleep-timer';
 
 import { createSleepTimerOwner } from './sleep-timer-owner';
@@ -45,6 +46,41 @@ describe('sleep timer record', () => {
     assert.equal(sleepTimerMinutesLeft(timer, 30 * MINUTE), 0);
     assert.equal(sleepTimerMinutesLeft(timer, 40 * MINUTE), 0);
     assert.equal(sleepTimerMinutesLeft(null, 0), 0);
+  });
+});
+
+describe('sleep timer row', () => {
+  // The row lights the longest option the time left still covers, and each arrow starts the next option past it.
+  const now = 0;
+  const left = (minutes: number) => ({ minutes: 240, deadline: now + minutes * MINUTE });
+  const segment = (minutes: number) => SLEEP_TIMER_MINUTES[sleepTimerSegment(left(minutes), now)];
+  it('lights the longest option the time left covers, and never Off while a timer runs', () => {
+    for (const [minutes, option] of [[1, 15], [14, 15], [15, 15], [16, 15], [89, 60], [90, 90], [91, 90], [110, 90],
+      [119, 90], [120, 120], [121, 120], [239, 120], [240, 240]] as const) {
+      assert.equal(segment(minutes), option, `${minutes} min left`);
+    }
+    // Part of a minute counts as a whole one, as the label shows it: 119.5 minutes read 120.
+    assert.equal(segment(119.5), 120);
+  });
+
+  it('starts the next option above or below the time left, so a step always changes the timer', () => {
+    for (const [minutes, up, down] of [[1, 15, 0], [14, 15, 0], [15, 30, 0], [16, 30, 15], [89, 90, 60], [90, 120, 60],
+      [91, 120, 90], [110, 120, 90], [119, 120, 90], [120, 240, 90], [121, 240, 120], [239, 240, 120],
+      [240, undefined, 120]] as const) {
+      assert.equal(sleepTimerStep(left(minutes), now, 1), up, `${minutes} min left, up`);
+      assert.equal(sleepTimerStep(left(minutes), now, -1), down, `${minutes} min left, down`);
+    }
+  });
+
+  it('is Off with no timer or one that ran out, and holds at the longest option after the clock moved back', () => {
+    for (const timer of [null, left(0), left(-30)]) {
+      assert.equal(sleepTimerSegment(timer, now), 0);
+      assert.equal(sleepTimerStep(timer, now, 1), 15);
+      assert.equal(sleepTimerStep(timer, now, -1), undefined);
+    }
+    assert.equal(segment(300), 240);
+    assert.equal(sleepTimerStep(left(300), now, 1), undefined);
+    assert.equal(sleepTimerStep(left(300), now, -1), 240);
   });
 });
 

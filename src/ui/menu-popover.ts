@@ -3,6 +3,8 @@ import { armPictureDismissOnLeave } from './picture-dismiss';
 import { systemClock, type UiClock } from './ui-clock';
 
 export const MENU_CLOSE_EVENT = 'theater-menu-close';
+/** Dispatched on the panel as a closed menu opens, before it is positioned: rows showing live state repaint. */
+export const MENU_OPEN_EVENT = 'theater-menu-open';
 
 const OPEN_CLASS = 'is-open';
 const PINNED_CLASS = 'visible';
@@ -151,6 +153,7 @@ export function bindMenuPopover(options: {
     const already = host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
     options.onBeforeOpen?.();
     if (!already) {
+      panel.dispatchEvent(new Event(MENU_OPEN_EVENT));
       releaseMenuPosition(panel);
       options.prepare?.();
     }
