@@ -1,10 +1,11 @@
 import type { DisposableScope } from '../core/disposable-scope';
 import {
-  resolveSleepTimer, SLEEP_TIMER_ACTION, SLEEP_TIMER_MINUTES, type SleepTimer, type SleepTimerBroadcast
+  resolveSleepTimer, SLEEP_TIMER_ACTION, SLEEP_TIMER_MINUTES, sleepTimerSegment, sleepTimerStep, type SleepTimer, type SleepTimerBroadcast
 } from '../core/sleep-timer';
 
 import type { ButtonTooltipBinder } from './button-tooltip';
 import { SLEEP_TIMER_ICONS } from './hud';
+import { MENU_OPEN_EVENT } from './menu-popover';
 import type { createPlayerSettings } from './player-settings';
 import type { PlayerChromeContext } from './runtime-context';
 import { createSleepTimerChip } from './sleep-timer-chip';
@@ -42,22 +43,28 @@ export function mountSleepTimer(
       // No extension context (an invalidated one, or a fixture page): the timer reads as off here.
     }
   };
-  const index = () => SLEEP_TIMER_MINUTES.indexOf((timer?.minutes ?? 0) as typeof SLEEP_TIMER_MINUTES[number]);
+  // The row's segment and its steps are derived from the shared deadline at every paint and every press.
   const stepper = settings.addStepperRow(row, t('sleepTimerLabel'), 'player', {
-    onStep: direction => request(SLEEP_TIMER_MINUTES[index() + direction])
+    onStep: direction => {
+      const minutes = sleepTimerStep(timer, Date.now(), direction);
+      if (minutes !== undefined) request(minutes);
+    }
   });
   const chip = createSleepTimerChip({
     scope, clock: systemClock, wallNow: Date.now, t, bindTooltip,
     onActivate: keyboard => settings.openAt(
       row.querySelector<HTMLElement>('.theater-stepper-btn:not([aria-disabled="true"])') ?? undefined, keyboard),
+    // The chip repaints at each minute boundary of the deadline, which is when the lit segment can change.
     onChange: text => {
       row.dataset.active = String(!!text);
       stepper.updateStepper('', {
-        value: text ?? t('sleepTimerOff'), index: text ? index() : 0, count: SLEEP_TIMER_MINUTES.length
+        value: text ?? t('sleepTimerOff'), index: sleepTimerSegment(timer, Date.now()), count: SLEEP_TIMER_MINUTES.length
       });
     }
   });
   chip.set(null);
+  // A tab that was hidden or throttled shows the current position as soon as the menu opens.
+  scope.listen(settings.panel, MENU_OPEN_EVENT, () => chip.set(timer));
   const onMessage = (message: SleepTimerBroadcast) => {
     if (message?.action !== SLEEP_TIMER_ACTION) return;
     revision++;

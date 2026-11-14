@@ -1,5 +1,5 @@
 /** Off, then the durations the player settings offer, in minutes. */
-export const SLEEP_TIMER_MINUTES = [0, 15, 30, 45, 60, 90, 120] as const;
+export const SLEEP_TIMER_MINUTES = [0, 15, 30, 45, 60, 90, 120, 240] as const;
 
 /**
  * One message action both ways: a frame asks the background (`minutes` sets the timer, 0 turns it off, none reads
@@ -36,3 +36,23 @@ export function resolveSleepTimerRequest(value: unknown): number | undefined {
 /** Minutes the countdown shows: rounded up, so it reads the full duration when set and 1 in the last minute. */
 export const sleepTimerMinutesLeft = (timer: SleepTimer | null, now: number): number =>
   timer ? Math.max(0, Math.ceil((timer.deadline - now) / 60_000)) : 0;
+
+/**
+ * The segment the settings row lights for a timer: the longest offered duration the minutes left still cover (110
+ * left lights 90), and at least the first one while a timer runs. Off without a running timer. The row's label is
+ * the time left itself.
+ */
+export function sleepTimerSegment(timer: SleepTimer | null, now: number): number {
+  const left = sleepTimerMinutesLeft(timer, now);
+  return left ? Math.max(1, SLEEP_TIMER_MINUTES.findLastIndex(minutes => minutes <= left)) : 0;
+}
+
+/**
+ * The duration a step of the settings row starts from now: the next option above the minutes left (110 left steps
+ * up to 120, 120 left to 240) or below them (Off at the bottom), so a step always changes the timer. Undefined
+ * where nothing lies that way: up from 240 or more, down with no timer.
+ */
+export function sleepTimerStep(timer: SleepTimer | null, now: number, direction: 1 | -1): number | undefined {
+  const left = sleepTimerMinutesLeft(timer, now);
+  return direction > 0 ? SLEEP_TIMER_MINUTES.find(minutes => minutes > left) : SLEEP_TIMER_MINUTES.findLast(minutes => minutes < left);
+}
