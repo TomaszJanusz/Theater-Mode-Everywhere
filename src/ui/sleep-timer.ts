@@ -1,6 +1,6 @@
 import type { DisposableScope } from '../core/disposable-scope';
 import {
-  resolveSleepTimer, SLEEP_TIMER_ACTION, SLEEP_TIMER_MINUTES, sleepTimerSegment, sleepTimerStep, type SleepTimer, type SleepTimerBroadcast
+  readSleepTimerReply, resolveSleepTimer, SLEEP_TIMER_ACTION, SLEEP_TIMER_MINUTES, sleepTimerSegment, sleepTimerStep, type SleepTimer, type SleepTimerBroadcast
 } from '../core/sleep-timer';
 
 import type { ButtonTooltipBinder } from './button-tooltip';
@@ -12,11 +12,11 @@ import { createSleepTimerChip } from './sleep-timer-chip';
 import { systemClock } from './ui-clock';
 
 /**
- * Asks the background, which owns the profile's timer, and resolves to the timer after the request. Rejects
- * without an extension context (an invalidated one, or a fixture page), where the timer reads as off.
+ * Asks the background, which owns the profile's timer, and resolves to the timer after the request. Rejects when the
+ * request did not complete (the background failed, or there is no extension context), so callers show nothing.
  */
 export async function requestSleepTimer(request: { minutes?: number; cycle?: true }): Promise<SleepTimer | null> {
-  return resolveSleepTimer(await chrome.runtime.sendMessage({ action: SLEEP_TIMER_ACTION, ...request }));
+  return readSleepTimerReply(await chrome.runtime.sendMessage({ action: SLEEP_TIMER_ACTION, ...request }));
 }
 
 /**

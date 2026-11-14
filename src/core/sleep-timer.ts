@@ -29,6 +29,18 @@ export function resolveSleepTimer(value: unknown): SleepTimer | null {
   return isDuration(timer?.minutes) && Number.isFinite(timer?.deadline) ? timer as SleepTimer : null;
 }
 
+/**
+ * The timer a background answer names, Off (null) included. Throws for a failure, no answer or anything else, so a
+ * caller never reads a request that did not complete as Off.
+ */
+export function readSleepTimerReply(value: unknown): SleepTimer | null {
+  const timer = (value as { timer?: unknown } | null | undefined)?.timer;
+  if (timer === null) return null;
+  const read = resolveSleepTimer(timer);
+  if (!read) throw new Error('The sleep timer request did not complete');
+  return read;
+}
+
 /** A duration a request may set: 0 (Off) or one of the offered minutes; undefined only reads. */
 export function resolveSleepTimerRequest(value: unknown): number | undefined {
   return value === 0 || isDuration(value) ? value : undefined;

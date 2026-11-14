@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { chromium, type BrowserContext, type Page } from 'playwright';
 
 import { SLEEP_TIMER_MINUTES, type SleepTimerBroadcast } from '../core/sleep-timer';
-import { createSleepTimerOwner } from '../platform/sleep-timer-owner';
+import { createSleepTimerOwner, sleepTimerReply } from '../platform/sleep-timer-owner';
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { CHROMIUM_BUILD, installedBuildReady } from '../test-utils/installed-build';
 import { bootPlayer, enterTheater } from '../test-utils/player-boot';
@@ -66,7 +66,7 @@ describe('sleep timer across tabs', () => {
         const page = await context.newPage();
         await serveFixture(page, FIXTURE, url);
         await bootPlayer(page, { settings: { keepControlsVisible: true } });
-        await page.exposeFunction('__sleepTimerRequest', (minutes: number | null) => owner.request(minutes ?? undefined));
+        await page.exposeFunction('__sleepTimerRequest', (minutes: number | null) => sleepTimerReply(owner.request(minutes ?? undefined), () => {}));
         await page.evaluate(MESSAGING);
         await waitPlaying(page);
         await enterTheater(page);
@@ -127,7 +127,7 @@ describe('sleep timer across tabs', () => {
         // The request carries the tab's clock, so the background's deadline is on the same fake timeline.
         await page.exposeFunction('__sleepTimerRequest', (minutes: number | null, pageNow: number) => {
           now = pageNow;
-          return owner.request(minutes ?? undefined);
+          return sleepTimerReply(owner.request(minutes ?? undefined), () => {});
         });
         await page.evaluate(MESSAGING);
         await waitPlaying(page);
@@ -195,7 +195,7 @@ describe('sleep timer across tabs', () => {
       });
       await serveFixture(page, FIXTURE, 'http://sleep-keys.test/');
       await bootPlayer(page, { settings: { keepControlsVisible: true } });
-      await page.exposeFunction('__sleepTimerRequest', (minutes: number | null) => owner.request(minutes ?? undefined));
+      await page.exposeFunction('__sleepTimerRequest', (minutes: number | null) => sleepTimerReply(owner.request(minutes ?? undefined), () => {}));
       await page.evaluate(MESSAGING);
       await waitPlaying(page);
       await enterTheater(page);
@@ -244,7 +244,7 @@ describe('sleep timer across tabs', () => {
         await page.exposeFunction('__sleepTimerRequest', (minutes: number | null, pageNow: number, cycle: boolean) => {
           now = pageNow;
           if (cycle) cycles++;
-          return cycle ? owner.cycle() : owner.request(minutes ?? undefined);
+          return sleepTimerReply(cycle ? owner.cycle() : owner.request(minutes ?? undefined), () => {});
         });
         await page.evaluate(MESSAGING);
         await waitPlaying(page);
@@ -293,6 +293,49 @@ describe('sleep timer across tabs', () => {
       await chipIn(tabB, '15 min');
     });
 
+    it(`a request the background could not complete changes no notice and no shown state in ${engine}`, { timeout: 60_000 }, async t => {
+      const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
+      let stored: unknown;
+      let refuse = false;
+      const owner = createSleepTimerOwner({
+        now: () => Date.now(), read: async () => stored, write: async timer => { stored = timer; },
+        // The next timer is written, then its wake-up is refused, as a failing alarm would.
+        schedule: async () => { if (refuse) throw new Error('alarm refused'); },
+        broadcast: async message => { await page.evaluate(`window.__deliverSleepTimer(${JSON.stringify(message)})`); }
+      });
+      await serveFixture(page, FIXTURE, 'http://sleep-fails.test/');
+      await bootPlayer(page, { settings: { keepControlsVisible: true } });
+      await page.exposeFunction('__sleepTimerRequest', (minutes: number | null, _now: number, cycle: boolean) =>
+        sleepTimerReply(cycle ? owner.cycle() : owner.request(minutes ?? undefined), () => {}));
+      await page.evaluate(MESSAGING);
+      // Records each answer once it reached the page, after which the player has handled it.
+      await page.evaluate(`(() => {
+        const send = window.chrome.runtime.sendMessage;
+        window.__answers = 0;
+        window.chrome.runtime.sendMessage = message => send(message).then(reply => { window.__answers++; return reply; });
+      })()`);
+      await waitPlaying(page);
+      await enterTheater(page);
+      const answered = async (count: number) => { await page.waitForFunction(`window.__answers === ${count}`); };
+      const notices = () => page.locator('.theater-everywhere-volume-overlay .volume-hud-text').filter({ hasText: /^Sleep timer/ }).count();
+      await answered(1);
+      await step(page, 1);
+      await answered(2);
+      await chipShows(page, '15 min');
+
+      refuse = true;
+      // Shift+S: the stored timer moved on but nothing confirmed it, so the player claims nothing, Off included.
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('Shift+S');
+      await answered(3);
+      assert.equal(await notices(), 0, 'no notice for a request that failed');
+      // The settings row: a failed step leaves the timer it showed instead of reading as Off.
+      await step(page, 1);
+      await answered(4);
+      assert.equal(await chip(page).textContent(), '15 min');
+      assert.equal(await page.locator('.sleep-timer-btn .theater-stepper-value').textContent(), '15 min');
+    });
+
     it(`a cleared sleep timer shortcut leaves Shift+S to the page in ${engine}`, { timeout: 60_000 }, async t => {
       const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
       let requests = 0;
@@ -300,7 +343,7 @@ describe('sleep timer across tabs', () => {
       await bootPlayer(page, { settings: { keepControlsVisible: true, shortcuts: { cycleSleepTimer: '' } } });
       await page.exposeFunction('__sleepTimerRequest', (_minutes: number | null, _now: number, cycle: boolean) => {
         if (cycle) requests++;
-        return null;
+        return { timer: null };
       });
       await page.evaluate(MESSAGING);
       await page.evaluate('window.__pageKeys = []; addEventListener("keydown", event => window.__pageKeys.push(event.key))');

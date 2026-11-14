@@ -69,3 +69,17 @@ export function createSleepTimerOwner(host: SleepTimerHost): SleepTimerOwner {
     reconcile: () => serial(async () => { await host.schedule((await current())?.deadline ?? null); })
   };
 }
+
+/** What the background answers a frame: the timer a request left (null is Off), or `failed`. */
+export type SleepTimerReply = { timer: SleepTimer | null } | { failed: true };
+
+/**
+ * Turns a request into its answer. A request that rejected (a refused alarm or broadcast after the write) answers
+ * `failed`, never `{ timer: null }`, so no frame reports Off, or any state, the owner did not reach.
+ */
+export function sleepTimerReply(work: Promise<SleepTimer | null>, onError: (error: unknown) => void): Promise<SleepTimerReply> {
+  return work.then(timer => ({ timer }), (error: unknown) => {
+    onError(error);
+    return { failed: true };
+  });
+}

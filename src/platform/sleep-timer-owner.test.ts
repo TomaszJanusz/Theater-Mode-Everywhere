@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  resolveSleepTimer, resolveSleepTimerRequest, SLEEP_TIMER_MINUTES, sleepTimerMinutesLeft, sleepTimerSegment, sleepTimerStep,
+  readSleepTimerReply, resolveSleepTimer, resolveSleepTimerRequest, SLEEP_TIMER_MINUTES, sleepTimerMinutesLeft, sleepTimerSegment, sleepTimerStep,
   type SleepTimerBroadcast
 } from '../core/sleep-timer';
 
@@ -46,6 +46,19 @@ describe('sleep timer record', () => {
     assert.equal(sleepTimerMinutesLeft(timer, 30 * MINUTE), 0);
     assert.equal(sleepTimerMinutesLeft(timer, 40 * MINUTE), 0);
     assert.equal(sleepTimerMinutesLeft(null, 0), 0);
+  });
+});
+
+describe('sleep timer reply', () => {
+  it('reads the timer the background left, Off included', () => {
+    assert.deepEqual(readSleepTimerReply({ timer: { minutes: 30, deadline: 5 } }), { minutes: 30, deadline: 5 });
+    assert.equal(readSleepTimerReply({ timer: null }), null);
+  });
+
+  it('rejects a failure, no answer and anything malformed instead of reading them as Off', () => {
+    for (const reply of [{ failed: true }, undefined, null, {}, { timer: { minutes: 20, deadline: 5 } }, { timer: 'off' }]) {
+      assert.throws(() => readSleepTimerReply(reply), /sleep timer/, JSON.stringify(reply));
+    }
   });
 });
 
@@ -112,6 +125,18 @@ describe('sleep timer cycle', () => {
 });
 
 describe('sleep timer owner', () => {
+  it('rejects a cycle whose wake-up fails after the next timer was written, and tells no tab', async () => {
+    const { state } = fakeBrowser();
+    const refusing = createSleepTimerOwner({
+      now: () => state.now, read: async () => state.stored, write: async timer => { state.stored = timer ?? undefined; },
+      schedule: async () => { throw new Error('alarm refused'); },
+      broadcast: async message => { state.sent.push(message); }
+    });
+    await assert.rejects(refusing.cycle(), /alarm refused/);
+    assert.deepEqual(state.stored, { minutes: 15, deadline: state.now + 15 * MINUTE });
+    assert.deepEqual(state.sent, []);
+  });
+
   it('sets a timer, wakes at its deadline and tells every tab', async () => {
     const { state, owner } = fakeBrowser();
     const timer = await owner.request(30);
