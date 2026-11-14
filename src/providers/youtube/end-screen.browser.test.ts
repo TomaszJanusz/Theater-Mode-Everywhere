@@ -131,14 +131,22 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
       const link = page.locator('.theater-end-screen-tile').first();
       assert.equal(await link.getAttribute('href'), extracted[0].href);
       assert.equal(await link.getAttribute('rel'), 'noopener noreferrer');
-      await context.route('https://www.youtube.com/**', route => route.fulfill({ contentType: 'text/html', body: '<title>Opened</title>' }));
+      // The new tab is proven by its request, not its `page` event: headless Chromium can commit a background tab's
+      // first navigation without reporting it, and Playwright then never emits that tab or its URL. This page's own
+      // route (`serveFixture`) takes its whole origin, so only another tab's request reaches the context route.
+      const opened: string[] = [];
+      await context.route('https://www.youtube.com/**', route => {
+        opened.push(route.request().url());
+        return route.fulfill({ contentType: 'text/html', body: '<title>Opened</title>' });
+      });
       for (const options of [{ modifiers: ['ControlOrMeta'] }, { button: 'middle' }] satisfies Array<Parameters<typeof link.click>[0]>) {
-        const [opened] = await Promise.all([context.waitForEvent('page'), link.click(options)]);
-        await opened.waitForURL(extracted[0].href!);
-        await opened.close();
+        opened.length = 0;
+        await Promise.all([context.waitForEvent('requestfinished', request => request.url() === extracted[0].href), link.click(options)]);
+        assert.deepEqual(opened, [extracted[0].href], `${JSON.stringify(options)} opens the link in another tab`);
         assert.equal(page.url(), url, `${JSON.stringify(options)} leaves the page`);
         assert.equal(await page.locator('.theater-end-screen-tile').count(), 3);
       }
+      for (const other of context.pages()) if (other !== page) await other.close();
       await page.locator('.theater-end-screen-tile').first().click();
       await page.waitForURL('**v=YQ8wOO9bvps');
       assert.equal(await page.locator('html.theater-everywhere-html-active').count(), 1, 'native fixture SPA navigation preserves theater');
