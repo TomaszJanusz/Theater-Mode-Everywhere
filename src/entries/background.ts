@@ -230,7 +230,7 @@ chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.Mess
   }
   if (message?.action === SLEEP_TIMER_ACTION) {
     if (_sender.id !== chrome.runtime.id) return false;
-    sleepTimer.request(message.minutes).then(sendResponse, (error: unknown) => {
+    (message.cycle === true ? sleepTimer.cycle() : sleepTimer.request(message.minutes)).then(sendResponse, (error: unknown) => {
       console.error('[Theater Everywhere] Could not update the sleep timer:', error);
       sendResponse(null);
     });

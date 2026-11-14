@@ -12,6 +12,14 @@ import { createSleepTimerChip } from './sleep-timer-chip';
 import { systemClock } from './ui-clock';
 
 /**
+ * Asks the background, which owns the profile's timer, and resolves to the timer after the request. Rejects
+ * without an extension context (an invalidated one, or a fixture page), where the timer reads as off.
+ */
+export async function requestSleepTimer(request: { minutes?: number; cycle?: true }): Promise<SleepTimer | null> {
+  return resolveSleepTimer(await chrome.runtime.sendMessage({ action: SLEEP_TIMER_ACTION, ...request }));
+}
+
+/**
  * The player's part of the profile-wide sleep timer: a settings row that sets it, the control bar chip that shows
  * it, and the pause when it fires. The background owns the timer; this player asks it once and then follows its
  * broadcasts until the controls go.
@@ -36,12 +44,7 @@ export function mountSleepTimer(
   };
   const request = (minutes?: number) => {
     const sent = ++revision;
-    try {
-      chrome.runtime.sendMessage({ action: SLEEP_TIMER_ACTION, minutes })
-        .then((value: unknown) => { if (sent === revision) apply(value); }, () => {});
-    } catch {
-      // No extension context (an invalidated one, or a fixture page): the timer reads as off here.
-    }
+    requestSleepTimer({ minutes }).then(timer => { if (sent === revision) apply(timer); }, () => {});
   };
   // The row's segment and its steps are derived from the shared deadline at every paint and every press.
   const stepper = settings.addStepperRow(row, t('sleepTimerLabel'), 'player', {

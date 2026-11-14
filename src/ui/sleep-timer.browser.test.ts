@@ -23,7 +23,7 @@ const MINUTE = 60_000;
 const MESSAGING = `(() => {
   const listeners = new Set();
   Object.assign(window.chrome.runtime, {
-    sendMessage: message => window.__sleepTimerRequest(message.minutes ?? null, Date.now()),
+    sendMessage: message => window.__sleepTimerRequest(message.minutes ?? null, Date.now(), message.cycle === true),
     onMessage: { addListener: fn => listeners.add(fn), removeListener: fn => listeners.delete(fn) }
   });
   window.__deliverSleepTimer = message => { for (const fn of [...listeners]) fn(message); };
@@ -221,6 +221,96 @@ describe('sleep timer across tabs', () => {
       const row = page.locator('.sleep-timer-btn');
       assert.equal(await row.locator('.theater-stepper-segment').count(), 8);
       assert.equal(await row.locator('.theater-stepper-btn[data-direction="1"]').getAttribute('aria-disabled'), 'true');
+    });
+
+    it(`Shift+S steps the shared timer up from the time left and turns it off after 240, in every tab, in ${engine}`, { timeout: 90_000 }, async t => {
+      const context = await browsers[engine].newContext(t, { viewport: { width: 1280, height: 720 } });
+      await context.clock.install({ time: Date.UTC(2026, 10, 14, 23, 0) });
+      await context.clock.resume();
+      const pages: Page[] = [];
+      let now = 0;
+      let stored: unknown;
+      let cycles = 0;
+      const owner = createSleepTimerOwner({
+        now: () => now, read: async () => stored, write: async timer => { stored = timer; }, schedule: async () => {},
+        broadcast: async message => {
+          await Promise.all(pages.map(page => page.evaluate(`window.__deliverSleepTimer(${JSON.stringify(message)})`)));
+        }
+      });
+      for (const url of ['http://sleep-keys-a.test/', 'http://sleep-keys-b.test/']) {
+        const page = await context.newPage();
+        await serveFixture(page, FIXTURE, url);
+        await bootPlayer(page, { settings: { keepControlsVisible: true } });
+        await page.exposeFunction('__sleepTimerRequest', (minutes: number | null, pageNow: number, cycle: boolean) => {
+          now = pageNow;
+          if (cycle) cycles++;
+          return cycle ? owner.cycle() : owner.request(minutes ?? undefined);
+        });
+        await page.evaluate(MESSAGING);
+        await waitPlaying(page);
+        await enterTheater(page);
+        pages.push(page);
+      }
+      const [tabA, tabB] = pages;
+      const exactly = (text: string) => new RegExp(`^${text}$`);
+      const notice = (page: Page, text: string) => page.locator('.theater-everywhere-volume-overlay .volume-hud-text')
+        .filter({ hasText: exactly(text) }).waitFor();
+      const chipIn = (page: Page, text: string) => page.locator('.sleep-timer-chip:not([hidden])').filter({ hasText: exactly(text) }).waitFor();
+      const press = async (page: Page) => { await page.bringToFront(); await page.keyboard.press('Shift+S'); };
+
+      // Each press in tab A starts the next option, confirmed there and shown in tab B; after 240 it turns off.
+      for (const minutes of [15, 30, 45, 60, 90, 120, 240]) {
+        await press(tabA);
+        await notice(tabA, `Sleep timer: ${minutes} min`);
+        await chipIn(tabB, `${minutes} min`);
+      }
+      await press(tabA);
+      await notice(tabA, 'Sleep timer off');
+      for (const page of pages) await chip(page).waitFor({ state: 'hidden' });
+      await press(tabA);
+      await chipIn(tabB, '15 min');
+
+      // Mid-countdown a press follows the time left, like the row's up arrow: 110 left starts 120, 10 left starts 15.
+      now = await tabA.evaluate('Date.now()') as number;
+      await owner.request(120);
+      await context.clock.fastForward(10 * MINUTE);
+      await chipIn(tabB, '110 min');
+      await press(tabB);
+      await notice(tabB, 'Sleep timer: 120 min');
+      await chipIn(tabA, '120 min');
+      await owner.request(15);
+      await context.clock.fastForward(5 * MINUTE);
+      await chipIn(tabA, '10 min');
+      await press(tabA);
+      await chipIn(tabB, '15 min');
+
+      // Typing in a field of the page is the field's: no request, the timer stays.
+      const before = cycles;
+      await tabA.evaluate('(() => { const input = document.createElement("input"); input.id = "typing"; document.body.prepend(input); input.focus(); })()');
+      await tabA.keyboard.press('Shift+S');
+      assert.equal(await tabA.locator('#typing').inputValue(), 'S');
+      assert.equal(cycles, before, 'Shift+S in a text field never reaches the sleep timer');
+      await chipIn(tabB, '15 min');
+    });
+
+    it(`a cleared sleep timer shortcut leaves Shift+S to the page in ${engine}`, { timeout: 60_000 }, async t => {
+      const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
+      let requests = 0;
+      await serveFixture(page, FIXTURE, 'http://sleep-keys-off.test/');
+      await bootPlayer(page, { settings: { keepControlsVisible: true, shortcuts: { cycleSleepTimer: '' } } });
+      await page.exposeFunction('__sleepTimerRequest', (_minutes: number | null, _now: number, cycle: boolean) => {
+        if (cycle) requests++;
+        return null;
+      });
+      await page.evaluate(MESSAGING);
+      await page.evaluate('window.__pageKeys = []; addEventListener("keydown", event => window.__pageKeys.push(event.key))');
+      await waitPlaying(page);
+      await enterTheater(page);
+      await page.keyboard.press('Shift+S');
+      // The page saw the key, so the player did not claim it.
+      await page.waitForFunction('window.__pageKeys.includes("S")');
+      assert.equal(requests, 0);
+      assert.equal(await chip(page).isHidden(), true);
     });
   }
 });

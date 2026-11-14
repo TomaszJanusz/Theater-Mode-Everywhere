@@ -15,6 +15,7 @@ export interface Shortcuts {
   frameForward: string;
   decreaseSpeed: string;
   increaseSpeed: string;
+  cycleSleepTimer: string;
   toggleFullscreen: string;
   volumeUp: string;
   volumeDown: string;
@@ -71,6 +72,8 @@ export const defaultShortcuts: Shortcuts = {
   frameForward: '.',
   decreaseSpeed: '<',
   increaseSpeed: '>',
+  // Plain S moves down in the navigation cluster; letters match Shift exactly, so the two never meet.
+  cycleSleepTimer: 'Shift+S',
   toggleFullscreen: 'F',
   volumeUp: 'ArrowUp',
   volumeDown: 'ArrowDown',
@@ -95,7 +98,7 @@ export const defaultShortcuts: Shortcuts = {
 };
 
 // Defaults added after release must not steal keys from existing custom actions.
-const INTRODUCED_SHORTCUTS: Array<keyof Shortcuts> = ['cycleLayout', 'toggleChat', 'toggleVolumeBoost', 'cycleVoice', 'cycleLeveling', 'cycleBass', 'decreaseSpeed', 'increaseSpeed', ...NAVIGATION_SHORTCUTS];
+const INTRODUCED_SHORTCUTS: Array<keyof Shortcuts> = ['cycleLayout', 'toggleChat', 'toggleVolumeBoost', 'cycleVoice', 'cycleLeveling', 'cycleBass', 'decreaseSpeed', 'increaseSpeed', 'cycleSleepTimer', ...NAVIGATION_SHORTCUTS];
 
 /**
  * Defaults that moved when a shortcut took their key: frame step had < and > until the speed shortcuts did.

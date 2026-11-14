@@ -128,6 +128,21 @@ describe('shortcut ownership', () => {
     const defaults = Object.values(defaultShortcuts).filter(Boolean);
     assert.equal(defaults.every((left, index) => defaults.every((right, other) => other === index || !shortcutsConflict(left, right))), true);
   });
+  it('introduces the sleep timer cycle on Shift+S, yielding to a custom binding and staying off once cleared', () => {
+    assert.equal(defaultShortcuts.cycleSleepTimer, 'Shift+S');
+    assert.equal(withShortcutDefaults({}).cycleSleepTimer, 'Shift+S');
+    // Plain S moves down in the navigation cluster; only the shifted letter is the sleep timer's.
+    assert.equal(shortcutsConflict('Shift+S', defaultShortcuts.navigateDown), false);
+    assert.equal(matchesShortcut(key({ key: 'S', code: 'KeyS', shiftKey: true }), 'Shift+S'), true);
+    assert.equal(matchesShortcut(key({ key: 's', code: 'KeyS' }), 'Shift+S'), false);
+    const taken = withShortcutDefaults({ showHelp: 'Shift+S' });
+    assert.equal(taken.showHelp, 'Shift+S');
+    assert.equal(taken.cycleSleepTimer, '');
+    assert.equal(withShortcutDefaults({ cycleSleepTimer: '' }).cycleSleepTimer, '');
+    assert.equal(withShortcutDefaults({ cycleSleepTimer: 'Alt+Z' }).cycleSleepTimer, 'Alt+Z');
+    assert.deepEqual(shortcutConflicts(defaultShortcuts, 'cycleFit', 'Shift+S'), ['cycleSleepTimer']);
+    assert.deepEqual(assignShortcut(defaultShortcuts, 'cycleFit', 'Shift+S').cycleSleepTimer, '');
+  });
   it('introduces speed shortcuts on the shifted frame-step keys, never taking a custom binding', () => {
     const migrated = withShortcutDefaults({ toggleMute: '>' });
     assert.equal(migrated.decreaseSpeed, '<');

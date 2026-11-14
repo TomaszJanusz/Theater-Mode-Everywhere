@@ -2,8 +2,9 @@
 export const SLEEP_TIMER_MINUTES = [0, 15, 30, 45, 60, 90, 120, 240] as const;
 
 /**
- * One message action both ways: a frame asks the background (`minutes` sets the timer, 0 turns it off, none reads
- * it), and the background tells every frame of every tab the new state (`fired` when it ran out).
+ * One message action both ways: a frame asks the background (`minutes` sets the timer, 0 turns it off, `cycle`
+ * steps it up like the row's up arrow and turns it off past the longest option, none reads it), and the background
+ * tells every frame of every tab the new state (`fired` when it ran out).
  */
 export const SLEEP_TIMER_ACTION = 'sleep-timer';
 

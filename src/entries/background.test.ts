@@ -429,4 +429,11 @@ it('keeps the sleep timer in session storage, wakes by alarm and tells every tab
   assert.equal(sent.length, 2);
   assert.deepEqual(session, {});
   assert.deepEqual(alarms, {});
+
+  // The cycle shortcut steps up from the time left: with no timer it starts 15 minutes.
+  const cycled = { minutes: 15, deadline: now + 15 * 60_000 };
+  assert.deepEqual(await send({ action: 'sleep-timer', cycle: true }), cycled);
+  assert.deepEqual(plain(session), { sleepTimer: cycled });
+  assert.deepEqual(alarms, { 'sleep-timer': cycled.deadline });
+  assert.deepEqual(sent.at(-1), [1, { action: 'sleep-timer', timer: cycled }]);
 });

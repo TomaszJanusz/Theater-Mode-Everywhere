@@ -44,6 +44,8 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   sleepTimerUnderMinute: '<1 min',
   sleepTimerPausesIn: 'Sleep timer: pauses in $1',
   sleepTimerPausedHud: 'Paused by sleep timer',
+  sleepTimerHud: 'Sleep timer: $1',
+  sleepTimerOffHud: 'Sleep timer off',
   showRemainingTime: 'Show time remaining',
   audioTrackLabel: "Audio track",
   audioTrackBack: "Back",
