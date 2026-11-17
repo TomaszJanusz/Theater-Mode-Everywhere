@@ -1,11 +1,11 @@
 import { openProviderSettings } from '../../options/provider-settings';
+import { mountPlaylistPanel } from '../providers/playlist-panel-view';
 import { createProviderSettings } from '../providers/settings';
 import { bindMenuPopover } from '../ui/menu-popover';
 import { createModal, type Modal } from '../ui/modal';
-import { mountPlaylistPanel } from '../ui/playlist-panel';
 
 import { controlButton, type SurfaceRegistration } from './component-surface';
-import { fakePlaylistSource, samplePlaylist } from './playlist-panel-fixture';
+import { fakePlaylistSource, playlistBar, samplePlaylist } from './playlist-panel-fixture';
 
 // The surface registry: one entry per top-layer surface. A new surface gets the conformance cases
 // (ui/surfaces.component.test.ts) and the accessibility matrix (ui/accessibility.component.test.ts) by registering here.
@@ -66,7 +66,7 @@ export const surfaceRegistrations: SurfaceRegistration[] = [
     name: 'playlist panel',
     policy: 'anchored-menu',
     mount({ stage, owner }) {
-      const panel = mountPlaylistPanel({ source: fakePlaylistSource(samplePlaylist()).source, scope: owner, label: 'Playlist', bindTooltip: () => {} });
+      const panel = mountPlaylistPanel(fakePlaylistSource(samplePlaylist()).source, playlistBar(owner));
       // The list-menu shell places its notch with the control bar's variables (shadow.css).
       panel.host.style.cssText = '--theater-menu-notch:48px;--theater-menu-notch-overlap:32px';
       stage.append(panel.host);

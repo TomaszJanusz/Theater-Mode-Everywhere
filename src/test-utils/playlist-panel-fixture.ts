@@ -1,5 +1,8 @@
-import type { PlaylistPanelItem, PlaylistPanelSnapshot, PlaylistPanelSource } from '../core/playlist-panel';
+import type { DisposableScope } from '../core/disposable-scope';
+import type { PlaylistPanelBar, PlaylistPanelItem, PlaylistPanelSnapshot, PlaylistPanelSource } from '../core/playlist-panel';
 import { mountPlaylistView } from '../providers/playlist-panel-view';
+import { bindMenuPopover } from '../ui/menu-popover';
+import { setSvgIcon } from '../ui/svg-icon';
 
 const TITLES = [
   'Morning light over the harbour', 'How a mechanical watch keeps time', 'Ten minutes of rain on a tin roof',
@@ -71,4 +74,9 @@ export function fakePlaylistSource(initial: PlaylistPanelSnapshot | null) {
     },
     setAvailable(value: boolean) { available = value; }
   };
+}
+
+/** The bar helpers controls.ts lends the toggle: the real menu shell and icon, with no tooltip or neighbouring menus. */
+export function playlistBar(scope: DisposableScope, label = 'Playlist'): PlaylistPanelBar {
+  return { scope, label, setIcon: setSvgIcon, bindTooltip: () => {}, bindMenu: bindMenuPopover, onBeforeOpen: () => {}, onChange: () => {} };
 }

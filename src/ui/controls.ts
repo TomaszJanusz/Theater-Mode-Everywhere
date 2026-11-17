@@ -2,6 +2,7 @@ import type { AudioSettings } from '../audio-settings';
 import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
 import { DisposableScope } from '../core/disposable-scope';
 import type { PlayerCommand } from '../core/player-session';
+import type { PlaylistPanelControl } from '../core/playlist-panel';
 import { languageRuntime } from '../i18n-runtime';
 import { captionPreferenceHost } from '../media-features/caption-preference';
 import { MediaFeaturesController } from '../media-features/controller';
@@ -46,7 +47,6 @@ import { beginPicturePress, clearPictureDismiss } from './picture-dismiss';
 import { togglePictureInPicture } from './picture-in-picture';
 import { observePicture, viewportPictureInsets } from './picture-insets';
 import { createPlayerSettings } from './player-settings';
-import { mountPlaylistPanel } from './playlist-panel';
 import type { PlayerChromeContext } from './runtime-context';
 import { waitForSeekCompletion } from './seek-completion';
 import { mountServiceActionCta } from './service-actions';
@@ -282,7 +282,7 @@ export function createControls(
     });
 
     // Mounted with the bar's right section; the navigation refresh below also re-reads its availability.
-    let playlistPanel: ReturnType<typeof mountPlaylistPanel> | null = null;
+    let playlistPanel: PlaylistPanelControl | null = null;
     const syncPlaylistButtons = (available: PlaylistNavState) => {
       playlistState = available;
       playlistPanel?.syncAvailability();
@@ -865,20 +865,20 @@ export function createControls(
     rightSec.appendChild(pipBtn);
     rightSec.appendChild(fullscreenBtn);
 
-    const playlistSource = enabledProviderSource('playlistPanel', video.element);
-    if (playlistSource) {
-      playlistPanel = mountPlaylistPanel({
-        source: playlistSource,
-        scope: controlsScope,
-        label: t('playlistPanelTitle'),
-        bindTooltip: bindCustomTooltip,
-        onBeforeOpen: () => {
-          settings.close();
-          ccPopover.close();
-          blurSliders();
-        },
-        onChange: updateCaptionDock
-      });
+    playlistPanel = enabledProviderSource('playlistPanel', video.element, {
+      scope: controlsScope,
+      label: t('playlistPanelTitle'),
+      setIcon,
+      bindTooltip: bindCustomTooltip,
+      bindMenu: bindMenuPopover,
+      onBeforeOpen: () => {
+        settings.close();
+        ccPopover.close();
+        blurSliders();
+      },
+      onChange: updateCaptionDock
+    }) ?? null;
+    if (playlistPanel) {
       // The list belongs with the step controls: right after Next, whether or not the steps are shown.
       nextBtn.after(playlistPanel.host);
       playlistPanel.syncAvailability();

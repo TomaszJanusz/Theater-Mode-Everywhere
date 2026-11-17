@@ -5,11 +5,11 @@ import { activeElementDeep } from '../accessibility';
 import { DisposableScope } from '../core/disposable-scope';
 import type { PlaylistPanelSnapshot } from '../core/playlist-panel';
 import { blockingViolations } from '../test-utils/axe';
-import { fakePlaylistSource, samplePlaylist } from '../test-utils/playlist-panel-fixture';
+import { fakePlaylistSource, playlistBar, samplePlaylist } from '../test-utils/playlist-panel-fixture';
+import { getPlayerUiRoot, mountPlayerUi } from '../ui/root';
+import { setSvgIcon } from '../ui/svg-icon';
 
-import { mountPlaylistPanel } from './playlist-panel';
-import { getPlayerUiRoot, mountPlayerUi } from './root';
-import { setSvgIcon } from './svg-icon';
+import { mountPlaylistPanel } from './playlist-panel-view';
 
 let scope: DisposableScope;
 afterEach(() => scope?.dispose());
@@ -49,7 +49,7 @@ function mount(snapshot: PlaylistPanelSnapshot | null = samplePlaylist(), bar: {
   wrapper.append(row);
   mountPlayerUi(wrapper);
   scope.add(() => wrapper.remove());
-  const panel = mountPlaylistPanel({ source: fake.source, scope, label: 'Playlist', bindTooltip: () => {} });
+  const panel = mountPlaylistPanel(fake.source, playlistBar(scope));
   if (bar.panel !== false) {
     next.after(panel.host);
     panel.syncAvailability();

@@ -2,13 +2,13 @@ import type { Meta, StoryObj } from '@storybook/html-vite';
 import { expect, userEvent, waitFor } from 'storybook/test';
 
 import { renderPlayerBar } from '../../.storybook/player-stage';
-import { fakePlaylistSource, samplePlaylist } from '../test-utils/playlist-panel-fixture';
+import { fakePlaylistSource, playlistBar, samplePlaylist } from '../test-utils/playlist-panel-fixture';
+import { filledIcon, PLAYLIST_STEP_ICONS } from '../ui/hud';
+import { t } from '../ui/messages';
+import { queryPlayerUi, queryPlayerUiAll } from '../ui/root';
+import { setSvgIcon } from '../ui/svg-icon';
 
-import { filledIcon, PLAYLIST_STEP_ICONS } from './hud';
-import { t } from './messages';
-import { mountPlaylistPanel } from './playlist-panel';
-import { queryPlayerUi, queryPlayerUiAll } from './root';
-import { setSvgIcon } from './svg-icon';
+import { mountPlaylistPanel } from './playlist-panel-view';
 
 interface Args {
   /** Items the host has loaded; YouTube lists a window of long lists. */
@@ -39,7 +39,7 @@ function barButton(className: string, label: string, icon: string): HTMLButtonEl
 let stage: { source: ReturnType<typeof fakePlaylistSource> } | undefined;
 
 /**
- * The bar's playlist toggle and panel: the production shell with the shared provider view over synthetic data shaped
+ * The bar's playlist toggle and panel: the production toggle and with the shared provider view over synthetic data shaped
  * like YouTube's panel model (offline colour thumbnails). The toggle sits right after Previous/Next in the bar's left
  * section, as controls.ts places it, and the panel opens from there towards the bar's end.
  */
@@ -59,7 +59,7 @@ const meta: Meta<Args> = {
     const playlist = samplePlaylist({ count, current, total: mix ? null : count, title: mix ? 'Mix – Slow travel' : undefined });
     const source = fakePlaylistSource(playlist);
     stage = { source };
-    const panel = mountPlaylistPanel({ source: source.source, scope, label: t('playlistPanelTitle'), bindTooltip: () => {} });
+    const panel = mountPlaylistPanel(source.source, playlistBar(scope, t('playlistPanelTitle')));
     source.setAvailable(list);
     panel.syncAvailability();
     if (unavailable) source.update(null);

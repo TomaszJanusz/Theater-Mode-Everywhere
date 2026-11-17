@@ -10,12 +10,15 @@ import { selectTestEngines } from '../../test-utils/test-engines';
 
 const chromiumBrowser = sharedTestBrowser(chromium);
 
-// The registered isolated hook (through the shared lookup and integration gate) and MAIN's listener, both worlds in
-// one page as the fixture runtime shares them.
+// The YouTube source and the registered isolated hook (through the shared lookup and integration gate) with MAIN's
+// listener, both worlds in one page as the fixture runtime shares them.
 const bundle = bundleModules([
   ...PROVIDER_ENTRIES,
   "export { DisposableScope } from './core/disposable-scope';",
   "export { enabledProviderSource } from './providers/hook-sources';",
+  "export { observeProviderDom } from './providers/dom-watch';",
+  "export { youtubePlaylistPanel } from './providers/youtube/playlist-panel';",
+  "export { playlistBar } from './test-utils/playlist-panel-fixture';",
   "export { providerOffAttribute } from './media-features/provider-flags';",
   "export { installYouTubePlaylist } from './providers/youtube/playlist-panel-main';"
 ], 'PlaylistTest');
@@ -73,7 +76,10 @@ async function setup(page: Page): Promise<void> {
   await page.evaluate(fixture);
   await page.evaluate(`(() => {
     PlaylistTest.installYouTubePlaylist();
-    window.__source = PlaylistTest.enabledProviderSource('playlistPanel', document.querySelector('video'));
+    window.__source = PlaylistTest.youtubePlaylistPanel(document.querySelector('video'), PlaylistTest.observeProviderDom);
+    // The bar's toggle, as controls.ts opens it through the registered hook.
+    window.__control = PlaylistTest.enabledProviderSource('playlistPanel', document.querySelector('video'),
+      PlaylistTest.playlistBar(new PlaylistTest.DisposableScope()));
     window.__closed = [];
     window.__open = () => {
       window.__scope = new PlaylistTest.DisposableScope();
@@ -99,6 +105,9 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         const page = await context.newPage();
         await setup(page);
         assert.equal(await page.evaluate('window.__source.available()'), true);
+        assert.deepEqual(await page.evaluate(`(() => { window.__control.syncAvailability();
+          return [window.__control.host.hidden, Boolean(window.__control.host.querySelector('button.theater-control-btn.theater-playlist-toggle'))]; })()`),
+          [false, true]);
         await page.evaluate('window.__open()');
         const listed = await rows(page);
         assert.deepEqual(listed.map(row => [row.title, row.byline, row.current]),
@@ -154,6 +163,7 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         await setup(page);
         await page.evaluate(`document.querySelector('ytd-playlist-panel-renderer').hidden = true`);
         assert.equal(await page.evaluate('window.__source.available()'), false);
+        assert.equal(await page.evaluate('window.__control.syncAvailability(), window.__control.host.hidden'), true);
         await page.evaluate(`document.querySelector('ytd-playlist-panel-renderer').hidden = false;
           history.replaceState(null, '', '/watch?v=b')`);
         assert.equal(await page.evaluate('window.__source.available()'), false);

@@ -310,6 +310,14 @@ const hostilePages: HostilePage[] = [
   }
 ];
 
+/**
+ * The host reacts to the page in a later task (a `toggle` or `fullscreenchange`, which browsers deliver differently:
+ * Chromium sends no `toggle` when a dialog closes) and then on its next frame. Wait for the observable top-layer state,
+ * advancing the fake frame clock on every check, rather than for a fixed time that the event may not have met
+ * (TME-246). A host that never reacts still fails at the timeout.
+ */
+const settles = (check: () => void) => vi.waitFor(check, { timeout: 2000, interval: 16 });
+
 const representatives = [...new Map(registrations.map(registration => [registration.policy, registration])).values()];
 
 for (const registration of representatives) {
@@ -333,21 +341,19 @@ for (const registration of representatives) {
         if (page.release && !page.afterOpen) {
           expect(onTop(mounted, mounted.trigger), 'the page dialog wins while open').toBe(false);
           await page.release();
-          await vi.advanceTimersByTimeAsync(50);
-          expect(mounted.root.host.matches(':popover-open'), 'host back in the top layer').toBe(true);
+          await settles(() => expect(mounted.root.host.matches(':popover-open'), 'host back in the top layer').toBe(true));
         }
         expect(onTop(mounted, mounted.trigger)).toBe(true);
         await openWith(mounted, 'keyboard');
         if (page.afterOpen) {
           await page.install();
-          // The host re-enters the top layer on the next frame after a page popover or fullscreen.
-          await vi.advanceTimersByTimeAsync(50);
           if (page.release) {
-            expect(onTop(mounted, policy.content(mounted)), 'the page wins while it holds the top layer').toBe(false);
-            expect(mounted.root.host.matches(':popover-open'), 'host in the top layer').toBe(!page.hidesHost);
+            await settles(() => {
+              expect(onTop(mounted, policy.content(mounted)), 'the page wins while it holds the top layer').toBe(false);
+              expect(mounted.root.host.matches(':popover-open'), 'host in the top layer').toBe(!page.hidesHost);
+            });
             await page.release();
-            await vi.advanceTimersByTimeAsync(50);
-            expect(mounted.root.host.matches(':popover-open'), 'host back in the top layer').toBe(true);
+            await settles(() => expect(mounted.root.host.matches(':popover-open'), 'host back in the top layer').toBe(true));
             // The dialog took focus; a surface that does not trap focus closed when it left.
             if (page.takesFocus && !policy.trapsFocus) {
               expect(state(mounted)).toBe('closed');
@@ -356,7 +362,8 @@ for (const registration of representatives) {
           }
         }
         expect(state(mounted)).toBe('open');
-        expect(onTop(mounted, policy.content(mounted))).toBe(true);
+        // After a page popover or fullscreen, the host re-enters the top layer on a frame after the page's event.
+        await settles(() => expect(onTop(mounted, policy.content(mounted))).toBe(true));
         policy.expectAria(mounted, true);
         policy.content(mounted).querySelector('button')!.focus();
         await userEvent.keyboard('{Escape}');

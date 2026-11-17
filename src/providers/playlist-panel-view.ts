@@ -1,6 +1,9 @@
 import type { DisposableScope } from '../core/disposable-scope';
-import type { PlaylistPanelItem, PlaylistPanelSnapshot } from '../core/playlist-panel';
+import type {
+  PlaylistPanelBar, PlaylistPanelControl, PlaylistPanelItem, PlaylistPanelSnapshot, PlaylistPanelSource
+} from '../core/playlist-panel';
 import { translateMessage } from '../i18n-runtime';
+import { MENU_CLOSE_EVENT, MENU_OPEN_EVENT } from '../ui/menu-popover';
 
 import css from './playlist-panel-view.css?inline';
 
@@ -24,6 +27,62 @@ const FALLBACKS: Record<string, string> = {
 const t = (key: string, substitutions?: string[]) => translateMessage(FALLBACKS, key, substitutions);
 
 const NOW_PLAYING_ICON = 'M7 4.5v15L19.5 12z';
+
+const PLAYLIST_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h9M3 18h7"/><path d="M15 14.5v6l5.5-3z" fill="currentColor"/></svg>';
+
+/**
+ * The bar's playlist toggle and its panel: a `.theater-control-btn` in the bar's anchored list-menu shell (the subtitle
+ * menu's), bound with the bar's own menu, icon and tooltip helpers, so hover, pinning, Escape, outside presses, focus,
+ * `aria-expanded`, the slot geometry and the bar's visibility are the shared control's. Each opening mounts the
+ * source's list in a child of the controls' scope that ends when the panel closes: nothing reads or observes the host
+ * while it is shut.
+ */
+export function mountPlaylistPanel(source: PlaylistPanelSource, bar: PlaylistPanelBar): PlaylistPanelControl {
+  const { scope } = bar;
+  const host = document.createElement('div');
+  host.className = 'theater-menu-anchored';
+  host.hidden = true;
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'theater-control-btn theater-playlist-toggle';
+  trigger.setAttribute('aria-label', bar.label);
+  bar.setIcon(trigger, PLAYLIST_ICON);
+  bar.bindTooltip(trigger, () => bar.label);
+  const panel = document.createElement('div');
+  panel.className = 'theater-cc-menu theater-playlist-menu';
+  host.append(trigger, panel);
+
+  let opening: DisposableScope | null = null;
+  const unmount = () => {
+    opening?.dispose();
+    opening = null;
+  };
+  const menu = bar.bindMenu({
+    host, trigger, panel, scope,
+    onBeforeOpen: bar.onBeforeOpen,
+    // Keyboard opening lands on the playing item (the list's active row), and the list opens centred on it.
+    firstFocus: () => panel.querySelector<HTMLElement>('.active') ?? undefined,
+    centerActiveIn: '.theater-cc-menu-list',
+    onChange: bar.onChange
+  });
+  // Dispatched before the menu positions itself, so the rows are in place for focus and centring.
+  scope.listen(panel, MENU_OPEN_EVENT, () => {
+    unmount();
+    opening = scope.child();
+    source.mount(panel, opening, menu.close);
+  });
+  scope.listen(panel, MENU_CLOSE_EVENT, unmount);
+
+  return {
+    host,
+    close: menu.close,
+    syncAvailability() {
+      const available = source.available();
+      if (!available) menu.close();
+      if (host.hidden === available) host.hidden = !available;
+    }
+  };
+}
 
 /**
  * The shared playlist view, the same for every provider: a header and a compact list of rows (position, thumbnail with

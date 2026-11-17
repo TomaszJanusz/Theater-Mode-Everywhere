@@ -1,3 +1,6 @@
+import type { ButtonTooltipBinder } from '../ui/button-tooltip';
+import type { bindMenuPopover } from '../ui/menu-popover';
+
 import type { DisposableScope } from './disposable-scope';
 
 /** One entry of a host playlist, as the player's playlist panel lists it. */
@@ -28,10 +31,9 @@ export interface PlaylistPanelSnapshot {
 }
 
 /**
- * The playlist panel of one bound player. The player owns the bar toggle and the panel shell (the shared anchored
- * menu: hover, pinning, focus, Escape, outside presses); the provider owns host data, identity checks, navigation and
- * the list it renders. `available` gates the toggle and is read on every playlist-navigation refresh, so it must
- * stay a cheap check. Host data is read and observed only between `mount` and the end of its scope.
+ * A provider's playlist for one bound player: what the shared panel view reads. `available` gates the toggle and is
+ * read on every playlist-navigation refresh, so it must stay a cheap check. Host data is read and observed only between
+ * `mount` and the end of its scope.
  */
 export interface PlaylistPanelSource {
   available(): boolean;
@@ -41,6 +43,32 @@ export interface PlaylistPanelSource {
    * toggle when asked, as after a keyboard activation.
    */
   mount(panel: HTMLElement, scope: DisposableScope, close: (restoreFocus: boolean) => void): void;
+}
+
+/**
+ * What the player lends the provider for the bar's playlist toggle. The toggle is built from the bar's own icon,
+ * tooltip and menu shell, so it is the same control as its neighbours; the shared view that builds it ships with the
+ * providers (like the end-screen view), not in every page's shared bundle.
+ */
+export interface PlaylistPanelBar {
+  /** The controls' scope: the toggle, its panel and any opening end with it. */
+  scope: DisposableScope;
+  label: string;
+  setIcon(element: HTMLElement, svg: string): void;
+  bindTooltip: ButtonTooltipBinder;
+  bindMenu: typeof bindMenuPopover;
+  /** Closes the bar's other menus before this one opens. */
+  onBeforeOpen(): void;
+  /** The panel opened or closed. */
+  onChange(): void;
+}
+
+/** The toggle and its panel, which the player places with the step controls and drives. */
+export interface PlaylistPanelControl {
+  host: HTMLElement;
+  /** Shows the toggle only while the provider has a list; a list that went away closes the panel. */
+  syncAvailability(): void;
+  close(restoreFocus?: boolean): boolean;
 }
 
 const MAX_TEXT = 300;
