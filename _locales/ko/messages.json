@@ -1618,5 +1618,22 @@
   "sleepTimerPausedHud": {
     "message": "취침 타이머로 일시정지됨",
     "description": "Brief on-video notice when the sleep timer pauses playback."
+  },
+  "cycleSleepTimer": {
+    "message": "취침 타이머 전환",
+    "description": "Keyboard shortcut name: each press raises the sleep timer to the next duration and turns it off after the longest."
+  },
+  "sleepTimerHud": {
+    "message": "취침 타이머: $1",
+    "description": "Brief on-video notice after the sleep timer shortcut; $1 is the duration just started, such as sleepTimerMinutes.",
+    "placeholders": {
+      "duration": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerOffHud": {
+    "message": "취침 타이머 꺼짐",
+    "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
   }
 }

@@ -37,7 +37,9 @@ export type PlayerCommand =
   | { type: 'TOGGLE_CONTROLS_PIN' }
   | { type: 'STEP_CONTROLS_PIN'; direction: 1 | -1 }
   /** Pauses media that is playing; never starts it. */
-  | { type: 'SLEEP_TIMER_PAUSE' };
+  | { type: 'SLEEP_TIMER_PAUSE' }
+  /** Steps the profile's sleep timer up to the next option, and Off after the longest. */
+  | { type: 'CYCLE_SLEEP_TIMER' };
 
 export class PlayerSession {
   private epoch = 0;
