@@ -139,7 +139,7 @@ describe('Playlist panel', () => {
   });
 
   test('the open panel has no blocking accessibility violations', async () => {
-    const { trigger, panel } = mount();
+    const { trigger } = mount();
     await userEvent.click(trigger);
     expect(await blockingViolations(getPlayerUiRoot().host as HTMLElement)).toEqual([]);
   });
