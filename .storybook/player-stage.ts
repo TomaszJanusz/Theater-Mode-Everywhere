@@ -20,13 +20,10 @@ export { mountPlayerUi };
 
 /**
  * Mounts controls in the real player-UI shadow root, inside the bar markup the extension
- * builds (`wrapper > row > left`, or `right` at the bar's end, where menus open towards its start).
- * The previous story's root and listeners are torn down first, as theater exit does.
+ * builds (`wrapper > row > left`). The previous story's root and listeners are torn down first,
+ * as theater exit does.
  */
-export function renderPlayerBar(
-  build: (scope: DisposableScope) => HTMLElement[],
-  options: { liftBar?: boolean; section?: 'left' | 'right' } = {}
-): HTMLElement {
+export function renderPlayerBar(build: (scope: DisposableScope) => HTMLElement[], options: { liftBar?: boolean } = {}): HTMLElement {
   const { scope, view } = beginStage();
   const wrapper = document.createElement('div');
   wrapper.className = 'theater-controls-wrapper visible';
@@ -36,15 +33,8 @@ export function renderPlayerBar(
   row.className = 'theater-controls-row';
   const left = document.createElement('div');
   left.className = 'theater-controls-left';
+  left.append(...build(scope));
   row.append(left);
-  if (options.section === 'right') {
-    const right = document.createElement('div');
-    right.className = 'theater-controls-right';
-    right.append(...build(scope));
-    row.append(right);
-  } else {
-    left.append(...build(scope));
-  }
   wrapper.append(row);
   // A tooltip below the bar needs room under it; flush with the viewport edge it would be clipped,
   // and the clipped fractional edge rasterises differently from run to run.

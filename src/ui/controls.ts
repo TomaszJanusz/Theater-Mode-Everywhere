@@ -38,7 +38,7 @@ import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { mountEndedCurtain, REPLAY_ICON } from './ended-curtain';
 import { createFullscreenRecovery } from './fullscreen-recovery';
 import {
-  AUDIO_SETTING_ICONS, createLoadingPlate, ensureLoadingRing, PICTURE_LAYOUT_ICON, strokeIcon, SWITCH_VIDEO_SHAPE, VIDEO_FIT_SHAPES,
+  AUDIO_SETTING_ICONS, createLoadingPlate, ensureLoadingRing, filledIcon, PICTURE_LAYOUT_ICON, PLAYLIST_STEP_ICONS, strokeIcon, SWITCH_VIDEO_SHAPE, VIDEO_FIT_SHAPES,
   VOLUME_BOOST_ICONS
 } from './hud';
 import { bindMenuPopover, playerChromeExpanded } from './menu-popover';
@@ -223,7 +223,6 @@ export function createControls(
     };
     bindCustomTooltip(playPauseBtn, () => `${t(playAction())} ${shortcutKeys(ui().shortcuts.playPause)}`);
 
-    const filledIcon = (shapes: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">${shapes}</svg>`;
     const playIcons = {
       play: filledIcon('<polygon points="5 3 19 12 5 21 5 3"/>'),
       pause: filledIcon('<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'),
@@ -240,14 +239,12 @@ export function createControls(
       executeCommand({ type: 'PLAY_PAUSE' });
     });
 
-    const previousIcon = filledIcon('<rect x="4" y="3" width="2.2" height="18" rx="0.4"/><path d="M19 4 8.5 12 19 20z"/>');
-    const nextIcon = filledIcon('<path d="M5 4 15.5 12 5 20z"/><rect x="17.8" y="3" width="2.2" height="18" rx="0.4"/>');
 
     const previousBtn = document.createElement('button');
     previousBtn.type = 'button';
     previousBtn.className = 'theater-control-btn playlist-prev-btn';
     previousBtn.hidden = true;
-    setIcon(previousBtn, previousIcon);
+    setIcon(previousBtn, PLAYLIST_STEP_ICONS.previous);
     let playlistState: PlaylistNavState = emptyPlaylistNav();
     const playlistPreview = (direction: 'previous' | 'next') => {
       const available = playlistState;
@@ -278,7 +275,7 @@ export function createControls(
     nextBtn.type = 'button';
     nextBtn.className = 'theater-control-btn playlist-next-btn';
     nextBtn.hidden = true;
-    setIcon(nextBtn, nextIcon);
+    setIcon(nextBtn, PLAYLIST_STEP_ICONS.next);
     bindCustomTooltip(nextBtn, () => playlistShortcutText('next'), () => playlistPreview('next'));
     nextBtn.addEventListener('click', () => {
       ctx.actions.activatePlaylistStep('next');
@@ -882,7 +879,8 @@ export function createControls(
         },
         onChange: updateCaptionDock
       });
-      rightSec.appendChild(playlistPanel.host);
+      // The list belongs with the step controls: right after Next, whether or not the steps are shown.
+      nextBtn.after(playlistPanel.host);
       playlistPanel.syncAvailability();
     }
 

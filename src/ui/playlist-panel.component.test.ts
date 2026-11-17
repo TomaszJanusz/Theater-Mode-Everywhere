@@ -9,28 +9,57 @@ import { fakePlaylistSource, samplePlaylist } from '../test-utils/playlist-panel
 
 import { mountPlaylistPanel } from './playlist-panel';
 import { getPlayerUiRoot, mountPlayerUi } from './root';
+import { setSvgIcon } from './svg-icon';
 
 let scope: DisposableScope;
 afterEach(() => scope?.dispose());
 
-/** The bar's right section with the playlist toggle, as controls.ts mounts it. */
-function mount(snapshot: PlaylistPanelSnapshot | null = samplePlaylist()) {
+const button = (className: string) => {
+  const element = document.createElement('button');
+  element.type = 'button';
+  element.className = `theater-control-btn ${className}`;
+  element.setAttribute('aria-label', className);
+  setSvgIcon(element, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"><rect width="24" height="24"/></svg>');
+  return element;
+};
+
+/**
+ * The control bar as controls.ts builds it: play, Previous and Next in the left section with the playlist toggle right
+ * after Next, the subtitle menu in the right section. Without a source the bar is the one a page without a list gets.
+ */
+function mount(snapshot: PlaylistPanelSnapshot | null = samplePlaylist(), bar: { panel?: boolean; dir?: 'ltr' | 'rtl'; pinned?: boolean } = {}) {
   scope = new DisposableScope();
   const fake = fakePlaylistSource(snapshot);
   const wrapper = document.createElement('div');
-  wrapper.className = 'theater-controls-wrapper visible';
+  wrapper.className = `theater-controls-wrapper visible${bar.pinned ? ' pinned' : ''}`;
+  wrapper.dir = bar.dir ?? 'ltr';
+  const row = document.createElement('div');
+  row.className = 'theater-controls-row';
+  const left = document.createElement('div');
+  left.className = 'theater-controls-left';
+  const next = button('playlist-next-btn');
+  left.append(button('play-pause-btn'), button('playlist-prev-btn'), next);
   const right = document.createElement('div');
   right.className = 'theater-controls-right';
-  wrapper.append(right);
+  const cc = document.createElement('div');
+  cc.className = 'theater-cc-menu-host theater-menu-anchored';
+  cc.append(button('cc-btn'));
+  right.append(cc, button('player-settings-btn'));
+  row.append(left, right);
+  wrapper.append(row);
   mountPlayerUi(wrapper);
   scope.add(() => wrapper.remove());
   const panel = mountPlaylistPanel({ source: fake.source, scope, label: 'Playlist', bindTooltip: () => {} });
-  right.append(panel.host);
-  panel.syncAvailability();
+  if (bar.panel !== false) {
+    next.after(panel.host);
+    panel.syncAvailability();
+  }
   const trigger = panel.host.querySelector<HTMLButtonElement>('.theater-playlist-toggle')!;
   const rows = () => [...panel.host.querySelectorAll<HTMLButtonElement>('.theater-playlist-row')];
-  return { ...fake, panel, trigger, rows, state: () => panel.host.dataset.teState };
+  return { ...fake, panel, trigger, next, wrapper, rows, state: () => panel.host.dataset.teState };
 }
+
+const heightOf = (element: Element) => element.getBoundingClientRect().height;
 
 describe('Playlist panel', () => {
   test('the toggle shows only while the provider has a list, and a list that goes away closes the panel', async () => {
@@ -143,4 +172,60 @@ describe('Playlist panel', () => {
     await userEvent.click(trigger);
     expect(await blockingViolations(getPlayerUiRoot().host as HTMLElement)).toEqual([]);
   });
+});
+
+describe('Playlist toggle in the control bar', () => {
+  for (const dir of ['ltr', 'rtl'] as const) {
+    for (const pinned of [false, true]) {
+      test(`leaves the bar's height unchanged, closed and open (${dir}${pinned ? ', pinned' : ''})`, async () => {
+        const without = heightOf(mount(samplePlaylist(), { panel: false, dir, pinned }).wrapper);
+        scope.dispose();
+        const { wrapper, trigger, state } = mount(samplePlaylist(), { dir, pinned });
+        expect(heightOf(wrapper)).toBe(without);
+        await userEvent.click(trigger);
+        expect(state()).toBe('open');
+        expect(heightOf(wrapper)).toBe(without);
+        await userEvent.keyboard('{Escape}');
+        trigger.focus();
+        await userEvent.keyboard('{Enter}');
+        expect(state()).toBe('open');
+        expect(heightOf(wrapper)).toBe(without);
+      });
+    }
+  }
+
+  test('sits with the step controls, boxed and centred like Next, and its icon stays put while open', async () => {
+    const { trigger, next, state } = mount();
+    expect(trigger.closest('.theater-menu-anchored')!.previousElementSibling).toBe(next);
+    const box = trigger.getBoundingClientRect();
+    const reference = next.getBoundingClientRect();
+    expect([box.top, box.height, box.width]).toEqual([reference.top, reference.height, reference.width]);
+    const icon = trigger.querySelector('svg')!.getBoundingClientRect();
+    expect([icon.width, icon.height]).toEqual([18, 18]);
+    expect(icon.top - box.top).toBe(next.querySelector('svg')!.getBoundingClientRect().top - reference.top);
+    await userEvent.click(trigger);
+    expect(state()).toBe('open');
+    const openIcon = trigger.querySelector('svg')!.getBoundingClientRect();
+    expect([openIcon.left, openIcon.top]).toEqual([icon.left, icon.top]);
+  });
+
+  for (const dir of ['ltr', 'rtl'] as const) {
+    test(`opens from the left section towards the bar's end, inside the viewport (${dir})`, async () => {
+      const { trigger, panel } = mount(samplePlaylist(), { dir });
+      await userEvent.click(trigger);
+      const menu = panel.host.querySelector('.theater-playlist-menu')!.getBoundingClientRect();
+      const toggle = trigger.getBoundingClientRect();
+      expect(menu.left).toBeGreaterThanOrEqual(0);
+      expect(menu.right).toBeLessThanOrEqual(window.innerWidth);
+      // The notch sits over the open toggle (as wide as the notch) at the panel's start corner, and the panel
+      // reaches towards the bar's end.
+      if (dir === 'ltr') {
+        expect(menu.left).toBeCloseTo(toggle.left, 0);
+        expect(menu.right).toBeGreaterThan(toggle.right);
+      } else {
+        expect(menu.right).toBeCloseTo(toggle.right, 0);
+        expect(menu.left).toBeLessThan(toggle.left);
+      }
+    });
+  }
 });
