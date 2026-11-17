@@ -7,6 +7,7 @@ import { serviceAutoEnabled } from '../providers/settings-values';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
 import { createSeekHold, SEEK_HOLD_RATE } from './seek-hold';
+import { requestSleepTimer } from './sleep-timer';
 import { formatRate, holdPlaybackRate, stepPlaybackRate } from './speed-control';
 
 import { isMotionReduced } from '../appearance-runtime';
@@ -654,6 +655,16 @@ function executeCommand(command: PlayerCommand): void {
     case 'TOGGLE_HELP':
       toggleHelpOverlay();
       break;
+    case 'CYCLE_SLEEP_TIMER': {
+      // The background steps the shared timer from the time left, so every tab follows; this tab confirms the result.
+      const epoch = session.currentEpoch;
+      requestSleepTimer({ cycle: true }).then(timer => {
+        if (session.currentEpoch !== epoch || !session.isActive) return;
+        triggerStatusIndicator(timer ? t('sleepTimerHud', t('sleepTimerMinutes', String(timer.minutes))) : t('sleepTimerOffHud'),
+          SLEEP_TIMER_ICONS.hud);
+      }, () => {});
+      break;
+    }
     case 'SLEEP_TIMER_PAUSE':
       // The shared play/pause path, so a provider that owns its host's pausing still does.
       if (nextPlaybackAction() !== 'pause') break;
@@ -1737,6 +1748,14 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
+      return true;
+    }
+
+    if (session.element && matchesShortcut(event, shortcuts.cycleSleepTimer)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'CYCLE_SLEEP_TIMER' });
       return true;
     }
 

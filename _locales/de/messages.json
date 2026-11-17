@@ -1618,5 +1618,22 @@
   "sleepTimerPausedHud": {
     "message": "Vom Sleep-Timer pausiert",
     "description": "Brief on-video notice when the sleep timer pauses playback."
+  },
+  "cycleSleepTimer": {
+    "message": "Sleep-Timer wechseln",
+    "description": "Keyboard shortcut name: each press raises the sleep timer to the next duration and turns it off after the longest."
+  },
+  "sleepTimerHud": {
+    "message": "Sleep-Timer: $1",
+    "description": "Brief on-video notice after the sleep timer shortcut; $1 is the duration just started, such as sleepTimerMinutes.",
+    "placeholders": {
+      "duration": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerOffHud": {
+    "message": "Sleep-Timer aus",
+    "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
   }
 }

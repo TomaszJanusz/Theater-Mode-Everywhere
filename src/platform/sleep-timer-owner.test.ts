@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  resolveSleepTimer, resolveSleepTimerRequest, SLEEP_TIMER_MINUTES, sleepTimerMinutesLeft, sleepTimerSegment, sleepTimerStep,
+  readSleepTimerReply, resolveSleepTimer, resolveSleepTimerRequest, SLEEP_TIMER_MINUTES, sleepTimerMinutesLeft, sleepTimerSegment, sleepTimerStep,
   type SleepTimerBroadcast
 } from '../core/sleep-timer';
 
@@ -49,6 +49,19 @@ describe('sleep timer record', () => {
   });
 });
 
+describe('sleep timer reply', () => {
+  it('reads the timer the background left, Off included', () => {
+    assert.deepEqual(readSleepTimerReply({ timer: { minutes: 30, deadline: 5 } }), { minutes: 30, deadline: 5 });
+    assert.equal(readSleepTimerReply({ timer: null }), null);
+  });
+
+  it('rejects a failure, no answer and anything malformed instead of reading them as Off', () => {
+    for (const reply of [{ failed: true }, undefined, null, {}, { timer: { minutes: 20, deadline: 5 } }, { timer: 'off' }]) {
+      assert.throws(() => readSleepTimerReply(reply), /sleep timer/, JSON.stringify(reply));
+    }
+  });
+});
+
 describe('sleep timer row', () => {
   // The row lights the longest option the time left still covers, and each arrow starts the next option past it.
   const now = 0;
@@ -84,7 +97,46 @@ describe('sleep timer row', () => {
   });
 });
 
+describe('sleep timer cycle', () => {
+  it('steps Off, 15, 30, 45, 60, 90, 120, 240, then Off, and starts over', async () => {
+    const { state, owner } = fakeBrowser();
+    const pressed: Array<number | 'off'> = [];
+    for (let press = 0; press < 10; press++) pressed.push((await owner.cycle())?.minutes ?? 'off');
+    assert.deepEqual(pressed, [15, 30, 45, 60, 90, 120, 240, 'off', 15, 30]);
+    // Every press is a fresh timer from now, told to every tab like a step of the row.
+    assert.deepEqual(state.stored, { minutes: 30, deadline: state.now + 30 * MINUTE });
+    assert.equal(state.alarm, state.now + 30 * MINUTE);
+    assert.equal(state.sent.length, 10);
+  });
+
+  it('steps up from the time left, as the row\'s up arrow does, and turns off once nothing longer is offered', async () => {
+    for (const [left, next] of [[110, 120], [10, 15], [119.5, 240], [120, 240], [239, 240], [240, 'off'], [300, 'off']] as const) {
+      const { state, owner } = fakeBrowser({ minutes: 240, deadline: 1_000_000 + left * MINUTE });
+      assert.equal((await owner.cycle())?.minutes ?? 'off', next, `${left} min left`);
+      assert.deepEqual(state.sent.map(message => message.timer?.minutes ?? 'off'), [next]);
+    }
+  });
+
+  it('starts 15 minutes after a timer that ran out unnoticed, which fires first', async () => {
+    const { state, owner } = fakeBrowser({ minutes: 60, deadline: 999_000 });
+    assert.deepEqual(await owner.cycle(), { minutes: 15, deadline: state.now + 15 * MINUTE });
+    assert.deepEqual(state.sent.map(message => message.fired ?? message.timer?.minutes), [true, 15]);
+  });
+});
+
 describe('sleep timer owner', () => {
+  it('rejects a cycle whose wake-up fails after the next timer was written, and tells no tab', async () => {
+    const { state } = fakeBrowser();
+    const refusing = createSleepTimerOwner({
+      now: () => state.now, read: async () => state.stored, write: async timer => { state.stored = timer ?? undefined; },
+      schedule: async () => { throw new Error('alarm refused'); },
+      broadcast: async message => { state.sent.push(message); }
+    });
+    await assert.rejects(refusing.cycle(), /alarm refused/);
+    assert.deepEqual(state.stored, { minutes: 15, deadline: state.now + 15 * MINUTE });
+    assert.deepEqual(state.sent, []);
+  });
+
   it('sets a timer, wakes at its deadline and tells every tab', async () => {
     const { state, owner } = fakeBrowser();
     const timer = await owner.request(30);

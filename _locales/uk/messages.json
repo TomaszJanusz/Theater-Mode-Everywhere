@@ -1618,5 +1618,22 @@
   "sleepTimerPausedHud": {
     "message": "Пауза за таймером сну",
     "description": "Brief on-video notice when the sleep timer pauses playback."
+  },
+  "cycleSleepTimer": {
+    "message": "Змінити таймер сну",
+    "description": "Keyboard shortcut name: each press raises the sleep timer to the next duration and turns it off after the longest."
+  },
+  "sleepTimerHud": {
+    "message": "Таймер сну: $1",
+    "description": "Brief on-video notice after the sleep timer shortcut; $1 is the duration just started, such as sleepTimerMinutes.",
+    "placeholders": {
+      "duration": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerOffHud": {
+    "message": "Таймер сну вимкнено",
+    "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
   }
 }
