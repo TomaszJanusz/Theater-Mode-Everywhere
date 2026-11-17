@@ -34,6 +34,7 @@ import { YOUTUBE_HARVEST_EVENT, youtubeEvents } from './events';
 import { youtubeHarvestTarget } from './harvest-target';
 import { seekForbiddenInMain } from './playback-main';
 import { youtubePlayerControl } from './player-controls';
+import { installYouTubePlaylist } from './playlist-panel-main';
 import { installYouTubeQueueNavigation } from './queue-main';
 import {
   createTimedtextBodyCache,
@@ -786,6 +787,7 @@ export function probeYoutube(): Record<string, unknown> | null {
 export function installYoutubeMain(pageMedia: NonNullable<typeof fetchPageMedia>): void {
   fetchPageMedia = pageMedia;
   installYouTubeQueueNavigation();
+  installYouTubePlaylist();
   installYouTubeAudio();
   timedtextCache.notePageVideo(expectedYoutubeVideo().id);
   window.addEventListener('message', (event: MessageEvent) => {

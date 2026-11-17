@@ -10,7 +10,8 @@
 
 .theater-chat-theme-row[hidden],
 .theater-chat-theme-hint[hidden],
-.theater-chat-toggle[hidden] {
+.theater-chat-toggle[hidden],
+.theater-menu-anchored[hidden] {
   display: none !important;
 }
 

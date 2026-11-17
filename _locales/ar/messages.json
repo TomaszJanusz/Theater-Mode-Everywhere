@@ -1618,5 +1618,25 @@
   "sleepTimerPausedHud": {
     "message": "أوقف مؤقت النوم التشغيل مؤقتًا",
     "description": "Brief on-video notice when the sleep timer pauses playback."
+  },
+  "playlistPanelTitle": {
+    "message": "قائمة التشغيل"
+  },
+  "playlistPosition": {
+    "message": "$CURRENT$ من $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "playlistUnavailable": {
+    "message": "قائمة التشغيل هذه غير متاحة الآن."
+  },
+  "playlistNowPlaying": {
+    "message": "قيد التشغيل الآن"
   }
 }

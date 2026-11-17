@@ -68,8 +68,10 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
   function closeTheaterPopovers(): void {
     const controls = ctx.queryPlayerUi('.theater-controls-wrapper');
     if (controls) closePlayerSettings(controls);
-    const ccMenu = ctx.queryPlayerUi<HTMLElement>('.theater-cc-menu');
-    if (!closeMenuPopover(ccMenu?.parentElement ?? null)) ccMenu?.classList.remove('visible');
+    // Every list menu in the anchored shell: subtitles and the playlist panel.
+    for (const menu of ctx.queryPlayerUiAll<HTMLElement>('.theater-cc-menu')) {
+      if (!closeMenuPopover(menu.parentElement)) menu.classList.remove('visible');
+    }
     for (const el of ctx.queryPlayerUiAll<HTMLElement>(
       '.theater-volume-container button, .theater-volume-container input, .theater-speed-container button, .theater-speed-container input'
     )) {

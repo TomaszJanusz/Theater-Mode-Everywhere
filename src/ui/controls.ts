@@ -22,7 +22,7 @@ import {
 } from '../playback-window';
 import { emptyPlaylistNav, type PlaylistNavState } from '../playlist-nav';
 import { requestOptionsPage } from '../protocol/options-page';
-import { createEndScreen, createPlaybackEnd } from '../providers/end-screen';
+import { enabledProviderSource } from '../providers/hook-sources';
 import { observeProviderMediaChanges, refreshProviderAfterElementReset } from '../providers/media-events';
 import { createServiceActions } from '../providers/service-actions';
 import { observeProviderClock, readProviderClock } from '../providers/timeline';
@@ -46,6 +46,7 @@ import { beginPicturePress, clearPictureDismiss } from './picture-dismiss';
 import { togglePictureInPicture } from './picture-in-picture';
 import { observePicture, viewportPictureInsets } from './picture-insets';
 import { createPlayerSettings } from './player-settings';
+import { mountPlaylistPanel } from './playlist-panel';
 import type { PlayerChromeContext } from './runtime-context';
 import { waitForSeekCompletion } from './seek-completion';
 import { mountServiceActionCta } from './service-actions';
@@ -283,8 +284,11 @@ export function createControls(
       ctx.actions.activatePlaylistStep('next');
     });
 
+    // Mounted with the bar's right section; the navigation refresh below also re-reads its availability.
+    let playlistPanel: ReturnType<typeof mountPlaylistPanel> | null = null;
     const syncPlaylistButtons = (available: PlaylistNavState) => {
       playlistState = available;
+      playlistPanel?.syncAvailability();
       if (previousBtn.hidden === available.previous) previousBtn.hidden = !available.previous;
       if (nextBtn.hidden === available.next) nextBtn.hidden = !available.next;
       for (const [button, direction] of [[previousBtn, 'previous'], [nextBtn, 'next']] as const) {
@@ -676,6 +680,7 @@ export function createControls(
       scope: controlsScope,
       onBeforeOpen: () => {
         settings.close();
+        playlistPanel?.close();
         volumeBtn.blur();
         volumeSlider.blur();
         speedBtn.blur();
@@ -698,6 +703,7 @@ export function createControls(
     };
     dismissOtherMenus.run = () => {
       ccPopover.close();
+      playlistPanel?.close();
       blurSliders();
     };
 
@@ -717,6 +723,7 @@ export function createControls(
       const inSettings = eventPathIncludes(e, settings.container);
       if (!inSettings) settings.close();
       if (!inCc) ccPopover.close();
+      if (playlistPanel && !eventPathIncludes(e, playlistPanel.host)) playlistPanel.close();
       if (!inVolume) {
         volumeBtn.blur();
         volumeSlider.blur();
@@ -860,6 +867,24 @@ export function createControls(
 
     rightSec.appendChild(pipBtn);
     rightSec.appendChild(fullscreenBtn);
+
+    const playlistSource = enabledProviderSource('playlistPanel', video.element);
+    if (playlistSource) {
+      playlistPanel = mountPlaylistPanel({
+        source: playlistSource,
+        scope: controlsScope,
+        label: t('playlistPanelTitle'),
+        bindTooltip: bindCustomTooltip,
+        onBeforeOpen: () => {
+          settings.close();
+          ccPopover.close();
+          blurSliders();
+        },
+        onChange: updateCaptionDock
+      });
+      rightSec.appendChild(playlistPanel.host);
+      playlistPanel.syncAvailability();
+    }
 
     mountNativeChatControls(ctx, controlsScope, rightSec, settings.panel, bindCustomTooltip);
 
@@ -1543,7 +1568,8 @@ export function createControls(
       ended = refs.playbackEnded = shown;
       paintPlayButton();
       if (shown) showToolbar();
-    }, undefined, createEndScreen(video.element), serviceActions, createPlaybackEnd(video.element));
+    }, undefined, enabledProviderSource('endScreen', video.element), serviceActions,
+      enabledProviderSource('playbackEnd', video.element));
     controlsScope.add(languageRuntime.subscribe(() => {
       // Rebuild only the current chrome; teardown retires caption/provider work.
       // Reuse the bound surface so language changes never seek, pause or exit theater.

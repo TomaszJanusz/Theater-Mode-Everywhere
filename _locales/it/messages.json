@@ -1618,5 +1618,25 @@
   "sleepTimerPausedHud": {
     "message": "Messo in pausa dal timer di spegnimento",
     "description": "Brief on-video notice when the sleep timer pauses playback."
+  },
+  "playlistPanelTitle": {
+    "message": "Playlist"
+  },
+  "playlistPosition": {
+    "message": "$CURRENT$ di $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "playlistUnavailable": {
+    "message": "Questa playlist non è disponibile al momento."
+  },
+  "playlistNowPlaying": {
+    "message": "In riproduzione"
   }
 }

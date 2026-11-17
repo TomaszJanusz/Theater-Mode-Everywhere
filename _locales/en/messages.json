@@ -1630,5 +1630,29 @@
   "sleepTimerPausedHud": {
     "message": "Paused by sleep timer",
     "description": "Brief on-video notice when the sleep timer pauses playback."
+  },
+  "playlistPanelTitle": {
+    "message": "Playlist",
+    "description": "Control bar button that opens the list of videos in the current playlist, and the panel heading when the playlist has no name."
+  },
+  "playlistPosition": {
+    "message": "$CURRENT$ of $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    },
+    "description": "Position of the playing video in the playlist, such as 3 of 19."
+  },
+  "playlistUnavailable": {
+    "message": "This playlist is not available right now.",
+    "description": "Shown in the playlist panel when the service no longer lists the playlist."
+  },
+  "playlistNowPlaying": {
+    "message": "Now playing",
+    "description": "Spoken after the title of the playlist item that is playing."
   }
 }

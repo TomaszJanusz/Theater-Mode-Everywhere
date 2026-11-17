@@ -31,6 +31,8 @@ export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args'
   'components-speed-control--open': () => ({}),
   // A longer German unit and a right-to-left bar with Arabic text beside the moon.
   'components-sleep-timer-chip--running': () => ({}),
+  // German position text and a right-to-left panel: index column, thumbnail badge and the notch mirror.
+  'components-playlist-panel--open': () => ({}),
   'components-control-button-tooltip--above': () => ({ tooltip: 'exitTheaterModeTooltip' }),
   // Arabic previously exercised backward seek, German forward seek.
   'components-hud--seek': locale => ({ direction: locale === 'ar' ? 'left' : 'right' }),

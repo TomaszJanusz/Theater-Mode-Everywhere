@@ -2,6 +2,7 @@ import { mediaProviderIntegrationEnabled } from '../../media-features/provider-f
 import type { PlaylistDirection } from '../../playlist-nav';
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { isYouTubeHost } from '../hosts';
+import { currentEntryIndex, findWatchPlaylist, integer, readWatchPlaylistEntries, type QueueEntry } from './playlist-host';
 import {
   YOUTUBE_QUEUE_GO,
   YOUTUBE_QUEUE_QUERY,
@@ -10,24 +11,6 @@ import {
   type YouTubeQueueStep
 } from './queue-bridge';
 
-type RecordValue = Record<string, unknown>;
-type HostNode = HTMLElement & { data?: unknown; polymerController?: { data?: unknown } };
-type QueuePlayer = HTMLElement & {
-  getVideoData?: () => { video_id?: unknown };
-  getPlaylist?: () => unknown;
-  getPlaylistIndex?: () => unknown;
-  getPlaylistId?: () => unknown;
-};
-type QueueEntry = {
-  id: string;
-  identity: string;
-  selected: boolean;
-  placeholder: boolean;
-  activate: (() => void) | null;
-  title: string;
-  imageUrl: string;
-};
-type RowIndex = { byData: Map<unknown, HostNode[]>; byIdentity: Map<string, HostNode[]> };
 type Resolution = {
   snapshot: Omit<YouTubeQueueSnapshot, 'requestId'>;
   targets: Partial<Record<PlaylistDirection, () => void>>;
@@ -72,32 +55,12 @@ function safelyResolveQueue(): Resolution | null {
 }
 
 function resolveQueue(): Resolution | null {
-  const url = new URL(window.location.href);
-  if (url.pathname !== '/watch') return null;
-  const player = document.getElementById('movie_player') as QueuePlayer | null;
-  const videoId = player?.getVideoData?.().video_id;
-  if (!player || typeof videoId !== 'string' || videoId !== url.searchParams.get('v')) return null;
-  // Only the watch-page panel belongs to this player; miniplayer copies are unrelated.
-  const watch = player.closest('ytd-watch-flexy');
-  if (!watch || watch.hasAttribute('hidden')) return null;
-  const panels = Array.from(watch.querySelectorAll<HostNode>('ytd-playlist-panel-renderer'))
-    .filter(panel => !panel.closest('ytd-miniplayer'));
-  if (panels.length !== 1) return null;
-  const panel = panels[0];
-  const data = record(panel.data ?? panel.polymerController?.data);
-  const queueId = string(data.playlistId);
-  const contents = data.contents;
-  if (!queueId || !Array.isArray(contents) || !contents.length || contents.length > 5000) return null;
-  const list = url.searchParams.get('list');
-  if (list && list !== queueId) return null;
-  const rows = indexRows(panel);
-  const entries = contents.map((value, index) => readEntry(playlistVideo(value), index, rows, queueId, panel));
+  const playlist = findWatchPlaylist();
+  if (!playlist) return null;
+  const { url, player, videoId, data, queueId } = playlist;
+  const entries = readWatchPlaylistEntries(playlist);
   const matching = entries.flatMap((entry, index) => entry?.id === videoId ? [index] : []);
-  const selected = matching.filter(index => entries[index]?.selected);
-  const localIndex = integer(data.localCurrentIndex);
-  const current = selected.length === 1 ? selected[0]
-    : matching.length === 1 ? matching[0]
-    : localIndex != null && matching.includes(localIndex) ? localIndex : -1;
+  const current = currentEntryIndex(entries, playlist);
   const currentEntry = entries[current];
   if (!currentEntry) return null;
 
@@ -160,70 +123,6 @@ function resolveQueue(): Resolution | null {
   return { snapshot, targets };
 }
 
-function playlistVideo(value: unknown): unknown {
-  const item = record(value);
-  if (item.playlistPanelVideoRenderer) return item.playlistPanelVideoRenderer;
-  const primary = record(record(item.playlistPanelVideoWrapperRenderer).primaryRenderer);
-  return primary.playlistPanelVideoRenderer ?? null;
-}
-
-function readEntry(raw: unknown, index: number, rows: RowIndex, queueId: string, panel: HTMLElement): QueueEntry | null {
-  const data = record(raw);
-  const id = string(data.videoId);
-  if (!id) return null;
-  const navigationEndpoint = record(data.navigationEndpoint);
-  const endpoint = record(navigationEndpoint.watchEndpoint);
-  const identity = string(data.playlistSetVideoId) || JSON.stringify([index, id, endpoint.index]);
-  const candidates = rows.byData.get(data) ?? rows.byIdentity.get(rowIdentity(data)) ?? [];
-  const row = candidates.length === 1 ? candidates[0] : null;
-  const anchor = row?.querySelector<HTMLAnchorElement>('a#wc-endpoint, a[href]') ?? null;
-  let activate: QueueEntry['activate'] = null;
-  const playable = data.isPlayable !== false && !data.unplayableText
-    && !row?.hasAttribute('disabled') && anchor?.getAttribute('aria-disabled') !== 'true';
-  if (playable && anchor?.getAttribute('href')) {
-    if (matchesQueueUrl(anchor.href, id, queueId, endpoint.index)) {
-      activate = () => { if (anchor.isConnected) anchor.click(); };
-    }
-  } else if (playable && candidates.length <= 1 && endpoint.videoId === id && endpoint.playlistId === queueId
-    && (endpoint.index == null || integer(endpoint.index) != null)) {
-    const endpointUrl = string(record(record(navigationEndpoint.commandMetadata).webCommandMetadata).url);
-    if (endpointUrl && matchesQueueUrl(endpointUrl, id, queueId, endpoint.index)) {
-      // Collapsed/virtualized panels can retain their model without row links.
-      // Let YouTube's playlist manager carry its queue context through navigation.
-      activate = () => {
-        if (!panel.isConnected) return;
-        panel.dispatchEvent(new CustomEvent('yt-navigate', {
-          bubbles: true, composed: true, cancelable: true, detail: { endpoint: navigationEndpoint }
-        }));
-      };
-    }
-  }
-  const titleData = record(data.title);
-  const title = (string(titleData.simpleText) || (Array.isArray(titleData.runs)
-    ? titleData.runs.map(run => string(record(run).text)).join('') : '')).replace(/\s+/g, ' ').trim();
-  const images = record(data.thumbnail).thumbnails;
-  const imageUrl = Array.isArray(images) ? string(record(images[images.length - 1]).url) : '';
-  return {
-    id, identity, selected: data.selected === true, activate,
-    placeholder: !endpoint.videoId && !anchor?.getAttribute('href'),
-    title: title.length <= 180 ? title : '', imageUrl: imageUrl.length <= 2000 ? imageUrl : ''
-  };
-}
-
-function matchesQueueUrl(href: string, videoId: string, queueId: string, index: unknown): boolean {
-  try {
-    const url = new URL(href, window.location.href);
-    const endpointIndex = integer(index);
-    const linkIndex = url.searchParams.get('index');
-    // Queue links sometimes omit index. A present index that disagrees is another occurrence.
-    const indexAgrees = endpointIndex == null || linkIndex == null || Number(linkIndex) === endpointIndex + 1;
-    return url.origin === window.location.origin && url.pathname === '/watch'
-      && url.searchParams.get('v') === videoId && url.searchParams.get('list') === queueId && indexAgrees;
-  } catch {
-    return false;
-  }
-}
-
 function nativeStepUsable(player: HTMLElement, direction: PlaylistDirection): boolean {
   const button = player.querySelector(direction === 'next' ? '.ytp-next-button' : '.ytp-prev-button');
   if (!(button instanceof HTMLElement)) return false;
@@ -246,37 +145,4 @@ function nativePreviewId(player: HTMLElement, direction: PlaylistDirection): str
   } catch {
     return '';
   }
-}
-
-function indexRows(panel: HTMLElement): RowIndex {
-  const byData: RowIndex['byData'] = new Map();
-  const byIdentity: RowIndex['byIdentity'] = new Map();
-  for (const row of panel.querySelectorAll<HostNode>('ytd-playlist-panel-video-renderer')) {
-    const data = record(row.data ?? row.polymerController?.data);
-    const identity = rowIdentity(data);
-    const dataRows = byData.get(data);
-    if (dataRows) dataRows.push(row);
-    else byData.set(data, [row]);
-    const identityRows = byIdentity.get(identity);
-    if (identityRows) identityRows.push(row);
-    else byIdentity.set(identity, [row]);
-  }
-  return { byData, byIdentity };
-}
-
-function rowIdentity(data: RecordValue): string {
-  return string(data.playlistSetVideoId)
-    || JSON.stringify([data.videoId, record(record(data.navigationEndpoint).watchEndpoint).index]);
-}
-
-function record(value: unknown): RecordValue {
-  return value && typeof value === 'object' ? value as RecordValue : {};
-}
-
-function string(value: unknown): string {
-  return typeof value === 'string' ? value : '';
-}
-
-function integer(value: unknown): number | null {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : null;
 }

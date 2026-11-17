@@ -1618,5 +1618,25 @@
   "sleepTimerPausedHud": {
     "message": "スリープタイマーで一時停止しました",
     "description": "Brief on-video notice when the sleep timer pauses playback."
+  },
+  "playlistPanelTitle": {
+    "message": "再生リスト"
+  },
+  "playlistPosition": {
+    "message": "$CURRENT$ / $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "playlistUnavailable": {
+    "message": "この再生リストは現在利用できません。"
+  },
+  "playlistNowPlaying": {
+    "message": "再生中"
   }
 }

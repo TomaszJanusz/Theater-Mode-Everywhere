@@ -1,0 +1,104 @@
+/* Injected into the panel with the list it styles (see playlist-panel-view.ts); shared rows come from shadow.css. */
+/* The subtitle menu's shell (shadow.css), wider and taller; two classes outrank its own size rule. */
+.theater-cc-menu.theater-playlist-menu {
+  min-width: min(400px, calc(100vw - 48px)) !important;
+  max-width: min(400px, calc(100vw - 48px)) !important;
+  max-height: min(62vh, 560px) !important;
+}
+
+.theater-playlist-heading {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-block: 2px;
+}
+
+.theater-playlist-meta,
+.theater-playlist-byline {
+  overflow: hidden;
+  color: var(--appearance-muted, #94a3b8);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theater-playlist-meta[hidden] { display: none; }
+
+.theater-playlist-list {
+  margin: 0;
+  list-style: none;
+}
+
+.theater-playlist-item { list-style: none; }
+
+.theater-playlist-index {
+  display: flex;
+  flex: 0 0 18px;
+  justify-content: center;
+  color: var(--appearance-muted, #94a3b8);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.theater-playlist-row.active .theater-playlist-index { color: inherit; }
+
+.theater-playlist-thumb {
+  position: relative;
+  flex: 0 0 72px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.1));
+}
+
+.theater-playlist-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.theater-playlist-duration {
+  position: absolute;
+  inset-block-end: 3px;
+  inset-inline-end: 3px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 14px;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.theater-playlist-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.theater-playlist-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+/* Read by screen readers only (see renderRow). */
+.theater-playlist-spoken {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

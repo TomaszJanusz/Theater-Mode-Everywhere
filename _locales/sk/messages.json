@@ -1618,5 +1618,25 @@
   "sleepTimerPausedHud": {
     "message": "Pozastavené časovačom vypnutia",
     "description": "Brief on-video notice when the sleep timer pauses playback."
+  },
+  "playlistPanelTitle": {
+    "message": "Playlist"
+  },
+  "playlistPosition": {
+    "message": "$CURRENT$ z $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "playlistUnavailable": {
+    "message": "Tento playlist teraz nie je dostupný."
+  },
+  "playlistNowPlaying": {
+    "message": "Práve hrá"
   }
 }

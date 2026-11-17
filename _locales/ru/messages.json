@@ -1618,5 +1618,25 @@
   "sleepTimerPausedHud": {
     "message": "Пауза по таймеру сна",
     "description": "Brief on-video notice when the sleep timer pauses playback."
+  },
+  "playlistPanelTitle": {
+    "message": "Плейлист"
+  },
+  "playlistPosition": {
+    "message": "$CURRENT$ из $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "playlistUnavailable": {
+    "message": "Этот плейлист сейчас недоступен."
+  },
+  "playlistNowPlaying": {
+    "message": "Сейчас играет"
   }
 }

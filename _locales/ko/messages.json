@@ -1618,5 +1618,25 @@
   "sleepTimerPausedHud": {
     "message": "취침 타이머로 일시정지됨",
     "description": "Brief on-video notice when the sleep timer pauses playback."
+  },
+  "playlistPanelTitle": {
+    "message": "재생목록"
+  },
+  "playlistPosition": {
+    "message": "$CURRENT$/$TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "playlistUnavailable": {
+    "message": "지금은 이 재생목록을 사용할 수 없습니다."
+  },
+  "playlistNowPlaying": {
+    "message": "지금 재생 중"
   }
 }
