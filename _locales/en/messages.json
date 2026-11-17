@@ -1671,5 +1671,9 @@
   "sleepTimerOffHud": {
     "message": "Sleep timer off",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "Toggle playlist",
+    "description": "Keyboard shortcut name: opens or closes the playlist panel in the control bar, where the service lists the playlist being played."
   }
 }

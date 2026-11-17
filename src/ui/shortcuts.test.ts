@@ -128,6 +128,18 @@ describe('shortcut ownership', () => {
     const defaults = Object.values(defaultShortcuts).filter(Boolean);
     assert.equal(defaults.every((left, index) => defaults.every((right, other) => other === index || !shortcutsConflict(left, right))), true);
   });
+  it('ships the playlist toggle unassigned: Shift+P is Previous video, here and on YouTube', () => {
+    assert.equal(defaultShortcuts.togglePlaylist, '');
+    assert.equal(withShortcutDefaults({}).togglePlaylist, '');
+    assert.equal(matchesShortcut(key({ key: 'P', code: 'KeyP', shiftKey: true }), withShortcutDefaults({}).togglePlaylist), false);
+    // Assigning the obvious key reports the clash, and taking it leaves Previous video unassigned.
+    assert.deepEqual(shortcutConflicts(defaultShortcuts, 'togglePlaylist', 'Shift+P'), ['previousVideo']);
+    assert.equal(assignShortcut(defaultShortcuts, 'togglePlaylist', 'Shift+P').previousVideo, '');
+    const chosen = withShortcutDefaults({ togglePlaylist: 'Q' });
+    assert.equal(chosen.togglePlaylist, 'Q');
+    assert.equal(matchesShortcut(key({ key: 'q', code: 'KeyQ' }), chosen.togglePlaylist), true);
+    assert.equal(withShortcutDefaults({ togglePlaylist: 'Q', previousVideo: '' }).previousVideo, '');
+  });
   it('introduces the sleep timer cycle on Shift+S, yielding to a custom binding and staying off once cleared', () => {
     assert.equal(defaultShortcuts.cycleSleepTimer, 'Shift+S');
     assert.equal(withShortcutDefaults({}).cycleSleepTimer, 'Shift+S');

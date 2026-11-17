@@ -1655,5 +1655,8 @@
   "sleepTimerOffHud": {
     "message": "تم إيقاف مؤقت النوم",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "تبديل قائمة التشغيل"
   }
 }

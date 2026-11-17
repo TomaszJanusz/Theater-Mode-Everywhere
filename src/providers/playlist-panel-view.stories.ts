@@ -59,7 +59,7 @@ const meta: Meta<Args> = {
     const playlist = samplePlaylist({ count, current, total: mix ? null : count, title: mix ? 'Mix – Slow travel' : undefined });
     const source = fakePlaylistSource(playlist);
     stage = { source };
-    const panel = mountPlaylistPanel(source.source, playlistBar(scope, t('playlistPanelTitle')));
+    const panel = mountPlaylistPanel(source.source, playlistBar(scope));
     source.setAvailable(list);
     panel.syncAvailability();
     if (unavailable) source.update(null);

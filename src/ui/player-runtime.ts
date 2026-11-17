@@ -1795,11 +1795,20 @@ function initialize(): void {
       return true;
     }
 
-    if (session.element && nativeChatState()?.available && matchesShortcut(event, shortcuts.toggleChat)) {
+    // The panel toggles act only while their panel is there; anywhere else the key stays the page's.
+    const chatKey = matchesShortcut(event, shortcuts.toggleChat) && nativeChatState()?.available;
+    const playlistPanel = !chatKey && matchesShortcut(event, shortcuts.togglePlaylist)
+      && (queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null)?._playlist;
+    if (session.element && (chatKey || (playlistPanel && !playlistPanel.host.hidden))) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'TOGGLE_CHAT' });
+      if (!ui().helpOpen && !event.repeat) {
+        if (playlistPanel) {
+          showToolbar();
+          playlistPanel.toggle();
+        } else executeCommand({ type: 'TOGGLE_CHAT' });
+      }
       return true;
     }
 

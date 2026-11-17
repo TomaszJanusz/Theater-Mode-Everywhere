@@ -53,7 +53,6 @@ export interface PlaylistPanelSource {
 export interface PlaylistPanelBar {
   /** The controls' scope: the toggle, its panel and any opening end with it. */
   scope: DisposableScope;
-  label: string;
   setIcon(element: HTMLElement, svg: string): void;
   bindTooltip: ButtonTooltipBinder;
   bindMenu: typeof bindMenuPopover;
@@ -69,6 +68,11 @@ export interface PlaylistPanelControl {
   /** Shows the toggle only while the provider has a list; a list that went away closes the panel. */
   syncAvailability(): void;
   close(restoreFocus?: boolean): boolean;
+  /**
+   * The keyboard shortcut: opens the panel as a keyboard activation of the toggle does (pinned, focus on the playing
+   * item) or closes it, handing focus back to the toggle when it was inside. Only while the toggle is shown.
+   */
+  toggle(): void;
 }
 
 const MAX_TEXT = 300;

@@ -1655,5 +1655,8 @@
   "sleepTimerOffHud": {
     "message": "취침 타이머 꺼짐",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "재생목록 전환"
   }
 }

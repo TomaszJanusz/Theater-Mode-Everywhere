@@ -29,6 +29,7 @@ export const SHORTCUT_LABELS: Record<Action, string> = {
   cycleFit: 'cycleVideoFit',
   cycleLayout: 'cyclePictureLayout',
   toggleChat: 'toggleNativeChat',
+  togglePlaylist: 'togglePlaylistPanel',
   toggleCaptions: 'toggleSubtitles',
   increaseCaptionSize: 'increaseSubtitleSize',
   decreaseCaptionSize: 'decreaseSubtitleSize',
@@ -91,7 +92,8 @@ export const SHORTCUT_HELP_GROUPS: readonly ShortcutHelpGroup[] = [
   { id: 'layout', title: 'helpGroupLayout', rows: [
     { actions: ['cycleFit'] },
     { actions: ['cycleLayout'] },
-    { actions: ['toggleChat'] }
+    { actions: ['toggleChat'] },
+    { actions: ['togglePlaylist'] }
   ] },
   { id: 'navigation', title: 'navigationGroupTitle', rows: [
     { label: 'helpNavigateControls', actions: NAVIGATION_SHORTCUTS },

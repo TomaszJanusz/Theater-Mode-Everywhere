@@ -26,6 +26,7 @@ export interface Shortcuts {
   cycleFit: string;
   cycleLayout: string;
   toggleChat: string;
+  togglePlaylist: string;
   toggleCaptions: string;
   increaseCaptionSize: string;
   decreaseCaptionSize: string;
@@ -84,6 +85,9 @@ export const defaultShortcuts: Shortcuts = {
   cycleFit: 'Z',
   cycleLayout: 'Shift+L',
   toggleChat: 'Alt+R',
+  // Unassigned: Shift+P, the obvious key, is Previous video here and on YouTube (see TME-253). A default chosen later
+  // joins INTRODUCED_SHORTCUTS, so a key someone already gave another action stays theirs.
+  togglePlaylist: '',
   toggleCaptions: 'C',
   increaseCaptionSize: '+',
   decreaseCaptionSize: '-',

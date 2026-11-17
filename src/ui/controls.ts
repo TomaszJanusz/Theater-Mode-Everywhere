@@ -65,6 +65,8 @@ export interface ExtendedHTMLDivElement extends HTMLDivElement {
   _mediaFeatures?: MediaFeaturesController;
   /** Re-reads provider availability for the AutoTheater row after Rich Theater Experience flags change. */
   _syncAutoTheaterAvailability?: () => void;
+  /** The provider's playlist toggle, for its keyboard shortcut. */
+  _playlist?: PlaylistPanelControl | null;
 }
 
 export function createControls(
@@ -867,7 +869,6 @@ export function createControls(
 
     playlistPanel = enabledProviderSource('playlistPanel', video.element, {
       scope: controlsScope,
-      label: t('playlistPanelTitle'),
       setIcon,
       bindTooltip: bindCustomTooltip,
       bindMenu: bindMenuPopover,
@@ -883,6 +884,7 @@ export function createControls(
       nextBtn.after(playlistPanel.host);
       playlistPanel.syncAvailability();
     }
+    wrapper._playlist = playlistPanel;
 
     mountNativeChatControls(ctx, controlsScope, rightSec, settings.panel, bindCustomTooltip);
 

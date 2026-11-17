@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - With Rich Theater Experience on, a YouTube video watched from a playlist gets a Playlist button next to Previous and Next. It opens the playlist as a compact list above the bar, with the position, thumbnail, duration, title and channel of each video and the playing one highlighted; choose a video with the mouse or keyboard to play it in the same playlist. It follows YouTube's own list, so it works for ordinary playlists, mixes (which show no count) and a channel's "Play all", and lists as much of a long list as YouTube has loaded around the current video.
 - Sleep timer in the player's settings menu: choose 15, 30, 45, 60, 90, 120 or 240 minutes, or Off, and playback pauses when the time is up. One timer covers the whole browser profile: it can be set, changed or turned off from any tab, and when it runs out it pauses whatever is playing in theater mode in every tab, without starting anything that was paused. While it runs, a small moon with the minutes left sits next to the settings button and opens the setting when clicked. Shift+S (customizable in Settings) steps it up to the next duration with each press, and after 240 minutes turns it off. A browser restart turns it off.
+- A Toggle playlist keyboard shortcut opens and closes the YouTube playlist panel in theater mode. It has no key until you assign one under Settings → Keyboard shortcuts: Shift+P, the obvious choice, already goes to the previous video, here and on YouTube.
 
 ### Changed
 

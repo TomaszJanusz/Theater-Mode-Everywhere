@@ -105,6 +105,7 @@ export const SHARED_I18N_FALLBACKS: Record<string, string> = {
   decreasePlaybackSpeed: 'Decrease Playback Speed',
   increasePlaybackSpeed: 'Increase Playback Speed',
   cycleSleepTimer: 'Cycle Sleep Timer',
+  togglePlaylistPanel: 'Toggle playlist',
   toggleFullscreen: 'Toggle Fullscreen',
   togglePictureInPicture: 'Toggle Picture-in-Picture',
   resetToDefault: 'Reset to default',

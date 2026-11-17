@@ -4,9 +4,10 @@ import { describe, it } from 'node:test';
 
 import { chromium, firefox, type Page } from 'playwright';
 
-import { PROVIDER_ENTRIES, bundleModules } from '../../test-utils/player-boot';
+import { PROVIDER_ENTRIES, bootPlayer, bundleModules, bundlePlayer, enterTheater } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { selectTestEngines } from '../../test-utils/test-engines';
+import { serveFixture, vodVideoFixture } from '../../test-utils/video-fixtures';
 
 const chromiumBrowser = sharedTestBrowser(chromium);
 
@@ -176,6 +177,66 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         await page.evaluate(`document.documentElement.removeAttribute(PlaylistTest.providerOffAttribute('youtube'));
           window.__scope.dispose(); history.replaceState(null, '', '/watch?v=b&list=PLother'); window.__open()`);
         assert.equal(await page.evaluate(`document.querySelector('#panel [role="status"]') !== null`), true);
+      } finally { await context.close(); }
+    });
+  });
+}
+
+// The installed player on a YouTube watch page: its keydown path, the toggle in the bar and the provider's panel.
+const playerPage = vodVideoFixture({ title: 'YouTube playlist shortcut fixture' })
+  .replace('<body>', '<body><ytd-watch-flexy><div id="movie_player">')
+  .replace('</body>', '</div><ytd-playlist-panel-renderer><div id="items"></div></ytd-playlist-panel-renderer></ytd-watch-flexy><input id="field"></body>');
+const playerBundle = bundlePlayer(["export { installYouTubePlaylist } from './providers/youtube/playlist-panel-main';"]);
+
+for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['Firefox', firefox]] as const, ([engine]) => engine)) {
+  const shared = browserType === chromium ? chromiumBrowser : sharedTestBrowser(browserType);
+  describe(`YouTube playlist shortcut in the player (${name})`, () => {
+    it('opens and closes the panel like the toggle, leaves Shift+P to Previous video, fields and pages without a list', { timeout: 60_000 }, async t => {
+      if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
+      const context = await shared.newContext(t, { viewport: { width: 1280, height: 720 } });
+      try {
+        const page = await context.newPage();
+        page.setDefaultTimeout(8000);
+        await serveFixture(page, playerPage, 'https://www.youtube.com/watch?v=b&list=PLfixture');
+        await page.route('https://*.ytimg.com/**', route => route.fulfill({ status: 204, body: '' }));
+        await page.evaluate(fixture);
+        await bootPlayer(page, { mainWorld: true, bundle: playerBundle, settings: { shortcuts: { togglePlaylist: 'Q' } } });
+        await page.evaluate('TheaterTest.installYouTubePlaylist()');
+        await page.waitForFunction(() => document.querySelector('video')!.readyState >= 2);
+        await enterTheater(page);
+        const toggle = page.locator('.theater-playlist-toggle');
+        await toggle.waitFor();
+        const state = () => toggle.evaluate(button => button.parentElement!.dataset.teState);
+        const focused = () => page.evaluate(() => {
+          const active = document.getElementById('theater-everywhere-ui')!.shadowRoot!.activeElement;
+          return active?.matches('.theater-playlist-toggle') ? 'toggle' : active?.getAttribute('aria-current') === 'true' ? 'playing row' : String(active?.className);
+        });
+        await page.keyboard.press('q');
+        assert.equal(await state(), 'open');
+        assert.equal(await focused(), 'playing row');
+        await page.keyboard.press('q');
+        assert.equal(await state(), 'closed');
+        assert.equal(await focused(), 'toggle');
+        // Shift+P stays Previous video: it goes through YouTube's previous row and opens nothing.
+        await page.keyboard.press('Shift+P');
+        assert.deepEqual(await page.evaluate('window.__clicks'), ['/watch?v=a&list=PLfixture&index=1']);
+        assert.equal(await state(), 'closed');
+        // Typing in a field stays the field's.
+        await page.evaluate(() => document.getElementById('field')!.focus());
+        await page.keyboard.press('q');
+        assert.equal(await state(), 'closed');
+        assert.equal(await page.inputValue('#field'), 'q');
+        // Without a list the toggle goes away and the key is the page's again.
+        await page.evaluate(() => {
+          (document.activeElement as HTMLElement).blur();
+          document.querySelector<HTMLElement>('ytd-playlist-panel-renderer')!.hidden = true;
+          (window as unknown as { __pageKeys: string[] }).__pageKeys = [];
+          document.addEventListener('keydown', event => (window as unknown as { __pageKeys: string[] }).__pageKeys.push(event.key));
+        });
+        await toggle.waitFor({ state: 'hidden' });
+        await page.keyboard.press('q');
+        assert.deepEqual(await page.evaluate('window.__pageKeys'), ['q']);
+        assert.equal(await state(), 'closed');
       } finally { await context.close(); }
     });
   });

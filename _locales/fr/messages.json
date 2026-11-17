@@ -1655,5 +1655,8 @@
   "sleepTimerOffHud": {
     "message": "Minuterie de mise en veille désactivée",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "Afficher ou masquer la playlist"
   }
 }

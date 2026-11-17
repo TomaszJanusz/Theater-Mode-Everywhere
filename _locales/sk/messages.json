@@ -1655,5 +1655,8 @@
   "sleepTimerOffHud": {
     "message": "Časovač vypnutia je vypnutý",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "Prepnúť playlist"
   }
 }

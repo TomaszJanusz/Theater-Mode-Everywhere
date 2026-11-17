@@ -1655,5 +1655,8 @@
   "sleepTimerOffHud": {
     "message": "Sleep-Timer aus",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "Playlist umschalten"
   }
 }
