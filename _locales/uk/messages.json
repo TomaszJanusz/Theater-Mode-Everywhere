@@ -1623,7 +1623,7 @@
     "message": "Плейлист"
   },
   "playlistPosition": {
-    "message": "$CURRENT$ з $TOTAL$",
+    "message": "Відео $CURRENT$ з $TOTAL$",
     "placeholders": {
       "current": {
         "content": "$1"

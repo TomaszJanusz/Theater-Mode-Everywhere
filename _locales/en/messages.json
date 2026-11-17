@@ -1636,7 +1636,7 @@
     "description": "Control bar button that opens the list of videos in the current playlist, and the panel heading when the playlist has no name."
   },
   "playlistPosition": {
-    "message": "$CURRENT$ of $TOTAL$",
+    "message": "Video $CURRENT$ of $TOTAL$",
     "placeholders": {
       "current": {
         "content": "$1"

@@ -1623,7 +1623,7 @@
     "message": "Playlista"
   },
   "playlistPosition": {
-    "message": "$CURRENT$ z $TOTAL$",
+    "message": "Film $CURRENT$ z $TOTAL$",
     "placeholders": {
       "current": {
         "content": "$1"

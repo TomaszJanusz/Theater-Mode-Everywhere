@@ -1623,7 +1623,7 @@
     "message": "播放列表"
   },
   "playlistPosition": {
-    "message": "$CURRENT$/$TOTAL$",
+    "message": "第 $CURRENT$ 个，共 $TOTAL$ 个",
     "placeholders": {
       "current": {
         "content": "$1"

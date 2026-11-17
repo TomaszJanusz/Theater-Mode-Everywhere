@@ -56,7 +56,7 @@ describe('Playlist panel', () => {
     const current = rows()[2];
     expect(current.getAttribute('aria-current')).toBe('true');
     expect(current.classList.contains('active')).toBe(true);
-    expect(panel.host.querySelector('.theater-playlist-meta')!.textContent).toBe('\u2068Harbour Films\u2069 · 3 of 12');
+    expect(panel.host.querySelector('.theater-playlist-meta')!.textContent).toBe('\u2068Harbour Films\u2069 · Video 3 of 12');
     panel.close();
     expect(subscriptions()).toBe(0);
     expect(rows()).toHaveLength(0);

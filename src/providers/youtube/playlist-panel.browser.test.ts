@@ -106,7 +106,7 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         // The row-sized ytimg thumbnail; any other host's image is dropped.
         assert.equal(listed[0].image, 'https://i.ytimg.com/vi/a/hqdefault.jpg');
         assert.equal(listed[3].image, '');
-        assert.equal(await page.textContent('#panel .theater-playlist-meta'), '\u2068Owner\u2069 · 2 of 4');
+        assert.equal(await page.textContent('#panel .theater-playlist-meta'), '\u2068Owner\u2069 · Video 2 of 4');
         // The playing item only closes the panel; another goes through YouTube's own row link. A click without a
         // pointer (detail 0) is a keyboard activation, which hands focus back to the toggle.
         await clickRow(page, 1);

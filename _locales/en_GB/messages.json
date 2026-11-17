@@ -1623,7 +1623,7 @@
     "message": "Playlist"
   },
   "playlistPosition": {
-    "message": "$CURRENT$ of $TOTAL$",
+    "message": "Video $CURRENT$ of $TOTAL$",
     "placeholders": {
       "current": {
         "content": "$1"

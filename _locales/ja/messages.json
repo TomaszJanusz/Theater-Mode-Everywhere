@@ -1623,7 +1623,7 @@
     "message": "再生リスト"
   },
   "playlistPosition": {
-    "message": "$CURRENT$ / $TOTAL$",
+    "message": "$CURRENT$ / $TOTAL$ 本目",
     "placeholders": {
       "current": {
         "content": "$1"

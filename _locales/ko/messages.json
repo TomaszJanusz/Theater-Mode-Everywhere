@@ -1623,7 +1623,7 @@
     "message": "재생목록"
   },
   "playlistPosition": {
-    "message": "$CURRENT$/$TOTAL$",
+    "message": "$TOTAL$개 중 $CURRENT$번째",
     "placeholders": {
       "current": {
         "content": "$1"

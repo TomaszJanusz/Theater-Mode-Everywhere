@@ -17,7 +17,7 @@ export interface PlaylistData {
 /** Provider-only fallbacks: these bytes never join content.js. */
 const FALLBACKS: Record<string, string> = {
   playlistPanelTitle: 'Playlist',
-  playlistPosition: '$1 of $2',
+  playlistPosition: 'Video $1 of $2',
   playlistUnavailable: 'This playlist is not available right now.',
   playlistNowPlaying: 'Now playing'
 };

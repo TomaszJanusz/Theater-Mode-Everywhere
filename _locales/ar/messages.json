@@ -1623,7 +1623,7 @@
     "message": "قائمة التشغيل"
   },
   "playlistPosition": {
-    "message": "$CURRENT$ من $TOTAL$",
+    "message": "الفيديو $CURRENT$ من $TOTAL$",
     "placeholders": {
       "current": {
         "content": "$1"
