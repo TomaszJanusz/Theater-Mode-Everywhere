@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { build } from 'vite';
 
 import { bundleMinify, resolveBundleBuildMode } from './build-mode';
@@ -60,7 +60,7 @@ function copyIfExistsSync(srcDir: string, destDir: string) {
 }
 
 function zipDirectory(sourceDir: string, outPath: string): Promise<void> {
-  const archive = archiver('zip', { zlib: { level: 9 } });
+  const archive = new ZipArchive({ zlib: { level: 9 } });
   const stream = fs.createWriteStream(outPath);
 
   return new Promise((resolve, reject) => {
