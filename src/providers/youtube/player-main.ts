@@ -41,6 +41,7 @@ import {
   MAX_TIMEDTEXT_STRING_LENGTH,
   TIMEDTEXT_CACHE_STRING_BUDGET
 } from './timedtext-cache';
+import { WatchChapterMemory, navigationChapters } from './watch-chapters';
 import { youtubeWatchPlayback } from './watch-playback';
 
 export function youtubeIntegrationEnabled(): boolean {
@@ -61,6 +62,7 @@ const YOUTUBE_CAPTION_AUTH_ID = 'theater-everywhere-youtube-caption-auth';
 let captionMintInFlight: Promise<string | null> | null = null;
 const lastCaptionMintFailedAt = new Map<string, number>();
 let youtubeHeatmapHarvest: (YoutubeHeatmap & { videoId: string | null }) | null = null;
+const navigatedChapters = new WatchChapterMemory();
 let youtubeHarvestNotifyTimer = 0;
 
 function notifyYoutubeHarvest(): void {
@@ -670,6 +672,8 @@ export function readYoutubeSnapshot(): Record<string, unknown> | null {
       if (expected.strict ? initialId === wantId : !wantId || !initialId || initialId === wantId) {
         markers = findYoutubeChapterMarkers(win.ytInitialData);
       }
+      // ytInitialData describes only the tab's first video; later ones are read from their navigation.
+      if (markers.length === 0 && wantId) markers = navigatedChapters.markers(wantId) ?? [];
     }
 
     return {
@@ -820,6 +824,11 @@ export function installYoutubeMain(pageMedia: NonNullable<typeof fetchPageMedia>
     if (event.target === findYoutubePlayer()?.querySelector('video')) invalidateYoutubeCaptions();
   }, true);
 
+  // In-app navigation hands over the page data it fetched; YouTube streams that get_watch body, so no harvest sees it.
+  // Captured, so the chapters are known before the publishes below read them.
+  document.addEventListener('yt-navigate-finish', (event) => {
+    navigatedChapters.remember(navigationChapters(youtubeRecord((event as CustomEvent<unknown>).detail)?.response));
+  }, true);
   ['yt-navigate-finish', 'yt-page-data-updated', 'yt-player-updated'].forEach((name) => {
     window.addEventListener(name, publishCurrentYoutubeSnapshot);
     document.addEventListener(name, publishCurrentYoutubeSnapshot);
