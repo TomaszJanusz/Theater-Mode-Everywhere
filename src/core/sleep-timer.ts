@@ -2,8 +2,9 @@
 export const SLEEP_TIMER_MINUTES = [0, 15, 30, 45, 60, 90, 120, 240] as const;
 
 /**
- * One message action both ways: a frame asks the background (`minutes` sets the timer, 0 turns it off, none reads
- * it), and the background tells every frame of every tab the new state (`fired` when it ran out).
+ * One message action both ways: a frame asks the background (`minutes` sets the timer, 0 turns it off, `cycle`
+ * steps it up like the row's up arrow and turns it off past the longest option, none reads it), and the background
+ * tells every frame of every tab the new state (`fired` when it ran out).
  */
 export const SLEEP_TIMER_ACTION = 'sleep-timer';
 
@@ -26,6 +27,18 @@ const isDuration = (value: unknown): value is number =>
 export function resolveSleepTimer(value: unknown): SleepTimer | null {
   const timer = value as Partial<Record<keyof SleepTimer, unknown>> | null | undefined;
   return isDuration(timer?.minutes) && Number.isFinite(timer?.deadline) ? timer as SleepTimer : null;
+}
+
+/**
+ * The timer a background answer names, Off (null) included. Throws for a failure, no answer or anything else, so a
+ * caller never reads a request that did not complete as Off.
+ */
+export function readSleepTimerReply(value: unknown): SleepTimer | null {
+  const timer = (value as { timer?: unknown } | null | undefined)?.timer;
+  if (timer === null) return null;
+  const read = resolveSleepTimer(timer);
+  if (!read) throw new Error('The sleep timer request did not complete');
+  return read;
 }
 
 /** A duration a request may set: 0 (Off) or one of the offered minutes; undefined only reads. */

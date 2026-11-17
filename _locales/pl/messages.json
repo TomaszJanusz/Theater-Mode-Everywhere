@@ -1638,5 +1638,22 @@
   },
   "playlistNowPlaying": {
     "message": "Teraz odtwarzane"
+  },
+  "cycleSleepTimer": {
+    "message": "Zmień wyłącznik czasowy",
+    "description": "Keyboard shortcut name: each press raises the sleep timer to the next duration and turns it off after the longest."
+  },
+  "sleepTimerHud": {
+    "message": "Wyłącznik czasowy: $1",
+    "description": "Brief on-video notice after the sleep timer shortcut; $1 is the duration just started, such as sleepTimerMinutes.",
+    "placeholders": {
+      "duration": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerOffHud": {
+    "message": "Wyłącznik czasowy wyłączony",
+    "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
   }
 }

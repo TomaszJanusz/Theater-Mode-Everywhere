@@ -1638,5 +1638,22 @@
   },
   "playlistNowPlaying": {
     "message": "En cours de lecture"
+  },
+  "cycleSleepTimer": {
+    "message": "Changer la minuterie de mise en veille",
+    "description": "Keyboard shortcut name: each press raises the sleep timer to the next duration and turns it off after the longest."
+  },
+  "sleepTimerHud": {
+    "message": "Minuterie de mise en veille : $1",
+    "description": "Brief on-video notice after the sleep timer shortcut; $1 is the duration just started, such as sleepTimerMinutes.",
+    "placeholders": {
+      "duration": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerOffHud": {
+    "message": "Minuterie de mise en veille désactivée",
+    "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
   }
 }

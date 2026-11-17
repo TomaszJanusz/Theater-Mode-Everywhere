@@ -11,7 +11,7 @@ import {
   removeLegacyYoutubeExclusion
 } from '../platform/legacy-youtube-exclusion';
 import { isAllowedBrokerFetchUrl, MAX_CAPTION_BYTES } from '../platform/media-url-policy';
-import { createSleepTimerOwner } from '../platform/sleep-timer-owner';
+import { createSleepTimerOwner, sleepTimerReply } from '../platform/sleep-timer-owner';
 import {
   OBSOLETE_LOCAL_KEYS, OBSOLETE_LOCAL_PREFIX, OBSOLETE_SYNC_KEYS, PENDING_UPDATE_KEY,
   pendingAfterInstall, resolvePendingUpdate
@@ -230,10 +230,8 @@ chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.Mess
   }
   if (message?.action === SLEEP_TIMER_ACTION) {
     if (_sender.id !== chrome.runtime.id) return false;
-    sleepTimer.request(message.minutes).then(sendResponse, (error: unknown) => {
-      console.error('[Theater Everywhere] Could not update the sleep timer:', error);
-      sendResponse(null);
-    });
+    void sleepTimerReply(message.cycle === true ? sleepTimer.cycle() : sleepTimer.request(message.minutes),
+      error => console.error('[Theater Everywhere] Could not update the sleep timer:', error)).then(sendResponse);
     return true;
   }
   if (message?.action === 'get-language-catalog') {

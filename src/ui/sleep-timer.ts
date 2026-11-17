@@ -1,6 +1,6 @@
 import type { DisposableScope } from '../core/disposable-scope';
 import {
-  resolveSleepTimer, SLEEP_TIMER_ACTION, SLEEP_TIMER_MINUTES, sleepTimerSegment, sleepTimerStep, type SleepTimer, type SleepTimerBroadcast
+  readSleepTimerReply, resolveSleepTimer, SLEEP_TIMER_ACTION, SLEEP_TIMER_MINUTES, sleepTimerSegment, sleepTimerStep, type SleepTimer, type SleepTimerBroadcast
 } from '../core/sleep-timer';
 
 import type { ButtonTooltipBinder } from './button-tooltip';
@@ -10,6 +10,14 @@ import type { createPlayerSettings } from './player-settings';
 import type { PlayerChromeContext } from './runtime-context';
 import { createSleepTimerChip } from './sleep-timer-chip';
 import { systemClock } from './ui-clock';
+
+/**
+ * Asks the background, which owns the profile's timer, and resolves to the timer after the request. Rejects when the
+ * request did not complete (the background failed, or there is no extension context), so callers show nothing.
+ */
+export async function requestSleepTimer(request: { minutes?: number; cycle?: true }): Promise<SleepTimer | null> {
+  return readSleepTimerReply(await chrome.runtime.sendMessage({ action: SLEEP_TIMER_ACTION, ...request }));
+}
 
 /**
  * The player's part of the profile-wide sleep timer: a settings row that sets it, the control bar chip that shows
@@ -36,12 +44,7 @@ export function mountSleepTimer(
   };
   const request = (minutes?: number) => {
     const sent = ++revision;
-    try {
-      chrome.runtime.sendMessage({ action: SLEEP_TIMER_ACTION, minutes })
-        .then((value: unknown) => { if (sent === revision) apply(value); }, () => {});
-    } catch {
-      // No extension context (an invalidated one, or a fixture page): the timer reads as off here.
-    }
+    requestSleepTimer({ minutes }).then(timer => { if (sent === revision) apply(timer); }, () => {});
   };
   // The row's segment and its steps are derived from the shared deadline at every paint and every press.
   const stepper = settings.addStepperRow(row, t('sleepTimerLabel'), 'player', {

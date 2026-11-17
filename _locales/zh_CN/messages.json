@@ -1638,5 +1638,22 @@
   },
   "playlistNowPlaying": {
     "message": "正在播放"
+  },
+  "cycleSleepTimer": {
+    "message": "切换睡眠定时器",
+    "description": "Keyboard shortcut name: each press raises the sleep timer to the next duration and turns it off after the longest."
+  },
+  "sleepTimerHud": {
+    "message": "睡眠定时器：$1",
+    "description": "Brief on-video notice after the sleep timer shortcut; $1 is the duration just started, such as sleepTimerMinutes.",
+    "placeholders": {
+      "duration": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerOffHud": {
+    "message": "睡眠定时器已关闭",
+    "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
   }
 }

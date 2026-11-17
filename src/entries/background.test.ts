@@ -375,6 +375,7 @@ it('keeps the sleep timer in session storage, wakes by alarm and tells every tab
   const alarms: Record<string, number> = {};
   const sent: Array<[number, unknown]> = [];
   let now = 1_000_000;
+  let alarmFails = false;
   runInNewContext(bundle, {
     console: { error() {} },
     Date: { now: () => now },
@@ -382,7 +383,10 @@ it('keeps the sleep timer in session storage, wakes by alarm and tells every tab
       ...quiet,
       alarms: {
         onAlarm: { addListener(fn: typeof onAlarm) { onAlarm = fn; } },
-        async create(name: string, { when }: { when: number }) { alarms[name] = when; },
+        async create(name: string, { when }: { when: number }) {
+          if (alarmFails) throw new Error('alarm refused');
+          alarms[name] = when;
+        },
         async clear(name: string) { delete alarms[name]; }
       },
       tabs: {
@@ -414,7 +418,8 @@ it('keeps the sleep timer in session storage, wakes by alarm and tells every tab
   });
   await assert.rejects(send({ action: 'sleep-timer', minutes: 30 }, { id: 'foreign' }));
   const timer = { minutes: 30, deadline: now + 30 * 60_000 };
-  assert.deepEqual(await send({ action: 'sleep-timer', minutes: 30 }), timer);
+  // Every answer names the timer it leaves, so a caller can tell a failure from a timer turned off.
+  assert.deepEqual(await send({ action: 'sleep-timer', minutes: 30 }), { timer });
   assert.deepEqual(plain(session), { sleepTimer: timer });
   assert.deepEqual(alarms, { 'sleep-timer': timer.deadline });
   // Tab 2 has no player and refuses; tab 1 still hears it.
@@ -424,9 +429,22 @@ it('keeps the sleep timer in session storage, wakes by alarm and tells every tab
   onAlarm({ name: 'other' });
   onAlarm({ name: 'sleep-timer' });
   // The reconcile runs on the owner's queue; a read after it settles behind it.
-  assert.equal(await send({ action: 'sleep-timer' }), null);
+  assert.deepEqual(await send({ action: 'sleep-timer' }), { timer: null });
   assert.deepEqual(sent.at(-1), [1, { action: 'sleep-timer', timer: null, fired: true }]);
   assert.equal(sent.length, 2);
   assert.deepEqual(session, {});
   assert.deepEqual(alarms, {});
+
+  // The cycle shortcut steps up from the time left: with no timer it starts 15 minutes.
+  const cycled = { minutes: 15, deadline: now + 15 * 60_000 };
+  assert.deepEqual(await send({ action: 'sleep-timer', cycle: true }), { timer: cycled });
+  assert.deepEqual(plain(session), { sleepTimer: cycled });
+  assert.deepEqual(alarms, { 'sleep-timer': cycled.deadline });
+  assert.deepEqual(sent.at(-1), [1, { action: 'sleep-timer', timer: cycled }]);
+
+  // The next timer is written but its wake-up is refused: the answer is a failure, never "no timer".
+  alarmFails = true;
+  assert.deepEqual(await send({ action: 'sleep-timer', cycle: true }), { failed: true });
+  assert.equal((plain(session) as { sleepTimer: { minutes: number } }).sleepTimer.minutes, 30, 'the write itself went through');
+  assert.equal(sent.length, 3, 'no tab was told of a timer whose wake-up failed');
 });

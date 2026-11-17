@@ -18,6 +18,7 @@ export const SHORTCUT_LABELS: Record<Action, string> = {
   frameForward: 'frameStepForward',
   decreaseSpeed: 'decreasePlaybackSpeed',
   increaseSpeed: 'increasePlaybackSpeed',
+  cycleSleepTimer: 'cycleSleepTimer',
   toggleFullscreen: 'toggleFullscreen',
   volumeUp: 'volumeUp5',
   volumeDown: 'volumeDown5',
@@ -65,7 +66,8 @@ export const SHORTCUT_HELP_GROUPS: readonly ShortcutHelpGroup[] = [
     { label: 'helpSeek', actions: ['seekBack', 'seekForward'] },
     { label: 'helpPreviousNext', actions: ['previousVideo', 'nextVideo'] },
     { label: 'helpFrameStep', actions: ['frameBack', 'frameForward'] },
-    { label: 'helpPlaybackSpeed', actions: ['decreaseSpeed', 'increaseSpeed'] }
+    { label: 'helpPlaybackSpeed', actions: ['decreaseSpeed', 'increaseSpeed'] },
+    { actions: ['cycleSleepTimer'] }
   ] },
   { id: 'audio', title: 'settingsSectionAudio', rows: [
     { label: 'helpVolume', actions: ['volumeDown', 'volumeUp'] },

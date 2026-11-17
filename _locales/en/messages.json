@@ -1654,5 +1654,22 @@
   "playlistNowPlaying": {
     "message": "Now playing",
     "description": "Spoken after the title of the playlist item that is playing."
+  },
+  "cycleSleepTimer": {
+    "message": "Cycle Sleep Timer",
+    "description": "Keyboard shortcut name: each press raises the sleep timer to the next duration and turns it off after the longest."
+  },
+  "sleepTimerHud": {
+    "message": "Sleep timer: $1",
+    "description": "Brief on-video notice after the sleep timer shortcut; $1 is the duration just started, such as sleepTimerMinutes.",
+    "placeholders": {
+      "duration": {
+        "content": "$1"
+      }
+    }
+  },
+  "sleepTimerOffHud": {
+    "message": "Sleep timer off",
+    "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
   }
 }
