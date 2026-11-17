@@ -1619,6 +1619,26 @@
     "message": "أوقف مؤقت النوم التشغيل مؤقتًا",
     "description": "Brief on-video notice when the sleep timer pauses playback."
   },
+  "playlistPanelTitle": {
+    "message": "قائمة التشغيل"
+  },
+  "playlistPosition": {
+    "message": "الفيديو $CURRENT$ من $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "playlistUnavailable": {
+    "message": "قائمة التشغيل هذه غير متاحة الآن."
+  },
+  "playlistNowPlaying": {
+    "message": "قيد التشغيل الآن"
+  },
   "cycleSleepTimer": {
     "message": "تبديل مؤقت النوم",
     "description": "Keyboard shortcut name: each press raises the sleep timer to the next duration and turns it off after the longest."

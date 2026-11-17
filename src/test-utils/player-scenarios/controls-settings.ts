@@ -55,6 +55,17 @@ export async function preparePinAndMenus(page: Page) {
       });
   });
   if (placement.length) fail(`Toolbar actions were lost, duplicated or misplaced: ${JSON.stringify(placement)}`);
+  // Tab follows the bar's order. The playlist toggle, present only when a provider lists the page's playlist, belongs
+  // with the step controls: right after Next.
+  const tabOrder = await page.evaluate(() => {
+    const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+    const names = ['play-pause-btn', 'playlist-prev-btn', 'playlist-next-btn', 'theater-playlist-toggle', 'volume-btn', 'cc-btn', 'speed-btn',
+      'pip-btn', 'fullscreen-btn', 'close-btn'];
+    const present = names.flatMap(name => [...root.querySelectorAll<HTMLElement>(`.theater-controls-row .${name}`)].map(element => ({ name, element })));
+    const sorted = [...present].sort((a, b) => a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
+    return { expected: present.map(entry => entry.name), actual: sorted.map(entry => entry.name) };
+  });
+  if (JSON.stringify(tabOrder.actual) !== JSON.stringify(tabOrder.expected)) fail(`Toolbar Tab order changed: ${JSON.stringify(tabOrder)}`);
   const gear = page.locator('.player-settings-btn');
   const menu = page.locator('.theater-settings-menu');
   await gear.evaluate(async button => {

@@ -39,6 +39,14 @@ const PICTURE_LAYOUT_SHAPES = '<rect x="3" y="3" width="18" height="18" rx="2"/>
 export const PICTURE_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 16);
 export const STATUS_HUD_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 28);
 
+/** A filled 18px bar icon. */
+export const filledIcon = (shapes: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">${shapes}</svg>`;
+/** The bar's Previous and Next. */
+export const PLAYLIST_STEP_ICONS = {
+  previous: filledIcon('<rect x="4" y="3" width="2.2" height="18" rx="0.4"/><path d="M19 4 8.5 12 19 20z"/>'),
+  next: filledIcon('<path d="M5 4 15.5 12 5 20z"/><rect x="17.8" y="3" width="2.2" height="18" rx="0.4"/>')
+};
+
 /**
  * A speed gauge whose needle leans to the slow or the fast side. Gauges read clockwise in every script,
  * so it is not mirrored for right-to-left interfaces, and it never suggests rewinding as a left-pointing arrow would.

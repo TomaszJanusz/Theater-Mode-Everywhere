@@ -2,6 +2,7 @@ import type { AudioSettings } from '../audio-settings';
 import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
 import { DisposableScope } from '../core/disposable-scope';
 import type { PlayerCommand } from '../core/player-session';
+import type { PlaylistPanelControl } from '../core/playlist-panel';
 import { languageRuntime } from '../i18n-runtime';
 import { captionPreferenceHost } from '../media-features/caption-preference';
 import { MediaFeaturesController } from '../media-features/controller';
@@ -22,7 +23,7 @@ import {
 } from '../playback-window';
 import { emptyPlaylistNav, type PlaylistNavState } from '../playlist-nav';
 import { requestOptionsPage } from '../protocol/options-page';
-import { createEndScreen, createPlaybackEnd } from '../providers/end-screen';
+import { enabledProviderSource } from '../providers/hook-sources';
 import { observeProviderMediaChanges, refreshProviderAfterElementReset } from '../providers/media-events';
 import { createServiceActions } from '../providers/service-actions';
 import { observeProviderClock, readProviderClock } from '../providers/timeline';
@@ -38,7 +39,7 @@ import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { mountEndedCurtain, REPLAY_ICON } from './ended-curtain';
 import { createFullscreenRecovery } from './fullscreen-recovery';
 import {
-  AUDIO_SETTING_ICONS, createLoadingPlate, ensureLoadingRing, PICTURE_LAYOUT_ICON, strokeIcon, SWITCH_VIDEO_SHAPE, VIDEO_FIT_SHAPES,
+  AUDIO_SETTING_ICONS, createLoadingPlate, ensureLoadingRing, filledIcon, PICTURE_LAYOUT_ICON, PLAYLIST_STEP_ICONS, strokeIcon, SWITCH_VIDEO_SHAPE, VIDEO_FIT_SHAPES,
   VOLUME_BOOST_ICONS
 } from './hud';
 import { bindMenuPopover, playerChromeExpanded } from './menu-popover';
@@ -222,7 +223,6 @@ export function createControls(
     };
     bindCustomTooltip(playPauseBtn, () => `${t(playAction())} ${shortcutKeys(ui().shortcuts.playPause)}`);
 
-    const filledIcon = (shapes: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">${shapes}</svg>`;
     const playIcons = {
       play: filledIcon('<polygon points="5 3 19 12 5 21 5 3"/>'),
       pause: filledIcon('<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'),
@@ -239,14 +239,12 @@ export function createControls(
       executeCommand({ type: 'PLAY_PAUSE' });
     });
 
-    const previousIcon = filledIcon('<rect x="4" y="3" width="2.2" height="18" rx="0.4"/><path d="M19 4 8.5 12 19 20z"/>');
-    const nextIcon = filledIcon('<path d="M5 4 15.5 12 5 20z"/><rect x="17.8" y="3" width="2.2" height="18" rx="0.4"/>');
 
     const previousBtn = document.createElement('button');
     previousBtn.type = 'button';
     previousBtn.className = 'theater-control-btn playlist-prev-btn';
     previousBtn.hidden = true;
-    setIcon(previousBtn, previousIcon);
+    setIcon(previousBtn, PLAYLIST_STEP_ICONS.previous);
     let playlistState: PlaylistNavState = emptyPlaylistNav();
     const playlistPreview = (direction: 'previous' | 'next') => {
       const available = playlistState;
@@ -277,14 +275,17 @@ export function createControls(
     nextBtn.type = 'button';
     nextBtn.className = 'theater-control-btn playlist-next-btn';
     nextBtn.hidden = true;
-    setIcon(nextBtn, nextIcon);
+    setIcon(nextBtn, PLAYLIST_STEP_ICONS.next);
     bindCustomTooltip(nextBtn, () => playlistShortcutText('next'), () => playlistPreview('next'));
     nextBtn.addEventListener('click', () => {
       ctx.actions.activatePlaylistStep('next');
     });
 
+    // Mounted with the bar's right section; the navigation refresh below also re-reads its availability.
+    let playlistPanel: PlaylistPanelControl | null = null;
     const syncPlaylistButtons = (available: PlaylistNavState) => {
       playlistState = available;
+      playlistPanel?.syncAvailability();
       if (previousBtn.hidden === available.previous) previousBtn.hidden = !available.previous;
       if (nextBtn.hidden === available.next) nextBtn.hidden = !available.next;
       for (const [button, direction] of [[previousBtn, 'previous'], [nextBtn, 'next']] as const) {
@@ -676,6 +677,7 @@ export function createControls(
       scope: controlsScope,
       onBeforeOpen: () => {
         settings.close();
+        playlistPanel?.close();
         volumeBtn.blur();
         volumeSlider.blur();
         speedBtn.blur();
@@ -698,6 +700,7 @@ export function createControls(
     };
     dismissOtherMenus.run = () => {
       ccPopover.close();
+      playlistPanel?.close();
       blurSliders();
     };
 
@@ -717,6 +720,7 @@ export function createControls(
       const inSettings = eventPathIncludes(e, settings.container);
       if (!inSettings) settings.close();
       if (!inCc) ccPopover.close();
+      if (playlistPanel && !eventPathIncludes(e, playlistPanel.host)) playlistPanel.close();
       if (!inVolume) {
         volumeBtn.blur();
         volumeSlider.blur();
@@ -860,6 +864,25 @@ export function createControls(
 
     rightSec.appendChild(pipBtn);
     rightSec.appendChild(fullscreenBtn);
+
+    playlistPanel = enabledProviderSource('playlistPanel', video.element, {
+      scope: controlsScope,
+      label: t('playlistPanelTitle'),
+      setIcon,
+      bindTooltip: bindCustomTooltip,
+      bindMenu: bindMenuPopover,
+      onBeforeOpen: () => {
+        settings.close();
+        ccPopover.close();
+        blurSliders();
+      },
+      onChange: updateCaptionDock
+    }) ?? null;
+    if (playlistPanel) {
+      // The list belongs with the step controls: right after Next, whether or not the steps are shown.
+      nextBtn.after(playlistPanel.host);
+      playlistPanel.syncAvailability();
+    }
 
     mountNativeChatControls(ctx, controlsScope, rightSec, settings.panel, bindCustomTooltip);
 
@@ -1543,7 +1566,8 @@ export function createControls(
       ended = refs.playbackEnded = shown;
       paintPlayButton();
       if (shown) showToolbar();
-    }, undefined, createEndScreen(video.element), serviceActions, createPlaybackEnd(video.element));
+    }, undefined, enabledProviderSource('endScreen', video.element), serviceActions,
+      enabledProviderSource('playbackEnd', video.element));
     controlsScope.add(languageRuntime.subscribe(() => {
       // Rebuild only the current chrome; teardown retires caption/provider work.
       // Reuse the bound surface so language changes never seek, pause or exit theater.

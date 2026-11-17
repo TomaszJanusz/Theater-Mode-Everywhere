@@ -1619,6 +1619,26 @@
     "message": "睡眠定时器已暂停播放",
     "description": "Brief on-video notice when the sleep timer pauses playback."
   },
+  "playlistPanelTitle": {
+    "message": "播放列表"
+  },
+  "playlistPosition": {
+    "message": "第 $CURRENT$ 个，共 $TOTAL$ 个",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "playlistUnavailable": {
+    "message": "此播放列表目前不可用。"
+  },
+  "playlistNowPlaying": {
+    "message": "正在播放"
+  },
   "cycleSleepTimer": {
     "message": "切换睡眠定时器",
     "description": "Keyboard shortcut name: each press raises the sleep timer to the next duration and turns it off after the longest."

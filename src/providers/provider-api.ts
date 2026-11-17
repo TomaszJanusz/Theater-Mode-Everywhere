@@ -2,6 +2,7 @@ import type { ChatThemeAdapter } from '../chat/adapters/types';
 import type { ChatActivation, ChatSurface } from '../chat/types';
 import type { ParsedChatLocation } from '../chat/url';
 import type { EndScreenSource, PlaybackEndSource } from '../core/end-screen';
+import type { PlaylistPanelBar, PlaylistPanelControl } from '../core/playlist-panel';
 import type { ProviderStage } from '../core/provider-presentation';
 import type { ServiceActionSource } from '../core/service-actions';
 import type { MediaFetchRequest } from '../media-features/fetch-allowlist';
@@ -154,6 +155,8 @@ type IsolatedOnlyHooks = {
     /** Host queue actions; each claimed direction (including a confirmed end) hides host controls for it. */
     queue?(root: ParentNode, video: HTMLVideoElement | null | undefined, helpers: PlaylistHelpers): { actions: PlaylistAction[]; claimed: Set<PlaylistDirection> };
   };
+  /** The bar's playlist toggle and panel for the player holding `element`, built with `mountPlaylistPanel`. */
+  playlistPanel?: (element: HTMLElement, bar: PlaylistPanelBar) => PlaylistPanelControl | undefined;
 };
 
 /** Hooks the MAIN-world runtime reads. */

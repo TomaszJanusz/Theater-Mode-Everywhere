@@ -1619,6 +1619,26 @@
     "message": "Пауза за таймером сну",
     "description": "Brief on-video notice when the sleep timer pauses playback."
   },
+  "playlistPanelTitle": {
+    "message": "Плейлист"
+  },
+  "playlistPosition": {
+    "message": "Відео $CURRENT$ з $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "playlistUnavailable": {
+    "message": "Цей плейлист зараз недоступний."
+  },
+  "playlistNowPlaying": {
+    "message": "Зараз відтворюється"
+  },
   "cycleSleepTimer": {
     "message": "Змінити таймер сну",
     "description": "Keyboard shortcut name: each press raises the sleep timer to the next duration and turns it off after the longest."
