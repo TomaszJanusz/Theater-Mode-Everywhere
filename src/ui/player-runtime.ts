@@ -1473,6 +1473,13 @@ async function checkBlacklistAndInit(): Promise<void> {
   }
 }
 
+/** The theater takes this key: neither the host page nor any later listener sees it, and its default is cancelled. */
+function consumeKey(event: Event): void {
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+}
+
 function getActiveElementDeep(): Element | null {
   let activeEl = document.activeElement;
   while (activeEl && activeEl.shadowRoot && activeEl.shadowRoot.activeElement) {
@@ -1521,86 +1528,56 @@ function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
   const shortcuts = ui().shortcuts || defaultShortcuts;
   
   if (matchesShortcut(e, shortcuts.playPause)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     // Space is toggled in the page MAIN world so YouTube cannot steal the key.
     // That path announces the HUD through theater-everywhere-playback-intent.
     if (e.key === ' ' || e.code === 'Space') return true;
     executeCommand({ type: 'PLAY_PAUSE' });
   } else if (!e.repeat && matchesShortcut(e, shortcuts.previousVideo) && playlistNavigationAvailable().previous) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     activatePlaylistStep('previous');
   } else if (!e.repeat && matchesShortcut(e, shortcuts.nextVideo) && playlistNavigationAvailable().next) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     activatePlaylistStep('next');
   } else if (matchesShortcut(e, shortcuts.seekBack)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     executeCommand({ type: 'SEEK_BY', delta: -5 });
   } else if (matchesShortcut(e, shortcuts.seekForward)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     // Holding plays at 2x instead of scrubbing, so its auto-repeats are dropped; live speed stays fixed.
     if (!ui().seekForwardHold || !rateSurface()) executeCommand({ type: 'SEEK_BY', delta: 5 });
     else if (!e.repeat) seekForwardHold.press(e.code || e.key);
   } else if (matchesShortcut(e, shortcuts.frameBack)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     executeCommand({ type: 'SEEK_BY', delta: -0.04 });
   } else if (matchesShortcut(e, shortcuts.frameForward)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     executeCommand({ type: 'SEEK_BY', delta: 0.04 });
   } else if (matchesShortcut(e, shortcuts.decreaseSpeed) || matchesShortcut(e, shortcuts.increaseSpeed)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     executeCommand({ type: 'STEP_PLAYBACK_RATE', direction: matchesShortcut(e, shortcuts.increaseSpeed) ? 1 : -1 });
   } else if (matchesShortcut(e, shortcuts.volumeUp)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     adjustVolume(video, 'up');
   } else if (matchesShortcut(e, shortcuts.volumeDown)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     adjustVolume(video, 'down');
   } else if (matchesShortcut(e, shortcuts.toggleMute)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     toggleVideoMute(video);
   } else if (matchesShortcut(e, shortcuts.togglePiP)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     togglePictureInPicture(video);
   } else if (matchesShortcut(e, shortcuts.toggleFullscreen)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     if (refs.currentToggleFullscreen) {
       refs.currentToggleFullscreen();
     }
   } else if (matchesShortcut(e, shortcuts.increaseCaptionSize)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     executeCommand({ type: 'STEP_CAPTION_SIZE', direction: 1 });
   } else if (matchesShortcut(e, shortcuts.decreaseCaptionSize)) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    consumeKey(e);
     executeCommand({ type: 'STEP_CAPTION_SIZE', direction: -1 });
   } else {
     return false;
@@ -1660,9 +1637,7 @@ function initialize(): void {
     if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
       hideHelpOverlay(false);
       if (event.key === ' ' || event.key === 'Enter') {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        consumeKey(event);
         return true;
       }
     }
@@ -1673,9 +1648,7 @@ function initialize(): void {
       // A select in our own menu, reached by W/S, keeps taking navigation keys; everything else stays the field's.
       if (activeEl instanceof HTMLSelectElement && activeEl.closest('.theater-settings-menu') && session.element && !ui().helpOpen
           && navigation.isActive() && navigation.handleKeydown(event, ui().shortcuts || defaultShortcuts)) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        consumeKey(event);
         return true;
       }
       return false;
@@ -1700,9 +1673,7 @@ function initialize(): void {
     // The announced automatic entry is cancelled by Escape like by a click, and the
     // key then belongs to the notice: it neither reaches the host nor exits anything.
     if ((event.key === 'Escape' || event.key === 'Esc') && autoTheaterRuntime?.cancelPending()) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       return true;
     }
 
@@ -1719,9 +1690,7 @@ function initialize(): void {
     if (event.key === 'Escape' || event.key === 'Esc') {
       const openMenu = queryPlayerUi<HTMLElement>('.theater-menu.is-open');
       if (closeMenuPopover(openMenu, true)) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        consumeKey(event);
         updateCaptionDock();
         return true;
       }
@@ -1729,56 +1698,42 @@ function initialize(): void {
 
     // Navigation owns Escape only while it runs on the bar; its menus close first, above.
     if ((event.key === 'Escape' || event.key === 'Esc') && session.element && navigation.handleEscape()) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       return true;
     }
 
     // Outside theater nothing here runs, so W/A/S/D stay the host page's; inside, only W starts the mode.
     if (session.element && !ui().helpOpen && navigation.handleKeydown(event, shortcuts)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.toggleControlsPin)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
       return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.cycleSleepTimer)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'CYCLE_SLEEP_TIMER' });
       return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.cycle)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       executeCommand({ type: 'CYCLE_VIDEO', direction: 'next' });
       return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.cycleLayout)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'CYCLE_LAYOUT' });
       return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.cycleFit)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       executeCommand({ type: 'CYCLE_FIT' });
       return true;
     }
@@ -1786,9 +1741,7 @@ function initialize(): void {
     const audioSetting = AUDIO_SETTING_NAMES.find((name) => matchesShortcut(event, shortcuts[AUDIO_SHORTCUTS[name]]));
     const volumeBoostKey = matchesShortcut(event, shortcuts.toggleVolumeBoost);
     if (session.element && (audioSetting || volumeBoostKey)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       if (!ui().helpOpen && !event.repeat) {
         executeCommand(audioSetting ? { type: 'CYCLE_AUDIO', setting: audioSetting } : { type: 'TOGGLE_VOLUME_BOOST' });
       }
@@ -1800,9 +1753,7 @@ function initialize(): void {
     const playlistPanel = !chatKey && matchesShortcut(event, shortcuts.togglePlaylist)
       && (queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null)?._playlist;
     if (session.element && (chatKey || (playlistPanel && !playlistPanel.host.hidden))) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       if (!ui().helpOpen && !event.repeat) {
         if (playlistPanel) {
           showToolbar();
@@ -1813,41 +1764,31 @@ function initialize(): void {
     }
 
     if (session.element && matchesShortcut(event, shortcuts.toggleCaptions)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       executeCommand({ type: 'TOGGLE_CAPTIONS' });
       return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.increaseCaptionSize)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       executeCommand({ type: 'STEP_CAPTION_SIZE', direction: 1 });
       return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.decreaseCaptionSize)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       executeCommand({ type: 'STEP_CAPTION_SIZE', direction: -1 });
       return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.showHelp)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       executeCommand({ type: 'TOGGLE_HELP' });
       return true;
     }
 
     if (matchesShortcut(event, shortcuts.toggle)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       if (!event.repeat) {
         if (isProviderPlaybackFrameDocument()) {
           frames.postToParent('FRAME_HOST_TOGGLE', createSessionId(), { action: 'toggle' });
@@ -1857,9 +1798,7 @@ function initialize(): void {
       }
       return true;
     } else if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       if (!event.repeat) {
         if (isProviderPlaybackFrameDocument()) {
           frames.postToParent('FRAME_HOST_TOGGLE', createSessionId(), { action: 'fullscreen' });
@@ -1870,9 +1809,7 @@ function initialize(): void {
       return true;
     } else if (matchesShortcut(event, shortcuts.exit) || event.key === 'Escape' || event.key === 'Esc') {
       if (session.hasUi) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        consumeKey(event);
         exitTheaterMode();
         return true;
       }
@@ -1912,9 +1849,7 @@ function initialize(): void {
             repeat: event.repeat
           });
           if (claimed) {
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
+            consumeKey(event);
             return true;
           }
         }
@@ -1962,17 +1897,13 @@ function initialize(): void {
       if (event.type === 'keyup') claimedKeyReleases.delete(key);
       // Non-video host players handle playback on release. Suppress only gestures claimed on
       // keydown, including Escape and T after they have exited the session.
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       return;
     }
     if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
       hideHelpOverlay(false);
       if (event.key === ' ' || event.key === 'Enter') {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        consumeKey(event);
         return;
       }
     }
@@ -1988,16 +1919,12 @@ function initialize(): void {
     if (theaterDialogOpen()) return;
     const shortcuts = ui().shortcuts || defaultShortcuts;
     if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
       return;
     }
     if (!session.element) return;
     if (matchesShortcut(event, shortcuts.playPause)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+      consumeKey(event);
     }
   };
   // Before the listener below can stop a claimed key, its release ends a seek-forward press; modifiers may have come up first.
