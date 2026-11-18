@@ -200,7 +200,8 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         await serveFixture(page, playerPage, 'https://www.youtube.com/watch?v=b&list=PLfixture');
         await page.route('https://*.ytimg.com/**', route => route.fulfill({ status: 204, body: '' }));
         await page.evaluate(fixture);
-        await bootPlayer(page, { mainWorld: true, bundle: playerBundle, settings: { shortcuts: { togglePlaylist: 'Q' } } });
+        // The default binding, Alt+P.
+        await bootPlayer(page, { mainWorld: true, bundle: playerBundle });
         await page.evaluate('TheaterTest.installYouTubePlaylist()');
         await page.waitForFunction(() => document.querySelector('video')!.readyState >= 2);
         await enterTheater(page);
@@ -211,10 +212,10 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
           const active = document.getElementById('theater-everywhere-ui')!.shadowRoot!.activeElement;
           return active?.matches('.theater-playlist-toggle') ? 'toggle' : active?.getAttribute('aria-current') === 'true' ? 'playing row' : String(active?.className);
         });
-        await page.keyboard.press('q');
+        await page.keyboard.press('Alt+P');
         assert.equal(await state(), 'open');
         assert.equal(await focused(), 'playing row');
-        await page.keyboard.press('q');
+        await page.keyboard.press('Alt+P');
         assert.equal(await state(), 'closed');
         assert.equal(await focused(), 'toggle');
         // Shift+P stays Previous video: it goes through YouTube's previous row and opens nothing.
@@ -223,8 +224,9 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         assert.equal(await state(), 'closed');
         // Typing in a field stays the field's.
         await page.evaluate(() => document.getElementById('field')!.focus());
-        await page.keyboard.press('q');
+        await page.keyboard.press('Alt+P');
         assert.equal(await state(), 'closed');
+        await page.keyboard.type('q');
         assert.equal(await page.inputValue('#field'), 'q');
         // Without a list the toggle goes away and the key is the page's again.
         await page.evaluate(() => {
@@ -234,8 +236,8 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
           document.addEventListener('keydown', event => (window as unknown as { __pageKeys: string[] }).__pageKeys.push(event.key));
         });
         await toggle.waitFor({ state: 'hidden' });
-        await page.keyboard.press('q');
-        assert.deepEqual(await page.evaluate('window.__pageKeys'), ['q']);
+        await page.keyboard.press('Alt+P');
+        assert.deepEqual(await page.evaluate('window.__pageKeys'), ['Alt', 'P']);
         assert.equal(await state(), 'closed');
       } finally { await context.close(); }
     });
