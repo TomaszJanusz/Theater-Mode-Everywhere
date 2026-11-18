@@ -26,6 +26,7 @@ export interface Shortcuts {
   cycleFit: string;
   cycleLayout: string;
   toggleChat: string;
+  togglePlaylist: string;
   toggleCaptions: string;
   increaseCaptionSize: string;
   decreaseCaptionSize: string;
@@ -84,6 +85,8 @@ export const defaultShortcuts: Shortcuts = {
   cycleFit: 'Z',
   cycleLayout: 'Shift+L',
   toggleChat: 'Alt+R',
+  // Beside Toggle chat's Alt+R. Not Shift+P: that is Previous video, here and on YouTube (TME-253).
+  togglePlaylist: 'Alt+P',
   toggleCaptions: 'C',
   increaseCaptionSize: '+',
   decreaseCaptionSize: '-',
@@ -98,7 +101,7 @@ export const defaultShortcuts: Shortcuts = {
 };
 
 // Defaults added after release must not steal keys from existing custom actions.
-const INTRODUCED_SHORTCUTS: Array<keyof Shortcuts> = ['cycleLayout', 'toggleChat', 'toggleVolumeBoost', 'cycleVoice', 'cycleLeveling', 'cycleBass', 'decreaseSpeed', 'increaseSpeed', 'cycleSleepTimer', ...NAVIGATION_SHORTCUTS];
+const INTRODUCED_SHORTCUTS: Array<keyof Shortcuts> = ['cycleLayout', 'toggleChat', 'toggleVolumeBoost', 'cycleVoice', 'cycleLeveling', 'cycleBass', 'decreaseSpeed', 'increaseSpeed', 'cycleSleepTimer', 'togglePlaylist', ...NAVIGATION_SHORTCUTS];
 
 /**
  * Defaults that moved when a shortcut took their key: frame step had < and > until the speed shortcuts did.

@@ -1655,5 +1655,8 @@
   "sleepTimerOffHud": {
     "message": "Wyłącznik czasowy wyłączony",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "Przełącz playlistę"
   }
 }

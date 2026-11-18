@@ -77,6 +77,6 @@ export function fakePlaylistSource(initial: PlaylistPanelSnapshot | null) {
 }
 
 /** The bar helpers controls.ts lends the toggle: the real menu shell and icon, with no tooltip or neighbouring menus. */
-export function playlistBar(scope: DisposableScope, label = 'Playlist'): PlaylistPanelBar {
-  return { scope, label, setIcon: setSvgIcon, bindTooltip: () => {}, bindMenu: bindMenuPopover, onBeforeOpen: () => {}, onChange: () => {} };
+export function playlistBar(scope: DisposableScope): PlaylistPanelBar {
+  return { scope, setIcon: setSvgIcon, bindTooltip: () => {}, bindMenu: bindMenuPopover, onBeforeOpen: () => {}, onChange: () => {} };
 }

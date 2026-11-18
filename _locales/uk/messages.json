@@ -1655,5 +1655,8 @@
   "sleepTimerOffHud": {
     "message": "Таймер сну вимкнено",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "Перемкнути плейлист"
   }
 }

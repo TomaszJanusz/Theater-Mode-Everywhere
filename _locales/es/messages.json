@@ -1655,5 +1655,8 @@
   "sleepTimerOffHud": {
     "message": "Temporizador de apagado desactivado",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "Alternar la lista de reproducción"
   }
 }

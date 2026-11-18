@@ -159,6 +159,22 @@ describe('Playlist panel', () => {
     expect(panel.host.querySelector('.theater-playlist-meta')!.textContent).toBe('\u2068Harbour Films\u2069');
   });
 
+  test('the shortcut toggles the panel as the keyboard does on the toggle, and only while the toggle is shown', async () => {
+    const { panel, trigger, rows, state, subscriptions, setAvailable } = mount();
+    panel.toggle();
+    expect(state()).toBe('open');
+    expect(activeElementDeep()).toBe(rows()[2]);
+    expect(subscriptions()).toBe(1);
+    panel.toggle();
+    expect(state()).toBe('closed');
+    expect(activeElementDeep()).toBe(trigger);
+    expect(subscriptions()).toBe(0);
+    setAvailable(false);
+    panel.syncAvailability();
+    panel.toggle();
+    expect(state()).toBe('closed');
+  });
+
   test('theater exit while open ends the opening', async () => {
     const { trigger, subscriptions } = mount();
     await userEvent.click(trigger);

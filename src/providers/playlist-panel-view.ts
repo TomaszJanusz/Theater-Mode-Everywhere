@@ -45,9 +45,10 @@ export function mountPlaylistPanel(source: PlaylistPanelSource, bar: PlaylistPan
   const trigger = document.createElement('button');
   trigger.type = 'button';
   trigger.className = 'theater-control-btn theater-playlist-toggle';
-  trigger.setAttribute('aria-label', bar.label);
+  const label = t('playlistPanelTitle');
+  trigger.setAttribute('aria-label', label);
   bar.setIcon(trigger, PLAYLIST_ICON);
-  bar.bindTooltip(trigger, () => bar.label);
+  bar.bindTooltip(trigger, () => label);
   const panel = document.createElement('div');
   panel.className = 'theater-cc-menu theater-playlist-menu';
   host.append(trigger, panel);
@@ -76,6 +77,12 @@ export function mountPlaylistPanel(source: PlaylistPanelSource, bar: PlaylistPan
   return {
     host,
     close: menu.close,
+    toggle() {
+      if (host.hidden) return;
+      const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
+      // A click without a pointer is the keyboard path of the shared menu: it pins the panel and focuses the playing row.
+      if (!menu.close(panel.contains(active))) trigger.click();
+    },
     syncAvailability() {
       const available = source.available();
       if (!available) menu.close();

@@ -1655,5 +1655,8 @@
   "sleepTimerOffHud": {
     "message": "スリープタイマー: オフ",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "再生リストの表示を切り替え"
   }
 }

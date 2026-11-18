@@ -1655,5 +1655,8 @@
   "sleepTimerOffHud": {
     "message": "睡眠定时器已关闭",
     "description": "Brief on-video notice when the sleep timer shortcut turns the timer off."
+  },
+  "togglePlaylistPanel": {
+    "message": "切换播放列表"
   }
 }
