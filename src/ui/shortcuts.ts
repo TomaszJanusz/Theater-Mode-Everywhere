@@ -85,8 +85,8 @@ export const defaultShortcuts: Shortcuts = {
   cycleFit: 'Z',
   cycleLayout: 'Shift+L',
   toggleChat: 'Alt+R',
-  // Beside Toggle chat's Alt+R. Not Shift+P: that is Previous video, here and on YouTube (TME-253).
-  togglePlaylist: 'Alt+P',
+  // Q for queue. Not Shift+P: that is Previous video, here and on YouTube (TME-253).
+  togglePlaylist: 'Shift+Q',
   toggleCaptions: 'C',
   increaseCaptionSize: '+',
   decreaseCaptionSize: '-',
