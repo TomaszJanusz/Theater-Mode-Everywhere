@@ -62,7 +62,20 @@ export function createLanguageRuntime(load: CatalogLoader) {
   };
 }
 
-export const languageRuntime = createLanguageRuntime(async locale => {
+type LanguageRuntime = ReturnType<typeof createLanguageRuntime>;
+const LANGUAGE_RUNTIME = Symbol.for('theater-everywhere.language-runtime');
+
+/**
+ * One runtime per extension world: the player and the provider scripts that render their own strings (the playlist
+ * panel and end-screen views) each bundle this module, so in a content script's isolated world whichever loads first
+ * creates the runtime and the others share it. Otherwise a provider's copy would never learn the language chosen in the
+ * settings and fall back to the browser's. Only a context with the extension's API shares it: in the page's own world
+ * (MAIN) a page could plant the property first, so each copy keeps its own runtime there.
+ */
+const shared: Record<symbol, LanguageRuntime | undefined> = typeof chrome !== 'undefined' && chrome.runtime?.id
+  ? globalThis as unknown as Record<symbol, LanguageRuntime | undefined>
+  : {};
+export const languageRuntime: LanguageRuntime = shared[LANGUAGE_RUNTIME] ??= createLanguageRuntime(async locale => {
   const response: unknown = await chrome.runtime.sendMessage({ action: 'get-language-catalog', locale });
   if (!isMessageCatalog(response)) throw new Error('Invalid language catalog');
   return response;

@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { DEFAULT_LANGUAGE, LANGUAGES, resolveLanguage, type Locale } from './language';
-import { createLanguageRuntime, languageRuntime, translateMessage } from './i18n-runtime';
-import { compileCatalog, isMessageCatalog, substituteMessage, type MessageCatalog } from './message-catalog';
+
 import { t as settingsMessage } from './i18n';
-import { t as playerMessage } from './ui/messages';
+import { createLanguageRuntime, languageRuntime, translateMessage } from './i18n-runtime';
+import type * as RuntimeModule from './i18n-runtime';
+import { DEFAULT_LANGUAGE, LANGUAGES, resolveLanguage, type Locale } from './language';
+import { compileCatalog, isMessageCatalog, substituteMessage, type MessageCatalog } from './message-catalog';
 import { loadLanguageCatalog } from './platform/locale-catalog';
+import { t as playerMessage } from './ui/messages';
 
 it('resolves only supported saved language identifiers; invalid values follow the browser', () => {
   for (const { locale } of LANGUAGES) assert.equal(resolveLanguage(locale), locale);
@@ -178,6 +180,30 @@ it('an Automatic storage event invalidates an older initial override read even b
   await runtime.set('pl', readRevision);
   assert.equal(loads, 0);
   assert.equal(runtime.language, 'automatic');
+});
+
+it('copies of the runtime share one in an extension world, as provider scripts bundle it, and stay apart in the page\'s', async () => {
+  const fresh = async (copy: string) => await import(new URL(`./i18n-runtime.ts?${copy}`, import.meta.url).href) as typeof RuntimeModule;
+  const key = Symbol.for('theater-everywhere.language-runtime');
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'chrome');
+  try {
+    // The page's own world: no extension API, so each copy keeps its own runtime.
+    Reflect.deleteProperty(globalThis, 'chrome');
+    assert.notEqual((await fresh('page-a')).languageRuntime, (await fresh('page-b')).languageRuntime);
+    // A content script's world: the player and a provider script share the one the settings set.
+    Object.defineProperty(globalThis, 'chrome', { configurable: true, value: { runtime: { id: 'extension',
+      sendMessage: async () => ({ playlistQueue: { message: 'Kolejka' } }) } } });
+    const player = await fresh('player');
+    const provider = await fresh('provider');
+    assert.equal(provider.languageRuntime, player.languageRuntime);
+    await player.languageRuntime.set('pl');
+    assert.equal(provider.translateMessage({ playlistQueue: 'Queue' }, 'playlistQueue'), 'Kolejka');
+    await player.languageRuntime.set('automatic');
+  } finally {
+    Reflect.deleteProperty(globalThis, key);
+    if (original) Object.defineProperty(globalThis, 'chrome', original);
+    else Reflect.deleteProperty(globalThis, 'chrome');
+  }
 });
 
 it('extension pages and player share the same override, preserve empty substitutions and return unknown keys', async () => {

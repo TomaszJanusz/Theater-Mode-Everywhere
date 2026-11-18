@@ -403,11 +403,6 @@
       "count": 1
     }
   },
-  "src/i18n.test.ts": {
-    "import/order": {
-      "count": 4
-    }
-  },
   "src/i18n.ts": {
     "import/order": {
       "count": 1
