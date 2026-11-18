@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "Przełącz playlistę"
+  },
+  "playlistQueue": {
+    "message": "Kolejka"
+  },
+  "playlistWatchLater": {
+    "message": "Do obejrzenia"
+  },
+  "playlistLikedVideos": {
+    "message": "Polubione filmy"
+  },
+  "playlistChannelUploads": {
+    "message": "Przesłane filmy"
+  },
+  "playlistChannelVideos": {
+    "message": "Filmy"
   }
 }

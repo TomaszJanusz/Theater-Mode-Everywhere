@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "Prepnúť playlist"
+  },
+  "playlistQueue": {
+    "message": "Poradie"
+  },
+  "playlistWatchLater": {
+    "message": "Pozrieť neskôr"
+  },
+  "playlistLikedVideos": {
+    "message": "Páčia sa mi"
+  },
+  "playlistChannelUploads": {
+    "message": "Nahrané videá"
+  },
+  "playlistChannelVideos": {
+    "message": "Videá"
   }
 }

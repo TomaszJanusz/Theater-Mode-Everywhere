@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "재생목록 전환"
+  },
+  "playlistQueue": {
+    "message": "대기열"
+  },
+  "playlistWatchLater": {
+    "message": "나중에 볼 동영상"
+  },
+  "playlistLikedVideos": {
+    "message": "좋아요 표시한 동영상"
+  },
+  "playlistChannelUploads": {
+    "message": "업로드한 동영상"
+  },
+  "playlistChannelVideos": {
+    "message": "동영상"
   }
 }

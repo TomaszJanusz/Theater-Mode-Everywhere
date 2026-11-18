@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "切换播放列表"
+  },
+  "playlistQueue": {
+    "message": "队列"
+  },
+  "playlistWatchLater": {
+    "message": "稍后观看"
+  },
+  "playlistLikedVideos": {
+    "message": "赞过的视频"
+  },
+  "playlistChannelUploads": {
+    "message": "上传的视频"
+  },
+  "playlistChannelVideos": {
+    "message": "视频"
   }
 }

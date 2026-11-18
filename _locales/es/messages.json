@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "Alternar la lista de reproducción"
+  },
+  "playlistQueue": {
+    "message": "Cola"
+  },
+  "playlistWatchLater": {
+    "message": "Ver más tarde"
+  },
+  "playlistLikedVideos": {
+    "message": "Videos que me gustan"
+  },
+  "playlistChannelUploads": {
+    "message": "Subidas"
+  },
+  "playlistChannelVideos": {
+    "message": "Videos"
   }
 }

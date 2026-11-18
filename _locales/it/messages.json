@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "Mostra o nascondi la playlist"
+  },
+  "playlistQueue": {
+    "message": "Coda"
+  },
+  "playlistWatchLater": {
+    "message": "Guarda più tardi"
+  },
+  "playlistLikedVideos": {
+    "message": "Video piaciuti"
+  },
+  "playlistChannelUploads": {
+    "message": "Caricamenti"
+  },
+  "playlistChannelVideos": {
+    "message": "Video"
   }
 }

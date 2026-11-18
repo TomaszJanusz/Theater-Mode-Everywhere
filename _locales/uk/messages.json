@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "Перемкнути плейлист"
+  },
+  "playlistQueue": {
+    "message": "Черга"
+  },
+  "playlistWatchLater": {
+    "message": "Переглянути пізніше"
+  },
+  "playlistLikedVideos": {
+    "message": "Вподобані"
+  },
+  "playlistChannelUploads": {
+    "message": "Завантаження"
+  },
+  "playlistChannelVideos": {
+    "message": "Відео"
   }
 }

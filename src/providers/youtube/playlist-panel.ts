@@ -6,6 +6,7 @@ import { mountPlaylistView } from '../playlist-panel-view';
 
 import { YOUTUBE_PAGE_EVENTS } from './events';
 import { queryYouTubePlaylist, goToYouTubePlaylistItem } from './playlist-panel-bridge';
+import { systemListTitle } from './system-lists';
 
 /** The watch page's own panel; the miniplayer keeps a copy of it that belongs to no theater player. */
 const WATCH_PANEL = 'ytd-watch-flexy ytd-playlist-panel-renderer';
@@ -41,7 +42,7 @@ export function youtubePlaylistPanel(
     },
     mount(panel, scope, close) {
       mountPlaylistView({
-        read: () => ownPlayer() && mediaProviderIntegrationEnabled('youtube') ? queryYouTubePlaylist(doc) : null,
+        read: () => ownPlayer() && mediaProviderIntegrationEnabled('youtube') ? queryYouTubePlaylist(doc, systemListTitle) : null,
         activate(key) {
           if (!ownPlayer()) return false;
           // MAIN finds the key's item in the live model and navigates with YouTube's own link, keeping the list.

@@ -1675,5 +1675,25 @@
   "togglePlaylistPanel": {
     "message": "Toggle playlist",
     "description": "Keyboard shortcut name: opens or closes the playlist panel in the control bar, where the service lists the playlist being played."
+  },
+  "playlistQueue": {
+    "message": "Queue",
+    "description": "Heading of the playlist panel for the queue built with \"Add to queue\"."
+  },
+  "playlistWatchLater": {
+    "message": "Watch later",
+    "description": "Heading of the playlist panel for the Watch later list."
+  },
+  "playlistLikedVideos": {
+    "message": "Liked videos",
+    "description": "Heading of the playlist panel for the list of videos the viewer liked."
+  },
+  "playlistChannelUploads": {
+    "message": "Uploads",
+    "description": "Heading of the playlist panel for all of a channel's uploads; the channel's name is shown under it."
+  },
+  "playlistChannelVideos": {
+    "message": "Videos",
+    "description": "Heading of the playlist panel for a channel's videos (Play all on its Videos tab); the channel's name is shown under it."
   }
 }

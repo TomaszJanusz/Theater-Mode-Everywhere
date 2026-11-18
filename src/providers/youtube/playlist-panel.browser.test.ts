@@ -71,8 +71,8 @@ const fixture = `(() => {
       items.append(row);
       return { playlistPanelVideoRenderer: renderer };
     });
-    // The queue's model has no owner and is titled "Queue".
-    panel.data = { playlistId: list, ...placeholder ? { title: 'Queue' } : { title: 'Fixture list', ownerName: { simpleText: 'Owner' } },
+    // The queue's model has no owner, and YouTube titles it in its own interface language (here Polish).
+    panel.data = { playlistId: list, ...placeholder ? { title: 'Kolejka' } : { title: 'Fixture list', ownerName: { simpleText: 'Owner' } },
       totalVideos: infinite ? undefined : ids.length, isInfinite: infinite, currentIndex: current, localCurrentIndex: current, contents };
   };
   window.__render(['a', 'b', 'c', 'x'], 1);
@@ -125,6 +125,8 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         assert.equal(listed[0].image, 'https://i.ytimg.com/vi/a/hqdefault.jpg');
         assert.equal(listed[3].image, '');
         assert.equal(await page.textContent('#panel .theater-playlist-meta'), '\u2068Owner\u2069 · Video 2 of 4');
+        // A playlist someone made keeps its own name: that is content.
+        assert.equal(await page.textContent('#panel .theater-cc-menu-title'), 'Fixture list');
         // The playing item only closes the panel; another goes through YouTube's own row link. A click without a
         // pointer (detail 0) is a keyboard activation, which hands focus back to the toggle.
         await clickRow(page, 1);
@@ -185,6 +187,8 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         // As in YouTube's own panel: no numbers on the queue's rows, "1 / 3" in the header.
         assert.deepEqual(await page.evaluate(`[...document.querySelectorAll('#panel .theater-playlist-index')].map(cell => cell.textContent)`), ['', '', '']);
         assert.equal(await page.textContent('#panel .theater-playlist-meta'), 'Video 1 of 3');
+        // YouTube's own list is named by its id in the extension's language, not YouTube's "Kolejka".
+        assert.equal(await page.textContent('#panel .theater-cc-menu-title'), 'Queue');
         await clickRow(page, 1);
         assert.deepEqual(await page.evaluate('window.__clicks'), ['/watch?v=b&list=TLPQfixture&index=2']);
         // YouTube steps into the queue: the URL now names it and the next row is current.

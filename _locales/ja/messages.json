@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "再生リストの表示を切り替え"
+  },
+  "playlistQueue": {
+    "message": "キュー"
+  },
+  "playlistWatchLater": {
+    "message": "後で見る"
+  },
+  "playlistLikedVideos": {
+    "message": "高く評価した動画"
+  },
+  "playlistChannelUploads": {
+    "message": "アップロード動画"
+  },
+  "playlistChannelVideos": {
+    "message": "動画"
   }
 }

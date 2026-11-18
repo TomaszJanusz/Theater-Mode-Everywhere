@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "Alternar a playlist"
+  },
+  "playlistQueue": {
+    "message": "Fila"
+  },
+  "playlistWatchLater": {
+    "message": "Assistir mais tarde"
+  },
+  "playlistLikedVideos": {
+    "message": "Vídeos curtidos"
+  },
+  "playlistChannelUploads": {
+    "message": "Envios"
+  },
+  "playlistChannelVideos": {
+    "message": "Vídeos"
   }
 }
