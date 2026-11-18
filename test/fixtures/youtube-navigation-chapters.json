@@ -1,0 +1,286 @@
+{
+ "capture": {
+  "date": "2026-11-17",
+  "how": "Logged-out Chromium, in-app navigation from another watch page to the public video; the page data YouTube passed as yt-navigate-finish detail.response, reduced to the video ids, the length and the player-bar chapters (thumbnails and tracking parameters removed)",
+  "video": "V7n3e1cNgso"
+ },
+ "pageData": {
+  "page": "watch",
+  "url": "/watch?v=V7n3e1cNgso",
+  "playerResponse": {
+   "videoDetails": {
+    "videoId": "V7n3e1cNgso",
+    "lengthSeconds": "4623"
+   }
+  },
+  "response": {
+   "currentVideoEndpoint": {
+    "watchEndpoint": {
+     "videoId": "V7n3e1cNgso"
+    }
+   },
+   "playerOverlays": {
+    "playerOverlayRenderer": {
+     "decoratedPlayerBarRenderer": {
+      "decoratedPlayerBarRenderer": {
+       "playerBar": {
+        "multiMarkersPlayerBarRenderer": {
+         "visibleOnLoad": {
+          "key": "DESCRIPTION_CHAPTERS"
+         },
+         "markersMap": [
+          {
+           "key": "DESCRIPTION_CHAPTERS",
+           "value": {
+            "chapters": [
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Intro"
+               },
+               "timeRangeStartMillis": 0,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 0
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Why I’m doing this"
+               },
+               "timeRangeStartMillis": 75000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 1
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "The fans"
+               },
+               "timeRangeStartMillis": 181000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 2
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Humble beginnings"
+               },
+               "timeRangeStartMillis": 467000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 3
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Signs of success"
+               },
+               "timeRangeStartMillis": 805000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 4
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Podcast"
+               },
+               "timeRangeStartMillis": 1150000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 5
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Trisha"
+               },
+               "timeRangeStartMillis": 1302000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 6
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Frenemies"
+               },
+               "timeRangeStartMillis": 1465000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 7
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Ryan Kavanagh"
+               },
+               "timeRangeStartMillis": 1822000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 8
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Hasan"
+               },
+               "timeRangeStartMillis": 2200000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 9
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "BONUS INVESTIGATION"
+               },
+               "timeRangeStartMillis": 2329000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 10
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Obsession"
+               },
+               "timeRangeStartMillis": 2558000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 11
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "The End?"
+               },
+               "timeRangeStartMillis": 3060000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 12
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Emptiness"
+               },
+               "timeRangeStartMillis": 3205000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 13
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "The Fans Are Lost"
+               },
+               "timeRangeStartMillis": 3473000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 14
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "The Fan Funeral"
+               },
+               "timeRangeStartMillis": 3664000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 15
+                }
+               }
+              }
+             },
+             {
+              "chapterRenderer": {
+               "title": {
+                "simpleText": "Meanest Messages"
+               },
+               "timeRangeStartMillis": 4568000,
+               "onActiveCommand": {
+                "setActivePanelItemAction": {
+                 "panelTargetId": "engagement-panel-macro-markers-description-chapters",
+                 "itemIndex": 16
+                }
+               }
+              }
+             }
+            ]
+           }
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

@@ -301,6 +301,35 @@ describe('youtube chapter parser', () => {
     assert.equal(chapters[4].end, 4541);
   });
 
+  it('reads chapters whose timestamp follows the title, as YouTube does', () => {
+    // Shaped like the description of a 77-minute video YouTube shows 17 chapters for.
+    const chapters = parseDescriptionChapters(
+      `Music by: @someone
+
+Time Stamps:
+
+Intro- 0:00
+Why I’m doing this- 1:15
+BONUS INVESTIGATION: 38:49
+The End?- 51:00
+Meanest Messages- 1:16:08`,
+      4623
+    );
+    assert.deepEqual(chapters.map(({ start, title }) => [start, title]), [
+      [0, 'Intro'], [75, 'Why I’m doing this'], [2329, 'BONUS INVESTIGATION'], [3060, 'The End?'], [4568, 'Meanest Messages']
+    ]);
+    assert.equal(chapters[4].end, 4623);
+    assert.equal(chapters[0].source, 'youtube-description');
+  });
+
+  it('reads trailing timestamps only when no line leads with one, and never bare times', () => {
+    const leading = parseDescriptionChapters('0:00 Intro\n1:00 Middle\nRecap - 2:00', 300);
+    assert.deepEqual(leading.map(chapter => chapter.title), ['Intro', 'Middle']);
+    assert.deepEqual(parseDescriptionChapters('1:00:00\n0:00\n2:00', 9999), []);
+    assert.deepEqual(parseDescriptionChapters('Song one 0:00\nSong two 2:00 extra', 300), [], 'one stamp is no chapter list');
+    assert.deepEqual(parseDescriptionChapters('Intro - 0:10\nEnd - 1:00', 300), [], 'the list starts at 0:00');
+  });
+
   it('reads player-bar chapters from ytInitialData markersMap', () => {
     const markers = findYoutubeChapterMarkers({
       currentVideoEndpoint: { watchEndpoint: { videoId: 'SPFP12ppFqE' } },
