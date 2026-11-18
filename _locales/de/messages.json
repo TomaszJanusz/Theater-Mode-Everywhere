@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "Playlist umschalten"
+  },
+  "playlistQueue": {
+    "message": "Warteschlange"
+  },
+  "playlistWatchLater": {
+    "message": "Später ansehen"
+  },
+  "playlistLikedVideos": {
+    "message": "Videos mit „Mag ich“"
+  },
+  "playlistChannelUploads": {
+    "message": "Uploads"
+  },
+  "playlistChannelVideos": {
+    "message": "Videos"
   }
 }

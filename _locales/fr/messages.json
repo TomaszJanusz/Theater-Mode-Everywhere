@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "Afficher ou masquer la playlist"
+  },
+  "playlistQueue": {
+    "message": "File d’attente"
+  },
+  "playlistWatchLater": {
+    "message": "À regarder plus tard"
+  },
+  "playlistLikedVideos": {
+    "message": "Vidéos « J’aime »"
+  },
+  "playlistChannelUploads": {
+    "message": "Mises en ligne"
+  },
+  "playlistChannelVideos": {
+    "message": "Vidéos"
   }
 }

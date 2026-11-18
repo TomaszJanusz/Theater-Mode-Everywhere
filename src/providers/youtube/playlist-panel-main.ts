@@ -6,7 +6,7 @@ import { isYouTubeHost } from '../hosts';
 import { currentEntryIndex, findWatchPlaylist, integer, readWatchPlaylistEntries, runsText, string } from './playlist-host';
 import { YOUTUBE_PLAYLIST_GO, YOUTUBE_PLAYLIST_QUERY, YOUTUBE_PLAYLIST_REPLY, type YouTubePlaylistReply } from './playlist-panel-bridge';
 
-type Resolution = { snapshot: PlaylistPanelSnapshot; targets: Map<string, () => void> };
+type Resolution = { listId: string; snapshot: PlaylistPanelSnapshot; targets: Map<string, () => void> };
 
 let installed = false;
 
@@ -18,7 +18,7 @@ export function installYouTubePlaylist(): void {
     const requestId = (event as CustomEvent<unknown>).detail;
     if (typeof requestId !== 'string' || requestId.length > 80) return;
     const resolved = safelyResolve();
-    const reply: YouTubePlaylistReply = { requestId, pageHref: window.location.href, snapshot: resolved?.snapshot ?? null };
+    const reply: YouTubePlaylistReply = { requestId, pageHref: window.location.href, listId: resolved?.listId ?? '', snapshot: resolved?.snapshot ?? null };
     publishHiddenJson(YOUTUBE_PLAYLIST_REPLY, reply);
   });
   window.addEventListener(YOUTUBE_PLAYLIST_GO, (event: Event) => {
@@ -69,5 +69,5 @@ function resolvePlaylist(): Resolution | null {
     total: data.isInfinite === true ? null : integer(data.totalVideos),
     items
   };
-  return { snapshot, targets };
+  return { listId: playlist.queueId, snapshot, targets };
 }

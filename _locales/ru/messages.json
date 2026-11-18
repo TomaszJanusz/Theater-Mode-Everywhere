@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "Переключить плейлист"
+  },
+  "playlistQueue": {
+    "message": "Очередь"
+  },
+  "playlistWatchLater": {
+    "message": "Смотреть позже"
+  },
+  "playlistLikedVideos": {
+    "message": "Понравившиеся"
+  },
+  "playlistChannelUploads": {
+    "message": "Загрузки"
+  },
+  "playlistChannelVideos": {
+    "message": "Видео"
   }
 }

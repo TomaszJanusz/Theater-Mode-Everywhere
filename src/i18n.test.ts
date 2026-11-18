@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { DEFAULT_LANGUAGE, LANGUAGES, resolveLanguage, type Locale } from './language';
-import { createLanguageRuntime, languageRuntime, translateMessage } from './i18n-runtime';
-import { compileCatalog, isMessageCatalog, substituteMessage, type MessageCatalog } from './message-catalog';
+
 import { t as settingsMessage } from './i18n';
-import { t as playerMessage } from './ui/messages';
+import { createLanguageRuntime, languageRuntime, languageRuntimeWorld, shareLanguageRuntime, translateMessage } from './i18n-runtime';
+import { DEFAULT_LANGUAGE, LANGUAGES, resolveLanguage, type Locale } from './language';
+import { compileCatalog, isMessageCatalog, substituteMessage, type MessageCatalog } from './message-catalog';
 import { loadLanguageCatalog } from './platform/locale-catalog';
+import { t as playerMessage } from './ui/messages';
 
 it('resolves only supported saved language identifiers; invalid values follow the browser', () => {
   for (const { locale } of LANGUAGES) assert.equal(resolveLanguage(locale), locale);
@@ -178,6 +179,29 @@ it('an Automatic storage event invalidates an older initial override read even b
   await runtime.set('pl', readRevision);
   assert.equal(loads, 0);
   assert.equal(runtime.language, 'automatic');
+});
+
+it('copies of the runtime share one in an extension world, as provider scripts bundle it, and stay apart in the page\'s', async () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'chrome');
+  const create = () => createLanguageRuntime(async () => ({ playlistQueue: { message: 'Kolejka' } }));
+  try {
+    // The page's own world: no extension API, so each copy keeps its own runtime.
+    Reflect.deleteProperty(globalThis, 'chrome');
+    assert.notEqual(shareLanguageRuntime(languageRuntimeWorld(), create), shareLanguageRuntime(languageRuntimeWorld(), create));
+    // A content script's world: its global is the meeting place.
+    Object.defineProperty(globalThis, 'chrome', { configurable: true, value: { runtime: { id: 'extension' } } });
+    assert.equal(languageRuntimeWorld(), globalThis);
+    // The player's copy creates the runtime, a provider's copy finds it and follows the language the player set.
+    const world = {};
+    const player = shareLanguageRuntime(world, create);
+    const provider = shareLanguageRuntime(world, create);
+    assert.equal(provider, player);
+    await player.set('pl');
+    assert.equal(provider.message('playlistQueue'), 'Kolejka');
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'chrome', original);
+    else Reflect.deleteProperty(globalThis, 'chrome');
+  }
 });
 
 it('extension pages and player share the same override, preserve empty substitutions and return unknown keys', async () => {

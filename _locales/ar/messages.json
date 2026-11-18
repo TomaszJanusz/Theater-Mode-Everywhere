@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "تبديل قائمة التشغيل"
+  },
+  "playlistQueue": {
+    "message": "قائمة الانتظار"
+  },
+  "playlistWatchLater": {
+    "message": "المشاهدة لاحقًا"
+  },
+  "playlistLikedVideos": {
+    "message": "الفيديوهات التي أعجبتني"
+  },
+  "playlistChannelUploads": {
+    "message": "عمليات التحميل"
+  },
+  "playlistChannelVideos": {
+    "message": "الفيديوهات"
   }
 }

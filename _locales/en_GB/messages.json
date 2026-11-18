@@ -1658,5 +1658,20 @@
   },
   "togglePlaylistPanel": {
     "message": "Toggle playlist"
+  },
+  "playlistQueue": {
+    "message": "Queue"
+  },
+  "playlistWatchLater": {
+    "message": "Watch later"
+  },
+  "playlistLikedVideos": {
+    "message": "Liked videos"
+  },
+  "playlistChannelUploads": {
+    "message": "Uploads"
+  },
+  "playlistChannelVideos": {
+    "message": "Videos"
   }
 }

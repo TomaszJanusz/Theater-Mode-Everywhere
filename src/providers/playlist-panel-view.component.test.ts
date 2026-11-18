@@ -243,5 +243,19 @@ describe('Playlist toggle in the control bar', () => {
         expect(menu.left).toBeLessThan(toggle.left);
       }
     });
+
+    test(`the open notch keeps the menu's outer edge and covers only its inner side, like the subtitle menu's (${dir})`, async () => {
+      const { trigger, wrapper } = mount(samplePlaylist(), { dir });
+      await userEvent.click(trigger);
+      // The cover strip over the notch's side stroke, measured from the inline start of the open toggle's padding box.
+      const cover = (button: HTMLElement) => parseFloat(getComputedStyle(button, '::before').insetInlineStart);
+      // In the left section the notch is the panel's start corner: its start side is the outline, its end side lies in
+      // the panel and is covered.
+      expect(cover(trigger)).toBe(trigger.clientWidth - 1);
+      // The subtitle menu on the bar's end is unchanged: its notch is the menu's end corner, so its start side is covered.
+      const cc = wrapper.querySelector<HTMLElement>('.theater-cc-menu-host')!;
+      cc.classList.add('theater-menu', 'is-open');
+      expect(cover(cc.querySelector('button')!)).toBe(-1);
+    });
   }
 });

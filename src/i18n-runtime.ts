@@ -62,11 +62,30 @@ export function createLanguageRuntime(load: CatalogLoader) {
   };
 }
 
-export const languageRuntime = createLanguageRuntime(async locale => {
+type LanguageRuntime = ReturnType<typeof createLanguageRuntime>;
+type RuntimeWorld = Record<symbol, LanguageRuntime | undefined>;
+const LANGUAGE_RUNTIME = Symbol.for('theater-everywhere.language-runtime');
+
+/**
+ * Where copies of this module meet. The player and the provider scripts that render their own strings (the playlist
+ * panel and end-screen views) each bundle it, and in a content script's isolated world they share its global. In the
+ * page's own world (MAIN) a page could plant the property first, so a copy there keeps a world of its own.
+ */
+export function languageRuntimeWorld(): RuntimeWorld {
+  return typeof chrome !== 'undefined' && chrome.runtime?.id ? globalThis as unknown as RuntimeWorld : {};
+}
+
+/** The world's runtime, created by whichever copy comes first, so a provider's copy follows the language the settings chose. */
+export function shareLanguageRuntime(world: RuntimeWorld, create: () => LanguageRuntime): LanguageRuntime {
+  world[LANGUAGE_RUNTIME] ??= create();
+  return world[LANGUAGE_RUNTIME];
+}
+
+export const languageRuntime = shareLanguageRuntime(languageRuntimeWorld(), () => createLanguageRuntime(async locale => {
   const response: unknown = await chrome.runtime.sendMessage({ action: 'get-language-catalog', locale });
   if (!isMessageCatalog(response)) throw new Error('Invalid language catalog');
   return response;
-});
+}));
 
 /** Shared by extension pages and player UI; Automatic still calls native i18n directly. */
 export function translateMessage(fallbacks: Record<string, string>, key: string, substitutions?: string | string[]): string {

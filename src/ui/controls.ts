@@ -680,10 +680,7 @@ export function createControls(
       onBeforeOpen: () => {
         settings.close();
         playlistPanel?.close();
-        volumeBtn.blur();
-        volumeSlider.blur();
-        speedBtn.blur();
-        speedSlider.blur();
+        blurSliders();
       },
       prepare: () => mediaFeatures.renderCcMenu(),
       firstFocus: () => mediaFeatures.firstCcMenuFocus(),

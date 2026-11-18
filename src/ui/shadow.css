@@ -494,7 +494,9 @@
   pointer-events: none !important;
 }
 
-.theater-menu.is-open > .theater-control-btn::before { inset-inline-start: -1px !important; }
+/* The cover goes on the side inside the menu: the start side for a menu on the bar's end, the end side (100%) for one
+   in the left section, whose notch sits at its start corner (--theater-menu-side -1). */
+.theater-menu.is-open > .theater-control-btn::before { inset-inline-start: calc((1 - var(--theater-menu-side, 1)) * 50% - 1px) !important; }
 .theater-settings-container.is-open > .theater-control-btn::after { inset-inline-end: -1px !important; }
 
 .theater-menu.is-open > .theater-control-btn:active,
