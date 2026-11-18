@@ -46,6 +46,8 @@ function resolvePlaylist(): Resolution | null {
   const current = currentEntryIndex(entries, playlist);
   const targets = new Map<string, () => void>();
   const items: PlaylistPanelItem[] = [];
+  // The playing row shows ▶; YouTube's header counts it from the model's index in the whole list ("1 / 3").
+  const currentIndex = integer(playlist.data.currentIndex);
   entries.forEach((entry, index) => {
     if (!entry?.title) return;
     // The list, the occurrence and the video: a key cannot select a different item after the list changes.
@@ -53,7 +55,8 @@ function resolvePlaylist(): Resolution | null {
     const isCurrent = index === current;
     if (entry.activate && !isCurrent) targets.set(key, entry.activate);
     items.push({
-      key, title: entry.title, position: entry.position, byline: entry.byline, duration: entry.duration,
+      key, title: entry.title, position: isCurrent && currentIndex != null ? currentIndex + 1 : entry.position,
+      byline: entry.byline, duration: entry.duration,
       imageUrl: entry.thumbnail, current: isCurrent, playable: isCurrent || Boolean(entry.activate)
     });
   });

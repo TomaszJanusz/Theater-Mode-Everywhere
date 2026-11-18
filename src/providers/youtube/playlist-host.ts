@@ -26,7 +26,10 @@ export type QueueEntry = {
   thumbnail: string;
   byline: string;
   duration: string;
-  /** 1-based position in the whole list, from the endpoint index; null when absent. */
+  /**
+   * The number YouTube shows on the row (1-based, in the whole list); null where it shows none: the playing row (▶) and
+   * the queue's rows, whose endpoint indexes skip its first, link-less row.
+   */
   position: number | null;
 };
 type RowIndex = { byData: Map<unknown, HostNode[]>; byIdentity: Map<string, HostNode[]> };
@@ -101,7 +104,7 @@ function readEntry(raw: unknown, index: number, context: EntryContext): QueueEnt
   const title = runsText(data.title);
   const images = record(data.thumbnail).thumbnails;
   const imageUrl = Array.isArray(images) ? string(record(images[images.length - 1]).url) : '';
-  const endpointIndex = integer(endpoint.index);
+  const shownIndex = runsText(data.indexText);
   return {
     id,
     identity: string(data.playlistSetVideoId) || JSON.stringify([index, id, endpoint.index]),
@@ -113,7 +116,7 @@ function readEntry(raw: unknown, index: number, context: EntryContext): QueueEnt
     thumbnail: rowThumbnail(images),
     byline: runsText(data.shortBylineText) || runsText(data.longBylineText),
     duration: runsText(data.lengthText),
-    position: endpointIndex == null ? null : endpointIndex + 1
+    position: /^\d{1,6}$/.test(shownIndex) ? Number(shownIndex) : null
   };
 }
 

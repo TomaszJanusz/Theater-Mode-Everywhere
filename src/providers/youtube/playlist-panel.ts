@@ -30,11 +30,12 @@ export function youtubePlaylistPanel(
     // A few lookups on each navigation refresh: the list data itself is read only while the panel is open.
     available() {
       if (!mediaProviderIntegrationEnabled('youtube')) return false;
-      const url = new URL(view.location.href);
-      if (url.pathname !== '/watch' || !url.searchParams.get('list')) return false;
+      if (new URL(view.location.href).pathname !== '/watch') return false;
       const watch = ownPlayer()?.closest<HTMLElement>('ytd-watch-flexy');
       if (!watch || watch.hidden) return false;
-      // YouTube keeps the element and hides it when the list is unavailable to this viewer (Watch later signed out).
+      // YouTube's own panel decides, not the URL: its queue ("Add to queue") plays without `list=` until it steps to
+      // the next item. YouTube keeps the element hidden on a watch page without a list, and for a list this viewer
+      // cannot see (Watch later signed out).
       const panel = watch.querySelector<HTMLElement>('ytd-playlist-panel-renderer');
       return Boolean(panel && !panel.hidden);
     },

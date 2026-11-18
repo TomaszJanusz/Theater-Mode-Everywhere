@@ -37,7 +37,8 @@ const fixture = `(() => {
   window.__state = { video: 'b', list: 'PLfixture' };
   const player = document.getElementById('movie_player');
   player.getVideoData = () => ({ video_id: window.__state.video });
-  window.__render = (ids, current, { setIds = {}, infinite = false } = {}) => {
+  // \`placeholder\`: the queue's first row, the video that was playing when the queue started: no link, no endpoint.
+  window.__render = (ids, current, { setIds = {}, infinite = false, placeholder = false } = {}) => {
     const panel = document.querySelector('ytd-playlist-panel-renderer');
     const items = panel.querySelector('#items');
     items.replaceChildren();
@@ -47,7 +48,8 @@ const fixture = `(() => {
       const renderer = { videoId: id, playlistSetVideoId: setIds[id] || 'set-' + id, selected: i === current,
         title: { simpleText: 'Video ' + id.toUpperCase() }, shortBylineText: { runs: [{ text: 'Channel ' + id }] },
         lengthText: { simpleText: (i + 1) + ':0' + i, accessibility: { accessibilityData: { label: 'n' } } },
-        indexText: { simpleText: i === current ? '▶' : String(i + 1) },
+        // The queue numbers none of its rows; other lists number every row but the playing one.
+        ...placeholder && i !== current ? {} : { indexText: { simpleText: i === current ? '▶' : String(i + 1) } },
         thumbnail: { thumbnails: [{ url: 'https://i.ytimg.com/vi/' + id + '/default.jpg', width: 120, height: 90 },
           { url: 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg', width: 336, height: 188 }] },
         navigationEndpoint: { commandMetadata: { webCommandMetadata: { url: href } },
@@ -55,16 +57,22 @@ const fixture = `(() => {
       if (id === 'x') renderer.thumbnail = { thumbnails: [{ url: 'https://tracker.example/x.jpg', width: 168 }] };
       const row = document.createElement('ytd-playlist-panel-video-renderer');
       row.data = renderer;
-      const a = document.createElement('a');
-      a.id = 'wc-endpoint';
-      a.href = href;
-      a.onclick = event => { event.preventDefault(); window.__clicks.push(a.getAttribute('href')); };
-      row.append(a);
+      if (placeholder && i === 0) {
+        delete renderer.navigationEndpoint;
+        delete renderer.selected;
+      } else {
+        const a = document.createElement('a');
+        a.id = 'wc-endpoint';
+        a.href = href;
+        a.onclick = event => { event.preventDefault(); window.__clicks.push(a.getAttribute('href')); };
+        row.append(a);
+      }
       items.append(row);
       return { playlistPanelVideoRenderer: renderer };
     });
-    panel.data = { playlistId: list, title: 'Fixture list', ownerName: { simpleText: 'Owner' },
-      totalVideos: infinite ? undefined : ids.length, isInfinite: infinite, localCurrentIndex: current, contents };
+    // The queue's model has no owner and is titled "Queue".
+    panel.data = { playlistId: list, ...placeholder ? { title: 'Queue' } : { title: 'Fixture list', ownerName: { simpleText: 'Owner' } },
+      totalVideos: infinite ? undefined : ids.length, isInfinite: infinite, currentIndex: current, localCurrentIndex: current, contents };
   };
   window.__render(['a', 'b', 'c', 'x'], 1);
 })()`;
@@ -155,6 +163,40 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
       } finally { await context.close(); }
     });
 
+    it('lists the queue on a watch page whose URL names no list, and follows it to the next item', async t => {
+      if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
+      const context = await shared.newContext(t);
+      try {
+        const page = await context.newPage();
+        await setup(page);
+        // "Add to queue" on a watch page without a list: YouTube shows its panel ("Queue", a TLPQ id) while the URL
+        // still has no \`list=\`, and the playing video is the queue's link-less first row (recorded live).
+        // A plain video first: YouTube's panel is there but hidden, so the toggle is absent.
+        await page.evaluate(`history.replaceState(null, '', '/watch?v=a'); document.querySelector('ytd-playlist-panel-renderer').hidden = true`);
+        assert.equal(await page.evaluate('window.__control.syncAvailability(), window.__control.host.hidden'), true);
+        // The viewer adds two videos to the queue: the panel appears, the URL still names no list.
+        await page.evaluate(`window.__state = { video: 'a', list: 'TLPQfixture' }; window.__render(['a', 'b', 'c'], 0, { placeholder: true });
+          document.querySelector('ytd-playlist-panel-renderer').hidden = false;`);
+        assert.equal(await page.evaluate('window.__source.available()'), true);
+        assert.equal(await page.evaluate('window.__control.syncAvailability(), window.__control.host.hidden'), false);
+        await page.evaluate('window.__open()');
+        assert.deepEqual((await rows(page)).map(row => [row.title, row.current]), [['Video A', true], ['Video B', false], ['Video C', false]]);
+        // As in YouTube's own panel: no numbers on the queue's rows, "1 / 3" in the header.
+        assert.deepEqual(await page.evaluate(`[...document.querySelectorAll('#panel .theater-playlist-index')].map(cell => cell.textContent)`), ['', '', '']);
+        assert.equal(await page.textContent('#panel .theater-playlist-meta'), 'Video 1 of 3');
+        await clickRow(page, 1);
+        assert.deepEqual(await page.evaluate('window.__clicks'), ['/watch?v=b&list=TLPQfixture&index=2']);
+        // YouTube steps into the queue: the URL now names it and the next row is current.
+        await page.evaluate(`history.pushState(null, '', '/watch?v=b&list=TLPQfixture&index=2'); window.__state.video = 'b';
+          window.__render(['a', 'b', 'c'], 1, { placeholder: true });`);
+        await page.waitForFunction(`document.querySelectorAll('#panel .theater-playlist-row')[1]?.getAttribute('aria-current') === 'true'`);
+        assert.equal(await page.evaluate('window.__control.syncAvailability(), window.__control.host.hidden'), false);
+        // Clearing the queue hides YouTube's panel again, and the toggle goes with it.
+        await page.evaluate(`history.pushState(null, '', '/watch?v=b'); document.querySelector('ytd-playlist-panel-renderer').hidden = true`);
+        assert.equal(await page.evaluate('window.__control.syncAvailability(), window.__control.host.hidden'), true);
+      } finally { await context.close(); }
+    });
+
     it('degrades to no panel without a list, with a hidden native panel and with the integration off', async t => {
       if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
       const context = await shared.newContext(t);
@@ -164,10 +206,11 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         await page.evaluate(`document.querySelector('ytd-playlist-panel-renderer').hidden = true`);
         assert.equal(await page.evaluate('window.__source.available()'), false);
         assert.equal(await page.evaluate('window.__control.syncAvailability(), window.__control.host.hidden'), true);
-        await page.evaluate(`document.querySelector('ytd-playlist-panel-renderer').hidden = false;
-          history.replaceState(null, '', '/watch?v=b')`);
+        // A plain video: YouTube keeps its panel, hidden, on a watch page without a list.
+        await page.evaluate(`history.replaceState(null, '', '/watch?v=b')`);
         assert.equal(await page.evaluate('window.__source.available()'), false);
-        await page.evaluate(`history.replaceState(null, '', '/watch?v=b&list=PLfixture');
+        await page.evaluate(`document.querySelector('ytd-playlist-panel-renderer').hidden = false;
+          history.replaceState(null, '', '/watch?v=b&list=PLfixture');
           document.documentElement.setAttribute(PlaylistTest.providerOffAttribute('youtube'), '')`);
         assert.equal(await page.evaluate('window.__source.available()'), false);
         await page.evaluate('window.__open()');
