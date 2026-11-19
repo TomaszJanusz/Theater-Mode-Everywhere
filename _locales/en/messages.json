@@ -734,10 +734,6 @@
     "message": "Video quality",
     "description": "Player settings row and list heading for choosing the video resolution the service streams."
   },
-  "videoQualityAuto": {
-    "message": "Auto",
-    "description": "Video quality choice that lets the service pick the resolution itself."
-  },
   "videoQualityAutoPlaying": {
     "message": "Auto ($LEVEL$)",
     "placeholders": {

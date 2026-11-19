@@ -5,7 +5,8 @@ import { MENU_OPEN_EVENT } from '../ui/menu-popover';
 /** Provider-only fallbacks: these bytes never join content.js. */
 const FALLBACKS: Record<string, string> = {
   videoQualityLabel: 'Video quality',
-  videoQualityAuto: 'Auto',
+  // The appearance settings' Auto, so every Auto in the extension reads alike.
+  appearanceAuto: 'Auto',
   videoQualityAutoPlaying: 'Auto ($1)',
   videoQualityBack: 'Back',
   videoQualityNone: 'No other qualities'
@@ -17,7 +18,7 @@ const QUALITY_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24
 /** The label Auto carries: what the host plays now, when it says. */
 function autoLabel(state: VideoQualityState): string {
   const playing = state.levels.find(level => level.id === state.playing);
-  return playing ? t('videoQualityAutoPlaying', [playing.label]) : t('videoQualityAuto');
+  return playing ? t('videoQualityAutoPlaying', [playing.label]) : t('appearanceAuto');
 }
 
 /**

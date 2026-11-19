@@ -728,11 +728,8 @@
   "videoQualityLabel": {
     "message": "Якість відео"
   },
-  "videoQualityAuto": {
-    "message": "Автоматично"
-  },
   "videoQualityAutoPlaying": {
-    "message": "Автоматично ($LEVEL$)",
+    "message": "Авто ($LEVEL$)",
     "placeholders": {
       "level": {
         "content": "$1"

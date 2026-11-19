@@ -728,9 +728,6 @@
   "videoQualityLabel": {
     "message": "画质"
   },
-  "videoQualityAuto": {
-    "message": "自动"
-  },
   "videoQualityAutoPlaying": {
     "message": "自动（$LEVEL$）",
     "placeholders": {
