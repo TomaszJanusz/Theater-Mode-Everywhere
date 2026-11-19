@@ -725,6 +725,26 @@
   "audioTrackBack": {
     "message": "뒤로"
   },
+  "videoQualityLabel": {
+    "message": "화질"
+  },
+  "videoQualityAuto": {
+    "message": "자동"
+  },
+  "videoQualityAutoPlaying": {
+    "message": "자동($LEVEL$)",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoQualityBack": {
+    "message": "뒤로"
+  },
+  "videoQualityNone": {
+    "message": "다른 화질 없음"
+  },
   "searchAudioTracks": {
     "message": "오디오 트랙 검색…"
   },

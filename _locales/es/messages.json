@@ -725,6 +725,26 @@
   "audioTrackBack": {
     "message": "Atrás"
   },
+  "videoQualityLabel": {
+    "message": "Calidad de vídeo"
+  },
+  "videoQualityAuto": {
+    "message": "Automática"
+  },
+  "videoQualityAutoPlaying": {
+    "message": "Automática ($LEVEL$)",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoQualityBack": {
+    "message": "Atrás"
+  },
+  "videoQualityNone": {
+    "message": "No hay otras calidades"
+  },
   "searchAudioTracks": {
     "message": "Buscar pistas de audio…"
   },

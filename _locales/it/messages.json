@@ -725,6 +725,26 @@
   "audioTrackBack": {
     "message": "Indietro"
   },
+  "videoQualityLabel": {
+    "message": "Qualità video"
+  },
+  "videoQualityAuto": {
+    "message": "Automatica"
+  },
+  "videoQualityAutoPlaying": {
+    "message": "Automatica ($LEVEL$)",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoQualityBack": {
+    "message": "Indietro"
+  },
+  "videoQualityNone": {
+    "message": "Nessun'altra qualità"
+  },
   "searchAudioTracks": {
     "message": "Cerca tracce audio…"
   },

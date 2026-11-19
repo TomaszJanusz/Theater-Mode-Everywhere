@@ -5,6 +5,7 @@ import type { EndScreenSource, PlaybackEndSource } from '../core/end-screen';
 import type { PlaylistPanelBar, PlaylistPanelControl } from '../core/playlist-panel';
 import type { ProviderStage } from '../core/provider-presentation';
 import type { ServiceActionSource } from '../core/service-actions';
+import type { VideoQualityControl, VideoQualityMenuHost } from '../core/video-quality';
 import type { MediaFetchRequest } from '../media-features/fetch-allowlist';
 import type { parseCaptionPayload } from '../media-features/parsers/captions';
 import type { MediaProbeSnapshot } from '../media-features/probe';
@@ -157,6 +158,8 @@ type IsolatedOnlyHooks = {
   };
   /** The bar's playlist toggle and panel for the player holding `element`, built with `mountPlaylistPanel`. */
   playlistPanel?: (element: HTMLElement, bar: PlaylistPanelBar) => PlaylistPanelControl | undefined;
+  /** The settings menu's Video quality row for the player holding `element`, built with `mountVideoQualityMenu`. */
+  videoQuality?: (element: HTMLElement, host: VideoQualityMenuHost) => VideoQualityControl | undefined;
 };
 
 /** Hooks the MAIN-world runtime reads. */

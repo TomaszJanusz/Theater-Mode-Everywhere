@@ -730,6 +730,31 @@
   "audioTrackBack": {
     "message": "Back"
   },
+  "videoQualityLabel": {
+    "message": "Video quality",
+    "description": "Player settings row and list heading for choosing the video resolution the service streams."
+  },
+  "videoQualityAuto": {
+    "message": "Auto",
+    "description": "Video quality choice that lets the service pick the resolution itself."
+  },
+  "videoQualityAutoPlaying": {
+    "message": "Auto ($LEVEL$)",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    },
+    "description": "The Auto video quality choice while the service reports the resolution it plays now, such as 720p60."
+  },
+  "videoQualityBack": {
+    "message": "Back",
+    "description": "Button that leaves the video quality list for the player settings."
+  },
+  "videoQualityNone": {
+    "message": "No other qualities",
+    "description": "Shown in the video quality list when the service offers nothing to choose from."
+  },
   "searchAudioTracks": {
     "message": "Search audio tracks…"
   },

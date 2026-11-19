@@ -1,6 +1,8 @@
 import { YouTubeAdapter } from '../../media-features/youtube-adapter';
 import { mountPlaylistPanel } from '../playlist-panel-view';
 import { providerRuntime } from '../provider-api';
+import { bridgedVideoQuality } from '../video-quality-bridge';
+import { mountVideoQualityMenu } from '../video-quality-view';
 
 import { youtubeChat } from './chat';
 import { youtubeChatTheme } from './chat-theme';
@@ -37,6 +39,10 @@ if (services) api?.register({
   playlistPanel: (element, bar) => {
     const source = youtubePlaylistPanel(element, services.observeProviderDom);
     return source && mountPlaylistPanel(source, bar);
+  },
+  videoQuality: (element, host) => {
+    const source = bridgedVideoQuality('youtube', element);
+    return source && mountVideoQualityMenu(source, host);
   },
   serviceActions: options => createYouTubeServiceActions({ ...options, elementToken: services.serviceElementToken, observe: services.observeProviderDom })
 });

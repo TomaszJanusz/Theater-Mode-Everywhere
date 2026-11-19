@@ -3,6 +3,7 @@ import { providerRuntime } from '../provider-api';
 import { twitchChat } from './chat';
 import { installTwitchMain, probeTwitch, twitchNetworkHarvest } from './harvest';
 import { installTwitchNavigation } from './navigation';
+import { installTwitchQuality } from './quality-main';
 import { twitchWatchPlayback } from './watch-playback';
 
 // The chat hook is registered here too: MAIN's entry shortcut capture must leave chat keys alone, and chat-only
@@ -15,5 +16,6 @@ providerRuntime('main')?.register({
   install() {
     installTwitchMain();
     installTwitchNavigation();
+    installTwitchQuality();
   }
 });
