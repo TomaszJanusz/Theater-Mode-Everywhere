@@ -687,28 +687,41 @@ export function readYoutubeSnapshot(): Record<string, unknown> | null {
   }
 }
 
+/**
+ * Makes YouTube lay its controls out again for the player's size after theater. YouTube sizes the control bar,
+ * chapter segments and settings menu from the live player size, but redoes that only when its cached size changes,
+ * and it never caches a zero-area size. Theater leaves the player with no height, so a fullscreen toggle there lays
+ * the controls out for a size the cache never held; back at the cached size, setSize() (which only re-measures) sees
+ * no change. Measured one pixel narrower first, the size changes twice and the controls follow the real size.
+ */
 function refreshYoutubePlayerLayout(): void {
+  // During theater the player has no area and YouTube ignores its size; the refreshes after exit do this.
+  if (document.documentElement.classList.contains('theater-everywhere-html-active')) return;
   const player = findYoutubePlayer();
-  if (!player || typeof player.clientWidth !== 'number') return;
-  const width = player.clientWidth;
-  const height = player.clientHeight;
-  if (width <= 0 || height <= 0) return;
+  const host = player instanceof HTMLElement ? player : null;
+  if (!player || !host || typeof player.setSize !== 'function') return;
+  const width = host.clientWidth;
+  const height = host.clientHeight;
+  if (width <= 1 || height <= 0) return;
 
-  const chrome = player.querySelector?.('.ytp-chrome-bottom');
-  if (chrome instanceof HTMLElement) {
-    const chromeWidth = chrome.getBoundingClientRect().width;
-    if (chromeWidth > width + 16) {
-      chrome.style.removeProperty('width');
-      chrome.style.removeProperty('left');
-    }
-  }
-
+  const { style } = host;
+  const hadStyle = host.hasAttribute('style');
+  const inlineWidth = style.getPropertyValue('width');
+  const inlinePriority = style.getPropertyPriority('width');
   try {
-    if (typeof player.setSize === 'function') {
-      player.setSize(width, height);
-    }
+    style.setProperty('width', `${width - 1}px`, 'important');
+    player.setSize(width - 1, height);
   } catch {
-    // Watch-page player may not expose setSize.
+    // A player without the API keeps its layout.
+  } finally {
+    if (inlineWidth) style.setProperty('width', inlineWidth, inlinePriority);
+    else style.removeProperty('width');
+    if (!hadStyle && !host.getAttribute('style')) host.removeAttribute('style');
+  }
+  try {
+    player.setSize(width, height);
+  } catch {
+    // As above.
   }
 }
 
