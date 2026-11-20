@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown, shouldAutoEnterTheater, updateAutoTheaterVisit,
+  resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown, shouldAutoEnterTheater, updateAutoTheaterContent, updateAutoTheaterVisit,
   type AutoTheaterDecision, type AutoTheaterVisit
 } from './auto-theater';
 
@@ -49,5 +49,16 @@ describe('automatic theater entry', () => {
     const home = updateAutoTheaterVisit(entered, null);
     assert.equal(shouldAutoEnterTheater(home, allowed), false);
     assert.equal(shouldAutoEnterTheater(updateAutoTheaterVisit(home, entered.identity), allowed), true);
+  });
+
+  it('starts a new visit for new content on the same page, such as the next live broadcast', () => {
+    const live = { identity: 'twitch:live:somechannel', entered: true };
+    const first = updateAutoTheaterContent(live, '1001');
+    assert.deepEqual(first, { ...live, content: '1001' }, 'the first content seen is recorded, not new');
+    assert.equal(updateAutoTheaterContent(first, '1001'), first);
+    const next = updateAutoTheaterContent(first, '1002');
+    assert.deepEqual(next, { identity: live.identity, entered: false, content: '1002' });
+    assert.equal(shouldAutoEnterTheater(next, allowed), true);
+    assert.equal(updateAutoTheaterVisit(next, 'twitch:live:otherchannel').content, undefined, 'a new page forgets it');
   });
 });

@@ -96,6 +96,11 @@ domain scope. Disabling a service cancels pending entry and consumes its current
 exiting an active theater session. Re-enabling waits for a new watch identity. The global
 preference, like the other gates, only blocks while off and does not consume the visit. A visit records
 entry so exiting or changing preferences cannot reenter the same content. New content identities reset it.
+Where the URL does not name the content (a live channel), a provider may declare the MAIN-only
+`WatchPlayback.contentIdentity`, which the watch bridge appends to its confirmation (`<request id>:<id>`,
+`[\w-]{1,64}`). The runtime records the first id it sees for a visit; a different one later, while theater is
+closed, starts a new visit on the same URL. An unknown id (null) keeps the visit, and while theater is open the
+recorded id is dropped, so exiting consumes whatever then plays.
 Entry is announced first: once the provider confirms the main video's identity and
 playback has been requested (not paused or ended, no media error, a source loading) —
 even before the stream can play (`ui/auto-theater-intent.ts`) — a corner notice shows for at
@@ -150,11 +155,23 @@ they hold exactly one non-live `<video>`; galleries, related-post players and em
 manual, and identity is the URL's post id only. Patreon is a pushState SPA whose route changes fire
 no `popstate`, so its MAIN-world hook (`providers/patreon/navigation.ts`) publishes one window event
 per `pushState`/`replaceState` for the runtime to refresh on. Twitch declares VOD pages
-only (`/videos/<id>`); live channels, clips and embeds stay manual. A VOD qualifies when its page
-holds exactly one `<video>`, inside the player's `video-ref`, with a non-infinite duration (the
-previous channel's live video during SPA entry is therefore rejected). Ads stitched into the VOD
-stream are part of the watch session, as on Netflix and Disney+. Twitch is a pushState SPA too and
-reuses the shared history publication (`providers/history-publication.ts`). Tencent
+(`/videos/<id>`) and channel pages (`/<login>`, identity `live:<login>`, query ignored); clips, channel
+tabs such as `/<login>/videos`, Twitch's own single-segment routes (`/directory`, `/settings`, … in
+`providers/twitch/routes.ts`), the front page's featured player, the mobile site and embeds stay manual.
+Either qualifies only when its page holds exactly one `<video>`, inside the player's `video-ref`, and no
+content classification gate ("Start Watching") covers the player: the stream already plays muted behind
+it, and accepting it fires no media event, so the provider's `observe` refreshes entry when the gate
+goes. A VOD needs a non-infinite duration (the previous channel's live video during SPA entry is
+therefore rejected). A channel page needs an infinite duration and Twitch's media player, reached in
+MAIN from the video-ref's React fiber (`providers/twitch/media-player.ts`), reporting the URL's channel
+as loaded: after SPA navigation the previous channel's stream keeps playing on the same element for a
+few seconds, and an offline channel's page autoplays a past broadcast (finite, no channel), so neither
+qualifies; the countdown may start while the new stream's duration is still unknown. The channel's
+current broadcast (`BROADCAST-ID` of the live manifest, read only while the player reports Playing and
+no ad shows) is its `contentIdentity`, so a channel that goes offline and live again on the same page
+starts a new visit. Ads stitched into a VOD or live stream are part of the watch session, as on Netflix
+and Disney+. Twitch is a pushState SPA too and reuses the shared history publication
+(`providers/history-publication.ts`); a raid is a navigation to the raided channel. Tencent
 also has WASM/iframe playback; Crunchyroll commonly plays in a separate frame.
 These providers remain undeclared until those content boundaries are qualified.
 Bilibili confirms the live bpx player manifest (upload kind, BV id and part) and

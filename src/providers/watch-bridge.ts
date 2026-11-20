@@ -12,6 +12,9 @@ export const PREPARING_RESPONSE = 'data-te-watch-preparing-response';
 export const MINIPLAYER_QUERY = 'theater-everywhere-miniplayer-query';
 export const MINIPLAYER_RESPONSE = 'data-te-miniplayer-response';
 
+/** Host content ids that may cross the bridge after a request id. */
+export const CONTENT_IDENTITY = /^[\w-]{1,64}$/;
+
 export const isRequestId = (value: unknown): value is string => typeof value === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(value);
 
 /** The response after the request id, or null when MAIN did not answer for this element. */
@@ -33,9 +36,20 @@ function confirmThroughBridge(video: HTMLVideoElement, query: string, responseAt
   return askBridge(video, query, responseAttribute) === '';
 }
 
+/**
+ * Null unless MAIN confirmed the main watch video; then its content identity
+ * (`WatchPlayback.contentIdentity`), or '' when the provider reports none.
+ */
+export function readProviderWatchContent(video: HTMLVideoElement): string | null {
+  const response = askBridge(video, WATCH_QUERY, WATCH_RESPONSE);
+  if (response === '' || response === null) return response;
+  const content = response.slice(1);
+  return response.startsWith(':') && CONTENT_IDENTITY.test(content) ? content : null;
+}
+
 /** Identity only, never playback state. Synchronous, string-only bridge, like queue navigation, including Firefox. */
 export function confirmProviderWatchVideo(video: HTMLVideoElement): boolean {
-  return confirmThroughBridge(video, WATCH_QUERY, WATCH_RESPONSE);
+  return readProviderWatchContent(video) !== null;
 }
 
 /** Manual sessions need the same identity check even with the integration disabled. */
@@ -54,6 +68,7 @@ export function confirmProviderPreparingVideo(video: HTMLVideoElement): boolean 
  * integration disabled because manual sessions need it.
  */
 export function readMiniplayerIdentity(video: HTMLVideoElement): string | null {
-  const identity = /^:([\w-]{1,64})$/.exec(askBridge(video, MINIPLAYER_QUERY, MINIPLAYER_RESPONSE) ?? '')?.[1];
-  return identity ?? null;
+  const response = askBridge(video, MINIPLAYER_QUERY, MINIPLAYER_RESPONSE);
+  const identity = response?.startsWith(':') ? response.slice(1) : '';
+  return CONTENT_IDENTITY.test(identity) ? identity : null;
 }
