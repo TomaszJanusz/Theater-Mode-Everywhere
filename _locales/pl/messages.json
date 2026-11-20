@@ -176,19 +176,10 @@
     }
   },
   "echoReductionLabel": {
-    "message": "Redukcja pogłosu"
-  },
-  "echoReductionOff": {
-    "message": "Wył."
-  },
-  "echoReductionLight": {
-    "message": "Lekka"
-  },
-  "echoReductionStrong": {
-    "message": "Mocna"
+    "message": "Tłumienie pogłosu"
   },
   "echoReductionHud": {
-    "message": "Redukcja pogłosu: $1",
+    "message": "Tłumienie pogłosu: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -196,7 +187,7 @@
     }
   },
   "echoReductionDescription": {
-    "message": "Do mowy nagranej w pomieszczeniach z pogłosem. Mocna może zabarwić muzykę."
+    "message": "Do mowy nagranej w pomieszczeniach z pogłosem. Mocne może zabarwić muzykę."
   },
   "navigationGroupTitle": {
     "message": "Nawigacja"

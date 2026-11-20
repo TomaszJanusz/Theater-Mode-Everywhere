@@ -178,15 +178,6 @@
   "echoReductionLabel": {
     "message": "エコー低減"
   },
-  "echoReductionOff": {
-    "message": "オフ"
-  },
-  "echoReductionLight": {
-    "message": "弱"
-  },
-  "echoReductionStrong": {
-    "message": "強"
-  },
   "echoReductionHud": {
     "message": "エコー低減: $1",
     "placeholders": {

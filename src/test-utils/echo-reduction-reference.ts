@@ -3,7 +3,7 @@
  * channel has its own real spectrum (no shared complex transform), the transform is a recursive
  * FFT and the stream is framed from whole arrays. The DSP test compares the WASM against it.
  */
-import type { EchoPreset } from '../platform/echo-reduction';
+import type { EchoPreset } from '../platform/echo-reduction-presets';
 
 const N = 1024;
 const HOP = 256;

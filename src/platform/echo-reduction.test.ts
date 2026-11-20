@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { ECHO_PRESETS, echoStage, type EchoCommand, type EchoLoader } from './echo-reduction';
+import { echoStage, type EchoCommand, type EchoLoader } from './echo-reduction';
 
 class Param {
   value = 0;
@@ -29,7 +29,7 @@ class FakeWorkletNode extends Node {
     super();
     FakeWorkletNode.created.push(this);
   }
-  reply(type: 'ready' | 'failed') { this.port.onmessage?.({ data: { type } }); }
+  reply(ok: boolean) { this.port.onmessage?.({ data: ok }); }
 }
 
 /** A suspended context: crossfades settle at once, so reachability shows the effective state. */
@@ -50,7 +50,7 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
 function setup(loader?: EchoLoader) {
   const ctx = context();
   let unavailable = 0;
-  const stage = echoStage(ctx as unknown as BaseAudioContext, loader, () => { unavailable++; });
+  const stage = echoStage(ctx as unknown as BaseAudioContext, loader && { load: loader, onUnavailable: () => { unavailable++; } });
   const reaches = (node: Node) => {
     const seen = new Set<Node>();
     const visit = (next: Node) => { if (seen.has(next)) return; seen.add(next); next.outputs.forEach(visit); };
@@ -79,15 +79,15 @@ describe('echo reduction stage', () => {
     resolve(new ArrayBuffer(8));
     await flush();
     const [node] = FakeWorkletNode.created;
-    assert.equal(node.sent[0].type, 'load');
+    assert.ok(node.sent[0] instanceof ArrayBuffer, 'the bytes go first');
     assert.equal(reaches(node), false, 'still dry while the worklet compiles');
-    node.reply('ready');
+    node.reply(true);
     assert.equal(reaches(node), true);
-    assert.deepEqual(node.sent.at(-1), { type: 'configure', ...ECHO_PRESETS.strong }, 'the level chosen meanwhile applies');
+    assert.deepEqual(node.sent.at(-1), 'strong', 'the level chosen meanwhile applies');
     stage.set('off');
     assert.equal(reaches(node), false, 'off disconnects the worklet');
     stage.set('light');
-    assert.deepEqual(node.sent.at(-1), { type: 'configure', ...ECHO_PRESETS.light });
+    assert.deepEqual(node.sent.at(-1), 'light');
     assert.equal(reaches(node), true, 'and the same node comes back');
     stage.dispose();
     assert.equal(node.closed, true);
@@ -100,11 +100,11 @@ describe('echo reduction stage', () => {
     resolve(new ArrayBuffer(8));
     await flush();
     const [node] = FakeWorkletNode.created;
-    node.reply('failed');
+    node.reply(false);
     assert.equal(unavailable(), 1);
     assert.equal(node.closed, true);
     stage.set('light');
-    node.reply('ready');
+    node.reply(true);
     assert.equal(loader.calls, 1, 'no retry on the same page');
     assert.equal(reaches(node), false);
     assert.equal(unavailable(), 1);
@@ -120,7 +120,7 @@ describe('echo reduction stage', () => {
     assert.equal(FakeWorkletNode.created.length, 0);
     const withoutLoader = setup(undefined);
     withoutLoader.stage.set('light');
-    assert.equal(withoutLoader.unavailable(), 1, 'a chain without a loader cannot reduce echo either');
+    assert.equal(FakeWorkletNode.created.length, 0, 'a chain without a loader stays dry');
   });
 
   it('ignores a load or a reply that arrives after the stage was disposed', async () => {
@@ -139,8 +139,8 @@ describe('echo reduction stage', () => {
     await flush();
     const [node] = FakeWorkletNode.created;
     late.stage.dispose();
-    node.reply('failed');
-    node.reply('ready');
+    node.reply(false);
+    node.reply(true);
     assert.equal(late.unavailable(), 0, 'a disposed stage reports nothing');
     assert.equal(late.reaches(node), false);
   });

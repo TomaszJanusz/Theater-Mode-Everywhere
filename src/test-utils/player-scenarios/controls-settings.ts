@@ -263,7 +263,7 @@ export async function preparePinAndMenus(page: Page) {
   await page.keyboard.press('Tab');
   if (!await boostArrow(1).evaluate(button => button.matches(':focus'))) fail('Tab skipped the upper boost arrow.');
   // Both arrows of a stepper are tab stops (an arrow at the end of its range is aria-disabled, so it keeps focus).
-  for (const [name, direction] of [['voice', -1], ['voice', 1], ['leveling', -1], ['leveling', 1], ['bass', -1], ['bass', 1]] as const) {
+  for (const [name, direction] of [['voice', -1], ['voice', 1], ['leveling', -1], ['leveling', 1], ['bass', -1], ['bass', 1], ['echo', -1], ['echo', 1]] as const) {
     await page.keyboard.press('Tab');
     if (!await menu.locator(`.audio-${name}-btn [data-direction="${direction}"]`).evaluate(button => button.matches(':focus'))) fail(`Tab skipped the ${name} audio setting.`);
   }

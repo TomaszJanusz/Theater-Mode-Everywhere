@@ -70,8 +70,8 @@ const AUDIO_SETTING_SHAPES: Record<AudioSettingName, string> = {
   // Even level bars held between two limits.
   leveling: '<path d="M3 4h18"/><path d="M3 20h18"/><path d="M6 9v6"/><path d="M10 8v8"/><path d="M14 9v6"/><path d="M18 8v8"/>',
   bass: BASS_SHAPES,
-  // A voice wave with its fading repeats cut off.
-  echo: '<path d="M3 12h2l2-6 3 12 3-9 2 3h2"/><path d="M20 9v6"/><path d="M22.5 10.5v3"/>'
+  // A voice wave that stops short, with no repeats after it.
+  echo: '<path d="M2 12h3l3-7 4 14 3-7h7"/>'
 };
 /** Menu and HUD size of the bass icon; `level` is also updated in place on the settings row. */
 function bassIcon(size: number, level: AudioSettings['bass']): string {

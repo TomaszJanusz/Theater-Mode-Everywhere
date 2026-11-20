@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 
 import { referenceEchoReduction } from '../test-utils/echo-reduction-reference';
 
-import { ECHO_PRESETS, type EchoPreset } from './echo-reduction';
+import { ECHO_PRESETS, type EchoPreset } from './echo-reduction-presets';
 
 const RATE = 48000;
 const QUANTUM = 128;

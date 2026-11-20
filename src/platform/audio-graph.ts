@@ -1,6 +1,6 @@
 import { isNeutralAudio, type AudioSettings } from '../audio-settings';
 import { AUDIO_FADE_SECONDS, createAudioCrossfade } from './audio-crossfade';
-import { echoStage, type EchoLoader } from './echo-reduction';
+import { echoStage, type EchoSupport } from './echo-reduction';
 
 type VoicePreset = {
   /** Dialogue band added on top of the centre (mid) signal. */
@@ -189,15 +189,12 @@ function levelingStage(ctx: BaseAudioContext) {
   };
 }
 
-/** How the echo stage loads its worklet, and whom it tells when it cannot run on this page. */
-export type EchoSupport = { load?: EchoLoader; onUnavailable(): void };
-
 /**
  * Echo reduction, then voice, bass and leveling, with one limiter guarding full scale. Echo comes
  * first because the voice compressor would otherwise lift the room tails it removes.
  */
 export function createAudioChain(ctx: BaseAudioContext, echoSupport?: EchoSupport): AudioChain {
-  const echo = echoStage(ctx, echoSupport?.load, () => echoSupport?.onUnavailable());
+  const echo = echoStage(ctx, echoSupport);
   const voice = voiceStage(ctx);
   const bass = bassStage(ctx);
   const leveling = levelingStage(ctx);

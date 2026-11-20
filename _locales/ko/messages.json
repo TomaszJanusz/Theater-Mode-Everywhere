@@ -178,15 +178,6 @@
   "echoReductionLabel": {
     "message": "에코 줄이기"
   },
-  "echoReductionOff": {
-    "message": "끔"
-  },
-  "echoReductionLight": {
-    "message": "약하게"
-  },
-  "echoReductionStrong": {
-    "message": "강하게"
-  },
   "echoReductionHud": {
     "message": "에코 줄이기: $1",
     "placeholders": {

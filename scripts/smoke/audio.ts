@@ -12,12 +12,12 @@ export async function assertAudioWorld(page: Page, context: BrowserContext): Pro
     const worker = await extensionWorker(context);
     const keys = ['voiceBoost', 'volumeLeveling', 'bassLevel', 'echoReduction', 'volumeBoostEnabled'];
     await page.locator('video#player').evaluate(async (video: HTMLVideoElement) => {
-      // The worklet's first reply ('ready' or 'failed'), seen from the page like any page script could.
+      // The worklet's one reply (whether the DSP compiled), seen from the page like any page script could.
       const Native = AudioWorkletNode;
       window.AudioWorkletNode = class extends Native {
         constructor(...args: ConstructorParameters<typeof AudioWorkletNode>) {
           super(...args);
-          this.port.addEventListener('message', event => { video.dataset.smokeEchoReply ??= String(event.data?.type); });
+          this.port.addEventListener('message', event => { video.dataset.smokeEchoReply ??= String(event.data); });
         }
       };
       video.srcObject = null;
@@ -46,7 +46,7 @@ export async function assertAudioWorld(page: Page, context: BrowserContext): Pro
     const echo = await page.locator('video#player').evaluate((video: HTMLVideoElement) => ({
       reply: video.dataset.smokeEchoReply, unavailable: video.dataset.theaterEchoUnavailable
     }));
-    if (echo.reply !== 'ready' || echo.unavailable !== undefined) fail(`Echo reduction did not load in the MAIN world: ${JSON.stringify(echo)}`);
+    if (echo.reply !== 'true' || echo.unavailable !== undefined) fail(`Echo reduction did not load in the MAIN world: ${JSON.stringify(echo)}`);
     const saved = await worker.evaluate(keys => chrome.storage.sync.get(keys), keys);
     if (saved.voiceBoost !== 'light' || saved.volumeLeveling !== 'strong' || saved.bassLevel !== 'more'
       || saved.echoReduction !== 'light' || saved.volumeBoostEnabled !== false) {

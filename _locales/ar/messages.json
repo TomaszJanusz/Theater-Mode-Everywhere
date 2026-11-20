@@ -178,15 +178,6 @@
   "echoReductionLabel": {
     "message": "تقليل الصدى"
   },
-  "echoReductionOff": {
-    "message": "إيقاف"
-  },
-  "echoReductionLight": {
-    "message": "خفيف"
-  },
-  "echoReductionStrong": {
-    "message": "قوي"
-  },
   "echoReductionHud": {
     "message": "تقليل الصدى: $1",
     "placeholders": {

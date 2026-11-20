@@ -178,15 +178,6 @@
   "echoReductionLabel": {
     "message": "Potlačenie ozveny"
   },
-  "echoReductionOff": {
-    "message": "Vypnuté"
-  },
-  "echoReductionLight": {
-    "message": "Mierne"
-  },
-  "echoReductionStrong": {
-    "message": "Silné"
-  },
   "echoReductionHud": {
     "message": "Potlačenie ozveny: $1",
     "placeholders": {

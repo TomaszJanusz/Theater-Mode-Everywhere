@@ -96,7 +96,7 @@ const RENDER = `(async ({ echo, seconds, origin }) => {
     }
   };
   const chain = EchoChain.createAudioChain(ctx, {
-    load: EchoChain.createEchoLoader(() => ({ worklet: origin + '/echo-reduction.js', wasm: origin + '/echo-reduction.wasm' })),
+    load: EchoChain.createEchoLoader(() => origin + '/echo-reduction.js'),
     onUnavailable: () => { unavailable = true; answered(); }
   });
   source.connect(chain.input);

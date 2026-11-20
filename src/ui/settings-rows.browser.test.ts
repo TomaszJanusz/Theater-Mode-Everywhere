@@ -197,7 +197,7 @@ describe('settings menu rows stay on one line', () => {
                 ...states('SET_KEEP_CONTROLS_VISIBLE', [true, false]),
                 ...states('SET_AUTO_ENTER_THEATER', [true, false]),
                 ...states('SET_VOLUME_BOOST', [true, false]),
-                ...['light', 'strong', 'off'].map(level => ({ type: 'SET_AUDIO', value: { voice: level, leveling: level, bass: level === 'light' ? 'less' : level === 'strong' ? 'more' : 'original' } }))
+                ...['light', 'strong', 'off'].map(level => ({ type: 'SET_AUDIO', value: { voice: level, leveling: level, bass: level === 'light' ? 'less' : level === 'strong' ? 'more' : 'original', echo: level } }))
               ];
               const valueWidths = () => [...menu.querySelectorAll<HTMLElement>('.theater-settings-detail')]
                 .map(detail => Math.round(detail.getBoundingClientRect().width * 100) / 100);
@@ -247,7 +247,7 @@ describe('Bass row sweep', () => {
             mountPlayerUi: (el: HTMLElement) => mount.appendChild(el), destroyPlayerUi: noop, eventPathIncludes: (e: Event, n: Node | null) => !!n && e.composedPath().includes(n), eventPathMatches: () => false, paintOverlay: noop, mediaHasSource: () => true, requestVideoPlay: noop, actions };
           api.createControls(ctx, noop).createCustomControls(video);
           const row = document.querySelector<HTMLElement>('.audio-bass-btn')!;
-          const set = (bass: string) => store.dispatch({ type: 'SET_AUDIO', value: { voice: 'off', leveling: 'off', bass } });
+          const set = (bass: string) => store.dispatch({ type: 'SET_AUDIO', value: { voice: 'off', leveling: 'off', bass, echo: 'off' } });
           const swept = () => row.classList.contains('is-sweeping');
           const seen: Record<string, boolean> = {};
           // A closed menu never fires animationend, so it must not be left carrying the marker.
@@ -295,7 +295,7 @@ describe('Settings row vertical alignment', () => {
               mountPlayerUi: (el: HTMLElement) => mount.appendChild(el), destroyPlayerUi: noop, eventPathIncludes: (e: Event, n: Node | null) => !!n && e.composedPath().includes(n), eventPathMatches: () => false, paintOverlay: noop, mediaHasSource: () => true, requestVideoPlay: noop, actions };
             api.createControls(ctx, noop).createCustomControls(video);
             document.querySelector('.theater-settings-container')!.classList.add('is-open');
-            store.dispatch({ type: 'SET_AUDIO', value: { voice: 'light', leveling: 'off', bass: 'moaaarr' } });
+            store.dispatch({ type: 'SET_AUDIO', value: { voice: 'light', leveling: 'off', bass: 'moaaarr', echo: 'strong' } });
             const centre = (element: Element | null) => { const box = element?.getBoundingClientRect(); return box ? box.top + box.height / 2 : null; };
             return [...document.querySelectorAll('.theater-settings-row')].filter(row => (row as HTMLElement).offsetParent).map(row => ({
               row: row.className.split(' ').find(name => name.endsWith('-btn')) ?? row.className,

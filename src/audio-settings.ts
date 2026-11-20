@@ -62,7 +62,8 @@ const LEVEL_LABEL_KEYS: { [N in AudioSettingName]: Record<AudioSettings[N], stri
   voice: { off: 'voiceBoostOff', light: 'voiceBoostLight', strong: 'voiceBoostStrong' },
   leveling: { off: 'volumeLevelingOff', light: 'volumeLevelingLight', strong: 'volumeLevelingStrong' },
   bass: { less: 'bassLess', original: 'bassOriginal', more: 'bassMore', moar: 'bassMoar', moaaarr: 'bassMoaaarr' },
-  echo: { off: 'echoReductionOff', light: 'echoReductionLight', strong: 'echoReductionStrong' }
+  // The same words as Voice boost's levels; each language names the Echo reduction row so they agree with it.
+  echo: { off: 'voiceBoostOff', light: 'voiceBoostLight', strong: 'voiceBoostStrong' }
 };
 /** Why audio settings cannot apply to a video, with the message that explains it. */
 export type AudioBlock = 'protected' | 'refused';

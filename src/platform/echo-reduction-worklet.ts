@@ -1,11 +1,12 @@
 /**
  * The AudioWorklet module behind echo reduction, built to `audio/echo-reduction.js` (a
- * web-accessible resource) and loaded by `createEchoLoader`. It stays self-contained: only types
- * are imported. The DSP arrives as bytes and is compiled here, because Chromium does not accept a
+ * web-accessible resource) and loaded by `createEchoLoader`. It is bundled self-contained and owns the
+ * Light and Strong parameters, so the shared bundles only pass a level. The DSP arrives as bytes and is compiled here, because Chromium does not accept a
  * compiled `WebAssembly.Module` through a worklet port. A page CSP without 'wasm-unsafe-eval'
  * rejects the compile, and the reply tells MAIN to show the effect as unavailable.
  */
-import { ECHO_PROCESSOR, type EchoCommand, type EchoReply } from './echo-reduction';
+import { ECHO_PROCESSOR, type EchoCommand } from './echo-reduction';
+import { ECHO_PRESETS } from './echo-reduction-presets';
 
 declare const sampleRate: number;
 declare class AudioWorkletProcessor {
@@ -36,22 +37,23 @@ class EchoReductionProcessor extends AudioWorkletProcessor {
   }
 
   private receive(command: EchoCommand): void {
-    if (command.type === 'load') {
-      WebAssembly.instantiate(command.bytes, {}).then(({ instance }) => {
-        const dsp = instance.exports as unknown as Dsp;
-        // The stub runtime never grows memory, so these views stay valid.
-        this.buffers = [dsp.inputBuffer(0), dsp.inputBuffer(1), dsp.outputBuffer(0), dsp.outputBuffer(1)]
-          .map(pointer => new Float32Array(dsp.memory.buffer, pointer, QUANTUM));
-        this.dsp = dsp;
-        this.reply({ type: 'ready' });
-      }, () => this.reply({ type: 'failed' }));
-    } else if (command.type === 'configure') {
-      this.dsp?.configure(command.rt60, command.overSubtraction, command.floorDb, command.gap, sampleRate);
+    if (typeof command === 'string') {
+      const preset = ECHO_PRESETS[command];
+      this.dsp?.configure(preset.rt60, preset.overSubtraction, preset.floorDb, preset.gap, sampleRate);
       this.configured = this.dsp !== null;
+      return;
     }
+    WebAssembly.instantiate(command, {}).then(({ instance }) => {
+      const dsp = instance.exports as unknown as Dsp;
+      // The stub runtime never grows memory, so these views stay valid.
+      this.buffers = [dsp.inputBuffer(0), dsp.inputBuffer(1), dsp.outputBuffer(0), dsp.outputBuffer(1)]
+        .map(pointer => new Float32Array(dsp.memory.buffer, pointer, QUANTUM));
+      this.dsp = dsp;
+      this.reply(true);
+    }, () => this.reply(false));
   }
 
-  private reply(message: EchoReply): void {
+  private reply(message: boolean): void {
     this.port.postMessage(message);
   }
 

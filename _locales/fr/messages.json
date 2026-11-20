@@ -178,15 +178,6 @@
   "echoReductionLabel": {
     "message": "Réduction de l’écho"
   },
-  "echoReductionOff": {
-    "message": "Désactivée"
-  },
-  "echoReductionLight": {
-    "message": "Légère"
-  },
-  "echoReductionStrong": {
-    "message": "Forte"
-  },
   "echoReductionHud": {
     "message": "Réduction de l’écho : $1",
     "placeholders": {

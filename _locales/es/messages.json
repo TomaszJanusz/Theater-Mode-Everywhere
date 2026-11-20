@@ -176,19 +176,10 @@
     }
   },
   "echoReductionLabel": {
-    "message": "Reducción de eco"
-  },
-  "echoReductionOff": {
-    "message": "Desactivada"
-  },
-  "echoReductionLight": {
-    "message": "Ligera"
-  },
-  "echoReductionStrong": {
-    "message": "Fuerte"
+    "message": "Reductor de eco"
   },
   "echoReductionHud": {
-    "message": "Reducción de eco: $1",
+    "message": "Reductor de eco: $1",
     "placeholders": {
       "level": {
         "content": "$1"

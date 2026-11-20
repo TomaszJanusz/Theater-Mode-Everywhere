@@ -87,7 +87,7 @@ describe('audio settings on protected media', () => {
     it(`restores the audio rows for ordinary video and reacts when DRM appears in ${engine}`, { timeout: 60_000 }, async t => {
       await withBrowser(t, engine, async page => {
         await boot(page, false);
-        assert.deepEqual(await audioMenu(page), { note: null, rows: 4, heading: true });
+        assert.deepEqual(await audioMenu(page), { note: null, rows: 5, heading: true });
         await page.evaluate('window.markDrm()');
         await page.waitForFunction(() => {
           const note = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-settings-note');

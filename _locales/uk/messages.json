@@ -178,15 +178,6 @@
   "echoReductionLabel": {
     "message": "Придушення луни"
   },
-  "echoReductionOff": {
-    "message": "Вимк."
-  },
-  "echoReductionLight": {
-    "message": "Слабке"
-  },
-  "echoReductionStrong": {
-    "message": "Сильне"
-  },
   "echoReductionHud": {
     "message": "Придушення луни: $1",
     "placeholders": {

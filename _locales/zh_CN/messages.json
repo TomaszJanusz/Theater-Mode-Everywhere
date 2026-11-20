@@ -178,15 +178,6 @@
   "echoReductionLabel": {
     "message": "减少回声"
   },
-  "echoReductionOff": {
-    "message": "关"
-  },
-  "echoReductionLight": {
-    "message": "轻度"
-  },
-  "echoReductionStrong": {
-    "message": "强力"
-  },
   "echoReductionHud": {
     "message": "减少回声：$1",
     "placeholders": {

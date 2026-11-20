@@ -161,9 +161,9 @@ export function installMediaAudioRuntime(loadEcho?: EchoLoader): void {
         void context.close().catch(console.error);
         return;
       }
-      chain = createAudioChain(context, {
+      // Only a live stage reports; the controls read the attribute when the event arrives.
+      chain = createAudioChain(context, loadEcho && {
         load: loadEcho,
-        // Only a live stage reports; the controls read the attribute when the event arrives.
         onUnavailable: () => {
           video.dataset.theaterEchoUnavailable = 'true';
           video.dispatchEvent(new CustomEvent(AUDIO_SETTINGS_EVENT, { bubbles: true, composed: true }));

@@ -178,15 +178,6 @@
   "echoReductionLabel": {
     "message": "Potlačení ozvěny"
   },
-  "echoReductionOff": {
-    "message": "Vypnuto"
-  },
-  "echoReductionLight": {
-    "message": "Mírné"
-  },
-  "echoReductionStrong": {
-    "message": "Silné"
-  },
   "echoReductionHud": {
     "message": "Potlačení ozvěny: $1",
     "placeholders": {
