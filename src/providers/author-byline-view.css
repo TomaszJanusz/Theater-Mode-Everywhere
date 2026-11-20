@@ -1,7 +1,7 @@
 /* Injected with the author panel (see author-byline-view.ts). The panel fills the start of the title plate
    (shadow.css, .theater-everywhere-title-hud) out to its filled edge, as tall as the plate and the home button, by
-   bleeding through the plate's edge insets, so the plate does not grow; its cards use the subtitle menu's shell class
-   for the shared open/close lifecycle and restyle it as cards under the plate. */
+   bleeding through the plate's edge insets, so the plate does not grow; its popup uses the subtitle menu's shell class
+   for the shared open/close lifecycle and restyles it as one block of rows under the plate. */
 
 .theater-byline {
   /* The chevron's depth; the names end this far before the apex, where the accent ramps up. */
@@ -218,24 +218,23 @@
   color: var(--appearance-muted, rgba(255, 255, 255, 0.72));
 }
 
-/* The cards: one per author, in a column under the plate from the panel's start, clamped to the video (never over
-   the chat). They start right at the panel's edge and are at least as wide, with the 8px gap as their own padding, so
-   a move from the panel to a card never leaves the menu.
+/* The popup: one block under the plate from the panel's start, clamped to the video (never over the chat), listing a
+   row per author. It starts right at the panel's edge and is at least as wide, with the 8px gap as its own padding, so
+   a move from the panel to a row never leaves the menu.
 
-   Hover intent without a timer: the shell opens the menu at once, and the cards turn visible after 250 ms of hover and
-   stay 300 ms after the pointer leaves, a bridge for a diagonal move. A click or a key pins them at once, and a close
-   (Escape, an outside press, the panel clicked again) suppresses the menu, which hides them at once. The delays are
+   Hover intent without a timer: the shell opens the menu at once, and the popup turns visible after 250 ms of hover and
+   stays 300 ms after the pointer leaves, a bridge for a diagonal move. A click or a key pins it at once, and a close
+   (Escape, an outside press, the panel clicked again) suppresses the menu, which hides it at once. The delays are
    pointer timing, not motion, so they hold under Reduce motion too. */
-.theater-cc-menu.theater-byline-cards {
+.theater-cc-menu.theater-byline-popup {
   position: absolute !important;
   top: 100% !important;
   bottom: auto !important;
   inset-inline-start: 0 !important;
   inset-inline-end: auto !important;
-  display: flex !important;
+  display: block !important;
   visibility: hidden !important;
   transition: visibility 0s linear 0.3s !important;
-  gap: 8px !important;
   box-sizing: border-box !important;
   width: max(100%, min(288px, calc(var(--theater-video-width, 100vw) - 48px))) !important;
   min-width: 0 !important;
@@ -254,59 +253,86 @@
   cursor: default !important;
 }
 
-.theater-menu.is-open > .theater-cc-menu.theater-byline-cards {
+.theater-menu.is-open > .theater-cc-menu.theater-byline-popup {
   visibility: visible !important;
   transition-delay: 0.25s !important;
 }
 
 /* No transition at all, not a zero delay: that also ends a hover delay already under way. */
-.theater-menu > .theater-cc-menu.theater-byline-cards.visible,
-.theater-menu.is-suppressed > .theater-cc-menu.theater-byline-cards { transition: none !important; }
+.theater-menu > .theater-cc-menu.theater-byline-popup.visible,
+.theater-menu.is-suppressed > .theater-cc-menu.theater-byline-popup { transition: none !important; }
 
-/* Each card is its author's channel link when the host admits one. Rows alternate from the second author, and a
-   pointer lifts the row further; every tone is the ink mixed into the card's surface, never the accent, so text keeps
-   WCAG AA on all of them whichever accent is chosen (author-byline-contrast.test.ts). The panel's lit edge rims the
-   hovered card; the keyboard ring is the ink, inside the card, so the video never hides it. */
-.theater-byline-card {
-  --card-fill: var(--appearance-surface, rgba(20, 20, 20, 0.96));
+/* The block: one surface, border, radius and shadow for every row. It clips the rows, so their tones, the hover edge
+   and the focus ring follow its rounded corners. */
+.theater-byline-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: clip;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15));
+  border-radius: 12px;
+  background: var(--appearance-surface, rgba(20, 20, 20, 0.96));
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  list-style: none;
+}
+
+/* A row is its author's channel link when the host admits one. From the second author the rows alternate, and a
+   pointer lifts a row further; every tone is the ink laid over the block's surface, never the accent, so text keeps
+   WCAG AA on all of them whichever accent is chosen (author-byline-contrast.test.ts). The panel's lit edge marks the
+   hovered row at its start; the keyboard ring is the ink, inside the row, so the block never cuts it. */
+.theater-byline-row {
+  --row-fill: transparent;
   position: relative;
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15));
-  border-radius: 12px;
-  background: var(--card-fill);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  /* The outer rows follow the block's corners, so the focus ring does too. */
+  border-radius: inherit;
+  background: var(--row-fill);
   color: var(--appearance-ink, #f8fafc);
   text-decoration: none;
 }
 
-.theater-byline-card:nth-child(even) { --card-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 6%, var(--appearance-surface, rgba(20, 20, 20, 0.96))); }
+.theater-byline-list > li { border-radius: 11px; }
+.theater-byline-list > li:not(:first-child) { border-start-start-radius: 0; border-start-end-radius: 0; }
+.theater-byline-list > li:not(:last-child) { border-end-start-radius: 0; border-end-end-radius: 0; }
 
-a.theater-byline-card {
+.theater-byline-list > li:nth-child(even) > .theater-byline-row { --row-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 6%, transparent); }
+
+a.theater-byline-row {
   cursor: pointer;
-  transition: background-color 0.12s ease-out, border-color 0.12s ease-out;
+  transition: background-color 0.12s ease-out;
 }
 
-a.theater-byline-card:hover {
-  --card-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 10%, var(--appearance-surface, rgba(20, 20, 20, 0.96)));
-  border-color: var(--edge);
+.theater-byline-list > li > a.theater-byline-row:hover { --row-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 10%, transparent); }
+
+.theater-byline-list > li > a.theater-byline-row:active { --row-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 12%, transparent); }
+
+a.theater-byline-row:hover::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  background: var(--edge);
 }
 
-a.theater-byline-card:active { --card-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 12%, var(--appearance-surface, rgba(20, 20, 20, 0.96))); }
-
-a.theater-byline-card:focus-visible {
+a.theater-byline-row:focus-visible {
   outline: 2px solid var(--appearance-ink, #ffffff);
   outline-offset: -2px;
 }
 
-/* Reduce motion gives every element a brief transition of every property, so the card's contents would take the
-   pinned cards' visibility a frame late and be read as hidden. Nothing in a card needs to move. */
-:host([data-motion="reduced"]) :is(.theater-byline-card, .theater-byline-card *) { transition: none; }
+/* High contrast draws every ring 1px outside its control; inside the block that would be cut, so this one stays in. */
+:host([data-contrast="high"]) a.theater-byline-row:focus-visible { outline-offset: -3px !important; }
 
-.theater-byline-card-avatar {
+/* Reduce motion gives every element a brief transition of every property, so a row's contents would take the pinned
+   popup's visibility a frame late and be read as hidden. Nothing in a row needs to move. */
+:host([data-motion="reduced"]) :is(.theater-byline-row, .theater-byline-row *) { transition: none; }
+
+.theater-byline-row-avatar {
   display: grid;
   place-items: center;
   width: 40px;
@@ -315,16 +341,16 @@ a.theater-byline-card:focus-visible {
   object-fit: cover;
 }
 
-.theater-byline-card-avatar.theater-byline-monogram { font-size: 14px; }
+.theater-byline-row-avatar.theater-byline-monogram { font-size: 14px; }
 
-.theater-byline-card-heading {
+.theater-byline-row-heading {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
 
-.theater-byline-card-name {
+.theater-byline-row-name {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -333,7 +359,7 @@ a.theater-byline-card:focus-visible {
   font-weight: 700;
 }
 
-.theater-byline-card-title {
+.theater-byline-row-title {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -341,9 +367,9 @@ a.theater-byline-card:focus-visible {
   unicode-bidi: isolate;
 }
 
-.theater-byline-card-stat {
+.theater-byline-row-stat {
   overflow: hidden;
-  /* Its own direction reads the text; the card's sets the side it lines up on, under the name. */
+  /* Its own direction reads the text; the row's sets the side it lines up on, under the name. */
   align-self: start;
   max-width: 100%;
   color: var(--appearance-muted, #a1a1aa);
@@ -352,8 +378,8 @@ a.theater-byline-card:focus-visible {
   white-space: nowrap;
 }
 
-/* The new-tab arrow at the card's end points to the inline end. */
-.theater-byline-card-open {
+/* The new-tab arrow at the row's end points to the inline end. */
+.theater-byline-row-open {
   display: inline-flex;
   color: var(--appearance-muted, #a1a1aa);
 }
@@ -367,9 +393,9 @@ a.theater-byline-card:focus-visible {
   white-space: nowrap;
 }
 
-a.theater-byline-card:is(:hover, :focus-visible) .theater-byline-card-open { color: var(--appearance-ink, #f8fafc); }
+a.theater-byline-row:is(:hover, :focus-visible) .theater-byline-row-open { color: var(--appearance-ink, #f8fafc); }
 
-.theater-everywhere-title-hud[dir="rtl"] .theater-byline-card-open svg { transform: scaleX(-1); }
+.theater-everywhere-title-hud[dir="rtl"] .theater-byline-row-open svg { transform: scaleX(-1); }
 
 /* A scrolling title takes the room beside the panel: the shell sizes it for a plate of its own. Its start fade keeps
    the shell's 20px, so it runs out under the chevron's tip and the first letter at rest stays clear of it. */

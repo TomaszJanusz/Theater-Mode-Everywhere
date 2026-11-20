@@ -66,7 +66,7 @@ export const surfaceRegistrations: SurfaceRegistration[] = [
   },
   // Before the playlist panel, which stays the anchored-menu representative on hostile pages (its rows are buttons).
   {
-    name: 'author cards',
+    name: 'author popup',
     policy: 'anchored-menu',
     mount({ stage, owner }) {
       // The title plate in its header at the top of the player, as the title HUD builds it (a plate takes pointer

@@ -75,29 +75,29 @@ const token = (name: string) => {
   return value;
 };
 
-/** Every tone a card takes (rest, alternate row, hover, press): the ink's share in the card's surface. */
-function cardTones(): number[] {
-  const fills = [...CSS.matchAll(/--card-fill: (.+);/g)].map(match => match[1]);
+/** Every tone a row takes (rest, alternate row, hover, press): the ink's share laid over the block's surface. */
+function rowTones(): number[] {
+  const fills = [...CSS.matchAll(/--row-fill: (.+);/g)].map(match => match[1]);
   assert.ok(fills.length >= 4, 'rest, alternate, hover and press tones are declared');
   return fills.map(fill => {
-    assert.doesNotMatch(fill, /accent/, 'card tones never take the accent');
-    if (fill.startsWith('var(--appearance-surface')) return 0;
-    const share = /^color-mix\(in srgb, var\(--appearance-ink, #[0-9a-f]{6}\) ([\d.]+)%, var\(--appearance-surface, [^)]+\)\)\)$/.exec(fill);
-    assert.ok(share, `a card tone mixes the ink into the surface: ${fill}`);
+    assert.doesNotMatch(fill, /accent/, 'row tones never take the accent');
+    if (fill === 'transparent') return 0;
+    const share = /^color-mix\(in srgb, var\(--appearance-ink, #[0-9a-f]{6}\) ([\d.]+)%, transparent\)$/.exec(fill);
+    assert.ok(share, `a row tone lays the ink over the block: ${fill}`);
     return Number(share[1]) / 100;
   });
 }
 
-/** The card's surface, ink and secondary text with no appearance setting, with Reduce transparency and with high contrast. */
-function cardModes() {
+/** The block's surface, the rows' ink and secondary text with no appearance setting, with Reduce transparency and with high contrast. */
+function blockModes() {
   const fallback = (rule: string, property: string) => {
     const value = new RegExp(`${rule} \\{[^}]*var\\(${property}, (#[0-9a-f]{6}|rgba\\([^)]+\\))\\)`).exec(CSS)?.[1];
     assert.ok(value, `${rule} falls back for ${property}`);
     return value;
   };
-  const surface = fallback('\\.theater-byline-card', '--appearance-surface');
-  const ink = fallback('\\.theater-byline-card', '--appearance-ink');
-  const muted = fallback('\\.theater-byline-card-stat', '--appearance-muted');
+  const surface = fallback('\\.theater-byline-list', '--appearance-surface');
+  const ink = fallback('\\.theater-byline-row', '--appearance-ink');
+  const muted = fallback('\\.theater-byline-row-stat', '--appearance-muted');
   // Both settings swap the glass for the opaque panel; only high contrast also lifts the ink and the secondary text.
   assert.match(TOKENS, /--appearance-surface: var\(--appearance-normal-panel\)/);
   assert.match(TOKENS, /--appearance-surface: var\(--appearance-high-panel\)/);
@@ -108,19 +108,20 @@ function cardModes() {
   ];
 }
 
-/** `color-mix(in srgb, ink share, surface)` over the picture: srgb mixing premultiplies alpha. */
-function cardFill(ink: Rgb, share: number, surface: { rgb: Rgb; alpha: number }, picture: Rgb): Rgb {
-  const alpha = share + surface.alpha * (1 - share);
-  const mixed = ink.map((channel, index) => (channel * share + surface.rgb[index] * surface.alpha * (1 - share)) / alpha) as Rgb;
-  return over(mixed, alpha, picture);
+/**
+ * A row's tone (the ink at `share` over the block) on the block's surface over the picture. Laying a translucent ink
+ * over the composited surface equals premultiplied `color-mix(in srgb, ink share, surface)` over the picture.
+ */
+function rowFill(ink: Rgb, share: number, surface: { rgb: Rgb; alpha: number }, picture: Rgb): Rgb {
+  return over(ink, share, over(surface.rgb, surface.alpha, picture));
 }
 
-it('keeps the card name and its secondary text at WCAG AA on every card tone in every appearance mode', () => {
-  const tones = cardTones();
+it('keeps the row name and its secondary text at WCAG AA on every row tone in every appearance mode', () => {
+  const tones = rowTones();
   // Alternate rows and the pointer each change the tone.
   assert.equal(new Set(tones).size, tones.length, 'every tone differs');
-  for (const mode of cardModes()) for (const tone of tones) for (const [video, picture] of Object.entries(VIDEOS)) {
-    const background = hex(cardFill(rgb(mode.ink), tone, color(mode.surface), picture));
+  for (const mode of blockModes()) for (const tone of tones) for (const [video, picture] of Object.entries(VIDEOS)) {
+    const background = hex(rowFill(rgb(mode.ink), tone, color(mode.surface), picture));
     for (const [text, foreground] of [['name', mode.ink], ['secondary', mode.muted]]) {
       const ratio = contrastRatio(foreground, background);
       assert.ok(ratio >= 4.5, `${mode.name}, ${tone * 100}% tone, ${video} video, ${text} text: ${ratio.toFixed(2)}:1`);
@@ -128,18 +129,18 @@ it('keeps the card name and its secondary text at WCAG AA on every card tone in 
   }
 });
 
-it('rims the hovered card in the panel\'s lit edge at 3:1 against every card tone for every preset', () => {
-  assert.match(CSS, /a\.theater-byline-card:hover \{[^}]*border-color: var\(--edge\)/);
+it('marks the hovered row with the panel\'s lit edge at 3:1 against every row tone for every preset', () => {
+  assert.match(CSS, /a\.theater-byline-row:hover::before \{[^}]*background: var\(--edge\)/);
   const edge = /--edge: color-mix\(in srgb, var\(--accent-color, #[0-9a-f]{6}\) ([\d.]+)%, var\(--appearance-ink, #[0-9a-f]{6}\)\)/.exec(CSS);
   assert.ok(edge, 'the lit edge lifts the accent towards the ink');
   const share = Number(edge[1]) / 100;
-  const modes = cardModes();
+  const modes = blockModes();
   // `system` is the browser's own accent; the lifted tone remains the hover cue there.
   for (const accent of ACCENT_COLOR_OPTIONS.filter(option => option.preset !== 'system')) {
     for (const [mode, swatch] of [[modes[0], accent.swatch], [modes[2], contrastSafeAccent(accent.swatch)]] as const) {
-      for (const tone of cardTones()) for (const [video, picture] of Object.entries(VIDEOS)) {
+      for (const tone of rowTones()) for (const [video, picture] of Object.entries(VIDEOS)) {
         const rim = hex(over(rgb(swatch), share, rgb(mode.ink)));
-        const ratio = contrastRatio(rim, hex(cardFill(rgb(mode.ink), tone, color(mode.surface), picture)));
+        const ratio = contrastRatio(rim, hex(rowFill(rgb(mode.ink), tone, color(mode.surface), picture)));
         assert.ok(ratio >= 3, `${accent.preset} (${mode.name}), ${tone * 100}% tone, ${video} video: ${ratio.toFixed(2)}:1`);
       }
     }

@@ -1753,7 +1753,7 @@
   },
   "authorChannelNewTab": {
     "message": "Opens the channel in a new tab",
-    "description": "Read by screen readers only, at the end of an author card's name; the whole card is a link to that channel."
+    "description": "Read by screen readers only, at the end of the name of an author's row in the byline popup; the whole row is a link to that channel."
   },
   "authorVerified": {
     "message": "Verified",
