@@ -3,47 +3,7 @@ import { normalizeHost } from '../../platform/domain-policy';
 import type { ProviderChat } from '../provider-api';
 
 import { isTwitchHost } from './hosts';
-
-const RESERVED = new Set([
-  'activate',
-  'admin',
-  'annual-recap',
-  'broadcast',
-  'browse',
-  'clips',
-  'creatorcamp',
-  'dashboard',
-  'directory',
-  'downloads',
-  'drops',
-  'embed',
-  'following',
-  'friends',
-  'inventory',
-  'jobs',
-  'login',
-  'messages',
-  'moderation',
-  'moderator',
-  'p',
-  'payments',
-  'popout',
-  'prime',
-  'privacy',
-  'products',
-  'search',
-  'security',
-  'settings',
-  'signup',
-  'store',
-  'subs',
-  'subscriptions',
-  'team',
-  'turbo',
-  'user',
-  'videos',
-  'wallet'
-]);
+import { isTwitchLogin, twitchChannelSegment } from './routes';
 
 /** Twitch's chat component. Theme attributes such as chat-theme-light are not required. */
 export const CHAT_SECTION_SELECTOR = '[data-test-selector="chat-room-component-layout"]';
@@ -84,22 +44,20 @@ function isWatchHost(hostname: string): boolean {
   return host === 'twitch.tv' || host === 'm.twitch.tv';
 }
 
-const isLogin = (value: string) => /^\w{1,25}$/.test(value);
 const isVideoId = (value: string) => /^\d{1,20}$/.test(value);
 
 export function parseTwitchChatLocation(url: URL): ParsedChatLocation | null {
   if (!isWatchHost(url.hostname)) return null;
   const pathname = url.pathname.length > 1 && url.pathname.endsWith('/') ? url.pathname.slice(0, -1) : url.pathname || '/';
   const parts = pathname.split('/').filter(Boolean);
-  if (parts.length === 3 && (parts[0] === 'popout' || parts[0] === 'embed') && parts[2] === 'chat' && isLogin(parts[1] ?? '')) {
+  if (parts.length === 3 && (parts[0] === 'popout' || parts[0] === 'embed') && parts[2] === 'chat' && isTwitchLogin(parts[1] ?? '')) {
     return { role: 'chat-document', provider: 'twitch', contentKey: (parts[1] ?? '').toLowerCase() };
   }
   if (parts.length === 2 && parts[0] === 'videos' && isVideoId(parts[1] ?? '')) {
     return { role: 'watch', provider: 'twitch', contentKey: parts[1] ?? '', kind: 'replay' };
   }
-  if (parts.length === 1 && parts[0] && isLogin(parts[0]) && !RESERVED.has(parts[0].toLowerCase())) {
-    return { role: 'watch', provider: 'twitch', contentKey: parts[0].toLowerCase(), kind: 'live' };
-  }
+  const channel = parts.length === 1 ? twitchChannelSegment(parts[0] ?? '') : null;
+  if (channel) return { role: 'watch', provider: 'twitch', contentKey: channel, kind: 'live' };
   return null;
 }
 

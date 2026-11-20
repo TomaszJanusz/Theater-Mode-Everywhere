@@ -1,10 +1,20 @@
 export { AUTO_THEATER_STORAGE_KEY, DEFAULT_AUTO_THEATER as DEFAULT_AUTO_ENTER_THEATER, AUTO_SKIP_COUNTDOWN_KEY as AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY,
   resolveSkipCountdown as resolveAutoTheaterSkipCountdown, resolveAutoEnterTheater } from '../auto-theater-preferences';
 
-export type AutoTheaterVisit = { identity: string | null; entered: boolean };
+/** `content` is the provider's content identity last confirmed on this page (`WatchPlayback.contentIdentity`). */
+export type AutoTheaterVisit = { identity: string | null; entered: boolean; content?: string };
 
 export function updateAutoTheaterVisit(visit: AutoTheaterVisit, identity: string | null): AutoTheaterVisit {
   return visit.identity === identity ? visit : { identity, entered: false };
+}
+
+/**
+ * New content on the same page, such as a live channel's next broadcast, starts a new visit. The first
+ * content seen only records it: the visit may already have been entered or cancelled for that content.
+ */
+export function updateAutoTheaterContent(visit: AutoTheaterVisit, content: string): AutoTheaterVisit {
+  if (visit.content === content) return visit;
+  return visit.content === undefined ? { ...visit, content } : { identity: visit.identity, entered: false, content };
 }
 
 export type AutoTheaterDecision = {

@@ -501,13 +501,34 @@ window.addEventListener('keydown', event => {
 fetch('/fixture.webm').then(response => response.blob()).then(blob => { document.querySelector('video').src = URL.createObjectURL(blob); });
 </script></body></html>`;
 
+// A live channel page: Twitch's media player sits on the video-ref's React fiber (30 levels up, as measured on
+// twitch.tv) and reports the channel it loaded; a live stream's duration is infinite. Its router changes the URL
+// first (openChannel) and the player loads the next channel into the same element afterwards (loadChannel).
+const twitchLiveFixture = `<!doctype html><html><head><title>Generic fixture title</title></head><body>
+<div class="persistent-player"><div class="video-player"><div class="video-ref" data-a-target="video-ref"><video muted style="width:640px;height:360px"></video></div></div></div>
+<script>
+const video = document.querySelector('video');
+const player = { login: location.pathname.slice(1).toLowerCase(), broadcast: '1001' };
+Object.defineProperty(video, 'duration', { get: () => Infinity });
+const instance = { getHTMLVideoElement: () => video, getLoadedChannelLogin: () => player.login, getState: () => 'Playing',
+  getSessionData: () => ({ 'BROADCAST-ID': player.broadcast }) };
+let fiber = { memoizedProps: { mediaPlayerInstance: instance } };
+for (let depth = 0; depth < 30; depth++) fiber = { return: fiber, memoizedProps: {} };
+document.querySelector('.video-ref').__reactFiber$smoke = fiber;
+window.openChannel = login => history.pushState({}, '', '/' + login);
+window.loadChannel = login => { player.login = login; player.broadcast = '2002'; video.dispatchEvent(new Event('playing')); };
+fetch('/fixture.webm').then(response => response.blob()).then(blob => { video.src = URL.createObjectURL(blob); });
+</script></body></html>`;
+
 /** Twitch loads per host: installed-extension evidence on intercepted host URLs, as for YouTube. */
 export async function assertTwitchProvider(page: Page, context: BrowserContext): Promise<void> {
   const worker = await extensionWorker(context);
   const saved = await worker.evaluate(() => chrome.storage.sync.get(['autoEnterTheater', 'twitchIntegrationEnabled']));
   const media = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
   const handler = async (route: Route) => {
-    if (new URL(route.request().url()).pathname === '/fixture.webm') await route.fulfill({ contentType: 'video/webm', body: media });
+    const { hostname, pathname } = new URL(route.request().url());
+    if (pathname === '/fixture.webm') await route.fulfill({ contentType: 'video/webm', body: media });
+    else if (hostname === 'www.twitch.tv' && /^\/\w+$/.test(pathname) && pathname !== '/videos') await route.fulfill({ contentType: 'text/html; charset=utf-8', body: twitchLiveFixture });
     else await route.fulfill({ contentType: 'text/html; charset=utf-8', body: twitchFixture });
   };
   const hosts = /^https:\/\/(?:www\.twitch\.tv|player\.twitch\.tv|www\.twitch\.tv\.evil\.test|player\.example\.test)\//;
@@ -579,7 +600,15 @@ export async function assertTwitchProvider(page: Page, context: BrowserContext):
     assert.equal(await frame.evaluate('window.earlyHarvest'), true, 'the player frame registers Twitch');
     assert.equal(await page.evaluate('window.earlyHarvest'), false, 'the generic parent loads no Twitch script');
     await assertAutoTheaterEntry(page, context, 'twitch', { url: TWITCH });
-    console.log(`smoke Twitch provider scripts: MAIN harvest before the first host script with fetch unwrapped, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), stage and title through the provider, chat keys, RTE off/on, chat-only popout, spoofed host, player embed in a generic page passed (installed fixture)`);
+    await assertAutoTheaterEntry(page, context, 'twitch', {
+      url: 'https://www.twitch.tv/somechannel?sr=a',
+      navigate: async page => {
+        type Router = { openChannel(login: string): void; loadChannel(login: string): void };
+        await page.evaluate(() => (window as unknown as Router).openChannel('otherchannel'));
+        await page.evaluate(() => (window as unknown as Router).loadChannel('otherchannel'));
+      }
+    });
+    console.log(`smoke Twitch provider scripts: MAIN harvest before the first host script with fetch unwrapped, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), stage and title through the provider, chat keys, RTE off/on, chat-only popout, spoofed host, player embed in a generic page, AutoTheater on a VOD and on live channels across an SPA channel switch passed (installed fixture)`);
   } finally {
     await context.unroute(hosts, handler);
     await worker.evaluate(async saved => {

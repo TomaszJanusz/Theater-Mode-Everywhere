@@ -2,10 +2,12 @@ import { DisposableScope } from '../core/disposable-scope';
 import { mediaHasSource } from '../host-play';
 import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
 import { observeProviderMediaChanges } from '../providers/media-events';
-import { confirmProviderPreparingVideo, confirmProviderWatchVideo, observeProviderWatchPlaybackChanges, readProviderWatchPage } from '../providers/watch-playback';
+import {
+  confirmProviderPreparingVideo, observeProviderWatchPlaybackChanges, readProviderWatchContent, readProviderWatchPage, type ProviderWatchPage
+} from '../providers/watch-playback';
 import { isSwitchableTheaterVideo } from '../switchable-videos';
 
-import { shouldAutoEnterTheater, updateAutoTheaterVisit, type AutoTheaterVisit } from './auto-theater';
+import { shouldAutoEnterTheater, updateAutoTheaterContent, updateAutoTheaterVisit, type AutoTheaterVisit } from './auto-theater';
 import { AUTO_ENTER_NOTICE_MIN_MS, createAutoEnterIntent } from './auto-theater-intent';
 
 /**
@@ -87,6 +89,19 @@ export function createAutoTheaterRuntime(options: {
     return wasPending;
   }
 
+  // A consumed visit ends when the page's content changes (a live channel's next broadcast), for providers
+  // that report content. Not while theater is open: exiting it consumes whatever then plays.
+  const recheckContent = (page: ProviderWatchPage): void => {
+    if (!page.playback.contentIdentity || !options.visit.current.entered || window !== window.top) return;
+    if (options.theaterActive()) {
+      options.visit.current = { identity: options.visit.current.identity, entered: true };
+      return;
+    }
+    const video = options.findBestVideo();
+    const content = video?.isConnected && isSwitchableTheaterVideo(video) ? readProviderWatchContent(video) : null;
+    if (content) options.visit.current = updateAutoTheaterContent(options.visit.current, content);
+  };
+
   const refresh = (): void => {
     if (scope.isDisposed) return;
     const page = readProviderWatchPage(new URL(window.location.href));
@@ -95,6 +110,7 @@ export function createAutoTheaterRuntime(options: {
       page ? `${page.provider}:${page.identity}` : null);
     // The player element is often reused across videos; a new identity restarts the countdown.
     if (options.visit.current.identity !== previousIdentity) intent.cancel();
+    if (page) recheckContent(page);
     // A switched-off service consumes this visit: switching it on waits for the next identity, never mid-watch.
     if (page && !options.serviceEnabled(page.provider)) options.visit.current.entered = true;
     if (!page || !options.enabled() || window !== window.top || !options.policyAllowed()
@@ -129,7 +145,9 @@ export function createAutoTheaterRuntime(options: {
     const requested = !video.paused && !video.ended && !video.error;
     // The provider may recognise its content video before the host reveals, sources or sizes
     // it. That starts or keeps the countdown only; entry below still needs full eligibility.
-    const confirmed = eligible && confirmProviderWatchVideo(video);
+    const content = eligible ? readProviderWatchContent(video) : null;
+    const confirmed = content !== null;
+    if (content) options.visit.current = updateAutoTheaterContent(options.visit.current, content);
     const hostPreparing = !confirmed && requested && confirmProviderPreparingVideo(video);
     const facts = {
       enabled: options.enabled() && options.serviceEnabled(page.provider), topLevel: window === window.top, policyAllowed: options.policyAllowed(),

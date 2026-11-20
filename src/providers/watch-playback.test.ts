@@ -69,13 +69,14 @@ describe('positive provider watch declarations', () => {
     }
   });
 
-  it('declares Twitch VOD pages only, keeping live channels, clips and other routes manual', t => {
+  it('declares Twitch VOD and live channel pages, keeping clips and other routes manual', t => {
     registerTwitch(t);
     const expected = { provider: 'twitch', identity: '2345678901' };
     for (const href of ['https://www.twitch.tv/videos/2345678901', 'https://www.twitch.tv/videos/2345678901/', 'https://twitch.tv/videos/2345678901?t=1h2m3s&filter=archives']) {
       assert.deepEqual(read(href), expected, href);
     }
-    for (const href of ['https://www.twitch.tv/', 'https://www.twitch.tv/somechannel', 'https://www.twitch.tv/somechannel/videos', 'https://www.twitch.tv/somechannel/clip/Slug-abc',
+    assert.deepEqual(read('https://www.twitch.tv/SomeChannel?sr=a'), { provider: 'twitch', identity: 'live:somechannel' });
+    for (const href of ['https://www.twitch.tv/', 'https://www.twitch.tv/directory', 'https://www.twitch.tv/somechannel/videos', 'https://www.twitch.tv/somechannel/clip/Slug-abc',
       'https://clips.twitch.tv/Slug-abc', 'https://www.twitch.tv/videos/', 'https://www.twitch.tv/videos/abc', 'https://www.twitch.tv/directory/game/x?video=2345678901',
       'https://player.twitch.tv/?video=2345678901']) {
       assert.equal(read(href), null, href);

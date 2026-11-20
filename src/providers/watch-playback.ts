@@ -2,7 +2,7 @@ import { mediaProviderIntegrationEnabled, type MediaProviderFlags, type MediaPro
 import { hasPlayableTheaterMedia, isSwitchableTheaterVideo } from '../switchable-videos';
 import { PROVIDER_DEFINITIONS } from './registry';
 import {
-  isRequestId, MINIPLAYER_QUERY, MINIPLAYER_RESPONSE, PREPARING_QUERY, PREPARING_RESPONSE, REPLACEMENT_QUERY,
+  CONTENT_IDENTITY, isRequestId, MINIPLAYER_QUERY, MINIPLAYER_RESPONSE, PREPARING_QUERY, PREPARING_RESPONSE, REPLACEMENT_QUERY,
   REPLACEMENT_RESPONSE, WATCH_QUERY, WATCH_RESPONSE
 } from './watch-bridge';
 
@@ -22,6 +22,12 @@ export type WatchPlayback = {
    * differs from the URL's, an ad, or an auxiliary player. Entry still requires `mainVideo`.
    */
   preparingVideo?(doc: Document, identity: string): HTMLVideoElement | null;
+  /**
+   * Called only in MAIN, with the video `mainVideo` just confirmed: the host's id for what it plays when
+   * the URL alone does not name it (a live channel's current broadcast), or null while unknown. A new id
+   * on the same page starts a new visit; null keeps the current one.
+   */
+  contentIdentity?(video: HTMLVideoElement, identity: string): string | null;
   /** Host publications that can make an already-playing watch video ready. */
   refreshEvents?: readonly string[];
   /** Null means attachment is not ready; retry on the next refresh. */
@@ -89,10 +95,15 @@ export function observeProviderWatchPlaybackChanges(onChange: () => void): () =>
   };
 }
 
-export { confirmProviderPreparingVideo, confirmProviderWatchVideo, confirmWatchReplacement, readMiniplayerIdentity } from './watch-bridge';
+export { confirmProviderPreparingVideo, confirmProviderWatchVideo, confirmWatchReplacement, readMiniplayerIdentity, readProviderWatchContent } from './watch-bridge';
 
+/** `detail` appends a host content id to the confirmation; `requireIntegration: false` answers with the integration off. */
 function installQuery(query: string, responseAttribute: string,
-  confirm: (page: ProviderWatchPage) => HTMLVideoElement | null | undefined, requireIntegration = true): void {
+  confirm: (page: ProviderWatchPage) => HTMLVideoElement | null | undefined,
+  { requireIntegration = true, detail }: {
+    requireIntegration?: boolean;
+    detail?: (page: ProviderWatchPage, video: HTMLVideoElement) => string | null | undefined;
+  } = {}): void {
   window.addEventListener(query, (event: Event) => {
     const requestId: unknown = (event as CustomEvent<unknown>).detail;
     if (!isRequestId(requestId) || window !== window.top) return;
@@ -100,7 +111,9 @@ function installQuery(query: string, responseAttribute: string,
     if (!page || (requireIntegration && !mediaProviderIntegrationEnabled(page.provider))) return;
     try {
       const video = confirm(page);
-      if (video?.isConnected) video.setAttribute(responseAttribute, requestId);
+      if (!video?.isConnected) return;
+      const suffix = detail?.(page, video);
+      video.setAttribute(responseAttribute, suffix && CONTENT_IDENTITY.test(suffix) ? `${requestId}:${suffix}` : requestId);
     } catch {
       // Host APIs can disappear or throw during navigation; fail closed.
     }
@@ -113,8 +126,8 @@ export function installWatchPlaybackQueries(): void {
     const video = page.playback.mainVideo(document, page.identity, purpose);
     return video && isSwitchableTheaterVideo(video) ? video : null;
   };
-  installQuery(WATCH_QUERY, WATCH_RESPONSE, mainVideo);
-  installQuery(REPLACEMENT_QUERY, REPLACEMENT_RESPONSE, page => mainVideo(page, 'replacement'), false);
+  installQuery(WATCH_QUERY, WATCH_RESPONSE, mainVideo, { detail: (page, video) => page.playback.contentIdentity?.(video, page.identity) });
+  installQuery(REPLACEMENT_QUERY, REPLACEMENT_RESPONSE, page => mainVideo(page, 'replacement'), { requireIntegration: false });
   installQuery(PREPARING_QUERY, PREPARING_RESPONSE, page => page.playback.preparingVideo?.(document, page.identity));
   installMiniplayerQuery();
 }
@@ -129,7 +142,7 @@ function installMiniplayerQuery(): void {
     for (const definition of providers) {
       try {
         const parked = definition.watchPlayback?.miniplayerVideo?.(document);
-        if (!parked?.video.isConnected || !/^[\w-]{1,64}$/.test(parked.identity) || !hasPlayableTheaterMedia(parked.video)) continue;
+        if (!parked?.video.isConnected || !CONTENT_IDENTITY.test(parked.identity) || !hasPlayableTheaterMedia(parked.video)) continue;
         parked.video.setAttribute(MINIPLAYER_RESPONSE, `${requestId}:${parked.identity}`);
         return;
       } catch {
