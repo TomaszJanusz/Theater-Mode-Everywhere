@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Niektóre skróty są przypisane do kilku akcji. Edytuj lub zresetuj wyróżnione skróty, aby usunąć konflikty."
   },
+  "searchShortcuts": {
+    "message": "Szukaj skrótów…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "Brak pasujących skrótów"
+  },
+  "shortcutSearchShown": {
+    "message": "Widoczne skróty: $count$ z $total$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Skrót jest już przypisany"
   },

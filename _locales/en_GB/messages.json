@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Some shortcuts are assigned to multiple actions. Edit or reset the highlighted shortcuts to resolve the conflicts."
   },
+  "searchShortcuts": {
+    "message": "Search shortcuts…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "No shortcuts match"
+  },
+  "shortcutSearchShown": {
+    "message": "$count$ of $total$ shortcuts shown",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Shortcut already assigned"
   },

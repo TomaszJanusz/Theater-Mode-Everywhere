@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "بعض الاختصارات معيّنة لعدة إجراءات. عدّل الاختصارات المميزة أو أعد ضبطها."
   },
+  "searchShortcuts": {
+    "message": "البحث في الاختصارات…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "لا توجد اختصارات مطابقة"
+  },
+  "shortcutSearchShown": {
+    "message": "الاختصارات المعروضة: $count$ من $total$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "الاختصار معيّن بالفعل"
   },

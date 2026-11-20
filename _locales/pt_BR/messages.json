@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Alguns atalhos estão atribuídos a várias ações. Edite ou redefina os atalhos destacados."
   },
+  "searchShortcuts": {
+    "message": "Buscar atalhos…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "Nenhum atalho corresponde"
+  },
+  "shortcutSearchShown": {
+    "message": "$count$ de $total$ atalhos exibidos",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Atalho já atribuído"
   },

@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Niektoré skratky sú priradené viacerým akciám. Upravte alebo obnovte zvýraznené skratky, aby ste vyriešili konflikty."
   },
+  "searchShortcuts": {
+    "message": "Hľadať skratky…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "Žiadna skratka nezodpovedá"
+  },
+  "shortcutSearchShown": {
+    "message": "Zobrazené skratky: $count$ z $total$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Skratka je už priradená"
   },

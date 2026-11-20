@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "部分快捷键已分配给多个操作。请编辑或重置突出显示的快捷键。"
   },
+  "searchShortcuts": {
+    "message": "搜索快捷键…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "没有匹配的快捷键"
+  },
+  "shortcutSearchShown": {
+    "message": "显示 $count$ / $total$ 个快捷键",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "快捷键已分配"
   },

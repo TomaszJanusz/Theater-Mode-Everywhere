@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Некоторые сочетания клавиш назначены нескольким действиям. Измените или сбросьте выделенные сочетания."
   },
+  "searchShortcuts": {
+    "message": "Поиск горячих клавиш…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "Нет подходящих горячих клавиш"
+  },
+  "shortcutSearchShown": {
+    "message": "Показано горячих клавиш: $count$ из $total$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Сочетание уже назначено"
   },

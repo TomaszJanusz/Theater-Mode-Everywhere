@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Některé zkratky jsou přiřazeny více akcím. Upravte nebo obnovte zvýrazněné zkratky, abyste vyřešili konflikty."
   },
+  "searchShortcuts": {
+    "message": "Hledat zkratky…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "Žádná zkratka neodpovídá"
+  },
+  "shortcutSearchShown": {
+    "message": "Zobrazeno zkratek: $count$ z $total$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Zkratka už je přiřazena"
   },

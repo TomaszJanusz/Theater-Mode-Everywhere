@@ -234,6 +234,29 @@ it('Settings catalog audit relabels the empty exclusions list', { skip: skipUnle
   } finally { await context.close(); }
 });
 
+// A filtered shortcut list shows a count and an empty state; both follow the language while the query stays.
+it('Settings catalog audit relabels the shortcut search count and empty state', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
+  const context = await browsers.chromium.newContext(t);
+  try {
+    const page = await context.newPage();
+    await open(page, 'options', []);
+    await page.locator('#tab-shortcuts').click();
+    const search = page.locator('#shortcut-search');
+    const status = page.locator('#shortcut-search-status');
+    for (const [query, key] of [['shift', 'shortcutSearchShown'], ['zzzz', 'shortcutSearchEmpty']] as const) {
+      await search.fill(query);
+      for (const locale of ['pl', 'ar']) {
+        await switchTo(page, locale);
+        const message = readCatalog(locale)[key].message.replace('$count$', '\\d+').replace('$total$', '\\d+');
+        assert.match(await status.textContent() ?? '', new RegExp(`^${message}$`));
+        assert.equal(await search.getAttribute('placeholder'), readCatalog(locale).searchShortcuts.message);
+        await assertLocalized(page, locale);
+      }
+      await switchTo(page, 'en');
+    }
+  } finally { await context.close(); }
+});
+
 it('Settings Language row links to the translation issue form for the selected language', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
   const context = await browsers.chromium.newContext(t);
   try {
