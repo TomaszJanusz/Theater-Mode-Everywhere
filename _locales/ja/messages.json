@@ -725,6 +725,23 @@
   "audioTrackBack": {
     "message": "戻る"
   },
+  "videoQualityLabel": {
+    "message": "画質"
+  },
+  "videoQualityAutoPlaying": {
+    "message": "自動（$LEVEL$）",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoQualityBack": {
+    "message": "戻る"
+  },
+  "videoQualityNone": {
+    "message": "ほかの画質はありません"
+  },
   "searchAudioTracks": {
     "message": "音声トラックを検索…"
   },

@@ -5,6 +5,7 @@ import { youtubeEvents } from './events';
 import { youtubeHarvest } from './harvest';
 import { installYoutubePlayback, youtubeHostPlayback } from './playback-main';
 import { fetchTimedtextWithPot, handleYoutubeMediaSeek, installYoutubeMain, isAllowedTimedtextUrl, probeYoutube } from './player-main';
+import { installYouTubeQuality } from './quality-main';
 import { youtubeWatchPlayback } from './watch-playback';
 
 const api = providerRuntime('main');
@@ -21,6 +22,7 @@ if (services) api?.register({
   probe: probeYoutube,
   install() {
     installYoutubePlayback();
+    installYouTubeQuality();
     installYoutubeMain(services.fetchPageMedia);
   }
 });

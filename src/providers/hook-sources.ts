@@ -4,7 +4,7 @@ import type { ProviderHooks } from './provider-api';
 import { providerRegistry } from './runtime-registration';
 
 /** Isolated hooks that open a feature source for the theater's bound element. */
-type SourceHook = 'endScreen' | 'playbackEnd' | 'playlistPanel';
+type SourceHook = 'endScreen' | 'playbackEnd' | 'playlistPanel' | 'videoQuality';
 type Open<K extends SourceHook> = NonNullable<ProviderHooks[K]>;
 
 /** The source the first integration-enabled provider opens for the bound element; none leaves the feature out. */

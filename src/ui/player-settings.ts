@@ -2,7 +2,7 @@ import type { DisposableScope } from '../core/disposable-scope';
 
 import { renderShortcutCaps } from './kbd-text';
 import { closeMenuPopover, bindMenuPopover, MENU_CLOSE_EVENT } from './menu-popover';
-import type { PlayerChromeContext } from './runtime-context';
+import type { PlayerChromeActions, PlayerChromeContext } from './runtime-context';
 import { shortcutAriaKeyshortcuts, shortcutKeyHint } from './shortcut-display';
 import { shortcutDisplayEnv } from './shortcuts';
 import { createStepper, type StepperState } from './stepper';
@@ -12,8 +12,13 @@ export function closePlayerSettings(root: ParentNode, restoreFocus = false): boo
   return closeMenuPopover(root.querySelector<HTMLElement>('.theater-settings-container'), restoreFocus);
 }
 
+/** What the settings panel reads from the player chrome; stories and tests supply only this. */
+export type PlayerSettingsContext = Pick<PlayerChromeContext, 't' | 'ui' | 'paintOverlay'> & {
+  actions: Pick<PlayerChromeActions, 'setIcon' | 'showToolbar' | 'updateCaptionDock'>;
+};
+
 export function createPlayerSettings(
-  ctx: PlayerChromeContext,
+  ctx: PlayerSettingsContext,
   scope: DisposableScope,
   options?: { onBeforeOpen?: () => void }
 ) {

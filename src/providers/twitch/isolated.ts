@@ -1,4 +1,6 @@
 import { providerRuntime } from '../provider-api';
+import { bridgedVideoQuality } from '../video-quality-bridge';
+import { mountVideoQualityMenu } from '../video-quality-view';
 
 import { TwitchAdapter } from './adapter';
 import { twitchChat } from './chat';
@@ -16,5 +18,9 @@ if (services) api?.register({
   createAdapter: () => new TwitchAdapter(services),
   stage: twitchTheaterStage,
   discovery: { abandonedVideo: twitchVideoAbandoned },
-  chat: { ...twitchChat, theme: twitchChatTheme }
+  chat: { ...twitchChat, theme: twitchChatTheme },
+  videoQuality: (element, host) => {
+    const source = bridgedVideoQuality('twitch', element);
+    return source && mountVideoQualityMenu(source, host);
+  }
 });

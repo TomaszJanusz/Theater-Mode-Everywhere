@@ -725,6 +725,23 @@
   "audioTrackBack": {
     "message": "Späť"
   },
+  "videoQualityLabel": {
+    "message": "Kvalita videa"
+  },
+  "videoQualityAutoPlaying": {
+    "message": "Automaticky ($LEVEL$)",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoQualityBack": {
+    "message": "Späť"
+  },
+  "videoQualityNone": {
+    "message": "Žiadne ďalšie kvality"
+  },
   "searchAudioTracks": {
     "message": "Hľadať zvukové stopy…"
   },

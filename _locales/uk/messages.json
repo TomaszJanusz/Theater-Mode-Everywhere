@@ -725,6 +725,23 @@
   "audioTrackBack": {
     "message": "Назад"
   },
+  "videoQualityLabel": {
+    "message": "Якість відео"
+  },
+  "videoQualityAutoPlaying": {
+    "message": "Авто ($LEVEL$)",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoQualityBack": {
+    "message": "Назад"
+  },
+  "videoQualityNone": {
+    "message": "Інших якостей немає"
+  },
   "searchAudioTracks": {
     "message": "Пошук аудіодоріжок…"
   },

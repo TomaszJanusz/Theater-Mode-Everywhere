@@ -16,7 +16,8 @@ export type ChoiceMenuConfig = {
   /** A header button before the title that leaves a nested list; Escape on an empty search takes it too. */
   back?: { label: string; run: () => void };
   listId: string;
-  searchLabel: string;
+  /** Without one the list is never searchable, as for a handful of fixed choices. */
+  searchLabel?: string;
   emptyLabel: string;
   noMatchesLabel: string;
   /** Receives the popover's close event; defaults to the panel itself. */
@@ -84,8 +85,8 @@ export class ChoiceMenu {
     this.search.className = 'theater-cc-search';
     this.input.className = 'theater-cc-search-input';
     this.input.type = 'text'; // Avoid browser-specific search decorations and clear buttons.
-    this.input.placeholder = config.searchLabel;
-    this.input.setAttribute('aria-label', config.searchLabel);
+    this.input.placeholder = config.searchLabel ?? '';
+    this.input.setAttribute('aria-label', config.searchLabel ?? '');
     this.input.setAttribute('aria-controls', this.list.id);
     this.input.autocomplete = 'off';
     this.input.spellcheck = false;
@@ -169,7 +170,7 @@ export class ChoiceMenu {
     if (this.scope.isDisposed) return;
     this.choices = choices.map(choice => ({ ...choice, text: searchText(`${choice.label} ${choice.language ?? ''}`) }));
     // Search is useful on long auto-generated lists, and noise on short ones.
-    this.search.hidden = choices.filter(choice => choice.id !== null).length < SEARCH_TRACK_THRESHOLD;
+    this.search.hidden = !this.config.searchLabel || choices.filter(choice => choice.id !== null).length < SEARCH_TRACK_THRESHOLD;
     if (this.search.hidden) {
       if ((this.panel.getRootNode() as Document | ShadowRoot).activeElement === this.input) this.trigger.focus({ preventScroll: true });
       this.input.value = '';

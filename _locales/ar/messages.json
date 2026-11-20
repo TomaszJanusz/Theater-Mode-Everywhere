@@ -725,6 +725,23 @@
   "audioTrackBack": {
     "message": "رجوع"
   },
+  "videoQualityLabel": {
+    "message": "جودة الفيديو"
+  },
+  "videoQualityAutoPlaying": {
+    "message": "تلقائي ($LEVEL$)",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoQualityBack": {
+    "message": "رجوع"
+  },
+  "videoQualityNone": {
+    "message": "لا توجد جودات أخرى"
+  },
   "searchAudioTracks": {
     "message": "البحث عن مسارات صوتية…"
   },

@@ -725,6 +725,23 @@
   "audioTrackBack": {
     "message": "返回"
   },
+  "videoQualityLabel": {
+    "message": "画质"
+  },
+  "videoQualityAutoPlaying": {
+    "message": "自动（$LEVEL$）",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoQualityBack": {
+    "message": "返回"
+  },
+  "videoQualityNone": {
+    "message": "没有其他画质"
+  },
   "searchAudioTracks": {
     "message": "搜索音轨…"
   },

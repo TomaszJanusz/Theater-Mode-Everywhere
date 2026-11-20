@@ -33,6 +33,7 @@ import { selectSwitchableVideos } from '../switchable-videos';
 import { PICTURE_ALIGNS, VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
 import { audioTrackHudReport, mountAudioTrackMenu } from './audio-track-menu';
 import type { ButtonTooltipBinder } from './button-tooltip';
+import { ChoiceMenu } from './cc-menu';
 import { mountNativeChatControls, nativeChatState } from './chat';
 import { observeChromeVisibility } from './chrome-visibility';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
@@ -648,6 +649,8 @@ export function createControls(
         ctx.actions.showAudioTrackHud(audioTrackHudReport({ playing: index >= 0 ? { track: tracks[index], index } : null }, t, interfaceLocale, true));
       }
     });
+    // The provider's row is the first player row; without a source the menu has none.
+    enabledProviderSource('videoQuality', video.element, { scope: controlsScope, settings, ChoiceMenu, setIcon });
     mediaFeatures.setCaptionStyle(ui().captionStyle);
     updateCaptionDock();
 
