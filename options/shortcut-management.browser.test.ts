@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { it } from 'node:test';
 
 import { chromium, firefox } from 'playwright';
@@ -14,6 +15,7 @@ import { defaultShortcuts } from '../src/ui/shortcuts';
 const html = readFileSync(new URL('./options.html', import.meta.url), 'utf8').replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
 const css = readStylesheet(new URL('./options.css', import.meta.url));
 const bundle = bundleModules(["export { createShortcutEditor } from '../options/shortcut-editor';"]);
+const axeSource = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
 const conflicting = { ...defaultShortcuts, toggleMute: 'F', toggleFullscreen: 'F' };
 
 for (const engine of testEngines()) {
@@ -135,4 +137,100 @@ for (const engine of testEngines()) {
         { toggleMute: 'Ctrl+Shift+K', navigateUp: 'KeyQ', toggleCaptions: 'C', toggleFullscreen: 'Space', playPause: '', seekBack: 'ArrowLeft' });
     });
   }
+
+  it(`${engine}: quick search filters shortcuts by name and key, shows an empty state, clears with Esc and keeps an edited row`, { timeout: 30_000 }, async t => {
+    const page = await (await shared.newContext(t)).newPage();
+    await page.setContent(html);
+    await page.addStyleTag({ content: css });
+    await page.locator('#shortcuts').evaluate(section => { (section as HTMLElement).hidden = false; });
+    await page.evaluate(`Object.defineProperty(Navigator.prototype, 'platform', { configurable: true, get: () => 'Win32' });
+      Object.defineProperty(Navigator.prototype, 'userAgentData', { configurable: true, get: () => undefined });`);
+    await installChromeStub(page, { sync: { shortcuts: defaultShortcuts } });
+    await page.addScriptTag({ content: recordingBundle });
+    await page.evaluate(`(() => {
+      const queue = TheaterTest.createShortcutUpdateQueue({
+        read: async () => TheaterTest.withShortcutDefaults((await chrome.storage.sync.get('shortcuts')).shortcuts),
+        write: shortcuts => chrome.storage.sync.set({ shortcuts })
+      });
+      chrome.runtime.sendMessage = async message => queue.apply(message.request);
+      const editor = TheaterTest.createShortcutEditor(async () => {});
+      chrome.storage.onChanged.addListener(changes => { if (changes.shortcuts) editor.applyStored(changes.shortcuts.newValue); });
+      return editor.initialize();
+    })()`);
+    const search = page.getByRole('searchbox', { name: 'Search shortcuts…' });
+    const status = page.locator('#shortcut-search-status');
+    const total = Object.keys(defaultShortcuts).length;
+    const visibleFields = () => page.locator('.options-input:visible').evaluateAll(inputs => inputs.map(input => input.id.replace('shortcut-', '')));
+    const visibleHeadings = () => page.locator('#shortcuts h3:visible').allTextContents();
+    const stored = () => page.evaluate(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts as Record<string, string>);
+
+    assert.equal(await status.textContent(), '');
+    assert.equal((await visibleFields()).length, total);
+    // The field comes before the list in the tab order and typing in it records nothing.
+    await search.focus();
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'shortcut-toggle');
+    await search.focus();
+    await page.keyboard.type('t');
+    assert.deepEqual(await stored(), defaultShortcuts, 'typing in the search field is not recorded as a shortcut');
+    assert.equal(await page.locator('.te-dialog-overlay').count(), 0);
+
+    await search.fill('PLAYLIST');
+    assert.deepEqual(await visibleFields(), ['toggle-playlist']);
+    assert.deepEqual(await visibleHeadings(), ['Player Controls'], 'groups without a match are hidden');
+    assert.equal(await status.textContent(), `1 of ${total} shortcuts shown`);
+
+    await search.fill('shift');
+    const shifted = Object.entries(defaultShortcuts).filter(([, shortcut]) => shortcut.startsWith('Shift+')).length;
+    assert.equal((await visibleFields()).length, shifted);
+    assert.ok((await visibleFields()).includes('toggle-playlist'));
+    await search.fill('alt+r');
+    assert.deepEqual(await visibleFields(), ['toggle-chat']);
+    await search.fill('hold');
+    assert.deepEqual(await visibleFields(), ['seek-forward'], 'the Hold for 2x speed switch is found with its shortcut');
+    assert.equal(await page.locator('#seek-hold-label').isVisible(), true);
+
+    // The search control only: the fields' accent text comes from the accent preset, which this fixture does not apply.
+    await page.addScriptTag({ content: axeSource });
+    const blockingViolations = () => page.evaluate(async () => {
+      const results = await (window as unknown as { axe: { run(scope: Element): Promise<{ violations: Array<{ id: string; impact: string; nodes: Array<{ target: string[] }> }> }> } })
+        .axe.run(document.querySelector('#shortcuts .shortcut-search')!);
+      return results.violations.filter(violation => ['serious', 'critical'].includes(violation.impact))
+        .flatMap(violation => violation.nodes.map(node => `${violation.id}: ${node.target.join(' ')}`));
+    });
+    assert.deepEqual(await blockingViolations(), [], 'filtered list');
+
+    await search.fill('zzzz');
+    assert.equal(await status.textContent(), 'No shortcuts match');
+    assert.deepEqual(await blockingViolations(), [], 'empty state');
+    assert.equal(await status.isVisible(), true);
+    assert.equal(await page.locator('#shortcuts .options-body').isVisible(), false);
+    assert.equal(await page.locator('#reset-shortcuts-btn').isVisible(), true);
+
+    await search.press('Escape');
+    assert.equal(await search.inputValue(), '');
+    assert.equal(await status.textContent(), '');
+    assert.equal((await visibleFields()).length, total);
+    assert.deepEqual(await visibleHeadings(), await page.locator('#shortcuts h3').allTextContents());
+    await search.press('Escape');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'shortcut-search', 'Esc on an empty field moves nothing');
+
+    // Editing a filtered row saves its new key and keeps it on screen although it no longer matches.
+    await search.fill('shift+q');
+    assert.deepEqual(await visibleFields(), ['toggle-playlist']);
+    await page.locator('#shortcut-toggle-playlist').press('Control+Shift+KeyY');
+    await page.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts.togglePlaylist === 'Ctrl+Shift+Y');
+    await page.waitForFunction(() => (document.getElementById('shortcut-toggle-playlist') as HTMLInputElement).value === 'Ctrl+Shift+Y');
+    await page.locator('#shortcut-toggle-playlist').blur();
+    assert.deepEqual(await visibleFields(), ['toggle-playlist']);
+    const saved = await stored();
+    assert.deepEqual({ ...saved, togglePlaylist: defaultShortcuts.togglePlaylist }, defaultShortcuts, 'only the edited shortcut changed');
+    // A new query uses the saved key.
+    await search.fill('ctrl+y');
+    assert.deepEqual(await visibleFields(), ['toggle-playlist']);
+    await search.fill('shift+q');
+    assert.equal(await status.textContent(), 'No shortcuts match');
+    await search.fill('');
+    assert.equal((await visibleFields()).length, total);
+  });
 }

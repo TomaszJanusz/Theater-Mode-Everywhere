@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "一部のショートカットが複数の操作に割り当てられています。強調表示された項目を編集するかリセットしてください。"
   },
+  "searchShortcuts": {
+    "message": "ショートカットを検索…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "一致するショートカットはありません"
+  },
+  "shortcutSearchShown": {
+    "message": "$total$ 件中 $count$ 件のショートカットを表示",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "ショートカットは使用中です"
   },

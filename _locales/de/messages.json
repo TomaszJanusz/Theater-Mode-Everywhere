@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Einige Tastenkürzel sind mehreren Aktionen zugewiesen. Bearbeite die markierten Kürzel oder setze sie zurück."
   },
+  "searchShortcuts": {
+    "message": "Tastenkürzel suchen…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "Keine passenden Tastenkürzel"
+  },
+  "shortcutSearchShown": {
+    "message": "$count$ von $total$ Tastenkürzeln angezeigt",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Tastenkürzel bereits zugewiesen"
   },

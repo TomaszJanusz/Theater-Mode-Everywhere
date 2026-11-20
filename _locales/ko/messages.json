@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "일부 단축키가 여러 동작에 할당되어 있습니다. 강조된 단축키를 수정하거나 초기화하세요."
   },
+  "searchShortcuts": {
+    "message": "단축키 검색…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "일치하는 단축키가 없습니다"
+  },
+  "shortcutSearchShown": {
+    "message": "$total$개 중 $count$개 단축키 표시",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "이미 할당된 단축키"
   },

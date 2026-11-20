@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Certains raccourcis sont attribués à plusieurs actions. Modifiez ou réinitialisez les raccourcis signalés."
   },
+  "searchShortcuts": {
+    "message": "Rechercher des raccourcis…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "Aucun raccourci ne correspond"
+  },
+  "shortcutSearchShown": {
+    "message": "Raccourcis affichés : $count$ sur $total$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Raccourci déjà attribué"
   },

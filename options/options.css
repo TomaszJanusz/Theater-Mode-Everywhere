@@ -453,7 +453,7 @@ section h2 {
   align-items: center;
 }
 
-.add-form input {
+:is(.add-form, .shortcut-search) input {
   background-color: #09090b;
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -466,7 +466,7 @@ section h2 {
   height: 42px;
 }
 
-.add-form input:focus {
+:is(.add-form, .shortcut-search) input:focus {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 22%, transparent);
 }
@@ -751,6 +751,19 @@ section h2 {
   display: block;
 }
 
+
+/* Quick search: the exclusions field and the services count; filtered-out rows, groups and the empty list leave no gap. */
+.shortcut-search-status {
+  margin: 6px 0 0;
+}
+
+.shortcut-search-status:empty {
+  margin: 0;
+}
+
+.shortcuts-section :is(.options-body, .options-group, .options-row)[hidden] {
+  display: none;
+}
 
 /* Actions Row */
 .shortcuts-actions {
@@ -1747,7 +1760,7 @@ html { scrollbar-gutter: stable; }
 .rte-master-row { justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 16px; }
 .rte-master { margin-inline-start: auto; cursor: pointer; font-size: 14px; font-weight: 600; }
 .rte-master input { width: 18px; height: 18px; accent-color: var(--accent-color); }
-#rte-shown, #rte-empty { color: var(--text-secondary); font-size: 12px; }
+#rte-shown, #rte-empty, .shortcut-search-status { color: var(--text-secondary); font-size: 12px; }
 #rte-shown { margin: 0; }
 .rte-filter-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; margin: 10px 0; }
 #rte-filter-label { flex: 1 1 auto; min-width: 0; font-size: 12px; font-weight: 600; }

@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Algunos atajos están asignados a varias acciones. Edita o restablece los atajos resaltados."
   },
+  "searchShortcuts": {
+    "message": "Buscar atajos…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "Ningún atajo coincide"
+  },
+  "shortcutSearchShown": {
+    "message": "$count$ de $total$ atajos mostrados",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Atajo ya asignado"
   },

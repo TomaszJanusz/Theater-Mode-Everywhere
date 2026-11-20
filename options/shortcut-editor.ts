@@ -1,8 +1,10 @@
 import { openDialog } from '../src/dialog';
 import { t } from '../src/i18n';
-import { shortcutLabel } from '../src/ui/shortcut-display';
+import { shortcutLabel, type ShortcutDisplayEnv } from '../src/ui/shortcut-display';
 import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, resolveSeekHold, SEEK_HOLD_STORAGE_KEY, shortcutConflicts, shortcutDisplayEnv, shortcutFromEvent, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
 import type { ShortcutUpdate, ShortcutUpdateResult } from '../src/ui/shortcut-updates';
+
+import { matchesShortcutSearch, normalizeSearchText, shortcutSearchTerms } from './shortcut-search';
 
 /** The Hold for 2x speed switch under Seek Forward; Settings saves it like the other feature switches. */
 export const SEEK_HOLD_TOGGLE = { id: 'seek-hold-toggle', key: SEEK_HOLD_STORAGE_KEY, resolve: resolveSeekHold } as const;
@@ -21,8 +23,15 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
   notice.setAttribute('role', 'status');
   notice.setAttribute('aria-atomic', 'true');
   entries[0]?.input.closest('.options-body')?.before(notice);
-  const grid = entries[0]?.input.closest('.options-body');
+  const grid = entries[0]?.input.closest<HTMLElement>('.options-body');
   grid?.setAttribute('aria-busy', 'true');
+  const search = document.getElementById('shortcut-search') as HTMLInputElement | null;
+  const searchStatus = document.getElementById('shortcut-search-status');
+  type SearchItem = { rows: HTMLElement[]; action: keyof Shortcuts };
+  // Collected on the first filter, so a page without the search field needs nothing more from the list than before.
+  let searchItems: SearchItem[] | undefined;
+  // Rows on screen when an edit starts stay until the query changes, so saving a key never hides the row being edited.
+  const keptBySearch = new Set<SearchItem>();
   let busy = false;
   let current = { ...defaultShortcuts };
   let epoch = 0;
@@ -77,6 +86,38 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
     notice.textContent = conflictsFound ? t('shortcutExistingConflicts') : '';
     // Keep the live region mounted even when there is no message to announce.
     notice.style.margin = conflictsFound ? '' : '0';
+    filter();
+  }
+
+  function collectSearchItems(list: HTMLElement): SearchItem[] {
+    const items: SearchItem[] = [];
+    // A switch row without its own shortcut (Hold for 2x speed) belongs to the shortcut above it and is filtered with it.
+    for (const row of list.querySelectorAll<HTMLElement>('.options-row')) {
+      const entry = entries.find(candidate => row.contains(candidate.input));
+      if (entry) items.push({ rows: [row], action: entry.action });
+      else items.at(-1)?.rows.push(row);
+    }
+    return items;
+  }
+
+  function filter(): void {
+    if (!search || !grid) return;
+    searchItems ??= collectSearchItems(grid);
+    const query = search.value;
+    // Spoken key names follow the Settings language, so `strzałka` finds the arrows in Polish.
+    const env: ShortcutDisplayEnv = { ...shortcutDisplayEnv(), spoken: message => t(message) };
+    let shown = 0;
+    for (const item of searchItems) {
+      const text = item.rows.flatMap(row => [...row.querySelectorAll('.options-label, .options-desc')].map(element => element.textContent ?? ''));
+      const visible = keptBySearch.has(item) || matchesShortcutSearch(query, { text, keys: shortcutSearchTerms(current[item.action], env) });
+      for (const row of item.rows) row.hidden = !visible;
+      if (visible) shown += 1;
+    }
+    for (const group of grid.querySelectorAll<HTMLElement>('.options-group')) group.hidden = !group.querySelector('.options-row:not([hidden])');
+    grid.hidden = shown === 0;
+    if (!searchStatus) return;
+    if (!normalizeSearchText(query)) searchStatus.textContent = '';
+    else searchStatus.textContent = shown ? t('shortcutSearchShown', [String(shown), String(searchItems.length)]) : t('shortcutSearchEmpty');
   }
 
   function applyStored(value: unknown): void {
@@ -140,6 +181,7 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
   async function edit(origin: HTMLElement, operation: () => Promise<void>) {
     if (busy) return;
     busy = true;
+    for (const item of searchItems ?? []) if (!item.rows[0].hidden) keptBySearch.add(item);
     grid?.setAttribute('aria-busy', 'true');
     try { await operation(); }
     catch (error) {
@@ -174,6 +216,15 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
       entry.input.addEventListener('blur', () => { if (!busy) render(current); });
       entry.reset.addEventListener('click', () => void edit(entry.reset, () => save(entry.action, defaultShortcuts[entry.action])));
     }
+    search?.addEventListener('input', () => { keptBySearch.clear(); filter(); });
+    search?.addEventListener('keydown', event => {
+      // Esc clears a query in every browser; on an empty field it is left to the page.
+      if (event.key !== 'Escape' || !search.value) return;
+      event.preventDefault();
+      search.value = '';
+      keptBySearch.clear();
+      filter();
+    });
     document.getElementById('reset-shortcuts-btn')?.addEventListener('click', event => {
       void edit(event.currentTarget as HTMLElement, async () => {
         await update({ type: 'resetAll' });

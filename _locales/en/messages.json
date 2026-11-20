@@ -1007,6 +1007,26 @@
   "shortcutExistingConflicts": {
     "message": "Some shortcuts are assigned to multiple actions. Edit or reset the highlighted shortcuts to resolve the conflicts."
   },
+  "searchShortcuts": {
+    "message": "Search shortcuts…",
+    "description": "Placeholder and accessible name of the field that filters the keyboard shortcuts in Settings"
+  },
+  "shortcutSearchEmpty": {
+    "message": "No shortcuts match",
+    "description": "Shown when no keyboard shortcut matches the search"
+  },
+  "shortcutSearchShown": {
+    "message": "$count$ of $total$ shortcuts shown",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    },
+    "description": "Polite screen reader and visible count while the keyboard shortcuts are filtered"
+  },
   "shortcutConflictTitle": {
     "message": "Shortcut already assigned"
   },

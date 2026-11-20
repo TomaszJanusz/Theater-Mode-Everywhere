@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Деякі сполучення клавіш призначені кільком діям. Змініть або скиньте виділені сполучення."
   },
+  "searchShortcuts": {
+    "message": "Пошук гарячих клавіш…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "Немає відповідних гарячих клавіш"
+  },
+  "shortcutSearchShown": {
+    "message": "Показано гарячих клавіш: $count$ із $total$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Сполучення вже призначене"
   },

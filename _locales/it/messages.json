@@ -991,6 +991,23 @@
   "shortcutExistingConflicts": {
     "message": "Alcune scorciatoie sono assegnate a più azioni. Modifica o ripristina quelle evidenziate."
   },
+  "searchShortcuts": {
+    "message": "Cerca scorciatoie…"
+  },
+  "shortcutSearchEmpty": {
+    "message": "Nessuna scorciatoia corrispondente"
+  },
+  "shortcutSearchShown": {
+    "message": "$count$ di $total$ scorciatoie mostrate",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
   "shortcutConflictTitle": {
     "message": "Scorciatoia già assegnata"
   },
