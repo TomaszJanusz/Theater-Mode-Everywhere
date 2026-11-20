@@ -2338,6 +2338,12 @@ button.theater-time-end:focus-visible,
 }
 
 .theater-everywhere-title-hud {
+  /* From the plate's filled edge (its border box, under the transparent 1px border; the outline rings it) to its
+     content. A child that fills the plate to that edge, such as the author panel (author-byline-view.css), bleeds by
+     these, so the plate does not grow. */
+  --theater-title-edge-block: 13px;
+  --theater-title-edge-inline: 21px;
+  --theater-title-radius: 12px;
   position: relative !important;
   box-sizing: border-box !important;
   min-width: 0 !important;
@@ -2346,8 +2352,8 @@ button.theater-time-end:focus-visible,
   border: 1px solid transparent !important;
   outline: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
   outline-offset: 1px !important;
-  border-radius: 12px !important;
-  padding: 12px 20px !important;
+  border-radius: var(--theater-title-radius) !important;
+  padding: calc(var(--theater-title-edge-block) - 1px) calc(var(--theater-title-edge-inline) - 1px) !important;
   display: flex !important;
   align-items: center !important;
   color: var(--appearance-ink, #ffffff) !important;

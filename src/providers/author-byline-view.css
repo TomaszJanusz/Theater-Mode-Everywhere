@@ -1,6 +1,7 @@
-/* Injected with the author panel (see author-byline-view.ts). The panel sits at the start of the title plate
-   (shadow.css, .theater-everywhere-title-hud) at the plate's full height, so the plate does not grow; its cards use the
-   subtitle menu's shell class for the shared open/close lifecycle and restyle it as cards under the plate. */
+/* Injected with the author panel (see author-byline-view.ts). The panel fills the start of the title plate
+   (shadow.css, .theater-everywhere-title-hud) out to its filled edge, as tall as the plate and the home button, by
+   bleeding through the plate's edge insets, so the plate does not grow; its cards use the subtitle menu's shell class
+   for the shared open/close lifecycle and restyle it as cards under the plate. */
 
 .theater-byline {
   /* The chevron's depth; the names end this far before the apex, where the accent ramps up. */
@@ -13,8 +14,8 @@
   display: flex;
   flex: none;
   align-self: stretch;
-  margin-block: -12px;
-  margin-inline: -20px 10px;
+  margin-block: calc(-1 * var(--theater-title-edge-block));
+  margin-inline: calc(-1 * var(--theater-title-edge-inline)) 10px;
   font-size: 15px;
   line-height: 1.2;
 }
@@ -31,10 +32,11 @@
   min-width: 0;
   margin: 0;
   border: 0;
-  border-start-start-radius: 11px;
-  border-end-start-radius: 11px;
+  border-start-start-radius: var(--theater-title-radius);
+  border-end-start-radius: var(--theater-title-radius);
   padding-block: 0;
-  padding-inline: 16px var(--text-end);
+  /* Measured from the plate's filled edge: the avatar keeps the W4b place, 17px in. */
+  padding-inline: 17px var(--text-end);
   background: none;
   color: var(--appearance-ink, #ffffff);
   font: inherit;

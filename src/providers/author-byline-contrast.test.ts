@@ -27,7 +27,7 @@ function accentUnderNames(): number[] {
   const under = stops.filter(({ position }) => position === '0%' || position.includes('var(--text-end)'));
   assert.ok(under.length >= 4, 'stops up to the end of the names are found');
   // The names stop --text-end before the apex; the stops after that point are the ramp into the tip.
-  assert.match(CSS, /padding-inline: 16px var\(--text-end\)/);
+  assert.match(CSS, /padding-inline: \d+px var\(--text-end\)/);
   return under.map(({ share }) => share);
 }
 

@@ -53,6 +53,16 @@ describe('author byline in the title plate', () => {
     const view = await mount([author('Harbour Films', { avatarUrl: AVATAR, verified: true })]);
     expect(view.plate().firstElementChild?.classList.contains('theater-byline')).toBe(true);
     expect(view.plate().getBoundingClientRect().height).toBe(height);
+    // The panel fills the plate to its filled edge, not to the inside of its border.
+    const plate = view.plate().getBoundingClientRect();
+    const panel = view.panel()!.getBoundingClientRect();
+    for (const edge of ['top', 'bottom', 'left'] as const) expect(panel[edge]).toBeCloseTo(plate[edge], 2);
+    // Name and title share the plate's centre line.
+    const middle = (box: DOMRect) => (box.top + box.bottom) / 2;
+    const name = view.panel()!.querySelector('.theater-byline-name')!.getBoundingClientRect();
+    const title = view.plate().querySelector('.theater-title-hud-text')!.getBoundingClientRect();
+    expect(middle(name)).toBeCloseTo(middle(plate), 1);
+    expect(middle(title)).toBeCloseTo(middle(plate), 1);
     expect(view.names()).toBe('Harbour Films');
     // The visible name is the accessible name.
     expect(view.panel()!.hasAttribute('aria-label')).toBe(false);
@@ -144,10 +154,11 @@ describe('author byline in the title plate', () => {
     expect(view.panel()).toBeNull();
   });
 
-  test('the chevron points into the title in right-to-left interfaces too', async () => {
+  test('the chevron points into the title and the panel fills from the plate\'s start edge in right-to-left interfaces too', async () => {
     const view = await mount([author('One')], { dir: 'rtl' });
     const fill = view.panel()!.querySelector('.theater-byline-fill')!;
     expect(getComputedStyle(fill).clipPath.startsWith('polygon(22px 0px')).toBe(true);
+    expect(view.panel()!.getBoundingClientRect().right).toBeCloseTo(view.plate().getBoundingClientRect().right, 2);
     view.plate().dir = 'ltr';
     expect(getComputedStyle(fill).clipPath.startsWith('polygon(0px 0px')).toBe(true);
   });
