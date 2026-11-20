@@ -1722,16 +1722,8 @@
   "playlistChannelVideos": {
     "message": "Videa"
   },
-  "authorOpenChannel": {
-    "message": "Otevřít kanál"
-  },
-  "authorOpenChannelLabel": {
-    "message": "$NAME$, otevře se na nové kartě",
-    "placeholders": {
-      "name": {
-        "content": "$1"
-      }
-    }
+  "authorChannelNewTab": {
+    "message": "Otevře kanál na nové kartě"
   },
   "authorVerified": {
     "message": "Ověřeno"

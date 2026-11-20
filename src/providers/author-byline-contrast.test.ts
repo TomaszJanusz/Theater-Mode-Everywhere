@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
 
 import { ACCENT_COLOR_OPTIONS } from '../accentTheme';
-import { accentForeground, contrastRatio, contrastSafeAccent } from '../contrast';
+import { contrastRatio, contrastSafeAccent } from '../contrast';
 
 const CSS = readFileSync(new URL('./author-byline-view.css', import.meta.url), 'utf8');
 const SHADOW = readFileSync(new URL('../ui/shadow.css', import.meta.url), 'utf8');
@@ -62,12 +62,86 @@ it('keeps the author name at WCAG AA (4.5:1) over the hover gradient for every a
   }
 });
 
-it('labels the Open channel link in the accent\'s own foreground at WCAG AA for every preset', () => {
-  assert.match(CSS, /\.theater-byline-open \{[^}]*background: var\(--accent-color[^}]*color: var\(--accent-text/);
+/** A CSS color: `#rrggbb` or `rgba(r, g, b, a)`. */
+function color(value: string): { rgb: Rgb; alpha: number } {
+  const channels = /^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/.exec(value);
+  return channels
+    ? { rgb: [Number(channels[1]), Number(channels[2]), Number(channels[3])], alpha: Number(channels[4]) }
+    : { rgb: rgb(value), alpha: 1 };
+}
+const token = (name: string) => {
+  const value = new RegExp(`${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(TOKENS)?.[1];
+  assert.ok(value, `${name} is declared`);
+  return value;
+};
+
+/** Every tone a card takes (rest, alternate row, hover, press): the ink's share in the card's surface. */
+function cardTones(): number[] {
+  const fills = [...CSS.matchAll(/--card-fill: (.+);/g)].map(match => match[1]);
+  assert.ok(fills.length >= 4, 'rest, alternate, hover and press tones are declared');
+  return fills.map(fill => {
+    assert.doesNotMatch(fill, /accent/, 'card tones never take the accent');
+    if (fill.startsWith('var(--appearance-surface')) return 0;
+    const share = /^color-mix\(in srgb, var\(--appearance-ink, #[0-9a-f]{6}\) ([\d.]+)%, var\(--appearance-surface, [^)]+\)\)\)$/.exec(fill);
+    assert.ok(share, `a card tone mixes the ink into the surface: ${fill}`);
+    return Number(share[1]) / 100;
+  });
+}
+
+/** The card's surface, ink and secondary text with no appearance setting, with Reduce transparency and with high contrast. */
+function cardModes() {
+  const fallback = (rule: string, property: string) => {
+    const value = new RegExp(`${rule} \\{[^}]*var\\(${property}, (#[0-9a-f]{6}|rgba\\([^)]+\\))\\)`).exec(CSS)?.[1];
+    assert.ok(value, `${rule} falls back for ${property}`);
+    return value;
+  };
+  const surface = fallback('\\.theater-byline-card', '--appearance-surface');
+  const ink = fallback('\\.theater-byline-card', '--appearance-ink');
+  const muted = fallback('\\.theater-byline-card-stat', '--appearance-muted');
+  // Both settings swap the glass for the opaque panel; only high contrast also lifts the ink and the secondary text.
+  assert.match(TOKENS, /--appearance-surface: var\(--appearance-normal-panel\)/);
+  assert.match(TOKENS, /--appearance-surface: var\(--appearance-high-panel\)/);
+  return [
+    { name: 'default', surface, ink, muted },
+    { name: 'reduced transparency', surface: token('--appearance-normal-panel'), ink, muted },
+    { name: 'high contrast', surface: token('--appearance-high-panel'), ink: token('--appearance-high-text'), muted: token('--appearance-high-secondary') }
+  ];
+}
+
+/** `color-mix(in srgb, ink share, surface)` over the picture: srgb mixing premultiplies alpha. */
+function cardFill(ink: Rgb, share: number, surface: { rgb: Rgb; alpha: number }, picture: Rgb): Rgb {
+  const alpha = share + surface.alpha * (1 - share);
+  const mixed = ink.map((channel, index) => (channel * share + surface.rgb[index] * surface.alpha * (1 - share)) / alpha) as Rgb;
+  return over(mixed, alpha, picture);
+}
+
+it('keeps the card name and its secondary text at WCAG AA on every card tone in every appearance mode', () => {
+  const tones = cardTones();
+  // Alternate rows and the pointer each change the tone.
+  assert.equal(new Set(tones).size, tones.length, 'every tone differs');
+  for (const mode of cardModes()) for (const tone of tones) for (const [video, picture] of Object.entries(VIDEOS)) {
+    const background = hex(cardFill(rgb(mode.ink), tone, color(mode.surface), picture));
+    for (const [text, foreground] of [['name', mode.ink], ['secondary', mode.muted]]) {
+      const ratio = contrastRatio(foreground, background);
+      assert.ok(ratio >= 4.5, `${mode.name}, ${tone * 100}% tone, ${video} video, ${text} text: ${ratio.toFixed(2)}:1`);
+    }
+  }
+});
+
+it('rims the hovered card in the panel\'s lit edge at 3:1 against every card tone for every preset', () => {
+  assert.match(CSS, /a\.theater-byline-card:hover \{[^}]*border-color: var\(--edge\)/);
+  const edge = /--edge: color-mix\(in srgb, var\(--accent-color, #[0-9a-f]{6}\) ([\d.]+)%, var\(--appearance-ink, #[0-9a-f]{6}\)\)/.exec(CSS);
+  assert.ok(edge, 'the lit edge lifts the accent towards the ink');
+  const share = Number(edge[1]) / 100;
+  const modes = cardModes();
+  // `system` is the browser's own accent; the lifted tone remains the hover cue there.
   for (const accent of ACCENT_COLOR_OPTIONS.filter(option => option.preset !== 'system')) {
-    for (const swatch of [accent.swatch, contrastSafeAccent(accent.swatch)]) {
-      const ratio = contrastRatio(accentForeground(swatch), swatch);
-      assert.ok(ratio >= 4.5, `${accent.preset} ${swatch}: ${ratio.toFixed(2)}:1`);
+    for (const [mode, swatch] of [[modes[0], accent.swatch], [modes[2], contrastSafeAccent(accent.swatch)]] as const) {
+      for (const tone of cardTones()) for (const [video, picture] of Object.entries(VIDEOS)) {
+        const rim = hex(over(rgb(swatch), share, rgb(mode.ink)));
+        const ratio = contrastRatio(rim, hex(cardFill(rgb(mode.ink), tone, color(mode.surface), picture)));
+        assert.ok(ratio >= 3, `${accent.preset} (${mode.name}), ${tone * 100}% tone, ${video} video: ${ratio.toFixed(2)}:1`);
+      }
     }
   }
 });

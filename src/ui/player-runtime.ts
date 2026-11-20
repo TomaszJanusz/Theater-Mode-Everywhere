@@ -1689,6 +1689,11 @@ function initialize(): void {
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();
+      // A link answers only Enter natively; Space opens it as it presses a button, instead of scrolling the page.
+      if (event.key === ' ' && activeEl instanceof HTMLAnchorElement && activeEl.href) {
+        event.preventDefault();
+        if (!event.repeat) activeEl.click();
+      }
       return false;
     }
 

@@ -1722,16 +1722,8 @@
   "playlistChannelVideos": {
     "message": "動画"
   },
-  "authorOpenChannel": {
-    "message": "チャンネルを開く"
-  },
-  "authorOpenChannelLabel": {
-    "message": "$NAME$、新しいタブで開きます",
-    "placeholders": {
-      "name": {
-        "content": "$1"
-      }
-    }
+  "authorChannelNewTab": {
+    "message": "チャンネルを新しいタブで開きます"
   },
   "authorVerified": {
     "message": "確認済み"

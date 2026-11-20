@@ -12,8 +12,7 @@ const STACKED_AVATARS = 3;
 
 /** Provider-only fallbacks: these bytes never join content.js. */
 const FALLBACKS: Record<string, string> = {
-  authorOpenChannel: 'Open channel',
-  authorOpenChannelLabel: '$1, opens in a new tab',
+  authorChannelNewTab: 'Opens the channel in a new tab',
   authorVerified: 'Verified'
 };
 const t = (key: string, substitutions?: string[]) => translateMessage(FALLBACKS, key, substitutions);
@@ -37,11 +36,15 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, className: strin
   return node;
 }
 
-/** The avatar, or the monogram when there is none or it fails to load. The image is the host's own CDN, sent no referrer. */
+/**
+ * The avatar, or the monogram when there is none or it fails to load: decoration beside the name, kept from assistive
+ * technology either way. The image is the host's own CDN, sent no referrer.
+ */
 function avatar(author: ContentAuthor, className: string): HTMLElement {
-  const fallback = () => element('span', `${className} theater-byline-monogram`, monogram(author.name));
+  const decorative = <T extends HTMLElement>(node: T) => { node.setAttribute('aria-hidden', 'true'); return node; };
+  const fallback = () => decorative(element('span', `${className} theater-byline-monogram`, monogram(author.name)));
   if (!author.avatarUrl) return fallback();
-  const image = element('img', className);
+  const image = decorative(element('img', className));
   image.alt = '';
   image.decoding = 'async';
   image.referrerPolicy = 'no-referrer';
@@ -69,8 +72,13 @@ function nameText(name: string, className: string): HTMLElement {
   return text;
 }
 
+/**
+ * One author's card. With an admitted channel link the whole card is that link, a real anchor: a click, Enter or Space
+ * (see the player's key guard) opens the channel in a new tab, so theater keeps playing; middle and modified clicks and
+ * the context menu stay the browser's. Without one it is a plain card.
+ */
 function renderCard(author: ContentAuthor): HTMLElement {
-  const card = element('div', 'theater-byline-card');
+  const card = element(author.url ? 'a' : 'div', 'theater-byline-card');
   const heading = element('div', 'theater-byline-card-heading');
   const name = element('div', 'theater-byline-card-name');
   name.append(nameText(author.name, 'theater-byline-card-title'));
@@ -78,17 +86,14 @@ function renderCard(author: ContentAuthor): HTMLElement {
   heading.append(name);
   if (author.stat) heading.append(nameText(author.stat, 'theater-byline-card-stat'));
   card.append(avatar(author, 'theater-byline-card-avatar'), heading);
-  if (author.url) {
-    // A real link: a click opens the channel in a new tab, so theater keeps playing; middle and modified clicks and
-    // the context menu stay the browser's.
-    const link = element('a', 'theater-byline-open');
-    link.href = author.url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    // The visible words start the link's name; whose channel it is and the new tab follow for screen readers.
-    link.append(element('span', '', t('authorOpenChannel')), element('span', 'theater-byline-sr', ` ${t('authorOpenChannelLabel', [author.name])}`));
-    link.append(createSvgIcon(OPEN_ICON));
-    card.append(link);
+  if (card instanceof HTMLAnchorElement && author.url) {
+    card.href = author.url;
+    card.target = '_blank';
+    card.rel = 'noopener noreferrer';
+    // The card's own words start the link's name; the new tab ends it for screen readers.
+    const open = element('span', 'theater-byline-card-open');
+    open.append(element('span', 'theater-byline-sr', t('authorChannelNewTab')), createSvgIcon(OPEN_ICON));
+    card.append(open);
   }
   return card;
 }
@@ -129,7 +134,7 @@ export function mountAuthorByline(
     host: root, trigger, panel: cards, scope,
     firstFocus: () => cards.querySelector<HTMLElement>('a') ?? undefined
   });
-  const links = () => [...cards.querySelectorAll<HTMLAnchorElement>('a.theater-byline-open')];
+  const links = () => [...cards.querySelectorAll<HTMLAnchorElement>('a.theater-byline-card')];
   scope.listen(trigger, 'keydown', (event: KeyboardEvent) => {
     if (event.key !== 'ArrowDown') return;
     event.preventDefault();
@@ -158,7 +163,7 @@ export function mountAuthorByline(
     const shown = options.settings.loaded && options.settings.values[options.provider]?.showAuthor
       ? checkedAuthors(authors, options.hosts)
       : [];
-    const next = JSON.stringify([shown, t('authorOpenChannel')]);
+    const next = JSON.stringify([shown, t('authorChannelNewTab'), t('authorVerified')]);
     if (next === signature && (!shown.length || root.parentElement === plate)) return;
     signature = next;
     if (!shown.length || !plate) {

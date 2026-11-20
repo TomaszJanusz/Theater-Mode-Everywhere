@@ -68,6 +68,9 @@ export const OneAuthorOpen = byline({ open: 'click' });
 // Also shot in German and Arabic (right-to-left): see .storybook/profiles.ts.
 export const TwoAuthorsOpen = byline({ authors: 2, accent: 'purple', open: 'click' });
 export const ThreeAuthors = byline({ authors: 3, accent: 'pink' });
+// Alternate rows from the second card; each card is its channel's link.
+export const ThreeAuthorsOpen = byline({ authors: 3, accent: 'green', open: 'click' });
+// The first card takes focus and shows its ring.
 export const KeyboardOpen = byline({ authors: 2, open: 'keyboard', accent: 'blue' });
 export const YellowAccentOpen = byline({ accent: 'yellow', open: 'click' });
 export const LongTitle = byline({ title: LONG_TITLE, authors: 2 });

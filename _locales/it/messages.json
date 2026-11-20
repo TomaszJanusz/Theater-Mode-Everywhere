@@ -1722,16 +1722,8 @@
   "playlistChannelVideos": {
     "message": "Video"
   },
-  "authorOpenChannel": {
-    "message": "Apri canale"
-  },
-  "authorOpenChannelLabel": {
-    "message": "$NAME$, si apre in una nuova scheda",
-    "placeholders": {
-      "name": {
-        "content": "$1"
-      }
-    }
+  "authorChannelNewTab": {
+    "message": "Apre il canale in una nuova scheda"
   },
   "authorVerified": {
     "message": "Verificato"

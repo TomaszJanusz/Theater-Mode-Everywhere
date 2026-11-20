@@ -1751,19 +1751,9 @@
     "message": "Videos",
     "description": "Heading of the playlist panel for a channel's videos (Play all on its Videos tab); the channel's name is shown under it."
   },
-  "authorOpenChannel": {
-    "message": "Open channel",
-    "description": "Button-styled link on an author card that opens the channel in a new tab."
-  },
-  "authorOpenChannelLabel": {
-    "message": "$NAME$, opens in a new tab",
-    "description": "Read after “Open channel” by screen readers only, on the link of an author card; $NAME$ is the channel's name.",
-    "placeholders": {
-      "name": {
-        "content": "$1",
-        "example": "Blender"
-      }
-    }
+  "authorChannelNewTab": {
+    "message": "Opens the channel in a new tab",
+    "description": "Read by screen readers only, at the end of an author card's name; the whole card is a link to that channel."
   },
   "authorVerified": {
     "message": "Verified",

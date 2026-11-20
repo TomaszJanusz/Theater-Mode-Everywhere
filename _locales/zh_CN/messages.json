@@ -1722,16 +1722,8 @@
   "playlistChannelVideos": {
     "message": "视频"
   },
-  "authorOpenChannel": {
-    "message": "打开频道"
-  },
-  "authorOpenChannelLabel": {
-    "message": "$NAME$，在新标签页中打开",
-    "placeholders": {
-      "name": {
-        "content": "$1"
-      }
-    }
+  "authorChannelNewTab": {
+    "message": "在新标签页中打开频道"
   },
   "authorVerified": {
     "message": "已验证"

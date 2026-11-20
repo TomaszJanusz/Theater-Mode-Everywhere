@@ -263,18 +263,48 @@
 .theater-menu > .theater-cc-menu.theater-byline-cards.visible,
 .theater-menu.is-suppressed > .theater-cc-menu.theater-byline-cards { transition: none !important; }
 
+/* Each card is its author's channel link when the host admits one. Rows alternate from the second author, and a
+   pointer lifts the row further; every tone is the ink mixed into the card's surface, never the accent, so text keeps
+   WCAG AA on all of them whichever accent is chosen (author-byline-contrast.test.ts). The panel's lit edge rims the
+   hovered card; the keyboard ring is the ink, inside the card, so the video never hides it. */
 .theater-byline-card {
+  --card-fill: var(--appearance-surface, rgba(20, 20, 20, 0.96));
+  position: relative;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px 12px;
+  gap: 12px;
   padding: 12px;
   border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15));
   border-radius: 12px;
-  background: var(--appearance-surface, rgba(20, 20, 20, 0.96));
+  background: var(--card-fill);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   color: var(--appearance-ink, #f8fafc);
+  text-decoration: none;
 }
+
+.theater-byline-card:nth-child(even) { --card-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 6%, var(--appearance-surface, rgba(20, 20, 20, 0.96))); }
+
+a.theater-byline-card {
+  cursor: pointer;
+  transition: background-color 0.12s ease-out, border-color 0.12s ease-out;
+}
+
+a.theater-byline-card:hover {
+  --card-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 10%, var(--appearance-surface, rgba(20, 20, 20, 0.96)));
+  border-color: var(--edge);
+}
+
+a.theater-byline-card:active { --card-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 12%, var(--appearance-surface, rgba(20, 20, 20, 0.96))); }
+
+a.theater-byline-card:focus-visible {
+  outline: 2px solid var(--appearance-ink, #ffffff);
+  outline-offset: -2px;
+}
+
+/* Reduce motion gives every element a brief transition of every property, so the card's contents would take the
+   pinned cards' visibility a frame late and be read as hidden. Nothing in a card needs to move. */
+:host([data-motion="reduced"]) :is(.theater-byline-card, .theater-byline-card *) { transition: none; }
 
 .theater-byline-card-avatar {
   display: grid;
@@ -313,26 +343,19 @@
 
 .theater-byline-card-stat {
   overflow: hidden;
+  /* Its own direction reads the text; the card's sets the side it lines up on, under the name. */
+  align-self: start;
+  max-width: 100%;
   color: var(--appearance-muted, #a1a1aa);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.theater-byline-open {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 32px;
-  border-radius: 6px;
-  background: var(--accent-color, #6366f1);
-  color: var(--accent-text, #ffffff);
-  font-size: 12px;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
+/* The new-tab arrow at the card's end points to the inline end. */
+.theater-byline-card-open {
+  display: inline-flex;
+  color: var(--appearance-muted, #a1a1aa);
 }
 
 .theater-byline-sr {
@@ -344,15 +367,9 @@
   white-space: nowrap;
 }
 
-.theater-byline-open:hover { background: var(--accent-hover, var(--accent-color, #6366f1)); }
+a.theater-byline-card:is(:hover, :focus-visible) .theater-byline-card-open { color: var(--appearance-ink, #f8fafc); }
 
-.theater-byline-open:focus-visible {
-  outline: 2px solid var(--appearance-ink, #ffffff);
-  outline-offset: 2px;
-}
-
-/* The open-in-new-tab arrow points to the inline end. */
-.theater-everywhere-title-hud[dir="rtl"] .theater-byline-open svg { transform: scaleX(-1); }
+.theater-everywhere-title-hud[dir="rtl"] .theater-byline-card-open svg { transform: scaleX(-1); }
 
 /* A scrolling title takes the room beside the panel: the shell sizes it for a plate of its own. Its start fade keeps
    the shell's 20px, so it runs out under the chevron's tip and the first letter at rest stays clear of it. */
