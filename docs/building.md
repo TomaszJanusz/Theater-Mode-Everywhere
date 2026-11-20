@@ -26,7 +26,19 @@ Outputs:
 
 Content scripts remain self-contained classic scripts, with no static or dynamic imports. `src/providers/*/provider.json` declares each extracted provider's hosts and MAIN/isolated entries. After editing a descriptor, run `pnpm exec tsx scripts/provider-descriptors.ts` to update the checked-in host catalog and manifest rules; builds and consistency tests reject drift. Providers not yet extracted keep their existing shared wiring.
 
-Each world runs its shared runtime, matching provider registration, then startup, in that order within one manifest `js` array at `document_start`. The generic rules exclude extracted hosts; every frame uses its own URL. The provider receives stateful shared services through the runtime API and registers before startup, which closes registration. Missing or rejected registrations retain generic HTML5 entry. JavaScript stays private; no background loader or `scripting` permission is needed. `pnpm verify:bundles` checks the complete inventory and order in both unpacked directories; the build also rejects extracted implementations in shared bundles and duplicated runtime owners in provider bundles.
+Each world runs its shared runtime, matching provider registration, then startup, in that order within one manifest `js` array at `document_start`. The generic rules exclude extracted hosts; every frame uses its own URL. The provider receives stateful shared services through the runtime API and registers before startup, which closes registration. Missing or rejected registrations retain generic HTML5 entry. JavaScript stays private, with one exception below; no background loader or `scripting` permission is needed. `pnpm verify:bundles` checks the complete inventory and order in both unpacked directories; the build also rejects extracted implementations in shared bundles and duplicated runtime owners in provider bundles.
+
+## Echo reduction (WebAssembly)
+
+The echo-reduction DSP is AssemblyScript ([`assembly/echo-reduction.ts`](../assembly/echo-reduction.ts)) compiled to WebAssembly with the `assemblyscript` version pinned in `package.json`. Its binary is committed as `assembly/echo-reduction.wasm`, because the build only copies it:
+
+```sh
+pnpm build:wasm   # rewrite assembly/echo-reduction.wasm from the source
+```
+
+The compiler output is deterministic, and `pnpm verify:bundles` (a CI gate) compiles the source again and requires the same bytes as the committed file. It also requires the packaged `audio/echo-reduction.wasm` to equal the committed file. To rebuild it by hand, run `pnpm build:wasm` and check that `git status` shows no change.
+
+The DSP runs in an AudioWorklet in the page's MAIN world, which can load its module only from an extension URL. `audio/echo-reduction.js` (the worklet, built from [`src/platform/echo-reduction-worklet.ts`](../src/platform/echo-reduction-worklet.ts)) and `audio/echo-reduction.wasm` are therefore the only web-accessible code. They have a `web_accessible_resources` entry of their own with `use_dynamic_url: true`, and [`scripts/bundle-integrity.ts`](../scripts/bundle-integrity.ts) rejects any other script, binary or wildcard there.
 
 ## Diagnostic build
 

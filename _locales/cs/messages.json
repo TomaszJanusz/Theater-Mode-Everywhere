@@ -175,6 +175,20 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Potlačení ozvěny"
+  },
+  "echoReductionHud": {
+    "message": "Potlačení ozvěny: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Pro řeč nahranou v místnostech s ozvěnou. Silné může zabarvit hudbu."
+  },
   "navigationGroupTitle": {
     "message": "Navigace"
   },

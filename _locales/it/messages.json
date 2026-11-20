@@ -175,6 +175,20 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Abbattimento eco"
+  },
+  "echoReductionHud": {
+    "message": "Abbattimento eco: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Per il parlato registrato in stanze con eco. Forte può alterare il timbro della musica."
+  },
   "navigationGroupTitle": {
     "message": "Navigazione"
   },

@@ -175,6 +175,20 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Tłumienie pogłosu"
+  },
+  "echoReductionHud": {
+    "message": "Tłumienie pogłosu: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Do mowy nagranej w pomieszczeniach z pogłosem. Mocne może zabarwić muzykę."
+  },
   "navigationGroupTitle": {
     "message": "Nawigacja"
   },

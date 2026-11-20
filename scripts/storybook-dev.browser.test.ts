@@ -78,12 +78,13 @@ for (const engine of testEngines()) {
     });
     await untilOutput(/Storybook ready!/);
     const base = `http://127.0.0.1:${address.port}`;
-    const context = await browser.newContext(t);
+    // A 1280x800 laptop canvas: the menu's five audio rows (with Echo reduction) need about 580 px beside the player.
+    const context = await browser.newContext(t, { viewport: { width: 1280, height: 800 } });
     const indexResponse = await context.request.get(`${base}/index.json`);
     assert.equal(indexResponse.status(), 200);
     const index = await indexResponse.json() as { entries: Record<string, { type: string; title: string }> };
     const stories = Object.keys(index.entries).filter(id => index.entries[id].type === 'story');
-    assert.equal(stories.length, 130, '108 component stories, 15 Options/Setup wizard stories, the four Options/What\'s new stories and the three Extension/Player UI stories');
+    assert.equal(stories.length, 131, '108 component stories, 15 Options/Setup wizard stories, the four Options/What\'s new stories and the four Extension/Player UI stories');
     assert.ok(stories.includes(PLAYER_STORY));
     assert.deepEqual([...new Set(stories.map(id => index.entries[id].title))].sort(), [
       'Extension/Player UI', 'Options/Setup wizard', 'Options/What\'s new',

@@ -175,6 +175,20 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Redutor de eco"
+  },
+  "echoReductionHud": {
+    "message": "Redutor de eco: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Para falas gravadas em salas com eco. Forte pode alterar o timbre da música."
+  },
   "navigationGroupTitle": {
     "message": "Navegação"
   },

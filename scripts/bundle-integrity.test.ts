@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { assertBackgroundScriptLoading, assertScopedScript, assertSelfContainedScript } from './bundle-integrity';
+import { assertBackgroundScriptLoading, assertScopedScript, assertSelfContainedScript, assertWebAccessible } from './bundle-integrity';
 
 const requireFromVite = createRequire(path.resolve(__dirname, '../node_modules/vite/package.json'));
 
@@ -101,4 +101,18 @@ it('requires module loading for packaged Firefox background imports', () => {
     writeFileSync(manifest, JSON.stringify({ background: { scripts: ['content.js'], type: 'module' } }));
     assert.doesNotThrow(() => assertBackgroundScriptLoading(dir));
   });
+});
+
+it('makes the echo-reduction worklet and its DSP the only web-accessible code, under dynamic URLs', () => {
+  const css = { resources: ['content.css'] };
+  const audio = { resources: ['audio/echo-reduction.js', 'audio/echo-reduction.wasm'], use_dynamic_url: true };
+  assert.doesNotThrow(() => assertWebAccessible([css, audio]));
+  for (const [rules, reason] of [
+    [[css], /Only the echo-reduction worklet/],
+    [[css, audio, { resources: ['providers/youtube/main.js'] }], /Only the echo-reduction worklet/],
+    [[css, { ...audio, resources: ['audio/*'] }], /Only the echo-reduction worklet/],
+    [[css, { ...audio, resources: [...audio.resources, 'content.css'] }], /list only the worklet/],
+    [[css, { resources: audio.resources }], /dynamic URLs/],
+    [[css, { resources: ['audio/echo-reduction.js'], use_dynamic_url: true }, { resources: ['audio/echo-reduction.wasm'], use_dynamic_url: true }], /list only the worklet/]
+  ] as const) assert.throws(() => assertWebAccessible(rules), reason);
 });

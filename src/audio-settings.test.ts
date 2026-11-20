@@ -13,6 +13,7 @@ import {
   resolveBassLevel,
   DEFAULT_AUDIO_SETTINGS,
   isNeutralAudio,
+  ECHO_LEVELS,
   LEVELING_LEVELS,
   readAudioDataset,
   resolveStoredAudioSettings,
@@ -26,12 +27,12 @@ describe('audio settings', () => {
       assert.deepEqual(resolveStoredAudioSettings({ voiceBoost: value, volumeLeveling: value, bassLevel: value }), DEFAULT_AUDIO_SETTINGS);
     }
     assert.deepEqual(resolveStoredAudioSettings({ voiceBoost: 'strong', volumeLeveling: 'bogus', bassLevel: 'less' }),
-      { voice: 'strong', leveling: 'off', bass: 'less' });
+      { voice: 'strong', leveling: 'off', bass: 'less', echo: 'off' });
   });
 
   it('cycles each setting through its levels independently, with a label for every level', () => {
     for (const name of AUDIO_SETTING_NAMES) {
-      const levelCount = { voice: VOICE_LEVELS.length, leveling: LEVELING_LEVELS.length, bass: BASS_LEVELS.length };
+      const levelCount = { voice: VOICE_LEVELS.length, leveling: LEVELING_LEVELS.length, bass: BASS_LEVELS.length, echo: ECHO_LEVELS.length };
       const seen = new Set<string>();
       let settings = DEFAULT_AUDIO_SETTINGS;
       for (let step = 0; step < levelCount[name]; step++) {
@@ -56,7 +57,7 @@ describe('audio settings', () => {
   it('round-trips through the media element dataset and reports only real changes', () => {
     const dataset: DOMStringMap = {};
     assert.deepEqual(readAudioDataset(dataset), DEFAULT_AUDIO_SETTINGS);
-    const boosted = { voice: 'light', leveling: 'strong', bass: 'more' } as const;
+    const boosted = { voice: 'light', leveling: 'strong', bass: 'more', echo: 'strong' } as const;
     assert.equal(writeAudioDataset(dataset, boosted), true);
     assert.equal(writeAudioDataset(dataset, boosted), false);
     assert.deepEqual(readAudioDataset(dataset), boosted);
@@ -66,8 +67,8 @@ describe('audio settings', () => {
 
   it('marks only non-default levels as active', () => {
     assert.deepEqual(AUDIO_SETTING_NAMES.filter(name => isAudioSettingActive(DEFAULT_AUDIO_SETTINGS, name)), []);
-    const tuned = { voice: 'light', leveling: 'off', bass: 'less' } as const;
-    assert.deepEqual(AUDIO_SETTING_NAMES.filter(name => isAudioSettingActive(tuned, name)), ['voice', 'bass']);
+    const tuned = { voice: 'light', leveling: 'off', bass: 'less', echo: 'light' } as const;
+    assert.deepEqual(AUDIO_SETTING_NAMES.filter(name => isAudioSettingActive(tuned, name)), ['voice', 'bass', 'echo']);
   });
 
   it('gates the top bass level behind one flag', () => {
@@ -106,7 +107,7 @@ describe('stepping audio levels', () => {
   });
 
   it('only changes the named setting', () => {
-    const settings = { voice: 'light', leveling: 'strong', bass: 'more' } as const;
+    const settings = { voice: 'light', leveling: 'strong', bass: 'more', echo: 'off' } as const;
     assert.deepEqual(stepAudioSetting(settings, 'bass', -1), { ...settings, bass: 'original' });
   });
 });

@@ -52,7 +52,7 @@ it('only connects requested DSP stages, including the neutral path used by boost
       chain.apply({ ...DEFAULT_AUDIO_SETTINGS, bass: 'moaaarr' });
       assert.deepEqual(reachable(), { filter: 1, compressor: 1, splitter: 0, shaper: 1 });
     }
-    chain.apply({ voice: 'strong', leveling: 'strong', bass: 'more' });
+    chain.apply({ voice: 'strong', leveling: 'strong', bass: 'more', echo: 'off' });
     assert.deepEqual(reachable(), { filter: 2, compressor: 3, splitter: 1, shaper: 0 });
   } finally { chain.dispose(); }
   assert.deepEqual(reachable(), { filter: 0, compressor: 0, splitter: 0, shaper: 0 });

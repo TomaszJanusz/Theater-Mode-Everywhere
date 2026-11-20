@@ -175,6 +175,20 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "减少回声"
+  },
+  "echoReductionHud": {
+    "message": "减少回声：$1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "适用于在有回声的房间中录制的语音。强力可能会改变音乐的音色。"
+  },
   "navigationGroupTitle": {
     "message": "导航"
   },

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/html-vite';
 import { expect } from 'storybook/test';
 
 import { FIXTURE_UPDATE, renderPlayer, SCENARIOS, type Scenario } from '../../.storybook/player-fixture';
+import { AUDIO_SETTINGS_EVENT } from '../audio-settings';
 import { announcedGeneration } from '../update-notice';
 
 import { t } from './messages';
@@ -72,5 +73,26 @@ export const UpdateAnnounced: StoryObj<Args> = {
     const label = t('updateMenuLabel', announcedGeneration(FIXTURE_UPDATE));
     await expect(row?.querySelector('.theater-settings-label')?.textContent).toBe(label);
     await expect(row?.getAttribute('aria-label')).toBe(label);
+  }
+};
+
+/**
+ * A page whose CSP forbids WebAssembly: the MAIN world marks the video and announces it, and the Echo reduction
+ * row reads Unavailable with both arrows disabled, while the other audio rows keep working. That the mark follows a
+ * blocked compile is proven in echo-reduction.browser.test.ts; this story covers the production row.
+ */
+export const EchoReductionUnavailable: StoryObj<Args> = {
+  args: { scenario: 'settings' },
+  play: async () => {
+    await window.__playerFixture!.ready;
+    const root = window.__playerFixture!.root;
+    const row = () => root.querySelector('.audio-echo-btn')?.closest('.theater-settings-row');
+    await expect(row()?.querySelector('.theater-stepper')?.getAttribute('data-disabled')).toBe('false');
+    const video = window.__storyDocument!.querySelector('video')!;
+    video.dataset.theaterEchoUnavailable = 'true';
+    video.dispatchEvent(new CustomEvent(AUDIO_SETTINGS_EVENT, { bubbles: true, composed: true }));
+    await expect(row()?.querySelector('.theater-stepper')?.getAttribute('data-disabled')).toBe('true');
+    await expect(row()?.textContent).toContain(t('statusUnavailable'));
+    await expect(root.querySelector('.audio-voice-btn')?.closest('.theater-settings-row')?.querySelector('.theater-stepper')?.getAttribute('data-disabled')).toBe('false');
   }
 };

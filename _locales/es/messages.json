@@ -175,6 +175,20 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Reductor de eco"
+  },
+  "echoReductionHud": {
+    "message": "Reductor de eco: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Para voces grabadas en salas con eco. Fuerte puede alterar el timbre de la música."
+  },
   "navigationGroupTitle": {
     "message": "Navegación"
   },

@@ -2,6 +2,7 @@ import { isNativeChatEvent } from '../chat/events';
 import { isChatDocument } from '../chat/url';
 import { findHostPlayButton, mainWorldOwnsWasmPlayPause, mediaHasSource, toggleDirectPlayback } from '../host-play';
 import { mediaProviderIntegrationEnabled, type MediaProviderId } from '../media-features/provider-flags';
+import { receiveAudioAssets } from '../protocol/audio-assets';
 import { CC_SEARCH_KEY_EVENT } from '../protocol/cc-search';
 import { MEDIA_SEEK_EVENT, parseMediaSeekDetail } from '../protocol/media-seek';
 import { MODAL_KEY_EVENT } from '../protocol/modal';
@@ -21,6 +22,7 @@ import { matchesShortcut } from '../ui/shortcuts';
 import { findActiveVideo } from './active-video';
 import { readCurrentBlobText } from './blob-text';
 import { MAX_BINARY_HARVEST_BYTES } from './bounded-body';
+import { createEchoLoader } from './echo-reduction';
 import { isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
 import { installMediaAudioRuntime } from './media-audio-runtime';
 import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
@@ -54,6 +56,8 @@ function wrapsFetch(harvests: readonly ProviderHarvest[]): boolean {
 
 export function installMainWorldRuntime(): void {
   if (isChatDocument(window.location.href)) return;
+  // First, before the harvest wraps fetch: the loader keeps the page's original.
+  const echoLoader = createEchoLoader(receiveAudioAssets());
   const FETCH_WRAPPED = Symbol.for('theater-everywhere.wrapped-fetch');
   // Capture the capability operations before host code can replace the prototypes.
   const postPortMessage: (port: MessagePort, message: WorldEnvelope) => void = Function.prototype.call.bind(MessagePort.prototype.postMessage);
@@ -263,7 +267,7 @@ export function installMainWorldRuntime(): void {
   installProviders();
   if (harvestHost) installCrunchyrollMain();
 
-  installMediaAudioRuntime();
+  installMediaAudioRuntime(echoLoader);
 
   function isEditableKeyboardTarget(target: EventTarget | null): boolean {
     const el = target instanceof HTMLElement ? target : document.activeElement as HTMLElement | null;

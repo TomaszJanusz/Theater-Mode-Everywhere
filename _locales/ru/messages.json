@@ -175,6 +175,20 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Подавление эха"
+  },
+  "echoReductionHud": {
+    "message": "Подавление эха: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Для речи, записанной в гулких помещениях. Сильное может окрашивать музыку."
+  },
   "navigationGroupTitle": {
     "message": "Навигация"
   },

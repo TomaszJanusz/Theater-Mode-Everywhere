@@ -175,6 +175,20 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Придушення луни"
+  },
+  "echoReductionHud": {
+    "message": "Придушення луни: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Для мовлення, записаного в гулких приміщеннях. Сильне може забарвлювати музику."
+  },
   "navigationGroupTitle": {
     "message": "Навігація"
   },

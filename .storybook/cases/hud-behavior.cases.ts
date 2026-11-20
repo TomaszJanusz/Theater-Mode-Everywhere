@@ -319,7 +319,7 @@ const RapidStatus: Story = hudStory(() => {}, {
   play: async () => {
     const { one, many } = rapid('status', index => {
       const bass = index % 2 ? 'more' : 'moaaarr';
-      hud().triggerStatusIndicator(`Bass: ${index}`, audioHudIcon('bass', { voice: 'off', leveling: 'off', bass }), bass);
+      hud().triggerStatusIndicator(`Bass: ${index}`, audioHudIcon('bass', { voice: 'off', leveling: 'off', bass, echo: 'off' }), bass);
     });
     await expect(many.nodes).toBe(one.nodes);
     await expect(many.animations).toBeLessThanOrEqual(MAX_PLATE_ANIMATIONS);

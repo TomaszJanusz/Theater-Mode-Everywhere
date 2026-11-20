@@ -29,7 +29,9 @@ const BUNDLE_ENTRIES = [...ENTRIES, 'src/entries/content-start.ts', 'src/entries
 const localeTest = file => /(?:locales|localization|i18n|store-listings|safe-dom|rte-settings|whatsNew-content|update-notice|cc-menu-rows|settings-rows)(?:\.browser)?\.test\./.test(file);
 // The one place this script starts git, with fixed arguments.
 const git = (cwd, args, env = process.env) => execFileSync('git', args, { cwd, env, encoding: 'utf8', stdio: 'pipe' });
-const codeFile = file => /\.(?:[cm]?[jt]sx?)$/.test(file) && !file.endsWith('.d.ts');
+// AssemblyScript (`assembly/`) is not TypeScript esbuild can parse. It stays a file in the graph: the literal paths
+// in scripts/echo-dsp.ts and the DSP test still tie it, and the committed .wasm, to the tests that read them.
+const codeFile = file => /\.(?:[cm]?[jt]sx?)$/.test(file) && !file.endsWith('.d.ts') && !file.startsWith('assembly/');
 
 // esbuild erases type-only imports, so they have no metafile edge. They still count as dependencies (a type edit can
 // change what a test exercises), and a relative specifier names exactly one file, so there is nothing to guess.

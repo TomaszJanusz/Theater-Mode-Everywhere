@@ -34,6 +34,7 @@ export interface Shortcuts {
   cycleVoice: string;
   cycleLeveling: string;
   cycleBass: string;
+  cycleEcho: string;
   navigateUp: string;
   navigateLeft: string;
   navigateDown: string;
@@ -56,7 +57,8 @@ export function isNavigationShortcut(action: keyof Shortcuts): action is Navigat
 export const AUDIO_SHORTCUTS = {
   voice: 'cycleVoice',
   leveling: 'cycleLeveling',
-  bass: 'cycleBass'
+  bass: 'cycleBass',
+  echo: 'cycleEcho'
 } as const satisfies Record<AudioSettingName, keyof Shortcuts>;
 
 export const defaultShortcuts: Shortcuts = {
@@ -94,6 +96,8 @@ export const defaultShortcuts: Shortcuts = {
   cycleVoice: 'V',
   cycleLeveling: 'R',
   cycleBass: 'B',
+  // Unbound: echo reduction is for one kind of recording, and the free keys near V, R and B sit in the navigation cluster.
+  cycleEcho: '',
   navigateUp: 'KeyW',
   navigateLeft: 'KeyA',
   navigateDown: 'KeyS',

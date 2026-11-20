@@ -176,6 +176,20 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Echo reduction"
+  },
+  "echoReductionHud": {
+    "message": "Echo reduction: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "For speech recorded in echoing rooms. Strong may color music."
+  },
   "navigationGroupTitle": {
     "message": "Navigation"
   },

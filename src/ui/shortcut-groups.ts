@@ -37,6 +37,7 @@ export const SHORTCUT_LABELS: Record<Action, string> = {
   cycleVoice: AUDIO_LABEL_KEYS.voice,
   cycleLeveling: AUDIO_LABEL_KEYS.leveling,
   cycleBass: AUDIO_LABEL_KEYS.bass,
+  cycleEcho: AUDIO_LABEL_KEYS.echo,
   navigateUp: 'navigateUp',
   navigateLeft: 'navigateLeft',
   navigateDown: 'navigateDown',
@@ -76,7 +77,8 @@ export const SHORTCUT_HELP_GROUPS: readonly ShortcutHelpGroup[] = [
     { actions: ['toggleVolumeBoost'] },
     { actions: ['cycleVoice'] },
     { actions: ['cycleLeveling'] },
-    { actions: ['cycleBass'] }
+    { actions: ['cycleBass'] },
+    { actions: ['cycleEcho'] }
   ] },
   { id: 'captions', title: 'subtitlesMenuTitle', rows: [
     { actions: ['toggleCaptions'] },

@@ -100,7 +100,7 @@ export function measure(): { nodes: number; animations: number; timers: number }
 
 /** The bass confirmation as the cycle command shows it: the label, the icon and the confirmed level. */
 export function bassHud(bass: AudioSettings['bass']): (hud: Hud) => void {
-  const settings: AudioSettings = { voice: 'off', leveling: 'off', bass };
+  const settings: AudioSettings = { voice: 'off', leveling: 'off', bass, echo: 'off' };
   return hud => hud.triggerStatusIndicator(
     t(AUDIO_HUD_KEYS.bass, t(audioLevelLabelKey(settings, 'bass'))), audioHudIcon('bass', settings), bass
   );

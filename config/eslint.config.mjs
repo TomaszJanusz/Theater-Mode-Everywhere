@@ -28,6 +28,8 @@ export default [
       '**/node_modules/**', 'dist/**', 'build/**', 'output/**', 'outputs/**',
       'coverage/**', 'playwright-report/**', 'test-results/**', 'blob-report/**',
       '.claude/**', '.web-ext-profile/**', '.playwright/**', '.pnpm-store/**',
+      // AssemblyScript, compiled by scripts/echo-dsp.ts; its f32/v128 types and @inline are not TypeScript.
+      'assembly/**',
       ...generatedFiles,
     ],
   },

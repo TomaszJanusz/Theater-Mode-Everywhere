@@ -61,6 +61,7 @@ consent pages and available encodings can make scenarios unavailable.
 - `extension-loaded`: extension loaded, outside theater, RTE disabled.
 - `rte-off`: theater active with RTE disabled.
 - `voice-only`, `leveling-only`, `bass-only`: individual extension audio effects.
+- `echo-only`: echo reduction at Strong (the AudioWorklet and its WebAssembly DSP). Not in the default set; pass it with `--states`.
 - `captions`: `neutral` with extension captions on. An overlay cue must be visible
   at both ends of warmup and of the measurement window, after the status chip
   has cleared. It is not part of the default matrix; select it with

@@ -1,5 +1,5 @@
-import type { AudioSettings } from '../audio-settings';
-import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
+import type { AudioSettingName, AudioSettings } from '../audio-settings';
+import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, echoUnavailable, isAudioSettingActive } from '../audio-settings';
 import { DisposableScope } from '../core/disposable-scope';
 import type { PlayerCommand } from '../core/player-session';
 import type { PlaylistPanelControl } from '../core/playlist-panel';
@@ -795,6 +795,8 @@ export function createControls(
       const audioRows = AUDIO_SETTING_NAMES.map((name) => {
         const button = document.createElement('div');
         button.className = `audio-${name}-btn`;
+        // Strong stays available on any content; the hint says what it is for.
+        if (name === 'echo') button.title = t('echoReductionDescription');
         setIcon(button, AUDIO_SETTING_ICONS[name].menu);
         const row = settings.addStepperRow(button, t(AUDIO_LABEL_KEYS[name]), 'audio',
           { onStep: direction => executeCommand({ type: 'STEP_AUDIO', setting: name, direction }) });
@@ -802,6 +804,19 @@ export function createControls(
       });
       const SWEEP_CLASS = 'is-sweeping';
       let lastBassLevel: AudioSettings['bass'] | undefined;
+      // Echo reduction compiles WebAssembly, which some page CSPs forbid; the other effects still work there.
+      const audioRowState = (name: AudioSettingName) => {
+        const unavailable = name === 'echo' && echoUnavailable(native);
+        return {
+          active: isAudioSettingActive(ui().audio, name) && !unavailable,
+          stepper: {
+            value: t(unavailable ? 'statusUnavailable' : audioLevelLabelKey(ui().audio, name)),
+            index: audioLevels(name).indexOf(ui().audio[name]),
+            count: audioLevels(name).length,
+            disabled: unavailable
+          }
+        };
+      };
       const updateAudioRows = () => {
         const block = ctx.actions.audioBlock(native);
         const shortcuts = ui().shortcuts;
@@ -816,7 +831,8 @@ export function createControls(
           });
         }
         for (const { name, button, row } of audioRows) {
-          button.dataset.active = String(isAudioSettingActive(ui().audio, name));
+          const state = audioRowState(name);
+          button.dataset.active = String(state.active);
           if (name === 'bass') {
             const level = ui().audio.bass;
             button.querySelector('.bass-icon')?.setAttribute('data-level', level);
@@ -829,11 +845,7 @@ export function createControls(
             }
             lastBassLevel = level;
           }
-          row.updateStepper(shortcuts[AUDIO_SHORTCUTS[name]], {
-            value: t(audioLevelLabelKey(ui().audio, name)),
-            index: audioLevels(name).indexOf(ui().audio[name]),
-            count: audioLevels(name).length
-          });
+          row.updateStepper(shortcuts[AUDIO_SHORTCUTS[name]], state.stepper);
         }
       };
       updateAudioRows();
