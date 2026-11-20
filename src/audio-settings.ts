@@ -2,7 +2,8 @@ import { stepLevel } from './step-level';
 
 export const VOICE_LEVELS = ['off', 'light', 'strong'] as const;
 export const LEVELING_LEVELS = ['off', 'light', 'strong'] as const;
-export const ECHO_LEVELS = ['off', 'light', 'strong'] as const;
+// The same three levels as Voice boost, shown with the same labels (see LEVEL_LABEL_KEYS).
+export const ECHO_LEVELS = VOICE_LEVELS;
 const ALL_BASS_LEVELS = ['less', 'original', 'more', 'moar', 'moaaarr'] as const;
 
 /**

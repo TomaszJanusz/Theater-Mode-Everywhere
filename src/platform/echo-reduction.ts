@@ -25,7 +25,7 @@ export function createEchoLoader(workletUrl: () => string | null): EchoLoader {
   const apply = Reflect.apply;
   const pageFetch = window.fetch;
   // AudioWorklet exists only in secure contexts.
-  const addModule = window.AudioWorklet?.prototype.addModule;
+  const addModule = window.AudioWorklet && AudioWorklet.prototype.addModule;
   let bytes: Promise<ArrayBuffer> | undefined;
   return async ctx => {
     const url = workletUrl();
@@ -36,10 +36,6 @@ export function createEchoLoader(workletUrl: () => string | null): EchoLoader {
     return (await bytes).slice(0);
   };
 }
-
-const LOADING = 1;
-const READY = 2;
-const FAILED = 3;
 
 /**
  * The first stage of the chain. It stays dry until the worklet has compiled the DSP, so a level chosen
@@ -52,54 +48,60 @@ export function echoStage(ctx: BaseAudioContext, support: EchoSupport | undefine
   const exit = ctx.createGain();
   const fade = createAudioCrossfade(ctx, { input: entry, output: exit });
   let level: AudioSettings['echo'] = 'off';
-  let state = 0;
   let node: AudioWorkletNode | undefined;
-  let disposed = false;
+  let started = false;
+  let ready = false;
+  // Disposed or failed: no continuation may connect or report any more.
+  let done = false;
 
-  const release = () => {
-    node?.port.close();
-    node?.disconnect();
+  const stop = () => {
+    done = true;
+    if (node) {
+      node.port.close();
+      node.disconnect();
+    }
   };
   const fail = () => {
-    if (disposed || state === FAILED) return;
-    state = FAILED;
-    release();
-    support?.onUnavailable();
+    if (done) return;
+    stop();
+    if (support) support.onUnavailable();
   };
   const sync = () => {
-    if (state !== READY || !node) return;
+    if (!ready || done || !node) return;
     if (level !== 'off') node.port.postMessage(level satisfies EchoCommand);
     fade.setActive(level !== 'off');
   };
+  const start = (load: EchoLoader) => load(ctx).then(bytes => {
+    if (done) return;
+    // Two channels in and out: like the voice stage, a 5.1 source is downmixed with its centre kept.
+    const worklet = node = new AudioWorkletNode(ctx, ECHO_PROCESSOR, { outputChannelCount: [2], channelCountMode: 'explicit' });
+    worklet.onprocessorerror = fail;
+    worklet.port.onmessage = (event: MessageEvent<boolean>) => {
+      if (done || ready) return;
+      if (!event.data) return fail();
+      ready = true;
+      entry.connect(worklet).connect(exit);
+      sync();
+    };
+    worklet.port.postMessage(bytes satisfies EchoCommand, [bytes]);
+  }, fail);
 
   return {
     input: fade.input,
     output: fade.output,
     set(next: AudioSettings['echo']) {
       level = next;
-      if (state || next === 'off') return sync();
-      state = LOADING;
-      if (!support) return fail();
-      support.load(ctx).then(bytes => {
-        if (disposed) return;
-        // Two channels in and out: like the voice stage, a 5.1 source is downmixed with its centre kept.
-        const worklet = node = new AudioWorkletNode(ctx, ECHO_PROCESSOR, { outputChannelCount: [2], channelCountMode: 'explicit' });
-        worklet.onprocessorerror = fail;
-        worklet.port.onmessage = (event: MessageEvent<boolean>) => {
-          if (disposed || state !== LOADING) return;
-          if (event.data !== true) return fail();
-          state = READY;
-          entry.connect(worklet).connect(exit);
-          sync();
-        };
-        worklet.port.postMessage(bytes satisfies EchoCommand, [bytes]);
-      }, fail);
+      if (next !== 'off' && !started) {
+        started = true;
+        if (support) void start(support.load);
+        else fail();
+      }
+      sync();
     },
+    // Safe to repeat, and after a failure.
     dispose() {
-      if (disposed) return;
-      disposed = true;
+      stop();
       fade.dispose();
-      release();
       entry.disconnect();
       exit.disconnect();
     }
