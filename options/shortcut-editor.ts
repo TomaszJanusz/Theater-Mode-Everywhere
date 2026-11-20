@@ -27,15 +27,11 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
   grid?.setAttribute('aria-busy', 'true');
   const search = document.getElementById('shortcut-search') as HTMLInputElement | null;
   const searchStatus = document.getElementById('shortcut-search-status');
-  // A switch row without its own shortcut (Hold for 2x speed) belongs to the shortcut above it and is filtered with it.
-  const searchItems: Array<{ rows: HTMLElement[]; action: keyof Shortcuts }> = [];
-  for (const row of grid?.querySelectorAll<HTMLElement>('.options-row') ?? []) {
-    const entry = entries.find(candidate => row.contains(candidate.input));
-    if (entry) searchItems.push({ rows: [row], action: entry.action });
-    else searchItems.at(-1)?.rows.push(row);
-  }
+  type SearchItem = { rows: HTMLElement[]; action: keyof Shortcuts };
+  // Collected on the first filter, so a page without the search field needs nothing more from the list than before.
+  let searchItems: SearchItem[] | undefined;
   // Rows on screen when an edit starts stay until the query changes, so saving a key never hides the row being edited.
-  const keptBySearch = new Set<(typeof searchItems)[number]>();
+  const keptBySearch = new Set<SearchItem>();
   let busy = false;
   let current = { ...defaultShortcuts };
   let epoch = 0;
@@ -93,8 +89,20 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
     filter();
   }
 
+  function collectSearchItems(list: HTMLElement): SearchItem[] {
+    const items: SearchItem[] = [];
+    // A switch row without its own shortcut (Hold for 2x speed) belongs to the shortcut above it and is filtered with it.
+    for (const row of list.querySelectorAll<HTMLElement>('.options-row')) {
+      const entry = entries.find(candidate => row.contains(candidate.input));
+      if (entry) items.push({ rows: [row], action: entry.action });
+      else items.at(-1)?.rows.push(row);
+    }
+    return items;
+  }
+
   function filter(): void {
     if (!search || !grid) return;
+    searchItems ??= collectSearchItems(grid);
     const query = search.value;
     // Spoken key names follow the Settings language, so `strzałka` finds the arrows in Polish.
     const env: ShortcutDisplayEnv = { ...shortcutDisplayEnv(), spoken: message => t(message) };
@@ -173,7 +181,7 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
   async function edit(origin: HTMLElement, operation: () => Promise<void>) {
     if (busy) return;
     busy = true;
-    for (const item of searchItems) if (!item.rows[0].hidden) keptBySearch.add(item);
+    for (const item of searchItems ?? []) if (!item.rows[0].hidden) keptBySearch.add(item);
     grid?.setAttribute('aria-busy', 'true');
     try { await operation(); }
     catch (error) {
