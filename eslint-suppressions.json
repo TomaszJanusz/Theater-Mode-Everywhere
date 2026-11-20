@@ -453,9 +453,6 @@
     }
   },
   "src/media-features/controller.test.ts": {
-    "import/order": {
-      "count": 3
-    },
     "max-lines": {
       "count": 1
     }
@@ -1737,9 +1734,6 @@
     }
   },
   "src/ui/hud.ts": {
-    "import/order": {
-      "count": 13
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -1843,12 +1837,6 @@
     }
   },
   "src/ui/runtime-context.ts": {
-    "@typescript-eslint/consistent-type-imports": {
-      "count": 1
-    },
-    "import/order": {
-      "count": 8
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }

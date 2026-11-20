@@ -1,7 +1,7 @@
 import { isOnMiniplayerSurface } from '../providers/video-candidates';
 import { readMiniplayerIdentity } from '../providers/watch-bridge';
 
-import { sanitizeContentTitle } from './content-title';
+import { sanitizeContentTitle, type ContentAuthor } from './content-title';
 import type { MediaFetchRequest } from './fetch-allowlist';
 import { heatmapSvgPath } from './heatmap-path';
 import type { parseCaptionPayload } from './parsers/captions';
@@ -325,14 +325,24 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     return this.snapshot?.videoId || null;
   }
 
-  getTitle(): string | null {
+  /** The freshest snapshot for the expected video: the title and its owner are read from the same one. */
+  private titleSnapshot() {
     const expected = this.expected();
-    const snapshot = firstMatchingYoutubeSnapshot(expected.id, [
+    return firstMatchingYoutubeSnapshot(expected.id, [
       readPublishedYoutubeSnapshot(),
       readYoutubeSnapshotFromDom(),
       this.snapshot
     ], expected.strict);
-    return sanitizeContentTitle(snapshot?.title);
+  }
+
+  getTitle(): string | null {
+    return sanitizeContentTitle(this.titleSnapshot()?.title);
+  }
+
+  /** The channel the title's snapshot names; a snapshot without a video id cannot vouch for one. */
+  getAuthors(): ContentAuthor[] | null {
+    const snapshot = this.titleSnapshot();
+    return snapshot?.videoId && snapshot.owner ? [snapshot.owner] : null;
   }
 
   private snapshotMatchesPage(): boolean {

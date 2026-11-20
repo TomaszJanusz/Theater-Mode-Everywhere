@@ -130,7 +130,7 @@ export class MediaFeaturesController {
   private providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
   private onSnapshot?: (snapshot: MediaSnapshot) => void;
   private onTitle?: (title: ContentTitle | null) => void;
-  private publishedTitleKey: string | null | undefined;
+  private publishedTitleKey: string | undefined;
   private opChain: Promise<void> = Promise.resolve();
   private activateGeneration = 0;
   private sessionEpoch = 0;
@@ -323,7 +323,7 @@ export class MediaFeaturesController {
     this.renderCcMenu();
     this.publishSubtitleLayout();
     this.onCaptionChange?.();
-    this.publishedTitleKey = null;
+    this.publishedTitleKey = 'null';
     this.onTitle?.(null);
   }
 
@@ -367,10 +367,12 @@ export class MediaFeaturesController {
     let title: ContentTitle | null = null;
     try {
       title = contentTitle(adapter.getTitle?.(), adapter.getSubtitle?.());
+      // The authors belong to this title: read together, published together, never without it.
+      if (title && adapter.getAuthors) title.authors = adapter.getAuthors();
     } catch {
       // Title metadata is optional and must not interrupt caption loading.
     }
-    const key = title ? `${title.title}\n${title.subtitle ?? ''}` : null;
+    const key = JSON.stringify(title);
     if (key === this.publishedTitleKey) return;
     this.publishedTitleKey = key;
     this.onTitle?.(title);

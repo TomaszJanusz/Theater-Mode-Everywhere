@@ -1707,5 +1707,27 @@
   },
   "playlistChannelVideos": {
     "message": "视频"
+  },
+  "authorOpenChannel": {
+    "message": "打开频道"
+  },
+  "authorOpenChannelLabel": {
+    "message": "$NAME$，在新标签页中打开",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "authorVerified": {
+    "message": "已验证"
+  },
+  "providerShowAuthor": {
+    "message": "显示频道",
+    "description": "Switch label in provider settings: shows the video's channel in the title row."
+  },
+  "providerShowAuthorDescription": {
+    "message": "在标题旁显示视频的发布者，并附上其频道链接。",
+    "description": "Description of that switch."
   }
 }

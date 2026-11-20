@@ -1707,5 +1707,27 @@
   },
   "playlistChannelVideos": {
     "message": "Видео"
+  },
+  "authorOpenChannel": {
+    "message": "Открыть канал"
+  },
+  "authorOpenChannelLabel": {
+    "message": "$NAME$, откроется в новой вкладке",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "authorVerified": {
+    "message": "Подтверждён"
+  },
+  "providerShowAuthor": {
+    "message": "Показывать канал",
+    "description": "Switch label in provider settings: shows the video's channel in the title row."
+  },
+  "providerShowAuthorDescription": {
+    "message": "Показывает рядом с названием, кто опубликовал видео, со ссылкой на канал.",
+    "description": "Description of that switch."
   }
 }

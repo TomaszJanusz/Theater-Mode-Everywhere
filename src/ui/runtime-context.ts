@@ -1,13 +1,21 @@
 import type { AudioBlock } from '../audio-settings';
-import type { CaptionLanguagePreference } from '../media-features/caption-preference';
-import type { CaptionStyle } from '../media-features/caption-style';
-import type { CaptionHudPayload } from '../media-features/controller';
-import type { ContentTitle } from '../media-features/content-title';
-import { defaultMediaProviderFlags, type MediaProviderFlags } from '../media-features/provider-flags';
+import type { AuthorBylineControl } from '../core/author-byline';
 import type { FrameCoordinator } from '../core/frame-coordinator';
 import type { ExitFrom, ExitOrigin, PlayerCommand, PlayerSession } from '../core/player-session';
+import {
+  mediaHasSource,
+  requestVideoPlay
+} from '../host-play';
+import type { CaptionLanguagePreference } from '../media-features/caption-preference';
+import type { CaptionStyle } from '../media-features/caption-style';
+import type { ContentTitle } from '../media-features/content-title';
+import type { CaptionHudPayload } from '../media-features/controller';
+import { defaultMediaProviderFlags, type MediaProviderFlags } from '../media-features/provider-flags';
+import type { PlaybackSurface } from '../playback-surface';
+import type { PlaylistDirection, PlaylistNavState } from '../playlist-nav';
+
 import type { VideoFitMode } from './appearance';
-import { t as translate } from './messages';
+import type { t as translate } from './messages';
 import {
   destroyPlayerUi,
   eventPathIncludes,
@@ -17,12 +25,7 @@ import {
   queryPlayerUiAll
 } from './root';
 import type { PlayerUiState, PlayerUiStore } from './store';
-import {
-  mediaHasSource,
-  requestVideoPlay
-} from '../host-play';
-import type { PlaylistDirection, PlaylistNavState } from '../playlist-nav';
-import type { PlaybackSurface } from '../playback-surface';
+
 
 export interface BoostedVideoElement extends HTMLVideoElement {
   _audioCtx?: AudioContext;
@@ -101,7 +104,7 @@ export type PlayerChromeActions = {
   applySubtitleLayout(on: boolean): void;
   showCaptionHud(payload: CaptionHudPayload): void;
   showAudioTrackHud(report: AudioTrackHudReport): void;
-  syncContentTitle(title: ContentTitle | null): void;
+  syncContentTitle(title: ContentTitle | null, byline?: AuthorBylineControl): void;
   createPlayerHeader(): HTMLElement;
   executeCommand(command: PlayerCommand): void;
   findBestVideo(): HTMLVideoElement | null;

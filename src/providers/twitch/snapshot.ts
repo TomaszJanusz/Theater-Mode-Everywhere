@@ -1,3 +1,5 @@
+import { isTwitchLogin } from './routes';
+
 /** What MAIN's harvest reports for the current page through the snapshot probe. */
 export type TwitchCaptionMeta = {
   id: string;
@@ -12,6 +14,8 @@ export type TwitchCaptionMeta = {
 export type TwitchPlayerSnapshot = {
   videoId?: string;
   title?: string;
+  /** The channel that owns `videoId`, from Twitch's video metadata. */
+  owner?: { channel: string; name?: string };
   duration?: number;
   seekPreviewsURL?: string;
   moments?: Array<{ startTime?: number; endTime?: number; title?: string }>;
@@ -30,6 +34,13 @@ const list = (value: unknown): Fields[] => Array.isArray(value)
   ? value.slice(0, 200).flatMap((item: unknown) => { const entry = fields(item); return entry ? [entry] : []; })
   : [];
 
+/** A channel and its display name as MAIN reported them; anything that is not a channel name is no owner. */
+export function parseTwitchOwner(value: unknown): TwitchPlayerSnapshot['owner'] {
+  const owner = fields(value);
+  const channel = text(owner?.channel);
+  return channel && isTwitchLogin(channel) ? { channel, name: text(owner?.name)?.slice(0, 80) } : undefined;
+}
+
 /** The isolated adapter's reading of MAIN's probe entry: anything not shaped like a snapshot is dropped. */
 export function parseTwitchSnapshot(value: unknown): TwitchPlayerSnapshot | null {
   const data = fields(value);
@@ -37,6 +48,7 @@ export function parseTwitchSnapshot(value: unknown): TwitchPlayerSnapshot | null
   return {
     videoId: text(data.videoId),
     title: text(data.title),
+    owner: parseTwitchOwner(data.owner),
     duration: finite(data.duration),
     seekPreviewsURL: text(data.seekPreviewsURL),
     moments: list(data.moments).map(moment => ({ startTime: finite(moment.startTime), endTime: finite(moment.endTime), title: text(moment.title) })),

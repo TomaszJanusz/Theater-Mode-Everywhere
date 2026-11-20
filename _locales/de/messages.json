@@ -1707,5 +1707,27 @@
   },
   "playlistChannelVideos": {
     "message": "Videos"
+  },
+  "authorOpenChannel": {
+    "message": "Kanal öffnen"
+  },
+  "authorOpenChannelLabel": {
+    "message": "$NAME$, öffnet in neuem Tab",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "authorVerified": {
+    "message": "Verifiziert"
+  },
+  "providerShowAuthor": {
+    "message": "Kanal anzeigen",
+    "description": "Switch label in provider settings: shows the video's channel in the title row."
+  },
+  "providerShowAuthorDescription": {
+    "message": "Zeigt neben dem Titel, wer das Video veröffentlicht hat, mit einem Link zum Kanal.",
+    "description": "Description of that switch."
   }
 }

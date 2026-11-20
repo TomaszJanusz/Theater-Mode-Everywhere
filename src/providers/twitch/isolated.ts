@@ -1,3 +1,5 @@
+import { providerAuthorHosts } from '../author-byline';
+import { mountAuthorByline } from '../author-byline-view';
 import { providerRuntime } from '../provider-api';
 import { bridgedVideoQuality } from '../video-quality-bridge';
 import { mountVideoQualityMenu } from '../video-quality-view';
@@ -6,9 +8,14 @@ import { TwitchAdapter } from './adapter';
 import { twitchChat } from './chat';
 import { twitchChatTheme } from './chat-theme';
 import { twitchVideoAbandoned } from './discovery';
+import descriptor from './provider.json';
+import { createTwitchSettings } from './settings';
 import { TWITCH_HARVEST_EVENT } from './snapshot';
 import { twitchTheaterStage } from './stage';
 import { twitchWatchPlayback } from './watch-playback';
+
+/** Channel avatars come from Twitch's static CDN only. */
+const AUTHOR_HOSTS = providerAuthorHosts(descriptor.hosts, ['static-cdn.jtvnw.net']);
 
 const api = providerRuntime('isolated');
 const services = api?.services;
@@ -22,5 +29,6 @@ if (services) api?.register({
   videoQuality: (element, host) => {
     const source = bridgedVideoQuality('twitch', element);
     return source && mountVideoQualityMenu(source, host);
-  }
+  },
+  authorByline: (_element, host) => mountAuthorByline(host, { provider: 'twitch', hosts: AUTHOR_HOSTS, settings: createTwitchSettings() })
 });

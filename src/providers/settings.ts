@@ -42,8 +42,9 @@ export function createProviderSettings(providers: readonly SettingsProvider[]) {
     revision++;
     apply(changes[PROVIDER_SETTINGS_KEY].newValue);
   };
-  storage?.onChanged.addListener(onStorage);
-  // Async, so a storage API that throws rejects `ready` instead of breaking the caller's construction.
+  // A storage API without change events (a page harness, a script orphaned by an update) leaves the store without
+  // live updates rather than breaking the caller's construction; reading below is async for the same reason.
+  try { storage?.onChanged.addListener(onStorage); } catch { /* No live updates. */ }
   const ready = (async () => {
     const data = storage ? await storage.sync.get(PROVIDER_SETTINGS_KEY) : {};
     if (disposed) return;
@@ -83,7 +84,7 @@ export function createProviderSettings(providers: readonly SettingsProvider[]) {
       if (disposed) return;
       disposed = true;
       listeners.clear();
-      storage?.onChanged.removeListener(onStorage);
+      try { storage?.onChanged.removeListener(onStorage); } catch { /* Never subscribed. */ }
     }
   };
 }

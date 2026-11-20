@@ -1707,5 +1707,27 @@
   },
   "playlistChannelVideos": {
     "message": "동영상"
+  },
+  "authorOpenChannel": {
+    "message": "채널 열기"
+  },
+  "authorOpenChannelLabel": {
+    "message": "$NAME$, 새 탭에서 열림",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "authorVerified": {
+    "message": "인증됨"
+  },
+  "providerShowAuthor": {
+    "message": "채널 표시",
+    "description": "Switch label in provider settings: shows the video's channel in the title row."
+  },
+  "providerShowAuthorDescription": {
+    "message": "제목 옆에 동영상을 게시한 채널을 표시하고 채널 링크를 제공합니다.",
+    "description": "Description of that switch."
   }
 }

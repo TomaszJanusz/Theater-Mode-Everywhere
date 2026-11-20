@@ -1,3 +1,5 @@
+import type { ContentAuthor } from './content-title';
+
 export type CaptionWord = {
   start: number;
   end: number;
@@ -184,6 +186,11 @@ export interface MediaFeaturesAdapter {
   observeAudioTracks?(onChange: () => void): () => void;
   /** Label shown beside this adapter's title, such as the episode. */
   getSubtitle?(): string | null;
+  /**
+   * Who published the item `getTitle()` names, owner first, in host order: cheap and side-effect free (no requests),
+   * read with every title publication and observed through `observeTitle`. Null when unknown, stale or not applicable.
+   */
+  getAuthors?(): readonly ContentAuthor[] | null;
   reload?(): Promise<void>;
   invalidate?(): void;
   dispose(): void;

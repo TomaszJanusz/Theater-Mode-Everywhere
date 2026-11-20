@@ -1,6 +1,8 @@
 import { openProviderSettings } from '../../options/provider-settings';
+import { providerAuthorHosts } from '../providers/author-byline';
+import { mountAuthorByline } from '../providers/author-byline-view';
 import { mountPlaylistPanel } from '../providers/playlist-panel-view';
-import { createProviderSettings } from '../providers/settings';
+import { createProviderSettings, type ProviderSettingsStore } from '../providers/settings';
 import { bindMenuPopover } from '../ui/menu-popover';
 import { createModal, type Modal } from '../ui/modal';
 
@@ -60,6 +62,31 @@ export const surfaceRegistrations: SurfaceRegistration[] = [
       stage.append(host);
       const menu = bindMenuPopover({ host, trigger, panel, scope: owner });
       return { trigger, surface: () => host, close: () => { menu.close(); } };
+    }
+  },
+  // Before the playlist panel, which stays the anchored-menu representative on hostile pages (its rows are buttons).
+  {
+    name: 'author cards',
+    policy: 'anchored-menu',
+    mount({ stage, owner }) {
+      // The title plate in its header at the top of the player, as the title HUD builds it (a plate takes pointer
+      // input only in a visible header), with the provider setting already loaded and on.
+      const header = document.createElement('div');
+      header.className = 'theater-everywhere-header-hud visible';
+      const plate = document.createElement('div');
+      plate.className = 'theater-everywhere-title-hud theater-hud-plate';
+      plate.append(Object.assign(document.createElement('div'), { className: 'theater-title-hud-viewport', textContent: 'A video' }));
+      header.append(plate);
+      stage.append(header);
+      const settings = { loaded: true, values: { sample: { showAuthor: true } }, subscribe: () => () => {}, dispose() {} } as unknown as ProviderSettingsStore;
+      const byline = mountAuthorByline({ scope: owner, bindMenu: bindMenuPopover }, {
+        provider: 'sample', settings, hosts: providerAuthorHosts([{ domain: 'example.com', includeSubdomains: true }], [])
+      });
+      byline.render([1, 2].map(index => ({ id: String(index), name: `Channel ${index}`, url: `https://www.example.com/c/${index}`,
+        avatarUrl: null, verified: false, stat: null })), plate);
+      const host = plate.querySelector<HTMLElement>('.theater-byline')!;
+      const trigger = host.querySelector<HTMLButtonElement>(':scope > button')!;
+      return { trigger, surface: () => host, close: () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); } };
     }
   },
   {
