@@ -175,6 +175,29 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Echo reduzieren"
+  },
+  "echoReductionOff": {
+    "message": "Aus"
+  },
+  "echoReductionLight": {
+    "message": "Leicht"
+  },
+  "echoReductionStrong": {
+    "message": "Stark"
+  },
+  "echoReductionHud": {
+    "message": "Echo reduzieren: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Für Sprache, die in hallenden Räumen aufgenommen wurde. Stark kann Musik verfärben."
+  },
   "navigationGroupTitle": {
     "message": "Navigation"
   },

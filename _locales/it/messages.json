@@ -175,6 +175,29 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Riduzione eco"
+  },
+  "echoReductionOff": {
+    "message": "Disattivata"
+  },
+  "echoReductionLight": {
+    "message": "Leggera"
+  },
+  "echoReductionStrong": {
+    "message": "Forte"
+  },
+  "echoReductionHud": {
+    "message": "Riduzione eco: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Per il parlato registrato in stanze con eco. Forte può alterare il timbro della musica."
+  },
   "navigationGroupTitle": {
     "message": "Navigazione"
   },

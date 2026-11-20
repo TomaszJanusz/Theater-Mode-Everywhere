@@ -167,6 +167,7 @@ import {
   AUDIO_STORAGE_KEYS,
   audioLevelLabelKey,
   cycleAudioSetting,
+  echoUnavailable,
   stepAudioSetting,
   DEFAULT_AUDIO_SETTINGS,
   isNeutralAudio,
@@ -431,6 +432,10 @@ function shiftAudioSetting(name: AudioSettingName, direction: 1 | -1 | 'cycle'):
   const icon = audioHudIcon(name, ui().audio);
   if (!video || audioBlock(video)) {
     triggerStatusIndicator(audioBlockedMessage(video), icon);
+    return;
+  }
+  if (name === 'echo' && echoUnavailable(video)) {
+    triggerStatusIndicator(t(AUDIO_HUD_KEYS.echo, t('statusUnavailable')), icon);
     return;
   }
   const next = direction === 'cycle' ? cycleAudioSetting(ui().audio, name) : stepAudioSetting(ui().audio, name, direction);

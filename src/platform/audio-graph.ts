@@ -1,5 +1,6 @@
 import { isNeutralAudio, type AudioSettings } from '../audio-settings';
 import { AUDIO_FADE_SECONDS, createAudioCrossfade } from './audio-crossfade';
+import { echoStage, type EchoLoader } from './echo-reduction';
 
 type VoicePreset = {
   /** Dialogue band added on top of the centre (mid) signal. */
@@ -188,8 +189,15 @@ function levelingStage(ctx: BaseAudioContext) {
   };
 }
 
-/** Voice, then bass, then leveling, with one limiter guarding full scale. */
-export function createAudioChain(ctx: BaseAudioContext): AudioChain {
+/** How the echo stage loads its worklet, and whom it tells when it cannot run on this page. */
+export type EchoSupport = { load?: EchoLoader; onUnavailable(): void };
+
+/**
+ * Echo reduction, then voice, bass and leveling, with one limiter guarding full scale. Echo comes
+ * first because the voice compressor would otherwise lift the room tails it removes.
+ */
+export function createAudioChain(ctx: BaseAudioContext, echoSupport?: EchoSupport): AudioChain {
+  const echo = echoStage(ctx, echoSupport?.load, () => echoSupport?.onUnavailable());
   const voice = voiceStage(ctx);
   const bass = bassStage(ctx);
   const leveling = levelingStage(ctx);
@@ -207,6 +215,7 @@ export function createAudioChain(ctx: BaseAudioContext): AudioChain {
   const unmakeup = gainNode(ctx, 10 ** (-makeupDb / 20));
   limiter.connect(unmakeup);
   const guard = createAudioCrossfade(ctx, { input: limiter, output: unmakeup });
+  echo.output.connect(voice.input);
   voice.output.connect(bass.input);
   bass.output.connect(leveling.input);
   leveling.output.connect(guard.input);
@@ -214,9 +223,10 @@ export function createAudioChain(ctx: BaseAudioContext): AudioChain {
   guard.output.connect(ceiling.input);
 
   return {
-    input: voice.input,
+    input: echo.input,
     output: ceiling.output,
     apply(settings) {
+      echo.set(settings.echo);
       voice.set(settings.voice);
       bass.set(settings.bass);
       leveling.set(settings.leveling);
@@ -224,6 +234,7 @@ export function createAudioChain(ctx: BaseAudioContext): AudioChain {
       ceiling.setActive(settings.bass === 'moaaarr');
     },
     dispose() {
+      echo.dispose();
       voice.dispose();
       bass.dispose();
       leveling.dispose();

@@ -175,6 +175,29 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Redukcja pogłosu"
+  },
+  "echoReductionOff": {
+    "message": "Wył."
+  },
+  "echoReductionLight": {
+    "message": "Lekka"
+  },
+  "echoReductionStrong": {
+    "message": "Mocna"
+  },
+  "echoReductionHud": {
+    "message": "Redukcja pogłosu: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Do mowy nagranej w pomieszczeniach z pogłosem. Mocna może zabarwić muzykę."
+  },
   "navigationGroupTitle": {
     "message": "Nawigacja"
   },

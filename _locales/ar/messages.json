@@ -175,6 +175,29 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "تقليل الصدى"
+  },
+  "echoReductionOff": {
+    "message": "إيقاف"
+  },
+  "echoReductionLight": {
+    "message": "خفيف"
+  },
+  "echoReductionStrong": {
+    "message": "قوي"
+  },
+  "echoReductionHud": {
+    "message": "تقليل الصدى: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "للكلام المسجَّل في غرف ذات صدى. قد يغيّر المستوى القوي طابع الموسيقى."
+  },
   "navigationGroupTitle": {
     "message": "التنقل"
   },

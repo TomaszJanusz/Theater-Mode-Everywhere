@@ -175,6 +175,29 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Echo reduction"
+  },
+  "echoReductionOff": {
+    "message": "Off"
+  },
+  "echoReductionLight": {
+    "message": "Light"
+  },
+  "echoReductionStrong": {
+    "message": "Strong"
+  },
+  "echoReductionHud": {
+    "message": "Echo reduction: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "For speech recorded in echoing rooms. Strong may colour music."
+  },
   "navigationGroupTitle": {
     "message": "Navigation"
   },

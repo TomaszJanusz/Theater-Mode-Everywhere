@@ -4,8 +4,11 @@ import * as path from 'path';
 import { ZipArchive } from 'archiver';
 import { build } from 'vite';
 
+import { ECHO_WASM_PATH, ECHO_WORKLET_PATH } from '../src/protocol/audio-assets';
+
 import { bundleMinify, resolveBundleBuildMode } from './build-mode';
 import { assertSelfContainedBundles } from './bundle-integrity';
+import { ECHO_DSP_BINARY } from './echo-dsp';
 import { assertProviderSources, classicEntries, discoverDescriptors, isHostOnlySource, type ProviderDescriptor } from './provider-descriptors';
 
 /** Stateful runtime owners a provider entry must receive through its runtime's services, never bundle. */
@@ -163,8 +166,11 @@ async function run() {
     await build({ configFile: path.resolve(__dirname, '../config/vite.config.ts') });
     console.log('Bundling isolated MV3 classic scripts...');
     for (const entry of classicEntries(descriptors)) await buildClassicScript(entry.output, entry.source, mode);
+    // The echo-reduction worklet and its committed DSP binary (see scripts/echo-dsp.ts).
+    await buildClassicScript(ECHO_WORKLET_PATH.replace(/\.js$/, ''), 'src/platform/echo-reduction-worklet.ts', mode);
 
     const distDir = path.resolve(__dirname, '../dist');
+    fs.copyFileSync(path.resolve(__dirname, '..', ECHO_DSP_BINARY), path.join(distDir, ECHO_WASM_PATH));
     assertSelfContainedBundles(distDir);
     const chromeStagingDir = path.resolve(__dirname, '../chrome-unpacked');
     const firefoxStagingDir = path.resolve(__dirname, '../firefox-unpacked');

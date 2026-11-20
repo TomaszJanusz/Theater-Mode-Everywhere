@@ -175,6 +175,29 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "エコー低減"
+  },
+  "echoReductionOff": {
+    "message": "オフ"
+  },
+  "echoReductionLight": {
+    "message": "弱"
+  },
+  "echoReductionStrong": {
+    "message": "強"
+  },
+  "echoReductionHud": {
+    "message": "エコー低減: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "響く部屋で録音された音声向けです。「強」では音楽の音色が変わることがあります。"
+  },
   "navigationGroupTitle": {
     "message": "ナビゲーション"
   },

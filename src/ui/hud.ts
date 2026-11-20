@@ -69,7 +69,9 @@ const AUDIO_SETTING_SHAPES: Record<AudioSettingName, string> = {
   voice: '<path d="M8.8 20v-4.1l1.9.2a2.3 2.3 0 0 0 2.16-2.1V8.3A5.37 5.37 0 0 0 2 8.25c0 2.8.66 3.05 1 4.55a5.77 5.77 0 0 1 .03 2.76L2 20"/><path d="M19.8 17.8a7.5 7.5 0 0 0 0-10.6"/><path d="M17 15a3.5 3.5 0 0 0 0-5"/>',
   // Even level bars held between two limits.
   leveling: '<path d="M3 4h18"/><path d="M3 20h18"/><path d="M6 9v6"/><path d="M10 8v8"/><path d="M14 9v6"/><path d="M18 8v8"/>',
-  bass: BASS_SHAPES
+  bass: BASS_SHAPES,
+  // A voice wave with its fading repeats cut off.
+  echo: '<path d="M3 12h2l2-6 3 12 3-9 2 3h2"/><path d="M20 9v6"/><path d="M22.5 10.5v3"/>'
 };
 /** Menu and HUD size of the bass icon; `level` is also updated in place on the settings row. */
 function bassIcon(size: number, level: AudioSettings['bass']): string {
@@ -82,7 +84,8 @@ const audioIcons = (name: AudioSettingName) => ({
 export const AUDIO_SETTING_ICONS: Record<AudioSettingName, { menu: string; hud: string }> = {
   voice: audioIcons('voice'),
   leveling: audioIcons('leveling'),
-  bass: { menu: bassIcon(16, 'original'), hud: bassIcon(28, 'original') }
+  bass: { menu: bassIcon(16, 'original'), hud: bassIcon(28, 'original') },
+  echo: audioIcons('echo')
 };
 /** The confirmation HUD shows the level just chosen. */
 export function audioHudIcon(name: AudioSettingName, settings: AudioSettings): string {

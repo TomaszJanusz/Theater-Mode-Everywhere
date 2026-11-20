@@ -512,6 +512,16 @@
       "matches": [
         "<all_urls>"
       ]
+    },
+    {
+      "resources": [
+        "audio/echo-reduction.js",
+        "audio/echo-reduction.wasm"
+      ],
+      "matches": [
+        "<all_urls>"
+      ],
+      "use_dynamic_url": true
     }
   ],
   "icons": {

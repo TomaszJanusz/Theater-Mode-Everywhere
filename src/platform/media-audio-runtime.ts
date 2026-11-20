@@ -2,6 +2,7 @@ import { AUDIO_SETTINGS_EVENT, isNeutralAudio, readAudioDataset, sameAudioSettin
 
 import { findActiveVideo, THEATER_VIDEO_SELECTOR } from './active-video';
 import { createAudioChain, type AudioChain } from './audio-graph';
+import type { EchoLoader } from './echo-reduction';
 import { mediaAudioAccess } from './media-audio-access';
 import { contextMayCapture, createPlaybackReconciler, type PlaybackReconciler } from './media-audio-lifecycle';
 
@@ -21,7 +22,7 @@ type MediaAudioGraph = {
 };
 
 /** One graph per connected media element, shared by gain and all audio effects. */
-export function installMediaAudioRuntime(): void {
+export function installMediaAudioRuntime(loadEcho?: EchoLoader): void {
   // A MediaElementSource cannot be recreated for the same element. Retain
   // its context across theater exit/reentry, but retire detached players.
   const graphs = new Map<HTMLVideoElement, MediaAudioGraph>();
@@ -78,6 +79,7 @@ export function installMediaAudioRuntime(): void {
     graph.source.disconnect();
     graph.gain.disconnect();
     delete video.dataset.theaterBoostReady;
+    delete video.dataset.theaterEchoUnavailable;
     if (context.state !== 'closed') void context.close().catch(console.error);
   }
 
@@ -159,7 +161,14 @@ export function installMediaAudioRuntime(): void {
         void context.close().catch(console.error);
         return;
       }
-      chain = createAudioChain(context);
+      chain = createAudioChain(context, {
+        load: loadEcho,
+        // Only a live stage reports; the controls read the attribute when the event arrives.
+        onUnavailable: () => {
+          video.dataset.theaterEchoUnavailable = 'true';
+          video.dispatchEvent(new CustomEvent(AUDIO_SETTINGS_EVENT, { bubbles: true, composed: true }));
+        }
+      });
       const gain = context.createGain();
       chain.apply(settings);
       gain.gain.value = boost;

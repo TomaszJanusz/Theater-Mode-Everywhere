@@ -3,7 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { chromium, type BrowserContext, type CDPSession, type Page, type Worker } from 'playwright';
-import { BASS_LEVELS, DEFAULT_AUDIO_SETTINGS, LEVELING_LEVELS, VOICE_LEVELS, isNeutralAudio } from '../../src/audio-settings';
+import { BASS_LEVELS, DEFAULT_AUDIO_SETTINGS, ECHO_LEVELS, LEVELING_LEVELS, VOICE_LEVELS, isNeutralAudio } from '../../src/audio-settings';
 import { AUTO_THEATER_STORAGE_KEY } from '../../src/ui/auto-theater';
 import { checkPlayer, checkState } from './validation';
 import { activeAudio, type Build, type Environment, type PlayerSnapshot, type Scenario, type State, type VideoSpec } from './model';
@@ -85,7 +85,8 @@ export async function readPlayer(page: Page): Promise<PlayerSnapshot> {
     const voice = settings.voice.find(level => level === (video?.dataset.theaterVoice ?? settings.defaults.voice));
     const leveling = settings.leveling.find(level => level === (video?.dataset.theaterLeveling ?? settings.defaults.leveling));
     const bass = settings.bass.find(level => level === (video?.dataset.theaterBass ?? settings.defaults.bass));
-    const audio = video && voice && leveling && bass ? { voice, leveling, bass } : null;
+    const echo = settings.echo.find(level => level === (video?.dataset.theaterEcho ?? settings.defaults.echo));
+    const audio = video && voice && leveling && bass && echo ? { voice, leveling, bass, echo } : null;
     const response = record(movie?.getPlayerResponse?.() ?? window.ytInitialPlayerResponse);
     const formats = record(response.videoDetails).videoId === data.video_id ? record(response.streamingData).adaptiveFormats : null;
     const format = Array.isArray(formats) ? formats.map(record).find(f => text(f.itag) === text(stats.fmt)) : null;
@@ -115,7 +116,7 @@ export async function readPlayer(page: Page): Promise<PlayerSnapshot> {
         graph: graph ? { state: graph.context.state, gain: graph.gain?.gain.value ?? null } : null,
         dropped: quality?.droppedVideoFrames ?? null, frames: quality?.totalVideoFrames ?? null } : null
     };
-  }, { defaults: DEFAULT_AUDIO_SETTINGS, voice: VOICE_LEVELS, leveling: LEVELING_LEVELS, bass: BASS_LEVELS });
+  }, { defaults: DEFAULT_AUDIO_SETTINGS, voice: VOICE_LEVELS, leveling: LEVELING_LEVELS, bass: BASS_LEVELS, echo: ECHO_LEVELS });
 }
 export async function launchBrowser(root: string, chrome: string, build: Build | null, resources: Resources,
   diagnostics: string, prepare?: (session: Session) => Promise<void>): Promise<Session> {
@@ -264,7 +265,7 @@ async function setSettings(session: Session, state: State): Promise<void> {
   await session.worker.evaluate(async value => {
     await chrome.storage.sync.clear();
     await chrome.storage.sync.set(value);
-  }, { voiceBoost: state.audio.voice, volumeLeveling: state.audio.leveling, bassLevel: state.audio.bass,
+  }, { voiceBoost: state.audio.voice, volumeLeveling: state.audio.leveling, bassLevel: state.audio.bass, echoReduction: state.audio.echo,
     volumeBoostEnabled: state.boost > 1, youtubeIntegrationEnabled: state.rte, [AUTO_THEATER_STORAGE_KEY]: false });
   await session.page.waitForFunction(rte => document.documentElement.hasAttribute('data-te-youtube-integration-off') !== rte, state.rte);
 }

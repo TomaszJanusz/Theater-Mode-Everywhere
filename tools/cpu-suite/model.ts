@@ -13,7 +13,7 @@ const base: Omit<State, 'captions'> = { extension: false, theater: false, rte: f
 // captions stays last so a saved state that predates the field still matches after the default is appended.
 const state = (value: Omit<State, 'captions'>, captions = false): State => ({ ...value, captions });
 const neutral: Omit<State, 'captions'> = { ...base, extension: true, theater: true, rte: true };
-export const activeAudio: AudioSettings = { voice: 'strong', leveling: 'strong', bass: 'more' };
+export const activeAudio: AudioSettings = { voice: 'strong', leveling: 'strong', bass: 'more', echo: 'off' };
 export const STATES = {
   reference: state(base),
   neutral: state(neutral),
@@ -31,6 +31,7 @@ export const STATES = {
   'voice-only': state({ ...neutral, audio: { ...DEFAULT_AUDIO_SETTINGS, voice: 'strong' } }),
   'leveling-only': state({ ...neutral, audio: { ...DEFAULT_AUDIO_SETTINGS, leveling: 'strong' } }),
   'bass-only': state({ ...neutral, audio: { ...DEFAULT_AUDIO_SETTINGS, bass: 'more' } }),
+  'echo-only': state({ ...neutral, audio: { ...DEFAULT_AUDIO_SETTINGS, echo: 'strong' } }),
   captions: state(neutral, true),
   'after-exit': state({ ...base, extension: true, rte: true, transition: 'exit' }),
   'after-navigation': state({ ...neutral, audio: activeAudio, transition: 'navigate' })

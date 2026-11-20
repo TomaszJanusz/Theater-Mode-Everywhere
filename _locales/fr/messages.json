@@ -175,6 +175,29 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Réduction de l’écho"
+  },
+  "echoReductionOff": {
+    "message": "Désactivée"
+  },
+  "echoReductionLight": {
+    "message": "Légère"
+  },
+  "echoReductionStrong": {
+    "message": "Forte"
+  },
+  "echoReductionHud": {
+    "message": "Réduction de l’écho : $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Pour la parole enregistrée dans des pièces qui résonnent. Forte peut colorer la musique."
+  },
   "navigationGroupTitle": {
     "message": "Navigation"
   },

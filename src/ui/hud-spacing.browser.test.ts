@@ -53,7 +53,7 @@ describe('confirmation HUD optical spacing', () => {
             const levels = { less: 'Less', original: 'Original', more: 'More', moar: 'MOAAR', moaaarr: 'MOAAARR!' };
             if (kind === 'less' || kind === 'original' || kind === 'more' || kind === 'moar' || kind === 'moaaarr') {
               const level = kind;
-              hud.triggerStatusIndicator(`Bass: ${levels[level]}`, api.audioHudIcon('bass', { bass: level, voice: 'off', leveling: 'off' }), level);
+              hud.triggerStatusIndicator(`Bass: ${levels[level]}`, api.audioHudIcon('bass', { bass: level, voice: 'off', leveling: 'off', echo: 'off' }), level);
             } else if (kind === 'volume' || kind === 'quiet' || kind === 'muted') {
               hud.triggerVolumeIndicator(kind === 'quiet' ? 0.25 : 0.75, kind === 'muted', 'up');
             } else {

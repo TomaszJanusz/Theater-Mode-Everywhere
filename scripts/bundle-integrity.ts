@@ -2,6 +2,9 @@ import * as fs from 'fs';
 import assert from 'node:assert/strict';
 import * as path from 'path';
 
+import { ECHO_WASM_PATH, ECHO_WORKLET_PATH } from '../src/protocol/audio-assets';
+
+import { ECHO_DSP_BINARY, sha256 } from './echo-dsp';
 import { classicEntries, contentScripts, discoverDescriptors } from './provider-descriptors';
 
 // `\s*` covers minified forms such as `export{` and `import"x"` that a
@@ -54,6 +57,37 @@ export function assertScopedScript(filePath: string): void {
   }
 }
 
+/** The only script and binary a page may load: the echo-reduction worklet and its DSP. */
+const AUDIO_WORKLET_RESOURCES = [ECHO_WORKLET_PATH, ECHO_WASM_PATH].sort();
+const CODE_RESOURCE_RE = /\.(?:c?js|mjs|wasm)$|\*/;
+
+type WebAccessibleRule = { resources: readonly string[]; use_dynamic_url?: boolean };
+
+/**
+ * Provider and runtime code stays private. The audio worklet must load from an extension URL in the
+ * page's MAIN world, so its two files are the exact exception: no wildcards, one entry of their own,
+ * served only under Chromium's per-session dynamic URL (Firefox's moz-extension UUID is per profile).
+ */
+export function assertWebAccessible(rules: readonly WebAccessibleRule[]): void {
+  const code = rules.flatMap(rule => rule.resources.filter(file => CODE_RESOURCE_RE.test(file)));
+  assert.deepEqual(code.toSorted(), AUDIO_WORKLET_RESOURCES, 'Only the echo-reduction worklet and its DSP may be web accessible');
+  for (const rule of rules) {
+    if (!rule.resources.some(file => AUDIO_WORKLET_RESOURCES.includes(file))) continue;
+    assert.deepEqual(rule.resources.toSorted(), AUDIO_WORKLET_RESOURCES, 'The audio worklet entry must list only the worklet and its DSP');
+    assert.equal(rule.use_dynamic_url, true, 'The audio worklet entry must use dynamic URLs');
+  }
+}
+
+/** The worklet holds no extension API or imports, and the DSP is byte for byte the committed, reproducible build. */
+export function assertAudioWorklet(dir: string): void {
+  const worklet = path.join(dir, ECHO_WORKLET_PATH);
+  assertSelfContainedScript(worklet);
+  assertScopedScript(worklet);
+  assert.ok(!/\b(?:chrome|browser)\s*\./.test(fs.readFileSync(worklet, 'utf8')), `${ECHO_WORKLET_PATH} must not use extension APIs`);
+  const committed = sha256(fs.readFileSync(path.resolve(__dirname, '..', ECHO_DSP_BINARY)));
+  assert.equal(sha256(fs.readFileSync(path.join(dir, ECHO_WASM_PATH))), committed, `${ECHO_WASM_PATH} differs from ${ECHO_DSP_BINARY}`);
+}
+
 export function assertSelfContainedBundles(dir: string): void {
   const descriptors = discoverDescriptors();
   const expected = classicEntries(descriptors).map(entry => `${entry.output}.js`);
@@ -64,10 +98,9 @@ export function assertSelfContainedBundles(dir: string): void {
     const scripts = [...new Set<string>(manifest.content_scripts.flatMap((entry: { js: string[] }) => entry.js))].sort();
     assert.deepEqual(scripts, expected.toSorted(), 'Provider output inventory disagrees with manifest');
     assert.ok(!manifest.permissions.includes('scripting'), 'Static providers need no scripting permission');
-    for (const rule of manifest.web_accessible_resources ?? []) {
-      assert.ok(rule.resources.every((file: string) => !/\.js$|\*/.test(file)), 'Provider JS must stay private');
-    }
+    assertWebAccessible(manifest.web_accessible_resources ?? []);
   }
+  assertAudioWorklet(dir);
   for (const name of expected) {
     assertSelfContainedScript(path.join(dir, name));
     assertScopedScript(path.join(dir, name));

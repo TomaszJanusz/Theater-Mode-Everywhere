@@ -6,6 +6,7 @@ import { FIXTURE_FORMAT } from '../tools/host-fixtures/format';
 
 import { assertBackgroundScriptLoading, assertSelfContainedBundles } from './bundle-integrity';
 import { assertBundleSizes } from './bundle-size-ratchet';
+import { assertDspReproducible } from './echo-dsp';
 
 const roots = process.argv.slice(2);
 const dirs = roots.length > 0
@@ -37,4 +38,8 @@ for (const dir of dirs) {
 // The shared bundles may only shrink; this needs the production build, so it lives here, not in `pnpm check`.
 assertBundleSizes(dirs);
 
-console.log('Bundle integrity check passed.');
+// Rebuild-and-compare: the shipped DSP (checked against the committed binary above) is its source's build.
+assertDspReproducible().then(() => console.log('Bundle integrity check passed.'), (error: unknown) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});

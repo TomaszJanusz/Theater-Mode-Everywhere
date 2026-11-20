@@ -175,6 +175,29 @@
       }
     }
   },
+  "echoReductionLabel": {
+    "message": "Potlačenie ozveny"
+  },
+  "echoReductionOff": {
+    "message": "Vypnuté"
+  },
+  "echoReductionLight": {
+    "message": "Mierne"
+  },
+  "echoReductionStrong": {
+    "message": "Silné"
+  },
+  "echoReductionHud": {
+    "message": "Potlačenie ozveny: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "echoReductionDescription": {
+    "message": "Pre reč nahratú v miestnostiach s ozvenou. Silné môže zafarbiť hudbu."
+  },
   "navigationGroupTitle": {
     "message": "Navigácia"
   },
