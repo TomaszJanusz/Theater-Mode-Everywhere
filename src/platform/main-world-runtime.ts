@@ -15,7 +15,7 @@ import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { providerRegistry, registeredEvents, registeredHostPlayback } from '../providers/runtime-registration';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
-import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
+import { findPlayerUiRoot, UI_ACTIVATION_SELECTOR } from '../ui/root-host';
 import { matchesShortcut } from '../ui/shortcuts';
 
 import { findActiveVideo } from './active-video';
@@ -290,7 +290,7 @@ export function installMainWorldRuntime(): void {
       return;
     }
     if (event.isComposing || event.composedPath().some(isEditableKeyboardTarget)
-        || document.querySelector('.te-dialog-overlay') || queryPlayerUi('.te-dialog-overlay')) return;
+        || document.querySelector('.te-dialog-overlay') || findPlayerUiRoot()?.querySelector('.te-dialog-overlay')) return;
     let config: { toggle?: unknown; fullscreen?: unknown; exit?: unknown };
     try { config = JSON.parse(document.documentElement.getAttribute(ENTRY_SHORTCUT_ATTRIBUTE) || '{}'); }
     catch { return; }
@@ -337,7 +337,7 @@ export function installMainWorldRuntime(): void {
   const modalKeys = new Set<string>();
   const ccSearchKeys = new Set<string>();
   function swallowTheaterPlaybackKeys(event: KeyboardEvent): void {
-    const modal = queryPlayerUi<HTMLElement>('.te-dialog-overlay > .te-dialog[aria-modal="true"]');
+    const modal = findPlayerUiRoot()?.querySelector<HTMLElement>('.te-dialog-overlay > .te-dialog[aria-modal="true"]');
     const identity = event.code || event.key;
     if (modal || modalKeys.has(identity)) {
       if (event.type === 'keydown') modalKeys.add(identity);
@@ -382,7 +382,7 @@ export function installMainWorldRuntime(): void {
     }
     // Shared player controls own native Space/Enter activation in both worlds.
     if (event.composedPath().some(node => node instanceof Element
-        && node.matches(PLAYER_NATIVE_ACTIVATION_SELECTOR))) return;
+        && node.matches(UI_ACTIVATION_SELECTOR))) return;
 
     // Non-video host players handle playback through their own API.
     if (marked && providerRegistry.all().some(hooks => hooks.playbackElement?.(marked))) {

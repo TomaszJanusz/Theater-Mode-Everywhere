@@ -1,5 +1,5 @@
-import { t } from './i18n';
 import { languageRuntime } from './i18n-runtime';
+import { t } from './ui/messages';
 import { createModal, type ModalAction, type ModalOptions, type ModalContent } from './ui/modal';
 
 export { createModal };
