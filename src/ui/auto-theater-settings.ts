@@ -1,6 +1,7 @@
 import { openDialog, type OpenDialogOptions } from '../dialog';
-import { t } from '../i18n';
+
 import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater } from './auto-theater';
+import { t } from './messages';
 import { shouldOfferVideoActivator, VIDEO_ACTIVATOR_PROMPT_ANSWER_STORAGE_KEY, VIDEO_ACTIVATOR_STORAGE_KEY } from './video-activator-settings';
 
 const PROMPT_KEYS = [AUTO_THEATER_STORAGE_KEY, VIDEO_ACTIVATOR_STORAGE_KEY, VIDEO_ACTIVATOR_PROMPT_ANSWER_STORAGE_KEY];

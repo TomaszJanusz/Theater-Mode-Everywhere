@@ -13,6 +13,8 @@ import { assertProviderSources, classicEntries, discoverDescriptors, isHostOnlyS
 // `chat/events` and `chat/url`, not the `chat` barrel, or the Twitch theme palette (~22 KB) ships to every host.
 const ISOLATED_ONLY_CHAT = /\/src\/chat\/(?:adapters\/|controller\.ts$|detect\.ts$)/;
 const RUNTIME_OWNERS = /\/src\/(?:providers\/(?:registry|runtime-registration)|media-features\/probe|platform\/(?:harvest-ownership|page-fetch))\.ts$/;
+// The Settings and popup message table (~13 KB). Content scripts translate through `ui/messages` and the shared fallbacks.
+const EXTENSION_PAGE_I18N = /\/src\/i18n\.ts$/;
 
 function copyFolderRecursiveSync(source: string, target: string) {
   let files: string[] = [];
@@ -78,6 +80,9 @@ function assertBundleBoundary(entryName: string, normalized: string, id: string,
   const isProviderBundle = entryName.startsWith('providers/');
   if (!isProviderBundle && descriptors.some(descriptor => isHostOnlySource(normalized, descriptor))) {
     throw new Error(`${entryName} includes extracted provider code: ${id}`);
+  }
+  if (EXTENSION_PAGE_I18N.test(normalized)) {
+    throw new Error(`${entryName} includes the extension-page message table: ${id}`);
   }
   if (entryName === 'mainWorld' && ISOLATED_ONLY_CHAT.test(normalized)) {
     throw new Error(`${entryName} includes isolated-world chat code: ${id}`);

@@ -1,13 +1,11 @@
 import { disposeModalIn } from './modal';
 import { observeAppearance, PAGE_MOTION_ATTRIBUTE, type AppearanceModes } from '../appearance-runtime';
 import { applyUiDirection } from './messages';
+import { findPlayerUiRoot, PLAYER_UI_HOST_ID } from './root-host';
 import { bindTopLayer, type TopLayerBinding } from './top-layer';
 
-// Both script worlds must leave native button activation to the focused UI control.
-export const PLAYER_NATIVE_ACTIVATION_SELECTOR = '.theater-menu, .theater-service-action-host, '
-  + '.theater-time-end, .theater-controls-row button, .theater-ended-curtain, .te-dialog-overlay';
+export { UI_ACTIVATION_SELECTOR } from './root-host';
 
-const HOST_ID = 'theater-everywhere-ui';
 const STYLE_ID = 'theater-everywhere-ui-styles';
 
 let hostEl: HTMLElement | null = null;
@@ -52,10 +50,10 @@ export function getPlayerUiRoot(): ShadowRoot {
 
   stopAppearance?.();
   topLayer?.dispose();
-  hostEl = document.getElementById(HOST_ID);
+  hostEl = document.getElementById(PLAYER_UI_HOST_ID);
   if (!hostEl) {
     hostEl = document.createElement('div');
-    hostEl.id = HOST_ID;
+    hostEl.id = PLAYER_UI_HOST_ID;
     hostEl.setAttribute('data-theater-everywhere-ui', '');
     applyUiDirection(hostEl);
     (document.documentElement || document.body).appendChild(hostEl);
@@ -78,8 +76,7 @@ export function getPlayerUiRoot(): ShadowRoot {
 
 export function peekPlayerUiRoot(): ShadowRoot | null {
   if (shadow && hostEl?.isConnected) return shadow;
-  const host = document.getElementById(HOST_ID);
-  return host?.shadowRoot || null;
+  return findPlayerUiRoot();
 }
 
 export function mountPlayerUi(el: HTMLElement): HTMLElement {

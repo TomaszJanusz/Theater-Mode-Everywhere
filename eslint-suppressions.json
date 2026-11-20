@@ -1664,11 +1664,6 @@
       "count": 1
     }
   },
-  "src/ui/auto-theater-settings.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/ui/auto-theater.test.ts": {
     "import/order": {
       "count": 1
@@ -1844,7 +1839,7 @@
       "count": 3
     },
     "local/max-symbol-name-length": {
-      "count": 2
+      "count": 1
     }
   },
   "src/ui/runtime-context.ts": {

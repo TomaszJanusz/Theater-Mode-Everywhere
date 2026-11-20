@@ -113,7 +113,7 @@ import {
   getPlayerUiRoot,
   queryPlayerUi,
   queryPlayerUiAll,
-  PLAYER_NATIVE_ACTIVATION_SELECTOR
+  UI_ACTIVATION_SELECTOR
 } from './root';
 import { FrameCoordinator } from '../core/frame-coordinator';
 import { PlayerSession, type PlayerCommand } from '../core/player-session';
@@ -1680,7 +1680,7 @@ function initialize(): void {
     const shortcuts = ui().shortcuts || defaultShortcuts;
 
     // Let native menu buttons and the duration toggle activate with Space/Enter.
-    if (!ui().helpOpen && activeEl?.closest(PLAYER_NATIVE_ACTIVATION_SELECTOR)
+    if (!ui().helpOpen && activeEl?.closest(UI_ACTIVATION_SELECTOR)
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -1908,7 +1908,7 @@ function initialize(): void {
       }
     }
     const activeEl = getActiveElementDeep() as HTMLElement | null;
-    if (!ui().helpOpen && activeEl?.closest(PLAYER_NATIVE_ACTIVATION_SELECTOR)
+    if (!ui().helpOpen && activeEl?.closest(UI_ACTIVATION_SELECTOR)
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();
