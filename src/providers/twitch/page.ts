@@ -28,7 +28,7 @@ export function isTwitchGqlUrl(value: string): boolean {
 export const TWITCH_HOST_CAPTION_ID = 'twitch:host-cc';
 
 /** The channel that owns a video, as Twitch's video metadata names it. */
-export type TwitchOwner = { login: string; name?: string };
+export type TwitchOwner = { channel: string; name?: string };
 
 export type TwitchPageAssets = {
   videoId: string | null;
@@ -282,10 +282,10 @@ function momentsFromNode(node: Record<string, unknown>): TwitchPageMoment[] {
 function twitchOwner(value: unknown): { owner?: TwitchOwner } {
   if (!value || typeof value !== 'object') return {};
   const record = value as Record<string, unknown>;
-  const login = typeof record.login === 'string' ? record.login.toLowerCase() : '';
-  if (!isTwitchLogin(login)) return {};
+  const channel = typeof record.login === 'string' ? record.login.toLowerCase() : '';
+  if (!isTwitchLogin(channel)) return {};
   const name = sanitizeContentTitle(record.displayName)?.slice(0, 80);
-  return { owner: { login, ...(name ? { name } : {}) } };
+  return { owner: { channel, ...(name ? { name } : {}) } };
 }
 
 export function extractTwitchPayloadFromJson(raw: unknown, videoId?: string | null): Partial<TwitchPageAssets> {

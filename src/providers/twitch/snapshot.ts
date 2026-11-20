@@ -15,7 +15,7 @@ export type TwitchPlayerSnapshot = {
   videoId?: string;
   title?: string;
   /** The channel that owns `videoId`, from Twitch's video metadata. */
-  owner?: { login: string; name?: string };
+  owner?: { channel: string; name?: string };
   duration?: number;
   seekPreviewsURL?: string;
   moments?: Array<{ startTime?: number; endTime?: number; title?: string }>;
@@ -34,11 +34,11 @@ const list = (value: unknown): Fields[] => Array.isArray(value)
   ? value.slice(0, 200).flatMap((item: unknown) => { const entry = fields(item); return entry ? [entry] : []; })
   : [];
 
-/** A channel login and display name as MAIN reported them; anything that is not a login is no owner. */
+/** A channel and its display name as MAIN reported them; anything that is not a channel name is no owner. */
 export function parseTwitchOwner(value: unknown): TwitchPlayerSnapshot['owner'] {
   const owner = fields(value);
-  const login = text(owner?.login);
-  return login && isTwitchLogin(login) ? { login, name: text(owner?.name)?.slice(0, 80) } : undefined;
+  const channel = text(owner?.channel);
+  return channel && isTwitchLogin(channel) ? { channel, name: text(owner?.name)?.slice(0, 80) } : undefined;
 }
 
 /** The isolated adapter's reading of MAIN's probe entry: anything not shaped like a snapshot is dropped. */

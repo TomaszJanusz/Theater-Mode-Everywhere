@@ -13,7 +13,7 @@ import type {
 import type { ProviderServices } from '../provider-api';
 
 import { encodeTwitchCaptions, TWITCH_CC_ACK_EVENT, TWITCH_CC_EVENT } from './captions';
-import { readTwitchChannelHeader, TWITCH_CHANNEL_HEADER, twitchLiveLogin } from './channel-header';
+import { readTwitchChannelHeader, TWITCH_CHANNEL_HEADER, twitchLiveChannel } from './channel-header';
 import {
   collectTwitchStoryboardUrls,
   isSafeTwitchCaptionUrl,
@@ -234,7 +234,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
 
   private snapshot: TwitchPlayerSnapshot | null = null;
   /** The live channel the snapshot was loaded for. */
-  private liveLogin: string | null = null;
+  private liveChannel: string | null = null;
   private storyboard: TwitchStoryboardSet | null = null;
   private tracks: TwitchPageCaption[] = [];
   private moments: TwitchPageMoment[] = [];
@@ -243,7 +243,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
 
   async load(): Promise<void> {
     const pageVideoId = twitchPageVideoId(window.location.href);
-    this.liveLogin = pageVideoId ? null : twitchLiveLogin(window.location.href);
+    this.liveChannel = pageVideoId ? null : twitchLiveChannel(window.location.href);
     if (!pageVideoId) {
       const probed = parseTwitchSnapshot((await this.services.requestMediaProbe(800)).providers?.twitch);
       const harvested = readTwitchHarvestFromDom();
@@ -397,19 +397,20 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
   }
 
   /**
-   * The channel of the loaded title: the live page's login (while the URL still names it) or the VOD's owner. The
-   * header adds the display name, avatar and badge when it shows that same channel; without it the login stands in.
+   * The channel of the loaded title: the live page's channel (while the URL still names it) or the VOD's owner. The
+   * header adds the display name, avatar and badge when it shows that same channel; without it the channel's login
+   * name stands in.
    */
   getAuthors(): ContentAuthor[] | null {
     const href = window.location.href;
     const videoId = twitchPageVideoId(href);
-    let login: string | null | undefined;
-    if (videoId) login = this.snapshot?.videoId === videoId ? this.snapshot.owner?.login : null;
-    else login = this.liveLogin === twitchLiveLogin(href) ? this.liveLogin : null;
-    if (!login || !this.snapshot) return null;
-    const header = readTwitchChannelHeader(login);
+    let channel: string | null | undefined;
+    if (videoId) channel = this.snapshot?.videoId === videoId ? this.snapshot.owner?.channel : null;
+    else channel = this.liveChannel === twitchLiveChannel(href) ? this.liveChannel : null;
+    if (!channel || !this.snapshot) return null;
+    const header = readTwitchChannelHeader(channel);
     return [{
-      id: login, name: header?.name || this.snapshot.owner?.name || login, url: `https://www.twitch.tv/${login}`,
+      id: channel, name: header?.name || this.snapshot.owner?.name || channel, url: `https://www.twitch.tv/${channel}`,
       avatarUrl: header?.avatarUrl ?? null, verified: header?.verified ?? false, stat: null
     }];
   }

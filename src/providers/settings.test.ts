@@ -101,6 +101,12 @@ it('keeps declared defaults without extension storage and never throws from cons
   assert.equal(orphaned.loaded, false);
   orphaned.dispose();
   assert.equal(edge.listeners.size, 0);
+  // Storage without change events (a page harness's stub) still loads, only without live updates.
+  globalThis.chrome = { storage: { sync: { get: async () => ({ providerSettings: { sample: { other: true } } }) } } } as unknown as typeof chrome;
+  const partial = createProviderSettings(providers);
+  await partial.ready;
+  assert.deepEqual(partial.values, { sample: { enabled: true, other: true } });
+  partial.dispose();
 });
 
 it('resolves global AND per-provider AutoTheater with validated defaults and service isolation', async () => {
