@@ -1736,5 +1736,31 @@
   "playlistChannelVideos": {
     "message": "Videos",
     "description": "Heading of the playlist panel for a channel's videos (Play all on its Videos tab); the channel's name is shown under it."
+  },
+  "authorOpenChannel": {
+    "message": "Open channel",
+    "description": "Button-styled link on an author card that opens the channel in a new tab."
+  },
+  "authorOpenChannelLabel": {
+    "message": "$NAME$, opens in a new tab",
+    "description": "Read after “Open channel” by screen readers only, on the link of an author card; $NAME$ is the channel's name.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Blender"
+      }
+    }
+  },
+  "authorVerified": {
+    "message": "Verified",
+    "description": "Accessible name of the host's verified-channel badge beside a channel name."
+  },
+  "providerShowAuthor": {
+    "message": "Show the channel",
+    "description": "Switch label in provider settings: shows the video's channel in the title row."
+  },
+  "providerShowAuthorDescription": {
+    "message": "Show who published the video beside its title, with a link to their channel.",
+    "description": "Description of that switch."
   }
 }

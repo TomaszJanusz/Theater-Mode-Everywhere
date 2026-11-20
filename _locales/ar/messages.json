@@ -1707,5 +1707,27 @@
   },
   "playlistChannelVideos": {
     "message": "الفيديوهات"
+  },
+  "authorOpenChannel": {
+    "message": "فتح القناة"
+  },
+  "authorOpenChannelLabel": {
+    "message": "$NAME$، يُفتح في علامة تبويب جديدة",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "authorVerified": {
+    "message": "موثّق"
+  },
+  "providerShowAuthor": {
+    "message": "عرض القناة",
+    "description": "Switch label in provider settings: shows the video's channel in the title row."
+  },
+  "providerShowAuthorDescription": {
+    "message": "عرض ناشر الفيديو بجانب عنوانه، مع رابط إلى قناته.",
+    "description": "Description of that switch."
   }
 }

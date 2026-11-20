@@ -1,6 +1,7 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
 
 import { isTwitchHost } from './hosts';
+import { isTwitchLogin } from './routes';
 import { isSafeTwitchStoryboardJsonUrl } from './storyboard';
 
 export type TwitchPageMoment = {
@@ -26,9 +27,13 @@ export function isTwitchGqlUrl(value: string): boolean {
 
 export const TWITCH_HOST_CAPTION_ID = 'twitch:host-cc';
 
+/** The channel that owns a video, as Twitch's video metadata names it. */
+export type TwitchOwner = { login: string; name?: string };
+
 export type TwitchPageAssets = {
   videoId: string | null;
   title?: string;
+  owner?: TwitchOwner;
   duration?: number;
   seekPreviewsURL?: string;
   moments: TwitchPageMoment[];
@@ -274,6 +279,15 @@ function momentsFromNode(node: Record<string, unknown>): TwitchPageMoment[] {
   return moments;
 }
 
+function twitchOwner(value: unknown): { owner?: TwitchOwner } {
+  if (!value || typeof value !== 'object') return {};
+  const record = value as Record<string, unknown>;
+  const login = typeof record.login === 'string' ? record.login.toLowerCase() : '';
+  if (!isTwitchLogin(login)) return {};
+  const name = sanitizeContentTitle(record.displayName)?.slice(0, 80);
+  return { owner: { login, ...(name ? { name } : {}) } };
+}
+
 export function extractTwitchPayloadFromJson(raw: unknown, videoId?: string | null): Partial<TwitchPageAssets> {
   const videos: Array<{
     id: string;
@@ -281,6 +295,7 @@ export function extractTwitchPayloadFromJson(raw: unknown, videoId?: string | nu
     duration?: number;
     moments: TwitchPageMoment[];
     title?: string;
+    owner?: TwitchOwner;
   }> = [];
   let budget = 4000;
 
@@ -308,7 +323,8 @@ export function extractTwitchPayloadFromJson(raw: unknown, videoId?: string | nu
           : undefined,
         duration: Number.isFinite(length) && length > 0 ? length : undefined,
         moments: momentsFromNode(record),
-        ...(title ? { title } : {})
+        ...(title ? { title } : {}),
+        ...twitchOwner(record.owner)
       });
     }
     for (const value of Object.values(record)) walk(value, depth + 1);
@@ -335,9 +351,11 @@ export function extractTwitchPayloadFromJson(raw: unknown, videoId?: string | nu
   }
   moments.sort((left, right) => left.start - right.start);
   const title = pool.find((video) => video.title)?.title;
+  const owner = pool.find((video) => video.owner)?.owner;
   return {
     videoId: pool.find((video) => video.id)?.id || videoId || null,
     ...(title ? { title } : {}),
+    ...(owner ? { owner } : {}),
     duration: pool.find((video) => video.duration)?.duration,
     seekPreviewsURL: pool.find((video) => video.seekPreviewsURL)?.seekPreviewsURL,
     moments: moments.slice(0, 80),

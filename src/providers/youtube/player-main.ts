@@ -22,7 +22,7 @@ import {
 import { MAX_CAPTION_BYTES } from '../../platform/bounded-body';
 import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { sanitizeContentTitle } from '../../media-features/content-title';
+import { sanitizeContentTitle, type ContentAuthor } from '../../media-features/content-title';
 import { readYoutubePlayerMetadata, youtubeRecord } from '../../media-features/parsers/youtube-player-response';
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { parseYoutubeCaptions } from '../../protocol/page-requests';
@@ -32,6 +32,7 @@ import { MINIPLAYER_SURFACE } from '../video-candidates';
 import { installYouTubeAudio } from './audio-main';
 import { YOUTUBE_HARVEST_EVENT, youtubeEvents } from './events';
 import { youtubeHarvestTarget } from './harvest-target';
+import { readYoutubeOwner, withOwnerRenderer } from './owner-main';
 import { seekForbiddenInMain } from './playback-main';
 import { youtubePlayerControl } from './player-controls';
 import { installYouTubePlaylist } from './playlist-panel-main';
@@ -644,6 +645,12 @@ function readYoutubeDomTitle(): string | null {
   return usableYoutubeDomTitle(sanitizeContentTitle(document.title.replace(/\s+-\s+YouTube$/i, '')));
 }
 
+/** The response's channel, completed from the watch page's owner renderer when that names the same channel. */
+function ownerOf(raw: unknown): { owner?: ContentAuthor } {
+  const owner = readYoutubeOwner(raw);
+  return owner ? { owner: withOwnerRenderer(owner) } : {};
+}
+
 export function readYoutubeSnapshot(): Record<string, unknown> | null {
   try {
     const expected = expectedYoutubeVideo();
@@ -679,6 +686,7 @@ export function readYoutubeSnapshot(): Record<string, unknown> | null {
     return {
       ...metadata,
       ...(metadata.title || domTitle ? { title: metadata.title || domTitle } : {}),
+      ...ownerOf(raw),
       markers,
       ...(heatmap ? { heatmap } : {})
     };

@@ -1,4 +1,4 @@
-import { sanitizeContentTitle } from '../../media-features/content-title';
+import { sanitizeContentTitle, type ContentAuthor } from '../../media-features/content-title';
 import type { MediaFetchRequest } from '../../media-features/fetch-allowlist';
 import type {
   CaptionActivationResult,
@@ -13,6 +13,7 @@ import type {
 import type { ProviderServices } from '../provider-api';
 
 import { encodeTwitchCaptions, TWITCH_CC_ACK_EVENT, TWITCH_CC_EVENT } from './captions';
+import { readTwitchChannelHeader, TWITCH_CHANNEL_HEADER, twitchLiveLogin } from './channel-header';
 import {
   collectTwitchStoryboardUrls,
   isSafeTwitchCaptionUrl,
@@ -22,7 +23,7 @@ import {
   type TwitchPageCaption,
   type TwitchPageMoment
 } from './page';
-import { parseTwitchSnapshot, type TwitchPlayerSnapshot } from './snapshot';
+import { parseTwitchOwner, parseTwitchSnapshot, type TwitchPlayerSnapshot } from './snapshot';
 import {
   getTwitchPreviewFrame,
   isSafeTwitchStoryboardJsonUrl,
@@ -74,7 +75,7 @@ function looksLikeCaptionBody(body: string, parseCaptionPayload: TwitchServices[
 }
 
 /** The shared owners the runtime lends; the probe and page fetch must not be bundled twice. */
-export type TwitchServices = Pick<ProviderServices['isolated'], 'requestMediaProbe' | 'requestPageFetch' | 'parseCaptionPayload'>;
+export type TwitchServices = Pick<ProviderServices['isolated'], 'requestMediaProbe' | 'requestPageFetch' | 'parseCaptionPayload' | 'observeProviderDom'>;
 
 async function fetchTwitchMedia(url: string, kind: MediaFetchRequest['kind'], services: TwitchServices): Promise<string | null> {
   let absolute = url;
@@ -199,6 +200,7 @@ function readTwitchHarvestFromDom(): TwitchPlayerSnapshot | null {
     const data = JSON.parse(raw) as {
       videoId?: string;
       title?: string;
+      owner?: unknown;
       duration?: number | string;
       seekPreviewsURL?: string;
       moments?: TwitchPlayerSnapshot['moments'];
@@ -212,9 +214,11 @@ function readTwitchHarvestFromDom(): TwitchPlayerSnapshot | null {
       : Array.isArray(data.captions) ? data.captions : [];
     const title = sanitizeContentTitle(data.title) || undefined;
     if (!data.videoId && moments.length === 0 && !data.seekPreviewsURL && captionTracks.length === 0 && !title) return null;
+    const owner = parseTwitchOwner(data.owner);
     return {
       videoId: data.videoId || undefined,
       ...(title ? { title } : {}),
+      ...(owner ? { owner } : {}),
       duration: Number.isFinite(duration) && duration > 0 ? duration : undefined,
       seekPreviewsURL: data.seekPreviewsURL || undefined,
       moments,
@@ -229,6 +233,8 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
   constructor(private readonly services: TwitchServices) {}
 
   private snapshot: TwitchPlayerSnapshot | null = null;
+  /** The live channel the snapshot was loaded for. */
+  private liveLogin: string | null = null;
   private storyboard: TwitchStoryboardSet | null = null;
   private tracks: TwitchPageCaption[] = [];
   private moments: TwitchPageMoment[] = [];
@@ -237,6 +243,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
 
   async load(): Promise<void> {
     const pageVideoId = twitchPageVideoId(window.location.href);
+    this.liveLogin = pageVideoId ? null : twitchLiveLogin(window.location.href);
     if (!pageVideoId) {
       const probed = parseTwitchSnapshot((await this.services.requestMediaProbe(800)).providers?.twitch);
       const harvested = readTwitchHarvestFromDom();
@@ -270,9 +277,12 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
       [...(probed?.captionTracks || []), ...(harvested?.captionTracks || [])],
       page.captions
     );
+    // Video metadata names the owner; MAIN keeps it only for the page's video.
+    const owner = [probed, harvested].find(snapshot => snapshot?.videoId === pageVideoId && snapshot.owner)?.owner;
     this.snapshot = {
       videoId: probed?.videoId || page.videoId || pageVideoId,
       ...(title ? { title } : {}),
+      ...(owner ? { owner } : {}),
       duration,
       seekPreviewsURL: seekCandidates[0],
       moments: this.moments.map((moment) => ({
@@ -384,6 +394,29 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
 
   getTitle(): string | null {
     return sanitizeContentTitle(this.snapshot?.title);
+  }
+
+  /**
+   * The channel of the loaded title: the live page's login (while the URL still names it) or the VOD's owner. The
+   * header adds the display name, avatar and badge when it shows that same channel; without it the login stands in.
+   */
+  getAuthors(): ContentAuthor[] | null {
+    const href = window.location.href;
+    const videoId = twitchPageVideoId(href);
+    let login: string | null | undefined;
+    if (videoId) login = this.snapshot?.videoId === videoId ? this.snapshot.owner?.login : null;
+    else login = this.liveLogin === twitchLiveLogin(href) ? this.liveLogin : null;
+    if (!login || !this.snapshot) return null;
+    const header = readTwitchChannelHeader(login);
+    return [{
+      id: login, name: header?.name || this.snapshot.owner?.name || login, url: `https://www.twitch.tv/${login}`,
+      avatarUrl: header?.avatarUrl ?? null, verified: header?.verified ?? false, stat: null
+    }];
+  }
+
+  /** The header renders after the stream starts and follows in-app navigation; its name and avatar republish the title. */
+  observeTitle(onChange: () => void): () => void {
+    return this.services.observeProviderDom({ root: document, selector: TWITCH_CHANNEL_HEADER, changed: onChange, needsFallback: () => false });
   }
 
   async reload(): Promise<void> {

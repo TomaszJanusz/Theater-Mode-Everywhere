@@ -102,7 +102,6 @@ export function createControls(
     ctx.actions.persistCaptionStyle(style);
   };
   const showCaptionHud = (payload: Parameters<typeof ctx.actions.showCaptionHud>[0]) => ctx.actions.showCaptionHud(payload);
-  const syncContentTitle = (title: Parameters<typeof ctx.actions.syncContentTitle>[0]) => ctx.actions.syncContentTitle(title);
   const executeCommand = (command: PlayerCommand) => ctx.actions.executeCommand(command);
   const exitTheaterMode = () => ctx.actions.exitTheaterMode();
   const showHelpOverlay = () => ctx.actions.showHelpOverlay();
@@ -604,6 +603,8 @@ export function createControls(
     const interfaceLocale = t('@@ui_locale').replace('_', '-');
     // Read live, like the subtitle preference, so another tab's choice applies to the next item.
     const audioPreference = () => refs.audioPreferenceMap[captionPreferenceHost(window.location.hostname)] ?? null;
+    // The provider's panel in the title plate; it follows each published title.
+    const authorByline = enabledProviderSource('authorByline', video.element, { scope: controlsScope, bindMenu: bindMenuPopover });
     const mediaFeatures = new MediaFeaturesController({
       video,
       ccBtn,
@@ -624,7 +625,7 @@ export function createControls(
       onSnapshot: (snapshot) => {
         session.publishSnapshot(snapshot, session.currentEpoch);
       },
-      onTitle: syncContentTitle,
+      onTitle: title => ctx.actions.syncContentTitle(title, authorByline),
       audioPreference,
       audioLocales: () => [interfaceLocale, ...navigator.languages],
       onAudioPreferenceChange: (preference) => ctx.actions.persistAudioPreference(preference),

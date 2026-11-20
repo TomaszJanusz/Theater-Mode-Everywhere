@@ -1,5 +1,6 @@
 import { allSettledResults, fulfilledValues } from '../core/result';
 
+import type { ContentAuthor } from './content-title';
 import type {
   AudioTrackList,
   CaptionActivationResult,
@@ -260,11 +261,19 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     return this.titled()?.title || null;
   }
 
-  /** The subtitle comes from the adapter that supplied the title. */
+  /** The subtitle and the authors come from the adapter that supplied the title. */
   getSubtitle(): string | null {
+    return this.fromTitled('getSubtitle');
+  }
+
+  getAuthors(): readonly ContentAuthor[] | null {
+    return this.fromTitled('getAuthors');
+  }
+
+  private fromTitled<K extends 'getSubtitle' | 'getAuthors'>(read: K): ReturnType<NonNullable<MediaFeaturesAdapter[K]>> | null {
     const titled = this.titled();
     try {
-      return titled?.adapter.getSubtitle?.() || null;
+      return titled?.adapter[read]?.() as ReturnType<NonNullable<MediaFeaturesAdapter[K]>> || null;
     } catch {
       return null;
     }

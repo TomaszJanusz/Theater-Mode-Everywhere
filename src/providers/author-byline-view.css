@@ -1,0 +1,361 @@
+/* Injected with the author panel (see author-byline-view.ts). The panel sits at the start of the title plate
+   (shadow.css, .theater-everywhere-title-hud) at the plate's full height, so the plate does not grow; its cards use the
+   subtitle menu's shell class for the shared open/close lifecycle and restyle it as cards under the plate. */
+
+.theater-byline {
+  /* The chevron's depth; the names end this far before the apex, where the accent ramps up. */
+  --tip: 22px;
+  --text-end: 44px;
+  --dir: to right;
+  /* The lit edge: the accent lifted towards the ink. */
+  --edge: color-mix(in srgb, var(--accent-color, #6366f1) 55%, var(--appearance-ink, #ffffff));
+  position: relative;
+  display: flex;
+  flex: none;
+  align-self: stretch;
+  margin-block: -12px;
+  margin-inline: -20px 10px;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.theater-everywhere-title-hud[dir="rtl"] .theater-byline { --dir: to left; }
+
+.theater-byline-panel {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 360px;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-start-start-radius: 11px;
+  border-end-start-radius: 11px;
+  padding-block: 0;
+  padding-inline: 16px var(--text-end);
+  background: none;
+  color: var(--appearance-ink, #ffffff);
+  font: inherit;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.theater-byline-panel:focus-visible { outline: none; }
+
+/* One polygon: an arrow with its apex at the inline end, mirrored for right-to-left. Both gradients share its stops. */
+.theater-byline-fill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  clip-path: polygon(0 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, 0 100%);
+}
+
+.theater-everywhere-title-hud[dir="rtl"] .theater-byline-fill {
+  clip-path: polygon(var(--tip) 0, 100% 0, 100% 100%, var(--tip) 100%, 0 50%);
+}
+
+/* Two layers cross-fade by opacity only, so nothing changes size or flickers. */
+.theater-byline-fill::before,
+.theater-byline-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.16s ease-out;
+}
+
+/* Rest: linear to black .32 where the names end, then an ease-in (u²) to .5 at the apex. */
+.theater-byline-fill::before {
+  background: linear-gradient(var(--dir),
+    rgb(0 0 0 / 0) 0%,
+    rgb(0 0 0 / 0.08) calc((100% - var(--text-end)) * 0.25),
+    rgb(0 0 0 / 0.16) calc((100% - var(--text-end)) * 0.5),
+    rgb(0 0 0 / 0.24) calc((100% - var(--text-end)) * 0.75),
+    rgb(0 0 0 / 0.32) calc((100% - var(--text-end)) * 1),
+    rgb(0 0 0 / 0.3218) calc(100% - 39.6px),
+    rgb(0 0 0 / 0.3272) calc(100% - 35.2px),
+    rgb(0 0 0 / 0.3362) calc(100% - 30.8px),
+    rgb(0 0 0 / 0.3488) calc(100% - 26.4px),
+    rgb(0 0 0 / 0.365) calc(100% - 22px),
+    rgb(0 0 0 / 0.3848) calc(100% - 17.6px),
+    rgb(0 0 0 / 0.4082) calc(100% - 13.2px),
+    rgb(0 0 0 / 0.4352) calc(100% - 8.8px),
+    rgb(0 0 0 / 0.4658) calc(100% - 4.4px),
+    rgb(0 0 0 / 0.5) calc(100% - 0px));
+}
+
+/* Hover, focus and open: linear to 25% accent where the names end (WCAG AA for every accent,
+   author-byline-contrast.test.ts), then u² to 85% at the apex; the lit edge supplies the full accent. */
+.theater-byline-fill::after {
+  opacity: 0;
+  background: linear-gradient(var(--dir),
+    color-mix(in srgb, var(--accent-color, #6366f1) 0%, transparent) 0%,
+    color-mix(in srgb, var(--accent-color, #6366f1) 6.25%, transparent) calc((100% - var(--text-end)) * 0.25),
+    color-mix(in srgb, var(--accent-color, #6366f1) 12.5%, transparent) calc((100% - var(--text-end)) * 0.5),
+    color-mix(in srgb, var(--accent-color, #6366f1) 18.75%, transparent) calc((100% - var(--text-end)) * 0.75),
+    color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent) calc((100% - var(--text-end)) * 1),
+    color-mix(in srgb, var(--accent-color, #6366f1) 25.6%, transparent) calc(100% - 39.6px),
+    color-mix(in srgb, var(--accent-color, #6366f1) 27.4%, transparent) calc(100% - 35.2px),
+    color-mix(in srgb, var(--accent-color, #6366f1) 30.4%, transparent) calc(100% - 30.8px),
+    color-mix(in srgb, var(--accent-color, #6366f1) 34.6%, transparent) calc(100% - 26.4px),
+    color-mix(in srgb, var(--accent-color, #6366f1) 40%, transparent) calc(100% - 22px),
+    color-mix(in srgb, var(--accent-color, #6366f1) 46.6%, transparent) calc(100% - 17.6px),
+    color-mix(in srgb, var(--accent-color, #6366f1) 54.4%, transparent) calc(100% - 13.2px),
+    color-mix(in srgb, var(--accent-color, #6366f1) 63.4%, transparent) calc(100% - 8.8px),
+    color-mix(in srgb, var(--accent-color, #6366f1) 73.6%, transparent) calc(100% - 4.4px),
+    color-mix(in srgb, var(--accent-color, #6366f1) 85%, transparent) calc(100% - 0px));
+}
+
+.theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) .theater-byline-fill::after { opacity: 1; }
+.theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) .theater-byline-fill::before { opacity: 0; }
+
+:host([data-motion="reduced"]) .theater-byline-fill::before,
+:host([data-motion="reduced"]) .theater-byline-fill::after { transition: none; }
+
+.theater-byline-panel:focus-visible .theater-byline-fill { box-shadow: inset 0 0 0 2px var(--appearance-ink, #ffffff); }
+
+/* The lit edge: a band cut from the same polygon (shared geometry and antialiasing), and a blurred copy as its glow. */
+.theater-byline-rim,
+.theater-byline-glow,
+.theater-byline-glow > span {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.theater-byline-rim {
+  background: var(--edge);
+  clip-path: polygon(calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%,
+    calc(100% - var(--tip) - 2.5px) 100%, calc(100% - 2.5px) 50%, calc(100% - var(--tip) - 2.5px) 0);
+}
+
+.theater-byline-glow {
+  filter: blur(3px);
+  opacity: 0.6;
+}
+
+.theater-byline-glow > span {
+  background: var(--edge);
+  clip-path: polygon(calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%,
+    calc(100% - var(--tip) - 5px) 100%, calc(100% - 5px) 50%, calc(100% - var(--tip) - 5px) 0);
+}
+
+.theater-everywhere-title-hud[dir="rtl"] .theater-byline-rim {
+  clip-path: polygon(var(--tip) 0, 0 50%, var(--tip) 100%, calc(var(--tip) + 2.5px) 100%, 2.5px 50%, calc(var(--tip) + 2.5px) 0);
+}
+
+.theater-everywhere-title-hud[dir="rtl"] .theater-byline-glow > span {
+  clip-path: polygon(var(--tip) 0, 0 50%, var(--tip) 100%, calc(var(--tip) + 5px) 100%, 5px 50%, calc(var(--tip) + 5px) 0);
+}
+
+.theater-byline-panel:focus-visible .theater-byline-rim { background: var(--appearance-ink, #ffffff); }
+
+.theater-byline-avatars {
+  display: flex;
+  flex: none;
+}
+
+.theater-byline-avatar {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  /* Ringed in the plate's fill, so stacked avatars stay apart. */
+  box-shadow: 0 0 0 2px var(--appearance-surface, rgb(12, 12, 14));
+}
+
+.theater-byline-avatar + .theater-byline-avatar { margin-inline-start: -7px; }
+
+.theater-byline-monogram {
+  background: color-mix(in srgb, var(--accent-color, #6366f1) 72%, #000000);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.theater-byline-names {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.theater-byline-name {
+  min-width: 0;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  unicode-bidi: isolate;
+}
+
+/* Two names share the room. */
+.theater-byline-and ~ .theater-byline-name,
+.theater-byline-name:has(~ .theater-byline-and) { max-width: 96px; }
+
+.theater-byline-and,
+.theater-byline-more {
+  flex: none;
+  color: var(--appearance-muted, rgba(255, 255, 255, 0.72));
+  font-weight: 600;
+}
+
+.theater-byline-verified {
+  display: inline-flex;
+  flex: none;
+  color: var(--appearance-muted, rgba(255, 255, 255, 0.72));
+}
+
+/* The cards: one per author, in a column under the plate from the panel's start, clamped to the video (never over
+   the chat). They start right at the panel's edge and are at least as wide, with the 8px gap as their own padding, so
+   a move from the panel to a card never leaves the menu.
+
+   Hover intent without a timer: the shell opens the menu at once, and the cards turn visible after 250 ms of hover and
+   stay 300 ms after the pointer leaves, a bridge for a diagonal move. A click or a key pins them at once, and a close
+   (Escape, an outside press, the panel clicked again) suppresses the menu, which hides them at once. The delays are
+   pointer timing, not motion, so they hold under Reduce motion too. */
+.theater-cc-menu.theater-byline-cards {
+  position: absolute !important;
+  top: 100% !important;
+  bottom: auto !important;
+  inset-inline-start: 0 !important;
+  inset-inline-end: auto !important;
+  display: flex !important;
+  visibility: hidden !important;
+  transition: visibility 0s linear 0.3s !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+  width: max(100%, min(288px, calc(var(--theater-video-width, 100vw) - 48px))) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 8px 0 0 !important;
+  padding-inline-start: 4px !important;
+  overflow: visible !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.3 !important;
+  text-shadow: none !important;
+  cursor: default !important;
+}
+
+.theater-menu.is-open > .theater-cc-menu.theater-byline-cards {
+  visibility: visible !important;
+  transition-delay: 0.25s !important;
+}
+
+/* No transition at all, not a zero delay: that also ends a hover delay already under way. */
+.theater-menu > .theater-cc-menu.theater-byline-cards.visible,
+.theater-menu.is-suppressed > .theater-cc-menu.theater-byline-cards { transition: none !important; }
+
+.theater-byline-card {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15));
+  border-radius: 12px;
+  background: var(--appearance-surface, rgba(20, 20, 20, 0.96));
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  color: var(--appearance-ink, #f8fafc);
+}
+
+.theater-byline-card-avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.theater-byline-card-avatar.theater-byline-monogram { font-size: 14px; }
+
+.theater-byline-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.theater-byline-card-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.theater-byline-card-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  unicode-bidi: isolate;
+}
+
+.theater-byline-card-stat {
+  overflow: hidden;
+  color: var(--appearance-muted, #a1a1aa);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theater-byline-open {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  border-radius: 6px;
+  background: var(--accent-color, #6366f1);
+  color: var(--accent-text, #ffffff);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.theater-byline-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.theater-byline-open:hover { background: var(--accent-hover, var(--accent-color, #6366f1)); }
+
+.theater-byline-open:focus-visible {
+  outline: 2px solid var(--appearance-ink, #ffffff);
+  outline-offset: 2px;
+}
+
+/* The open-in-new-tab arrow points to the inline end. */
+.theater-everywhere-title-hud[dir="rtl"] .theater-byline-open svg { transform: scaleX(-1); }
+
+/* A scrolling title takes the room beside the panel: the shell sizes it for a plate of its own. Its start fade keeps
+   the shell's 20px, so it runs out under the chevron's tip and the first letter at rest stays clear of it. */
+.theater-everywhere-title-hud.marquee > .theater-byline.theater-byline ~ .theater-title-hud-viewport {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+}

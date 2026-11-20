@@ -1707,5 +1707,27 @@
   },
   "playlistChannelVideos": {
     "message": "動画"
+  },
+  "authorOpenChannel": {
+    "message": "チャンネルを開く"
+  },
+  "authorOpenChannelLabel": {
+    "message": "$NAME$、新しいタブで開きます",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "authorVerified": {
+    "message": "確認済み"
+  },
+  "providerShowAuthor": {
+    "message": "チャンネルを表示",
+    "description": "Switch label in provider settings: shows the video's channel in the title row."
+  },
+  "providerShowAuthorDescription": {
+    "message": "タイトルの横に動画の投稿者を表示し、チャンネルへのリンクを付けます。",
+    "description": "Description of that switch."
   }
 }

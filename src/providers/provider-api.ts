@@ -1,6 +1,7 @@
 import type { ChatThemeAdapter } from '../chat/adapters/types';
 import type { ChatActivation, ChatSurface } from '../chat/types';
 import type { ParsedChatLocation } from '../chat/url';
+import type { AuthorBylineControl, AuthorBylineHost } from '../core/author-byline';
 import type { EndScreenSource, PlaybackEndSource } from '../core/end-screen';
 import type { PlaylistPanelBar, PlaylistPanelControl } from '../core/playlist-panel';
 import type { ProviderStage } from '../core/provider-presentation';
@@ -160,6 +161,8 @@ type IsolatedOnlyHooks = {
   playlistPanel?: (element: HTMLElement, bar: PlaylistPanelBar) => PlaylistPanelControl | undefined;
   /** The settings menu's Video quality row for the player holding `element`, built with `mountVideoQualityMenu`. */
   videoQuality?: (element: HTMLElement, host: VideoQualityMenuHost) => VideoQualityControl | undefined;
+  /** The title plate's author panel for the player holding `element`, built with `mountAuthorByline`. */
+  authorByline?: (element: HTMLElement, host: AuthorBylineHost) => AuthorBylineControl | undefined;
 };
 
 /** Hooks the MAIN-world runtime reads. */

@@ -1707,5 +1707,27 @@
   },
   "playlistChannelVideos": {
     "message": "Відео"
+  },
+  "authorOpenChannel": {
+    "message": "Відкрити канал"
+  },
+  "authorOpenChannelLabel": {
+    "message": "$NAME$, відкриється в новій вкладці",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "authorVerified": {
+    "message": "Підтверджено"
+  },
+  "providerShowAuthor": {
+    "message": "Показувати канал",
+    "description": "Switch label in provider settings: shows the video's channel in the title row."
+  },
+  "providerShowAuthorDescription": {
+    "message": "Показує поруч із назвою, хто опублікував відео, з посиланням на канал.",
+    "description": "Description of that switch."
   }
 }

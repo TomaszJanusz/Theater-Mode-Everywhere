@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { MediaFeaturesController, type MediaFeaturesBindings } from './controller';
-import { CompositeMediaAdapter } from './composite-adapter';
-import type { CaptionActivationResult, CaptionCue, CaptionTrack, Chapter, MediaFeaturesAdapter } from './types';
+
 import type { CaptionLanguagePreference } from './caption-preference';
+import { CompositeMediaAdapter } from './composite-adapter';
+import type { ContentTitle } from './content-title';
+import { MediaFeaturesController, type MediaFeaturesBindings } from './controller';
+import type { CaptionActivationResult, CaptionCue, CaptionTrack, Chapter, MediaFeaturesAdapter } from './types';
 
 class TokenList {
   private tokens = new Set<string>();
@@ -1095,6 +1097,50 @@ describe('MediaFeaturesController captions toggle', () => {
       { title: 'Night Drive', subtitle: 'S1:E2 Detour' },
       null
     ]);
+  });
+
+  it('publishes the authors with their title: an author change republishes it, and no title publishes none', async () => {
+    const titles: Array<ContentTitle | null> = [];
+    let title: string | null = 'Night Drive';
+    let name = 'Harbour Films';
+    const author = () => ({ id: 'UC1', name, url: null, avatarUrl: null, verified: false, stat: null });
+    const { controller } = createController({
+      listCaptionTracks: async () => [],
+      activateCaptionTrack: async () => [],
+      getTitle: () => title,
+      getAuthors: () => [author()]
+    }, { onTitle: (published) => { titles.push(published); } });
+    await controller.refresh();
+    await controller.refresh();
+    name = 'Harbour Films Studio';
+    await controller.refresh();
+    // Authors never stand alone: without a title nothing is published for them.
+    title = null;
+    await controller.refresh();
+    assert.deepEqual(titles, [
+      { title: 'Night Drive', subtitle: null, authors: [{ ...author(), name: 'Harbour Films' }] },
+      { title: 'Night Drive', subtitle: null, authors: [author()] },
+      null
+    ]);
+  });
+
+  it('takes the authors from the adapter that names the title, never from another one', () => {
+    const stub = (overrides: Partial<MediaFeaturesAdapter>): MediaFeaturesAdapter => ({
+      probe: async () => ({ captions: false, chapters: false, previews: false }),
+      listCaptionTracks: async () => [],
+      activateCaptionTrack: async () => ({ status: 'off', delivery: 'none', cues: [] }),
+      dispose() {},
+      ...overrides
+    });
+    const stranger = [{ id: 'x', name: 'Not the author', url: null, avatarUrl: null, verified: false, stat: null }];
+    let providerTitle: string | null = 'Provider title';
+    const composite = new CompositeMediaAdapter([
+      stub({ getTitle: () => 'Page title', getAuthors: () => stranger }),
+      stub({ getTitle: () => providerTitle, getAuthors: () => { throw new Error('host changed'); } })
+    ]);
+    assert.equal(composite.getAuthors(), null, 'a throwing provider shows no authors, not the page adapter\'s');
+    providerTitle = null;
+    assert.deepEqual(composite.getAuthors(), stranger, 'the adapter whose title shows supplies its authors');
   });
 
   it('publishes observed title changes only for the current adapter and disconnects on rebind and exit', async () => {

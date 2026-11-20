@@ -1,18 +1,19 @@
-import { measureNextFrame } from '../core/frame-batch';
-
-import { createLoadingPlate, ensureLoadingRing, HUD_FADE_OUT_MS, HUD_PLATE_CLASS, LOADING_PLATE_CLASS } from './hud-plate';
-import { createLanguageHud } from './language-hud';
-import { createSvgIcon } from './svg-icon';
 import { isMotionReduced } from '../appearance-runtime';
-import { splitTitleForTruncation, type TitleSegment } from './title-truncation';
-import { announcePlayerStatus } from './root';
+import type { AudioSettingName, AudioSettings } from '../audio-settings';
+import type { AuthorBylineControl } from '../core/author-byline';
+import { measureNextFrame } from '../core/frame-batch';
 import { contentTitle, type ContentTitle } from '../media-features/content-title';
 import { discoverParentOrigin } from '../platform/parent-origin';
 import { serviceHomeUrl } from '../platform/service-home';
+
 import type { ButtonTooltipBinder } from './button-tooltip';
+import { createLoadingPlate, ensureLoadingRing, HUD_FADE_OUT_MS, HUD_PLATE_CLASS, LOADING_PLATE_CLASS } from './hud-plate';
+import { createLanguageHud } from './language-hud';
+import { announcePlayerStatus } from './root';
 import type { PlayerChromeContext } from './runtime-context';
+import { createSvgIcon } from './svg-icon';
+import { splitTitleForTruncation, type TitleSegment } from './title-truncation';
 import { systemClock, type UiClock } from './ui-clock';
-import type { AudioSettingName, AudioSettings } from '../audio-settings';
 
 export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
@@ -391,7 +392,8 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     return header;
   }
 
-  function syncContentTitle(title: ContentTitle | null): void {
+  /** `byline` is the provider's author panel, if any; it takes the authors published with this title. */
+  function syncContentTitle(title: ContentTitle | null, byline?: AuthorBylineControl): void {
     const header = createPlayerHeader();
     const cleaned = contentTitle(title?.title, title?.subtitle);
     const existing = ctx.queryPlayerUi(`.${TITLE_HUD_CLASS}`) as HTMLElement | null;
@@ -442,6 +444,7 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
       resetTitleMarquee(overlay);
       requestTitleLayout(overlay);
     }
+    byline?.render(title!.authors, overlay);
   }
 
   function renderTitleText(text: Element, content: ContentTitle): void {
@@ -489,14 +492,15 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
 
   let stopTitleWatch: (() => void) | null = null;
   /**
-   * Re-lays out the title when the header width or the Reduce motion setting changes. Both
+   * Re-lays out the title when the room for it or the Reduce motion setting changes. Both
    * are events, coalesced to one frame; nothing runs per playback tick.
    */
   function watchTitleLayout(overlay: HTMLElement, header: HTMLElement): void {
     stopTitleWatch?.();
     const relayout = () => requestTitleLayout(overlay);
     const size = typeof ResizeObserver === 'function' ? new ResizeObserver(relayout) : null;
-    size?.observe(header);
+    // The viewport's width follows the header's (the video's width) and the author panel beside it.
+    size?.observe(overlay.lastElementChild!);
     const host = (header.getRootNode() as ShadowRoot).host;
     const motion = host && typeof MutationObserver === 'function' ? new MutationObserver(relayout) : null;
     motion?.observe(host, { attributes: true, attributeFilter: ['data-motion'] });

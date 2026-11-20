@@ -1707,5 +1707,27 @@
   },
   "playlistChannelVideos": {
     "message": "Videa"
+  },
+  "authorOpenChannel": {
+    "message": "Otevřít kanál"
+  },
+  "authorOpenChannelLabel": {
+    "message": "$NAME$, otevře se na nové kartě",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "authorVerified": {
+    "message": "Ověřeno"
+  },
+  "providerShowAuthor": {
+    "message": "Zobrazovat kanál",
+    "description": "Switch label in provider settings: shows the video's channel in the title row."
+  },
+  "providerShowAuthorDescription": {
+    "message": "Zobrazí vedle názvu videa, kdo ho zveřejnil, s odkazem na jeho kanál.",
+    "description": "Description of that switch."
   }
 }

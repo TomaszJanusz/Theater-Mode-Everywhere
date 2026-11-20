@@ -7,7 +7,7 @@ import type { ProviderHarvest } from '../provider-api';
 
 import { parseTwitchCaptions, TWITCH_CC_ACK_EVENT, TWITCH_CC_EVENT } from './captions';
 import { isTwitchHost } from './hosts';
-import { isTwitchGqlUrl, parseTwitchGraphqlBody, parseTwitchGraphqlData, type TwitchPageAssets, TWITCH_HOST_CAPTION_ID } from './page';
+import { isTwitchGqlUrl, parseTwitchGraphqlBody, parseTwitchGraphqlData, type TwitchOwner, type TwitchPageAssets, TWITCH_HOST_CAPTION_ID } from './page';
 import { TWITCH_HARVEST_EVENT } from './snapshot';
 
 export function twitchIntegrationEnabled(): boolean {
@@ -17,6 +17,8 @@ export function twitchIntegrationEnabled(): boolean {
 type TwitchHarvest = {
   videoId?: string;
   title?: string;
+  /** The channel that owns `videoId`; only video metadata for that id sets it. */
+  owner?: TwitchOwner;
   duration?: number;
   seekPreviewsURL?: string;
   moments: Array<{ startTime: number; endTime?: number; title: string }>;
@@ -75,6 +77,7 @@ function publishTwitchHarvest(): void {
   const payload = JSON.stringify({
     videoId: twitchHarvest.videoId || '',
     title: twitchHarvest.title || '',
+    owner: twitchHarvest.owner,
     duration: twitchHarvest.duration || '',
     seekPreviewsURL: twitchHarvest.seekPreviewsURL || '',
     moments: twitchHarvest.moments,
@@ -290,6 +293,10 @@ function mergeTwitchGqlData(parsed: Partial<TwitchPageAssets>, videoId: string |
     twitchHarvest.title = parsedTitle;
     changed = true;
   }
+  if (videoId && parsed.videoId === videoId && parsed.owner && JSON.stringify(parsed.owner) !== JSON.stringify(twitchHarvest.owner)) {
+    twitchHarvest.owner = parsed.owner;
+    changed = true;
+  }
   for (const caption of parsed.captions || []) {
     if (twitchHarvest.captions.some((entry) => entry.url === caption.url && entry.id === caption.id)) continue;
     twitchHarvest.captions.push(caption);
@@ -355,6 +362,7 @@ export function readTwitchSnapshot(): Record<string, unknown> | null {
     return {
       videoId,
       ...(title ? { title } : {}),
+      ...(twitchHarvest.owner ? { owner: twitchHarvest.owner } : {}),
       duration: twitchHarvest.duration,
       seekPreviewsURL,
       moments: [...twitchHarvest.moments],
