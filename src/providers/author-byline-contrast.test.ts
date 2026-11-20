@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
 
 import { ACCENT_COLOR_OPTIONS } from '../accentTheme';
-import { accentForeground, contrastRatio, contrastSafeAccent } from '../contrast';
+import { contrastRatio, contrastSafeAccent } from '../contrast';
 
 const CSS = readFileSync(new URL('./author-byline-view.css', import.meta.url), 'utf8');
 const SHADOW = readFileSync(new URL('../ui/shadow.css', import.meta.url), 'utf8');
@@ -62,12 +62,87 @@ it('keeps the author name at WCAG AA (4.5:1) over the hover gradient for every a
   }
 });
 
-it('labels the Open channel link in the accent\'s own foreground at WCAG AA for every preset', () => {
-  assert.match(CSS, /\.theater-byline-open \{[^}]*background: var\(--accent-color[^}]*color: var\(--accent-text/);
+/** A CSS color: `#rrggbb` or `rgba(r, g, b, a)`. */
+function color(value: string): { rgb: Rgb; alpha: number } {
+  const channels = /^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/.exec(value);
+  return channels
+    ? { rgb: [Number(channels[1]), Number(channels[2]), Number(channels[3])], alpha: Number(channels[4]) }
+    : { rgb: rgb(value), alpha: 1 };
+}
+const token = (name: string) => {
+  const value = new RegExp(`${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(TOKENS)?.[1];
+  assert.ok(value, `${name} is declared`);
+  return value;
+};
+
+/** Every tone a row takes (rest, alternate row, hover, press): the ink's share laid over the block's surface. */
+function rowTones(): number[] {
+  const fills = [...CSS.matchAll(/--row-fill: (.+);/g)].map(match => match[1]);
+  assert.ok(fills.length >= 4, 'rest, alternate, hover and press tones are declared');
+  return fills.map(fill => {
+    assert.doesNotMatch(fill, /accent/, 'row tones never take the accent');
+    if (fill === 'transparent') return 0;
+    const share = /^color-mix\(in srgb, var\(--appearance-ink, #[0-9a-f]{6}\) ([\d.]+)%, transparent\)$/.exec(fill);
+    assert.ok(share, `a row tone lays the ink over the block: ${fill}`);
+    return Number(share[1]) / 100;
+  });
+}
+
+/** The block's surface, the rows' ink and secondary text with no appearance setting, with Reduce transparency and with high contrast. */
+function blockModes() {
+  const fallback = (rule: string, property: string) => {
+    const value = new RegExp(`${rule} \\{[^}]*var\\(${property}, (#[0-9a-f]{6}|rgba\\([^)]+\\))\\)`).exec(CSS)?.[1];
+    assert.ok(value, `${rule} falls back for ${property}`);
+    return value;
+  };
+  const surface = fallback('\\.theater-byline-list', '--appearance-surface');
+  const ink = fallback('\\.theater-byline-row', '--appearance-ink');
+  const muted = fallback('\\.theater-byline-row-stat', '--appearance-muted');
+  // Both settings swap the glass for the opaque panel; only high contrast also lifts the ink and the secondary text.
+  assert.match(TOKENS, /--appearance-surface: var\(--appearance-normal-panel\)/);
+  assert.match(TOKENS, /--appearance-surface: var\(--appearance-high-panel\)/);
+  return [
+    { name: 'default', surface, ink, muted },
+    { name: 'reduced transparency', surface: token('--appearance-normal-panel'), ink, muted },
+    { name: 'high contrast', surface: token('--appearance-high-panel'), ink: token('--appearance-high-text'), muted: token('--appearance-high-secondary') }
+  ];
+}
+
+/**
+ * A row's tone (the ink at `share` over the block) on the block's surface over the picture. Laying a translucent ink
+ * over the composited surface equals premultiplied `color-mix(in srgb, ink share, surface)` over the picture.
+ */
+function rowFill(ink: Rgb, share: number, surface: { rgb: Rgb; alpha: number }, picture: Rgb): Rgb {
+  return over(ink, share, over(surface.rgb, surface.alpha, picture));
+}
+
+it('keeps the row name and its secondary text at WCAG AA on every row tone in every appearance mode', () => {
+  const tones = rowTones();
+  // Alternate rows and the pointer each change the tone.
+  assert.equal(new Set(tones).size, tones.length, 'every tone differs');
+  for (const mode of blockModes()) for (const tone of tones) for (const [video, picture] of Object.entries(VIDEOS)) {
+    const background = hex(rowFill(rgb(mode.ink), tone, color(mode.surface), picture));
+    for (const [text, foreground] of [['name', mode.ink], ['secondary', mode.muted]]) {
+      const ratio = contrastRatio(foreground, background);
+      assert.ok(ratio >= 4.5, `${mode.name}, ${tone * 100}% tone, ${video} video, ${text} text: ${ratio.toFixed(2)}:1`);
+    }
+  }
+});
+
+it('marks the hovered row with the panel\'s lit edge at 3:1 against every row tone for every preset', () => {
+  assert.match(CSS, /a\.theater-byline-row:hover::before \{[^}]*background: var\(--edge\)/);
+  const edge = /--edge: color-mix\(in srgb, var\(--accent-color, #[0-9a-f]{6}\) ([\d.]+)%, var\(--appearance-ink, #[0-9a-f]{6}\)\)/.exec(CSS);
+  assert.ok(edge, 'the lit edge lifts the accent towards the ink');
+  const share = Number(edge[1]) / 100;
+  const modes = blockModes();
+  // `system` is the browser's own accent; the lifted tone remains the hover cue there.
   for (const accent of ACCENT_COLOR_OPTIONS.filter(option => option.preset !== 'system')) {
-    for (const swatch of [accent.swatch, contrastSafeAccent(accent.swatch)]) {
-      const ratio = contrastRatio(accentForeground(swatch), swatch);
-      assert.ok(ratio >= 4.5, `${accent.preset} ${swatch}: ${ratio.toFixed(2)}:1`);
+    for (const [mode, swatch] of [[modes[0], accent.swatch], [modes[2], contrastSafeAccent(accent.swatch)]] as const) {
+      for (const tone of rowTones()) for (const [video, picture] of Object.entries(VIDEOS)) {
+        const rim = hex(over(rgb(swatch), share, rgb(mode.ink)));
+        const ratio = contrastRatio(rim, hex(rowFill(rgb(mode.ink), tone, color(mode.surface), picture)));
+        assert.ok(ratio >= 3, `${accent.preset} (${mode.name}), ${tone * 100}% tone, ${video} video: ${ratio.toFixed(2)}:1`);
+      }
     }
   }
 });

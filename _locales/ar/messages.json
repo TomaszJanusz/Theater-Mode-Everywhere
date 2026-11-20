@@ -1722,16 +1722,8 @@
   "playlistChannelVideos": {
     "message": "الفيديوهات"
   },
-  "authorOpenChannel": {
-    "message": "فتح القناة"
-  },
-  "authorOpenChannelLabel": {
-    "message": "$NAME$، يُفتح في علامة تبويب جديدة",
-    "placeholders": {
-      "name": {
-        "content": "$1"
-      }
-    }
+  "authorChannelNewTab": {
+    "message": "تُفتح القناة في علامة تبويب جديدة"
   },
   "authorVerified": {
     "message": "موثّق"

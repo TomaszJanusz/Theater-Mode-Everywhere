@@ -12,8 +12,7 @@ const STACKED_AVATARS = 3;
 
 /** Provider-only fallbacks: these bytes never join content.js. */
 const FALLBACKS: Record<string, string> = {
-  authorOpenChannel: 'Open channel',
-  authorOpenChannelLabel: '$1, opens in a new tab',
+  authorChannelNewTab: 'Opens the channel in a new tab',
   authorVerified: 'Verified'
 };
 const t = (key: string, substitutions?: string[]) => translateMessage(FALLBACKS, key, substitutions);
@@ -37,11 +36,15 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, className: strin
   return node;
 }
 
-/** The avatar, or the monogram when there is none or it fails to load. The image is the host's own CDN, sent no referrer. */
+/**
+ * The avatar, or the monogram when there is none or it fails to load: decoration beside the name, kept from assistive
+ * technology either way. The image is the host's own CDN, sent no referrer.
+ */
 function avatar(author: ContentAuthor, className: string): HTMLElement {
-  const fallback = () => element('span', `${className} theater-byline-monogram`, monogram(author.name));
+  const decorative = <T extends HTMLElement>(node: T) => { node.setAttribute('aria-hidden', 'true'); return node; };
+  const fallback = () => decorative(element('span', `${className} theater-byline-monogram`, monogram(author.name)));
   if (!author.avatarUrl) return fallback();
-  const image = element('img', className);
+  const image = decorative(element('img', className));
   image.alt = '';
   image.decoding = 'async';
   image.referrerPolicy = 'no-referrer';
@@ -62,42 +65,46 @@ function verifiedMark(): HTMLElement {
   return mark;
 }
 
-/** A name keeps its own direction inside the panel and the cards, whichever way the interface reads. */
+/** A name keeps its own direction inside the panel and the rows, whichever way the interface reads. */
 function nameText(name: string, className: string): HTMLElement {
   const text = element('span', className, name);
   text.dir = 'auto';
   return text;
 }
 
-function renderCard(author: ContentAuthor): HTMLElement {
-  const card = element('div', 'theater-byline-card');
-  const heading = element('div', 'theater-byline-card-heading');
-  const name = element('div', 'theater-byline-card-name');
-  name.append(nameText(author.name, 'theater-byline-card-title'));
+/**
+ * One author's row in the popup's list. With an admitted channel link the whole row is that link, a real anchor: a
+ * click, Enter or Space (see the player's key guard) opens the channel in a new tab, so theater keeps playing; middle
+ * and modified clicks and the context menu stay the browser's. Without one it is a plain row.
+ */
+function renderRow(author: ContentAuthor): HTMLLIElement {
+  const row = element(author.url ? 'a' : 'div', 'theater-byline-row');
+  const heading = element('div', 'theater-byline-row-heading');
+  const name = element('div', 'theater-byline-row-name');
+  name.append(nameText(author.name, 'theater-byline-row-title'));
   if (author.verified) name.append(verifiedMark());
   heading.append(name);
-  if (author.stat) heading.append(nameText(author.stat, 'theater-byline-card-stat'));
-  card.append(avatar(author, 'theater-byline-card-avatar'), heading);
-  if (author.url) {
-    // A real link: a click opens the channel in a new tab, so theater keeps playing; middle and modified clicks and
-    // the context menu stay the browser's.
-    const link = element('a', 'theater-byline-open');
-    link.href = author.url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    // The visible words start the link's name; whose channel it is and the new tab follow for screen readers.
-    link.append(element('span', '', t('authorOpenChannel')), element('span', 'theater-byline-sr', ` ${t('authorOpenChannelLabel', [author.name])}`));
-    link.append(createSvgIcon(OPEN_ICON));
-    card.append(link);
+  if (author.stat) heading.append(nameText(author.stat, 'theater-byline-row-stat'));
+  row.append(avatar(author, 'theater-byline-row-avatar'), heading);
+  if (row instanceof HTMLAnchorElement && author.url) {
+    row.href = author.url;
+    row.target = '_blank';
+    row.rel = 'noopener noreferrer';
+    // The row's own words start the link's name; the new tab ends it for screen readers.
+    const open = element('span', 'theater-byline-row-open');
+    open.append(element('span', 'theater-byline-sr', t('authorChannelNewTab')), createSvgIcon(OPEN_ICON));
+    row.append(open);
   }
-  return card;
+  const item = element('li', '');
+  item.append(row);
+  return item;
 }
 
 /**
- * The author panel at the start of the title plate and its cards: an arrow-shaped button whose gradient leads into the
- * title, and one card per author under the plate, in the player's menu shell (hover, click, Enter, Space or ↓; Escape
- * and outside presses close it; focus returns to the panel). The stylesheet holds hover intent: the cards show after
- * 250 ms of hover and stay 300 ms after the pointer leaves. It shows only what
+ * The author panel at the start of the title plate and its popup: an arrow-shaped button whose gradient leads into the
+ * title, and under the plate one block listing a row per author, in the player's menu shell (hover, click, Enter, Space
+ * or ↓; ↑/↓ move between rows; Escape and outside presses close it; focus returns to the panel). The stylesheet holds
+ * hover intent: the popup shows after 250 ms of hover and stays 300 ms after the pointer leaves. It shows only what
  * `checkedAuthors` admits, only while the provider's `showAuthor` setting is on, and repaints only when that changed.
  */
 export function mountAuthorByline(
@@ -117,26 +124,30 @@ export function mountAuthorByline(
   const rim = element('span', 'theater-byline-rim');
   for (const part of [fill, glow, rim]) part.setAttribute('aria-hidden', 'true');
   const avatars = element('span', 'theater-byline-avatars');
-  // The cards show each avatar again beside its name; in the panel they are decoration.
+  // The rows show each avatar again beside its name; in the panel they are decoration.
   avatars.setAttribute('aria-hidden', 'true');
   const names = element('span', 'theater-byline-names');
   trigger.append(fill, glow, rim, avatars, names);
-  const cards = element('div', 'theater-cc-menu theater-byline-cards');
-  cards.setAttribute('role', 'group');
-  root.append(style, trigger, cards);
+  // The menu shell's panel; its top padding is the hover bridge from the panel, and the list inside is the block.
+  const popup = element('div', 'theater-cc-menu theater-byline-popup');
+  const list = element('ul', 'theater-byline-list');
+  // A list without bullets keeps its role everywhere only when it says so.
+  list.setAttribute('role', 'list');
+  popup.append(list);
+  root.append(style, trigger, popup);
 
   const menu = host.bindMenu({
-    host: root, trigger, panel: cards, scope,
-    firstFocus: () => cards.querySelector<HTMLElement>('a') ?? undefined
+    host: root, trigger, panel: popup, scope,
+    firstFocus: () => list.querySelector<HTMLElement>('a') ?? undefined
   });
-  const links = () => [...cards.querySelectorAll<HTMLAnchorElement>('a.theater-byline-open')];
+  const links = () => [...list.querySelectorAll<HTMLAnchorElement>('a.theater-byline-row')];
   scope.listen(trigger, 'keydown', (event: KeyboardEvent) => {
     if (event.key !== 'ArrowDown') return;
     event.preventDefault();
     event.stopPropagation();
     menu.open(links()[0] ?? trigger);
   });
-  scope.listen(cards, 'keydown', (event: KeyboardEvent) => {
+  scope.listen(list, 'keydown', (event: KeyboardEvent) => {
     const all = links();
     const index = all.indexOf(event.target as HTMLAnchorElement);
     const target = index < 0 ? -1 : rowKeyTarget(event.key, index, all.length);
@@ -158,7 +169,7 @@ export function mountAuthorByline(
     const shown = options.settings.loaded && options.settings.values[options.provider]?.showAuthor
       ? checkedAuthors(authors, options.hosts)
       : [];
-    const next = JSON.stringify([shown, t('authorOpenChannel')]);
+    const next = JSON.stringify([shown, t('authorChannelNewTab'), t('authorVerified')]);
     if (next === signature && (!shown.length || root.parentElement === plate)) return;
     signature = next;
     if (!shown.length || !plate) {
@@ -182,7 +193,7 @@ export function mountAuthorByline(
       names.append(count);
       trigger.setAttribute('aria-label', listedNames(shown));
     } else trigger.removeAttribute('aria-label');
-    cards.replaceChildren(...shown.map(renderCard));
+    list.replaceChildren(...shown.map(renderRow));
     if (root.parentElement !== plate) {
       // A new plate (another title row) starts closed.
       menu.close();

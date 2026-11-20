@@ -281,6 +281,34 @@ for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium,
       });
     });
 
+    it('opens a link in a player menu with Space as with Enter, without toggling playback or scrolling the page', { timeout: 30_000 }, async t => {
+      await testPage(t, async page => {
+        await playerPage(page);
+        await page.context().route('http://accessibility.test/channel', route => route.fulfill({ contentType: 'text/html', body: 'Channel' }));
+        // A menu link like an author card: the guard is generic, so a bare one stands in for the provider's view.
+        await page.locator('#theater-everywhere-ui').evaluate((host: HTMLElement) => {
+          const menu = document.createElement('div');
+          menu.className = 'theater-menu';
+          const link = Object.assign(document.createElement('a'), { href: '/channel', target: '_blank', rel: 'noopener noreferrer', textContent: 'Channel' });
+          menu.append(link);
+          host.shadowRoot!.append(menu);
+          document.body.style.height = '4000px';
+        });
+        const link = page.locator('.theater-menu > a[href="/channel"]');
+        await link.focus();
+        for (const key of ['Space', 'Enter']) {
+          const opened = page.context().waitForEvent('page', { timeout: 5_000 });
+          await page.keyboard.press(key);
+          const tab = await opened;
+          await tab.waitForLoadState();
+          assert.equal(tab.url(), 'http://accessibility.test/channel', key);
+          await tab.close();
+        }
+        assert.equal(await page.locator('video').evaluate((video: HTMLVideoElement) => video.paused), true);
+        assert.equal(await page.evaluate(() => window.scrollY), 0);
+      });
+    });
+
     it('lets a second Escape leave theater after the slider panel has been closed with Escape', { timeout: 30_000 }, async t => {
       await testPage(t, async page => {
         await playerPage(page);

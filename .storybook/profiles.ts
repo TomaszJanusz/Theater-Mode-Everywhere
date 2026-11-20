@@ -53,7 +53,7 @@ export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args'
   'components-title-hud--overflow': (locale): Profile['args'] => locale === 'ar'
     ? { title: 'الفيلم الوثائقي الطويل عن السينما والضوء وتاريخ جهاز العرض في العالم', subtitle: 'الحلقة ٣' } : {},
   'components-auto-theater-notice--counting': () => ({}),
-  // The author panel's chevron and cards mirrored for right-to-left, and the German card link.
+  // The author panel's chevron and popup rows mirrored for right-to-left, and the rows in German.
   'components-author-byline--two-authors-open': () => ({}),
   // The recommendations switch under the tiles: a longer German label, and centred in right-to-left.
   'components-youtube-end-screen--three-suggestions': () => ({})

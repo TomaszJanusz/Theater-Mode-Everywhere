@@ -1722,16 +1722,8 @@
   "playlistChannelVideos": {
     "message": "Videá"
   },
-  "authorOpenChannel": {
-    "message": "Otvoriť kanál"
-  },
-  "authorOpenChannelLabel": {
-    "message": "$NAME$, otvorí sa na novej karte",
-    "placeholders": {
-      "name": {
-        "content": "$1"
-      }
-    }
+  "authorChannelNewTab": {
+    "message": "Otvorí kanál na novej karte"
   },
   "authorVerified": {
     "message": "Overené"

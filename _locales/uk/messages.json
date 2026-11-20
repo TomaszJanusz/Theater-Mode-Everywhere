@@ -1722,16 +1722,8 @@
   "playlistChannelVideos": {
     "message": "Відео"
   },
-  "authorOpenChannel": {
-    "message": "Відкрити канал"
-  },
-  "authorOpenChannelLabel": {
-    "message": "$NAME$, відкриється в новій вкладці",
-    "placeholders": {
-      "name": {
-        "content": "$1"
-      }
-    }
+  "authorChannelNewTab": {
+    "message": "Відкриває канал у новій вкладці"
   },
   "authorVerified": {
     "message": "Підтверджено"

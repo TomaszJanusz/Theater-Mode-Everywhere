@@ -1722,16 +1722,8 @@
   "playlistChannelVideos": {
     "message": "Videos"
   },
-  "authorOpenChannel": {
-    "message": "Open channel"
-  },
-  "authorOpenChannelLabel": {
-    "message": "$NAME$, opens in a new tab",
-    "placeholders": {
-      "name": {
-        "content": "$1"
-      }
-    }
+  "authorChannelNewTab": {
+    "message": "Opens the channel in a new tab"
   },
   "authorVerified": {
     "message": "Verified"

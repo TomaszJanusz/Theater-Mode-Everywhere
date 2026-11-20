@@ -1722,16 +1722,8 @@
   "playlistChannelVideos": {
     "message": "동영상"
   },
-  "authorOpenChannel": {
-    "message": "채널 열기"
-  },
-  "authorOpenChannelLabel": {
-    "message": "$NAME$, 새 탭에서 열림",
-    "placeholders": {
-      "name": {
-        "content": "$1"
-      }
-    }
+  "authorChannelNewTab": {
+    "message": "새 탭에서 채널 열기"
   },
   "authorVerified": {
     "message": "인증됨"
