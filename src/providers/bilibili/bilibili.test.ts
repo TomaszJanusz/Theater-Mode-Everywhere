@@ -218,7 +218,7 @@ describe('Bilibili RTE', () => {
     const requested: string[] = [];
     try {
       globalThis.window = { location: { hostname: 'www.bilibili.com' }, __INITIAL_STATE__: {
-        aid: 9, cid: 9, videoData: { title: 'Heat', duration: 40 }
+        aid: 9, cid: 9, videoData: { aid: 9, title: 'Heat', duration: 40, owner: { mid: 7, name: 'Uploader', face: '' } }
       } } as any;
       globalThis.document = { documentElement: { hasAttribute: () => false }, querySelector: () => null } as any;
       globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -244,6 +244,7 @@ describe('Bilibili RTE', () => {
       assert.equal(snapshot?.captionTracks[0]?.language, 'ai-en');
       assert.equal(snapshot?.captionTracks[0]?.url, 'https://aisubtitle.hdslb.com/bfs/ai_subtitle/prod/abc');
       assert.deepEqual(snapshot?.heatmap?.values, [0, 0.5, 1, 0]);
+      assert.deepEqual(snapshot?.authors?.map(author => author.name), ['Uploader'], 'the owner is read with the title');
       assert.equal(requested.some((url) => url.includes('evil.test')), false);
       assert.equal(requested.filter((url) => url.includes('/pbp/data')).length, 1);
     } finally {

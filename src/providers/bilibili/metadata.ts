@@ -1,9 +1,10 @@
-import { sanitizeContentTitle } from '../../media-features/content-title';
+import { sanitizeContentTitle, type ContentAuthor } from '../../media-features/content-title';
 import { heatmapSvgPath } from '../../media-features/heatmap-path';
 import type { parseCaptionPayload } from '../../media-features/parsers/captions';
 import { sanitizeCaptionCueText } from '../../media-features/sanitize';
 import type { CaptionCue, Chapter, PreviewFrame, TimelineHeatmap } from '../../media-features/types';
 
+import { parseBilibiliAuthors } from './authors';
 import { isBilibiliSubtitleUrl } from './fetch-policy';
 
 export type BilibiliCaption = {
@@ -37,6 +38,8 @@ export type BilibiliSnapshot = {
   chapters: Chapter[];
   storyboard: BilibiliStoryboard | null;
   heatmap: BilibiliHeatmap | null;
+  /** Who published the video, read from the same page state as `title` (`authors.ts`). */
+  authors?: ContentAuthor[];
 };
 
 function record(value: unknown): Record<string, unknown> {
@@ -468,6 +471,7 @@ export function parseBilibiliSnapshot(value: unknown): BilibiliSnapshot | null {
     videoId: raw.videoId,
     ...(raw.title !== undefined ? { title: raw.title } : {}),
     ...(raw.duration !== undefined ? { duration: raw.duration } : {}),
-    captionTracks: captionTracks as BilibiliCaption[], chapters: chapters as Chapter[], storyboard, heatmap
+    captionTracks: captionTracks as BilibiliCaption[], chapters: chapters as Chapter[], storyboard, heatmap,
+    ...(Array.isArray(raw.authors) ? { authors: parseBilibiliAuthors(raw.authors) } : {})
   };
 }
