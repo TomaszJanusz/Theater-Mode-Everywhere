@@ -1,0 +1,334 @@
+{
+  "source": "YouTube watch page of a two-channel collaboration (Saturday Night Live UK with Sky TV), /watch?v=mhZtH3r_KJU, logged out, English UI",
+  "captured": "2026-11-21",
+  "environment": "Playwright Chromium (headless=new) on runner02 with a desktop Chrome user agent; ytInitialData of the page, which matched the live ytd-watch-flexy data",
+  "evidence": "Recorded host fixture (the watch page data's owner renderer), not live extension verification",
+  "notes": "Tracking parameters, logging contexts, style runs and subscribe buttons are removed. On a collaboration the owner renderer's navigationEndpoint opens a Collaborators dialog instead of the channel and has no thumbnail or badges; avatarStack holds the stacked avatars and the dialog's list items each channel.",
+  "watch": {
+    "currentVideoEndpoint": {
+      "watchEndpoint": {
+        "videoId": "mhZtH3r_KJU"
+      }
+    },
+    "contents": {
+      "twoColumnWatchNextResults": {
+        "results": {
+          "results": {
+            "contents": [
+              {
+                "videoPrimaryInfoRenderer": {}
+              },
+              {
+                "videoSecondaryInfoRenderer": {
+                  "owner": {
+                    "videoOwnerRenderer": {
+                      "navigationEndpoint": {
+                        "commandMetadata": {},
+                        "showDialogCommand": {
+                          "panelLoadingStrategy": {
+                            "inlineContent": {
+                              "dialogViewModel": {
+                                "header": {
+                                  "dialogHeaderViewModel": {
+                                    "headline": {
+                                      "content": "Collaborators"
+                                    }
+                                  }
+                                },
+                                "customContent": {
+                                  "listViewModel": {
+                                    "listItems": [
+                                      {
+                                        "listItemViewModel": {
+                                          "title": {
+                                            "content": "Saturday Night Live UK",
+                                            "commandRuns": [
+                                              {
+                                                "startIndex": 0,
+                                                "length": 22,
+                                                "onTap": {
+                                                  "innertubeCommand": {
+                                                    "commandMetadata": {
+                                                      "webCommandMetadata": {
+                                                        "url": "/channel/UC6en775nhqTdmaZQi9uT16A",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                      }
+                                                    },
+                                                    "browseEndpoint": {
+                                                      "browseId": "UC6en775nhqTdmaZQi9uT16A",
+                                                      "canonicalBaseUrl": "/channel/UC6en775nhqTdmaZQi9uT16A"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            ],
+                                            "attachmentRuns": [
+                                              {
+                                                "startIndex": 22,
+                                                "length": 0,
+                                                "element": {
+                                                  "type": {
+                                                    "imageType": {
+                                                      "image": {
+                                                        "sources": [
+                                                          {
+                                                            "clientResource": {
+                                                              "imageName": "CHECK_CIRCLE_FILLED"
+                                                            },
+                                                            "width": 14,
+                                                            "height": 14
+                                                          }
+                                                        ]
+                                                      }
+                                                    }
+                                                  },
+                                                  "properties": {
+                                                    "layoutProperties": {
+                                                      "height": {
+                                                        "value": 14,
+                                                        "unit": "DIMENSION_UNIT_POINT"
+                                                      },
+                                                      "width": {
+                                                        "value": 14,
+                                                        "unit": "DIMENSION_UNIT_POINT"
+                                                      },
+                                                      "margin": {
+                                                        "left": {
+                                                          "value": 4,
+                                                          "unit": "DIMENSION_UNIT_POINT"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                "alignment": "ALIGNMENT_VERTICAL_CENTER"
+                                              }
+                                            ]
+                                          },
+                                          "subtitle": {
+                                            "content": "‎⁨@SaturdayNightLiveUK⁩ • ⁨324K subscribers⁩"
+                                          },
+                                          "leadingAccessory": {
+                                            "avatarViewModel": {
+                                              "image": {
+                                                "sources": [
+                                                  {
+                                                    "url": "https://yt3.ggpht.com/JUwoH4RdR6HdJwE4-FCp2eepJgqU-EucnHQdP4Qa39zf62_uSyxCl1wKUXoIKIVk0fCHimPF=s88-c-k-c0x00ffffff-no-rj"
+                                                  }
+                                                ],
+                                                "processor": {
+                                                  "borderImageProcessor": {
+                                                    "circular": true
+                                                  }
+                                                }
+                                              },
+                                              "accessibilityText": "Saturday Night Live UK. Go to channel.",
+                                              "avatarImageSize": "AVATAR_SIZE_M",
+                                              "endpoint": {
+                                                "innertubeCommand": {
+                                                  "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                      "url": "/@SaturdayNightLiveUK",
+                                                      "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                      "rootVe": 3611,
+                                                      "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                  },
+                                                  "browseEndpoint": {
+                                                    "browseId": "UC6en775nhqTdmaZQi9uT16A",
+                                                    "canonicalBaseUrl": "/@SaturdayNightLiveUK"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "rendererContext": {
+                                            "accessibilityContext": {
+                                              "label": "Saturday Night Live UK, Verified @SaturdayNightLiveUK 324 thousand subscribers. Go to channel"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "listItemViewModel": {
+                                          "title": {
+                                            "content": "Sky TV",
+                                            "commandRuns": [
+                                              {
+                                                "startIndex": 0,
+                                                "length": 6,
+                                                "onTap": {
+                                                  "innertubeCommand": {
+                                                    "commandMetadata": {
+                                                      "webCommandMetadata": {
+                                                        "url": "/channel/UCxw5iQs7tt4qbcLa31shZ7Q",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                      }
+                                                    },
+                                                    "browseEndpoint": {
+                                                      "browseId": "UCxw5iQs7tt4qbcLa31shZ7Q",
+                                                      "canonicalBaseUrl": "/channel/UCxw5iQs7tt4qbcLa31shZ7Q"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            ],
+                                            "attachmentRuns": [
+                                              {
+                                                "startIndex": 6,
+                                                "length": 0,
+                                                "element": {
+                                                  "type": {
+                                                    "imageType": {
+                                                      "image": {
+                                                        "sources": [
+                                                          {
+                                                            "clientResource": {
+                                                              "imageName": "CHECK_CIRCLE_FILLED"
+                                                            },
+                                                            "width": 14,
+                                                            "height": 14
+                                                          }
+                                                        ]
+                                                      }
+                                                    }
+                                                  },
+                                                  "properties": {
+                                                    "layoutProperties": {
+                                                      "height": {
+                                                        "value": 14,
+                                                        "unit": "DIMENSION_UNIT_POINT"
+                                                      },
+                                                      "width": {
+                                                        "value": 14,
+                                                        "unit": "DIMENSION_UNIT_POINT"
+                                                      },
+                                                      "margin": {
+                                                        "left": {
+                                                          "value": 4,
+                                                          "unit": "DIMENSION_UNIT_POINT"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                "alignment": "ALIGNMENT_VERTICAL_CENTER"
+                                              }
+                                            ]
+                                          },
+                                          "subtitle": {
+                                            "content": "‎⁨@SkyTV⁩ • ⁨408K subscribers⁩"
+                                          },
+                                          "leadingAccessory": {
+                                            "avatarViewModel": {
+                                              "image": {
+                                                "sources": [
+                                                  {
+                                                    "url": "https://yt3.ggpht.com/NnpLpyVrcoHYjrNNOO11yOhjAHNEzxddkm2JhCPjtQPiIHXJ9GnG13p_PlLv5a-ArTlG2xZrvA=s88-c-k-c0x00ffffff-no-rj"
+                                                  }
+                                                ],
+                                                "processor": {
+                                                  "borderImageProcessor": {
+                                                    "circular": true
+                                                  }
+                                                }
+                                              },
+                                              "accessibilityText": "Sky TV. Go to channel.",
+                                              "avatarImageSize": "AVATAR_SIZE_M",
+                                              "endpoint": {
+                                                "innertubeCommand": {
+                                                  "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                      "url": "/@SkyTV",
+                                                      "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                      "rootVe": 3611,
+                                                      "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                  },
+                                                  "browseEndpoint": {
+                                                    "browseId": "UCxw5iQs7tt4qbcLa31shZ7Q",
+                                                    "canonicalBaseUrl": "/@SkyTV"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "rendererContext": {
+                                            "accessibilityContext": {
+                                              "label": "Sky TV, Verified @SkyTV 408 thousand subscribers. Go to channel"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            "screenVe": 269990
+                          }
+                        }
+                      },
+                      "avatarStack": {
+                        "avatarStackViewModel": {
+                          "avatars": [
+                            {
+                              "avatarViewModel": {
+                                "image": {
+                                  "sources": [
+                                    {
+                                      "url": "https://yt3.ggpht.com/JUwoH4RdR6HdJwE4-FCp2eepJgqU-EucnHQdP4Qa39zf62_uSyxCl1wKUXoIKIVk0fCHimPF=s88-c-k-c0x00ffffff-no-rj"
+                                    }
+                                  ],
+                                  "processor": {
+                                    "borderImageProcessor": {
+                                      "circular": true
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "avatarViewModel": {
+                                "image": {
+                                  "sources": [
+                                    {
+                                      "url": "https://yt3.ggpht.com/NnpLpyVrcoHYjrNNOO11yOhjAHNEzxddkm2JhCPjtQPiIHXJ9GnG13p_PlLv5a-ArTlG2xZrvA=s88-c-k-c0x00ffffff-no-rj"
+                                    }
+                                  ],
+                                  "processor": {
+                                    "borderImageProcessor": {
+                                      "circular": true
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ],
+                          "avatarClusterSize": "AVATAR_SIZE_S",
+                          "layoutType": "AVATAR_STACK_LAYOUT_CLUSTER",
+                          "rendererContext": {
+                            "accessibilityContext": {
+                              "label": "Collaboration channels"
+                            }
+                          }
+                        }
+                      },
+                      "attributedTitle": {
+                        "content": "Saturday Night Live UK and Sky TV"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

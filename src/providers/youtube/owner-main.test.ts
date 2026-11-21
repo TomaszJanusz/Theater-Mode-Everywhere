@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { firstMatchingYoutubeSnapshot as firstMatch, normalizeYoutubeSnapshot } from '../../media-features/youtube-snapshot';
+import { MAX_AUTHORS } from '../author-byline';
 
-import { readYoutubeOwner, withOwnerRenderer } from './owner-main';
+import { readYoutubeOwner, youtubeAuthors } from './owner-main';
 
 const CHANNEL = 'UCSMOQeBJ2RAnuFungnQOxLg';
 const response = (details: Record<string, unknown> = {}, ownerProfileUrl?: unknown) => ({
@@ -11,6 +13,36 @@ const response = (details: Record<string, unknown> = {}, ownerProfileUrl?: unkno
   microformat: { playerMicroformatRenderer: { ownerProfileUrl } }
 });
 const owner = { id: CHANNEL, name: 'Blender', url: 'https://www.youtube.com/@BlenderOfficial', avatarUrl: null, verified: false, stat: null };
+
+/** A watch-next response for `videoId` with `renderer` as its owner. */
+const watchData = (videoId: string, renderer: unknown) => ({
+  currentVideoEndpoint: { watchEndpoint: { videoId } },
+  contents: { twoColumnWatchNextResults: { results: { results: { contents: [
+    { videoPrimaryInfoRenderer: {} }, { videoSecondaryInfoRenderer: { owner: { videoOwnerRenderer: renderer } } }
+  ] } } } }
+});
+
+// A recorded collaboration: Saturday Night Live UK with Sky TV.
+const collab = JSON.parse(readFileSync(new URL('../../../test/host-fixtures/youtube-collab-owner.json', import.meta.url), 'utf8')) as {
+  watch: ReturnType<typeof watchData>;
+};
+const COLLAB_VIDEO = 'mhZtH3r_KJU';
+const SNL_AVATAR = 'JUwoH4RdR6HdJwE4-FCp2eepJgqU-EucnHQdP4Qa39zf62_uSyxCl1wKUXoIKIVk0fCHimPF=s88-c-k-c0x00ffffff-no-rj';
+const SKY_AVATAR = 'NnpLpyVrcoHYjrNNOO11yOhjAHNEzxddkm2JhCPjtQPiIHXJ9GnG13p_PlLv5a-ArTlG2xZrvA=s88-c-k-c0x00ffffff-no-rj';
+// The player response names only the first channel.
+const snl = {
+  id: 'UC6en775nhqTdmaZQi9uT16A', name: 'Saturday Night Live UK', url: 'https://www.youtube.com/@SaturdayNightLiveUK',
+  avatarUrl: null, verified: false, stat: null
+};
+/** A "Collaborators" dialog row as YouTube builds it, reduced to the channel link. */
+const dialogRow = (browseId: string, content: string) => ({ listItemViewModel: { title: {
+  content, commandRuns: [{ onTap: { innertubeCommand: { browseEndpoint: { browseId } } } }]
+} } });
+const collaborators = (rows: unknown[]) => ({
+  navigationEndpoint: { showDialogCommand: { panelLoadingStrategy: { inlineContent: { dialogViewModel: {
+    customContent: { listViewModel: { listItems: rows } }
+  } } } } }
+});
 
 describe('YouTube video owner', () => {
   it('names the channel from the player response, linked over https', () => {
@@ -25,32 +57,58 @@ describe('YouTube video owner', () => {
   });
 
   it('adds the owner renderer\'s avatar, badge and subscribers only when it names the same channel', () => {
-    const renderer = (browseId: string) => ({
-      querySelector: () => ({ data: {
-        navigationEndpoint: { browseEndpoint: { browseId } },
-        thumbnail: { thumbnails: [
-          { url: '//yt3.ggpht.com/a=s48', width: 48 }, { url: '//yt3.ggpht.com/a=s176', width: 176 }, { url: '//yt3.ggpht.com/a=s88', width: 88 }
-        ] },
-        badges: [{ metadataBadgeRenderer: { style: 'BADGE_STYLE_TYPE_VERIFIED' } }],
-        subscriberCountText: { simpleText: '1.26M subscribers' }
-      } })
-    }) as unknown as ParentNode;
-    assert.deepEqual(withOwnerRenderer(owner, renderer(CHANNEL)),
-      { ...owner, avatarUrl: 'https://yt3.ggpht.com/a=s88', verified: true, stat: '1.26M subscribers' });
-    // After an in-app navigation the renderer can still describe the previous video's channel.
-    assert.deepEqual(withOwnerRenderer(owner, renderer('UCpreviousChannel0000000')), owner);
-    assert.deepEqual(withOwnerRenderer(owner, { querySelector: () => null } as unknown as ParentNode), owner);
+    const renderer = {
+      navigationEndpoint: { browseEndpoint: { browseId: CHANNEL } },
+      thumbnail: { thumbnails: [
+        { url: '//yt3.ggpht.com/a=s48', width: 48 }, { url: '//yt3.ggpht.com/a=s176', width: 176 }, { url: '//yt3.ggpht.com/a=s88', width: 88 }
+      ] },
+      badges: [{ metadataBadgeRenderer: { style: 'BADGE_STYLE_TYPE_VERIFIED' } }],
+      subscriberCountText: { simpleText: '1.26M subscribers' }
+    };
+    assert.deepEqual(youtubeAuthors(owner, 'video-a', [watchData('video-a', renderer)]),
+      [{ ...owner, avatarUrl: 'https://yt3.ggpht.com/a=s88', verified: true, stat: '1.26M subscribers' }]);
+    const otherChannel = { ...renderer, navigationEndpoint: { browseEndpoint: { browseId: 'UCpreviousChannel0000000' } } };
+    assert.deepEqual(youtubeAuthors(owner, 'video-a', [watchData('video-a', otherChannel)]), [owner]);
+    // Only a response for the same video counts: ytInitialData describes only the tab's first video.
+    assert.deepEqual(youtubeAuthors(owner, 'video-b', [watchData('video-a', renderer)]), [owner]);
+    assert.deepEqual(youtubeAuthors(owner, 'video-a', [null, {}]), [owner]);
   });
 
-  it('takes an owner only from a snapshot of the same video, and checks MAIN\'s published copy again', () => {
-    const previous = normalizeYoutubeSnapshot({ videoId: 'video-a', title: 'Old', owner: { ...owner, name: 'Previous channel' } });
-    const current = normalizeYoutubeSnapshot({ videoId: 'video-b', title: 'New', owner });
-    assert.equal(firstMatch('video-b', [previous, current])?.owner?.name, 'Blender');
+  it('lists every collaborator of a collaboration, in YouTube\'s order, with their own avatars', () => {
+    const page = [watchData('video-z', {}), collab.watch];
+    assert.deepEqual(youtubeAuthors(snl, COLLAB_VIDEO, page), [
+      { ...snl, avatarUrl: `https://yt3.ggpht.com/${SNL_AVATAR}`, verified: true, stat: '324K subscribers' },
+      {
+        id: 'UCxw5iQs7tt4qbcLa31shZ7Q', name: 'Sky TV', url: 'https://www.youtube.com/@SkyTV',
+        avatarUrl: `https://yt3.ggpht.com/${SKY_AVATAR}`, verified: true, stat: '408K subscribers'
+      }
+    ]);
+    // The dialog counts only for the video its response describes, and only when it names the player's channel.
+    assert.deepEqual(youtubeAuthors(snl, 'video-b', page), [snl]);
+    const stranger = { ...snl, id: 'UCstrangerChannel000000a' };
+    assert.deepEqual(youtubeAuthors(stranger, COLLAB_VIDEO, page), [stranger]);
+  });
+
+  it('keeps at most the byline\'s limit of collaborators and skips rows without a channel', () => {
+    const rows = [
+      dialogRow(snl.id, snl.name), { listItemViewModel: { title: { content: 'No channel' } } }, dialogRow('not-a-channel', 'Bad id'),
+      ...Array.from({ length: 12 }, (_, index) => dialogRow(`UCcollaborator${String(index).padStart(10, '0')}`, `Channel ${index}`))
+    ];
+    const authors = youtubeAuthors(snl, COLLAB_VIDEO, [watchData(COLLAB_VIDEO, collaborators(rows))]);
+    assert.equal(authors.length, MAX_AUTHORS);
+    assert.deepEqual(authors.map(author => author.name).slice(0, 3), ['Saturday Night Live UK', 'Channel 0', 'Channel 1']);
+  });
+
+  it('takes authors only from a snapshot of the same video, and checks MAIN\'s published copy again', () => {
+    const previous = normalizeYoutubeSnapshot({ videoId: 'video-a', title: 'Old', authors: [{ ...owner, name: 'Previous channel' }] });
+    const current = normalizeYoutubeSnapshot({ videoId: 'video-b', title: 'New', authors: [owner, { ...owner, id: 'UCsecond', name: 'Second' }] });
+    assert.deepEqual(firstMatch('video-b', [previous, current])?.authors?.map(author => author.name), ['Blender', 'Second']);
     const ownerless = normalizeYoutubeSnapshot({ videoId: 'video-b', title: 'New' });
-    assert.equal(firstMatch('video-b', [ownerless, { ...previous!, videoId: 'video-c' }])?.owner, undefined);
-    assert.equal(firstMatch('video-b', [ownerless, current])?.owner?.name, 'Blender');
-    assert.equal(normalizeYoutubeSnapshot({ videoId: 'video-b', owner: { ...owner, name: 7 } })?.owner, undefined);
-    assert.deepEqual(normalizeYoutubeSnapshot({ videoId: 'video-b', owner: { ...owner, avatarUrl: 9, verified: 'yes', stat: '1M' } })?.owner,
-      { ...owner, avatarUrl: null, verified: false, stat: '1M' });
+    assert.equal(firstMatch('video-b', [ownerless, { ...previous!, videoId: 'video-c' }])?.authors, undefined);
+    assert.equal(firstMatch('video-b', [ownerless, current])?.authors?.[0]?.name, 'Blender');
+    assert.equal(normalizeYoutubeSnapshot({ videoId: 'video-b', authors: [{ ...owner, name: 7 }] })?.authors, undefined);
+    assert.equal(normalizeYoutubeSnapshot({ videoId: 'video-b', authors: owner })?.authors, undefined);
+    assert.deepEqual(normalizeYoutubeSnapshot({ videoId: 'video-b', authors: [{ ...owner, avatarUrl: 9, verified: 'yes', stat: '1M' }] })?.authors,
+      [{ ...owner, avatarUrl: null, verified: false, stat: '1M' }]);
   });
 });
