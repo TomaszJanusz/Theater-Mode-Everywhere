@@ -1,18 +1,19 @@
 import { installQualityBridge } from '../video-quality-bridge';
 
-import { twitchMediaPlayer, twitchShowsAd, type TwitchMediaPlayer, type TwitchQuality } from './media-player';
+import { twitchLoadedChannel, twitchLoadedVideo, twitchMediaPlayer, twitchShowsAd, type TwitchMediaPlayer, type TwitchQuality } from './media-player';
 
 function qualities(instance: TwitchMediaPlayer): TwitchQuality[] {
   const list = instance.getQualities?.();
   return Array.isArray(list) ? list.filter((quality): quality is TwitchQuality => Boolean(quality) && typeof quality === 'object') : [];
 }
 
-/** The channel, and the recording when the page plays one: a new stream or VOD is another item. */
+/**
+ * What the player loaded, not what the URL names: in-app navigation changes the URL before the player switches.
+ * A past broadcast is its video id (the player names no channel for one), a live stream its channel.
+ */
 function mediaId(instance: TwitchMediaPlayer): string | null {
-  const login = instance.getLoadedChannelLogin?.();
-  if (typeof login !== 'string' || !login) return null;
-  const vod = /^\/videos\/(\d+)/.exec(window.location.pathname)?.[1];
-  return vod ? `${login}/videos/${vod}` : login;
+  const vod = twitchLoadedVideo(instance);
+  return vod ? `videos/${vod}` : twitchLoadedChannel(instance);
 }
 
 function read(video: HTMLVideoElement): unknown {
