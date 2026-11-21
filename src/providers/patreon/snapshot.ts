@@ -1,6 +1,7 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import { isMuxCaptionUrl } from '../../media-features/parsers/mux-storyboard';
 
+import { readPatreonCreator } from './creator';
 import type { PatreonPlayerSnapshot } from './snapshot-model';
 
 const isMuxCaption = (url: string): boolean => {
@@ -226,10 +227,12 @@ export function readPatreonSnapshot(): PatreonPlayerSnapshot | null {
     }
     const description = readPatreonPostText();
     const title = readPatreonPostTitle();
+    const creator = readPatreonCreator(document);
     if (!storyboardUrl && chapters.length === 0 && captionTracks.length === 0 && !description && !title) return null;
     return {
       playbackId: playbackId || page?.playbackId || undefined,
       ...(title ? { title } : {}),
+      ...(creator ? { creator } : {}),
       duration: Number(player?.duration) || undefined,
       storyboardUrl: storyboardUrl || undefined,
       description: description || undefined,

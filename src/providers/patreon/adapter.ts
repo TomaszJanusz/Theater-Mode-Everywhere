@@ -1,4 +1,4 @@
-import { sanitizeContentTitle } from '../../media-features/content-title';
+import { sanitizeContentTitle, type ContentAuthor } from '../../media-features/content-title';
 import { parseCaptionPayload } from '../../media-features/parsers/captions';
 import { parseDescriptionChapters } from '../../media-features/parsers/description-chapters';
 import { getMuxPreviewFrame, isMuxCaptionUrl, isMuxStoryboardUrl, parseMuxStoryboard, type MuxStoryboardSet } from '../../media-features/parsers/mux-storyboard';
@@ -23,6 +23,7 @@ import {
   type PatreonPageCaption
 } from './page-assets';
 import { normalizePatreonSnapshot, type PatreonPlayerSnapshot } from './snapshot-model';
+import { patreonPostId } from './watch-playback';
 
 const cueCache = new Map<string, CaptionCue[]>();
 
@@ -137,7 +138,8 @@ export class PatreonAdapter implements MediaFeaturesAdapter {
       storyboardUrl: page?.storyboardVttUrl || page?.storyboardJsonUrl || probed?.storyboardUrl,
       description: probed?.description,
       chapters: probed?.chapters,
-      captionTracks
+      captionTracks,
+      creator: probed?.creator
     };
     this.tracks = captionTracks;
     this.storyboard = null;
@@ -229,6 +231,12 @@ export class PatreonAdapter implements MediaFeaturesAdapter {
 
   getTitle(): string | null {
     return sanitizeContentTitle(this.snapshot?.title);
+  }
+
+  /** The creator read with the title, only while the page still shows the post it was read for. */
+  getAuthors(): ContentAuthor[] | null {
+    const creator = this.snapshot?.creator;
+    return creator && creator.postId === patreonPostId(new URL(window.location.href)) ? [creator.author] : null;
   }
 
   async reload(): Promise<void> {
