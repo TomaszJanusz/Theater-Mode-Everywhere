@@ -31,6 +31,10 @@ export function preferProviderCaptionTracks(tracks: CaptionTrack[]): CaptionTrac
   return merged;
 }
 
+function replacesElementCaptions(adapter: MediaFeaturesAdapter): boolean {
+  try { return adapter.replacesElementCaptions?.() === true; } catch { return false; }
+}
+
 export class CompositeMediaAdapter implements MediaFeaturesAdapter {
   private adapters: MediaFeaturesAdapter[];
   private captionAdapter: MediaFeaturesAdapter | null = null;
@@ -124,11 +128,12 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
 
   /**
    * Merges tracks from successful adapters and drops native tracks when a host
-   * subtitle list is already present.
+   * subtitle list is already present or an adapter replaces the element's tracks.
    */
   async listCaptionTracks(): Promise<CaptionTrack[]> {
     const lists = fulfilledValues(await allSettledResults(this.adapters.map((adapter) => adapter.listCaptionTracks())));
-    return preferProviderCaptionTracks(lists.flat());
+    const tracks = preferProviderCaptionTracks(lists.flat());
+    return this.adapters.some(replacesElementCaptions) ? tracks.filter((track) => track.source !== 'native-text-track') : tracks;
   }
 
   /**

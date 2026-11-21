@@ -1,0 +1,13 @@
+{
+  "source": "Reddit post page with a captioned v.redd.it video, /r/:subreddit/comments/:id/:slug/ (logged out)",
+  "captured": "2026-11-21",
+  "environment": "Playwright Chromium 153 (headless=new) on runner02 with a desktop Chrome user agent, logged out, English UI; no extension installed",
+  "evidence": "Recorded host fixture (player DOM and caption file excerpt), not live extension verification",
+  "notes": "reddit-post-player.html: the post's <shreddit-player> after Reddit's own captions were switched on. The video sits in the player's open shadow root, the controls (<shreddit-media-ui>, which gets captions-enabled) beside it, and Reddit draws captions in <shreddit-caption-overlay> inside the controls' shadow root. Reddit stores the toggle in localStorage '@reddit/shreddit-player-media-captions'. The element's only text track is hls.js's subtitles/en 'English' rendition, which stays empty (no <track>, no cues); Reddit fetches caption-url itself. reddit-post-captions.vtt: the first 49 of 367 cues of that caption-url file (text/vtt, Access-Control-Allow-Origin: *), words replaced by same-length filler, timings and <u> markup kept: one cue per spoken word, each repeating the whole two-line text with the current word underlined, contiguous times. The full file folds into 30 lines. NOT captured: feed cards, promoted players (they carry their own caption-url, advertiser_en.vtt), the embed page, client navigation.",
+  "consumers": {
+    "shreddit-player[post-id, post-title, caption-url]": "src/providers/reddit/player.ts readRedditPost, redditPlayerOf",
+    "shreddit-media-ui[captions-enabled]": "src/providers/reddit/player.ts redditCaptionsEnabled, adapter.ts hostCaptionTrack",
+    "shreddit-caption-overlay": "src/providers/reddit/player.ts redditCaptionOverlay, stage.ts",
+    "reddit-post-captions.vtt": "src/providers/reddit/captions.ts mergeRedditCues"
+  }
+}

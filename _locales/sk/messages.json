@@ -1087,6 +1087,12 @@
   "vikiIntegrationDescription": {
     "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, značky úvodu/záverečných titulkov, miniatúry. Rýchle akcie: preskočenie úvodu a ďalší diel."
   },
+  "redditIntegrationTitle": {
+    "message": "Integrácia Reddit"
+  },
+  "redditIntegrationDescription": {
+    "message": "V režime kina zobrazuje názov príspevku a jeho titulky a zapne titulky, keď má Reddit zapnuté vlastné titulky."
+  },
   "aboutTitle": {
     "message": "O rozšírení"
   },
@@ -1312,6 +1318,9 @@
   },
   "rteNoteViki": {
     "message": "Titulky a náhľady, ak sú k dispozícii; ďalší diel cez prehrávač."
+  },
+  "rteNoteReddit": {
+    "message": "Titulky, ak ich video má."
   },
   "rteSaveError": {
     "message": "Nastavenia služby sa nepodarilo uložiť. Skúste to znova."

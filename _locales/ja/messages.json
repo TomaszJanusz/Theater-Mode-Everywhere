@@ -1087,6 +1087,12 @@
   "vikiIntegrationDescription": {
     "message": "動画やプレーヤーが提供する場合に利用可能：タイトル、字幕、イントロ・クレジットのマーカー、サムネイル。クイック操作：イントロのスキップと次のエピソード。"
   },
+  "redditIntegrationTitle": {
+    "message": "Reddit 連携"
+  },
+  "redditIntegrationDescription": {
+    "message": "シアターモードで投稿のタイトルと字幕を表示し、Reddit 自体の字幕がオンのときは字幕をオンにします。"
+  },
   "aboutTitle": {
     "message": "このツールについて"
   },
@@ -1312,6 +1318,9 @@
   },
   "rteNoteViki": {
     "message": "提供される場合に字幕とプレビュー、プレーヤー経由で次のエピソードに対応。"
+  },
+  "rteNoteReddit": {
+    "message": "動画に字幕がある場合は字幕。"
   },
   "rteSaveError": {
     "message": "サービス設定を保存できませんでした。もう一度お試しください。"

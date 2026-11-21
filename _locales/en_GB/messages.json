@@ -1087,6 +1087,12 @@
   "vikiIntegrationDescription": {
     "message": "Available when provided by the video or player: Title, Subtitles, intro/credits markers, Thumbnails. Quick actions: skip intro and next episode."
   },
+  "redditIntegrationTitle": {
+    "message": "Reddit integration"
+  },
+  "redditIntegrationDescription": {
+    "message": "Shows the post's title and its captions in theatre, and turns the captions on when Reddit's own captions are on."
+  },
   "aboutTitle": {
     "message": "About"
   },
@@ -1312,6 +1318,9 @@
   },
   "rteNoteViki": {
     "message": "Subtitles and previews when provided; next via the player."
+  },
+  "rteNoteReddit": {
+    "message": "Captions when the video has them."
   },
   "rteSaveError": {
     "message": "Could not save service settings. Please try again."

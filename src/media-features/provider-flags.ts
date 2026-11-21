@@ -1,4 +1,4 @@
-export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'viki'] as const;
+export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'viki', 'reddit'] as const;
 
 export type MediaProviderId = (typeof MEDIA_PROVIDER_IDS)[number];
 
@@ -15,7 +15,8 @@ export const MEDIA_PROVIDER_FLAG_KEYS: Record<MediaProviderId, string> = {
   crunchyroll: 'crunchyrollIntegrationEnabled',
   iqiyi: 'iqiyiIntegrationEnabled',
   soop: 'soopIntegrationEnabled',
-  viki: 'vikiIntegrationEnabled'
+  viki: 'vikiIntegrationEnabled',
+  reddit: 'redditIntegrationEnabled'
 };
 
 export type MediaProviderFlags = Record<MediaProviderId, boolean>;
@@ -40,7 +41,8 @@ const MEDIA_PROVIDER_OFF_ATTRS: Record<MediaProviderId, string> = {
   crunchyroll: 'data-te-crunchyroll-integration-off',
   iqiyi: 'data-te-iqiyi-integration-off',
   soop: 'data-te-soop-integration-off',
-  viki: 'data-te-viki-integration-off'
+  viki: 'data-te-viki-integration-off',
+  reddit: 'data-te-reddit-integration-off'
 };
 
 /** The root attribute present while a provider's integration is off. */

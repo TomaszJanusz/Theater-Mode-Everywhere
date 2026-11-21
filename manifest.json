@@ -36,6 +36,8 @@
         "*://*.netflix.com./*",
         "*://*.patreon.com/*",
         "*://*.patreon.com./*",
+        "*://*.reddit.com/*",
+        "*://*.reddit.com./*",
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*",
         "*://*.v.qq.com/*",
@@ -165,6 +167,22 @@
     },
     {
       "matches": [
+        "*://*.reddit.com/*",
+        "*://*.reddit.com./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/reddit/isolated.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*"
       ],
@@ -284,6 +302,8 @@
         "*://*.netflix.com./*",
         "*://*.patreon.com/*",
         "*://*.patreon.com./*",
+        "*://*.reddit.com/*",
+        "*://*.reddit.com./*",
         "*://*.sooplive.com/*",
         "*://*.sooplive.com./*",
         "*://*.v.qq.com/*",
@@ -391,6 +411,20 @@
       "js": [
         "mainWorld.js",
         "providers/patreon/main.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.reddit.com/*",
+        "*://*.reddit.com./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/reddit/main.js",
         "mainWorldStart.js"
       ],
       "run_at": "document_start",

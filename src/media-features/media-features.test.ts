@@ -972,6 +972,16 @@ describe('F-05 composite adapter isolation', () => {
     assert.equal(tracks[0].id, 'native:0');
   });
 
+  it('drops the element\'s own tracks when a provider replaces them, also before it lists one', async () => {
+    const providerTrack = { id: 'p:en', language: 'en', label: 'English', kind: 'captions' as const, source: 'vimeo' as const };
+    const replacing = (tracks: Array<typeof providerTrack>) => stubAdapter({ replacesElementCaptions: () => true, listCaptionTracks: async () => tracks });
+    assert.deepEqual((await new CompositeMediaAdapter([stubAdapter(), replacing([providerTrack])]).listCaptionTracks()).map(track => track.id), ['p:en']);
+    assert.deepEqual(await new CompositeMediaAdapter([stubAdapter(), replacing([])]).listCaptionTracks(), [], 'an empty decoy is not offered');
+    const broken = stubAdapter({ replacesElementCaptions: () => { throw new Error('host gone'); }, listCaptionTracks: async () => [] });
+    assert.deepEqual((await new CompositeMediaAdapter([stubAdapter(), broken]).listCaptionTracks()).map(track => track.id), ['native:0'],
+      'a provider that cannot tell keeps the element\'s tracks');
+  });
+
   it('returns the first drawable heatmap', () => {
     const composite = new CompositeMediaAdapter([
       stubAdapter(),
@@ -1405,7 +1415,8 @@ describe('provider integration flags', () => {
       crunchyroll: true,
       iqiyi: true,
       soop: true,
-      viki: true
+      viki: true,
+      reddit: true
     });
     assert.deepEqual(resolveMediaProviderFlags({}), allOn);
   });
@@ -1461,7 +1472,8 @@ describe('provider integration flags', () => {
       crunchyroll: false,
       iqiyi: false,
       soop: false,
-      viki: false
+      viki: false,
+      reddit: false
     });
     assert.deepEqual(mediaProviderFlagStorageUpdate(mediaProviderFlagsForRichTheaterExperience(true)), {
       youtubeIntegrationEnabled: true,
@@ -1476,7 +1488,8 @@ describe('provider integration flags', () => {
       crunchyrollIntegrationEnabled: true,
       iqiyiIntegrationEnabled: true,
       soopIntegrationEnabled: true,
-      vikiIntegrationEnabled: true
+      vikiIntegrationEnabled: true,
+      redditIntegrationEnabled: true
     });
   });
 

@@ -1087,6 +1087,12 @@
   "vikiIntegrationDescription": {
     "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, marcadores de abertura/créditos, Miniaturas. Ações rápidas: pular abertura e próximo episódio."
   },
+  "redditIntegrationTitle": {
+    "message": "Integração com o Reddit"
+  },
+  "redditIntegrationDescription": {
+    "message": "Mostra no modo cinema o título da publicação e as legendas dela, e ativa as legendas quando as do próprio Reddit estão ativadas."
+  },
   "aboutTitle": {
     "message": "Sobre"
   },
@@ -1312,6 +1318,9 @@
   },
   "rteNoteViki": {
     "message": "Legendas e prévias quando disponíveis; próximo pelo player."
+  },
+  "rteNoteReddit": {
+    "message": "Legendas quando o vídeo as tem."
   },
   "rteSaveError": {
     "message": "Não foi possível salvar as configurações dos serviços. Tente novamente."
