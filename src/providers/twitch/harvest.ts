@@ -6,8 +6,12 @@ import { isChildFrameMessage } from '../../protocol/frame-messages';
 import type { ProviderHarvest } from '../provider-api';
 
 import { parseTwitchCaptions, TWITCH_CC_ACK_EVENT, TWITCH_CC_EVENT } from './captions';
+import { twitchLiveChannel } from './channel-header';
 import { isTwitchHost } from './hosts';
-import { isTwitchGqlUrl, parseTwitchGraphqlBody, parseTwitchGraphqlData, type TwitchOwner, type TwitchPageAssets, TWITCH_HOST_CAPTION_ID } from './page';
+import {
+  isTwitchGqlUrl, parseCollaborations, parseTwitchGraphqlBody, parseTwitchGraphqlData, type TwitchCollaboration, type TwitchCollaborator,
+  type TwitchOwner, type TwitchPageAssets, TWITCH_HOST_CAPTION_ID
+} from './page';
 import { TWITCH_HARVEST_EVENT } from './snapshot';
 
 export function twitchIntegrationEnabled(): boolean {
@@ -45,6 +49,38 @@ function rememberOwner(videoId: string, owner: TwitchOwner): void {
 function ownerOf(videoId: string): { owner?: TwitchOwner } {
   const owner = twitchHarvest.owner ?? ownersByVideo.get(videoId);
   return owner ? { owner } : {};
+}
+
+/** Stream Together sessions by channel id, as Twitch last reported them; a few channels' worth across navigation. */
+const collaborationsById = new Map<string, TwitchCollaborator[] | null>();
+
+function keepCollaborations(found: TwitchCollaboration[]): void {
+  let changed = false;
+  for (const { channelId, members } of found) {
+    if (JSON.stringify(collaborationsById.get(channelId) ?? null) === JSON.stringify(members)) continue;
+    collaborationsById.delete(channelId);
+    collaborationsById.set(channelId, members);
+    changed = true;
+  }
+  for (const channelId of collaborationsById.keys()) {
+    if (collaborationsById.size <= 8) break;
+    collaborationsById.delete(channelId);
+  }
+  if (changed) notifyTwitchHarvest();
+}
+
+/**
+ * The live page's channel and its Stream Together members for the snapshot: the channel first, then the others in
+ * Twitch's order. The channel says which page the members describe, since the URL can change while a probe is answered.
+ */
+function liveCollaborators(): { channel?: string; collaborators?: TwitchCollaborator[] } {
+  const channel = twitchLiveChannel(window.location.href);
+  if (!channel) return {};
+  for (const [channelId, members] of collaborationsById) {
+    const self = members?.find(member => member.id === channelId);
+    if (members && self?.channel === channel) return { channel, collaborators: [self, ...members.filter(member => member !== self)] };
+  }
+  return { channel };
 }
 
 function twitchPageVideoId(href: string): string | null {
@@ -282,6 +318,9 @@ function setTwitchClosedCaptionsEnabled(enabled: boolean): boolean {
 
 export function harvestTwitchGqlBody(body: string): void {
   if (!body || body.length > MAX_CAPTION_BYTES) return;
+  if (/"collaboration"\s*:/.test(body.slice(0, 200000))) {
+    try { keepCollaborations(parseCollaborations(JSON.parse(body))); } catch { /* Not JSON. */ }
+  }
   if (!/"seekPreviewsURL"|"positionMilliseconds"|"lengthSeconds"|"moments"|captions\.twitch\.tv/.test(body.slice(0, 200000))) return;
   const videoId = twitchPageVideoId(window.location.href);
   mergeTwitchGqlData(parseTwitchGraphqlBody(body, videoId), videoId);
@@ -331,12 +370,13 @@ function mergeTwitchGqlData(parsed: Partial<TwitchPageAssets>, videoId: string |
 export function harvestTwitchResponseJson(url: string, data: unknown): void {
   if (!twitchIntegrationEnabled() || !isTwitchHost() || (url && !isTwitchGqlUrl(url))) return;
   const videoId = twitchPageVideoId(window.location.href);
+  keepCollaborations(parseCollaborations(data));
   mergeTwitchGqlData(parseTwitchGraphqlData(data, videoId), videoId);
 }
 
 export function harvestTwitchResponseText(url: string, text: string): void {
   if (!twitchIntegrationEnabled() || !isTwitchHost() || (url && !isTwitchGqlUrl(url))) return;
-  if (!(isTwitchGqlUrl(url) || /"positionMilliseconds"|"seekPreviewsURL"/.test(text.slice(0, 4000)))) return;
+  if (!(isTwitchGqlUrl(url) || /"positionMilliseconds"|"seekPreviewsURL"|"collaboration"/.test(text.slice(0, 4000)))) return;
   harvestTwitchGqlBody(text);
 }
 
@@ -359,7 +399,7 @@ export function readTwitchSnapshot(): Record<string, unknown> | null {
       twitchHarvest = { moments: [], captions: [] };
     }
     const title = sanitizeContentTitle(twitchHarvest.title) || readTwitchDomTitle() || undefined;
-    if (!videoId) return { videoId: undefined, ...(title ? { title } : {}) };
+    if (!videoId) return { videoId: undefined, ...(title ? { title } : {}), ...liveCollaborators() };
     const urls: string[] = [];
     const seenUrls = new Set<string>();
     const addUrl = (raw?: string | null) => {

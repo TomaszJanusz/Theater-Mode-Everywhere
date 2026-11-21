@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it, type TestContext } from 'node:test';
 
 import type { Page } from 'playwright';
@@ -24,6 +25,10 @@ const VOD = 'https://www.twitch.tv/videos/123';
 const STORYBOARD = 'https://vod-storyboards.twitch.tv/storyboards/123-info.json';
 const GQL = JSON.stringify({ data: { video: { id: '123', lengthSeconds: 1200, title: 'Fixture VOD' } } });
 const CORS = { 'access-control-allow-origin': '*' };
+const COLLABORATORS = JSON.parse(readFileSync(new URL('../../../test/host-fixtures/twitch-collaborator-list.json', import.meta.url), 'utf8')) as {
+  together: unknown;
+  none: unknown;
+};
 
 async function open(t: TestContext, engine: keyof typeof browsers, url: string, off = false): Promise<Page> {
   const page = await (await browsers[engine].newContext(t)).newPage();
@@ -129,6 +134,53 @@ for (const engine of testEngines()) describe(`${engine} Twitch provider`, () => 
 
     await page.evaluate(`document.querySelector('[data-a-target="stream-title"]').textContent = 'Renamed stream'`);
     await page.waitForFunction(`adapter.getTitle() === 'Renamed stream'`);
+  });
+
+  it('lists the channels streaming together from Twitch\'s collaborator list, for that channel only', async t => {
+    const page = await (await browsers[engine].newContext(t)).newPage();
+    let body = JSON.stringify(COLLABORATORS.together);
+    await page.route('https://gql.twitch.tv/**', route => route.fulfill({ contentType: 'application/json', headers: CORS, body }));
+    await page.route('https://www.twitch.tv/**', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: `<!doctype html><body>
+      <section class="channel-info-content"><img class="tw-image-avatar" src="https://static-cdn.jtvnw.net/jtv_user_pictures/ella.png">
+      <div><a href="/tallemi_ella"><h1>タルレミエラ</h1></a></div><p data-a-target="stream-title">Tarkov together</p></section></body>` }));
+    await page.goto('https://www.twitch.tv/tallemi_ella');
+    await page.addScriptTag({ content: 'window.__name = fn => fn;' });
+    await page.addScriptTag({ content: shipped });
+    await page.addScriptTag({ content: adapterBundle });
+    // The channel page's own request, as Twitch's client sends it (a Blob through XHR).
+    await xhr(page, 'https://gql.twitch.tv/gql', 'blob');
+    await page.waitForFunction(`TwitchMain.requestMediaProbe().then(result => result.providers.twitch?.collaborators?.length === 3)`);
+    await page.evaluate(`(async () => {
+      window.adapter = new TwitchAdapterTest.TwitchAdapter({ requestPageFetch: async () => null, parseCaptionPayload: () => [],
+        observeProviderDom: TwitchAdapterTest.observeProviderDom,
+        requestMediaProbe: async timeout => window.probeAnswer ?? TwitchMain.requestMediaProbe(timeout) });
+      await adapter.reload();
+    })()`);
+    const authors = () => page.evaluate(`adapter.getAuthors()?.map(author => [author.name, author.url, author.avatarUrl !== null]) ?? null`);
+    assert.deepEqual(await authors(), [
+      ['タルレミエラ', 'https://www.twitch.tv/tallemi_ella', true],
+      ['_なるる_', 'https://www.twitch.tv/narupxq', true],
+      ['べこぉ', 'https://www.twitch.tv/be_kooo', true]
+    ], 'the page\'s channel first, then the others in Twitch\'s order');
+    await page.evaluate('adapter.invalidate()');
+    assert.equal((await authors() as unknown[]).length, 3, 'a media reset keeps the session');
+    await page.evaluate(`window.probeAnswer = { providers: { twitch: { channel: 'evelone2004' } } }; adapter.reload()`);
+    assert.equal((await authors() as unknown[]).length, 3, 'an answer for a page the URL has moved on to keeps the session');
+    await page.evaluate('window.probeAnswer = null');
+
+    // Another channel: its own byline only, even before the next probe.
+    await page.evaluate(`history.pushState(null, '', '/evelone2004'); document.querySelector('.channel-info-content').innerHTML =
+      '<div><a href="/evelone2004"><h1>evelone2004</h1></a></div><p data-a-target="stream-title">Solo</p>'`);
+    assert.deepEqual(await authors(), [['evelone2004', 'https://www.twitch.tv/evelone2004', false]]);
+
+    // Back on the channel after its session ended: Twitch's list now names none.
+    body = JSON.stringify({ data: { channel: { id: '1020349410', collaboration: null, __typename: 'Channel' } } });
+    await xhr(page, 'https://gql.twitch.tv/gql', 'blob');
+    await page.evaluate(`history.pushState(null, '', '/tallemi_ella'); document.querySelector('.channel-info-content').innerHTML =
+      '<div><a href="/tallemi_ella"><h1>タルレミエラ</h1></a></div>'`);
+    await page.waitForFunction(`TwitchMain.requestMediaProbe().then(result => !result.providers.twitch?.collaborators)`);
+    await page.evaluate('adapter.reload()');
+    assert.deepEqual(await authors(), [['タルレミエラ', 'https://www.twitch.tv/tallemi_ella', false]]);
   });
 
   it('validates the MAIN snapshot it reads across the world boundary', async t => {
