@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { readFileSync } from 'node:fs';
+import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 
 import { classifyMediaFetchUrl } from '../../media-features/fetch-allowlist';
 import { parseCaptionPayload } from '../../media-features/parsers/captions';
@@ -12,6 +13,12 @@ import {
   parseBilibiliSnapshot, parseBilibiliStoryboard, resolveBilibiliSubtitleUrl
 } from './metadata';
 import { readBilibiliSnapshot, trackBilibiliVisits } from './snapshot';
+
+type SwitchState = { path: string; state: { aid: number; cid: number; videoData: { aid: number; title: string } } };
+const inPlaceSwitch = JSON.parse(readFileSync(new URL('../../../test/host-fixtures/bilibili-in-place-switch.json', import.meta.url), 'utf8')) as {
+  lagging: SwitchState;
+  settled: SwitchState;
+};
 
 // Field names and duplicate timestamps from the live videoshot response for BV1xx411c7mu.
 const shot = {
@@ -306,6 +313,63 @@ describe('Bilibili RTE', () => {
     replies[2]({ ...part(3), videoId: '<img>' });
     assert.deepEqual(await malformed, []);
     assert.equal(adapter.mediaId(), null);
+  });
+});
+
+describe('Bilibili in-place switch', () => {
+  const oldWindow = globalThis.window;
+  const oldDocument = globalThis.document;
+  const oldFetch = globalThis.fetch;
+  let win: { location: { hostname: string; pathname: string; search: string }; __INITIAL_STATE__: unknown };
+  const show = (recorded: SwitchState) => {
+    win.location.pathname = recorded.path;
+    win.__INITIAL_STATE__ = structuredClone(recorded.state);
+  };
+  /** Runs the read's 100 ms checks up to `ms`, letting each continuation run. */
+  const advance = async (ms: number) => {
+    for (let elapsed = 0; elapsed < ms; elapsed += 100) {
+      mock.timers.tick(100);
+      for (let turn = 0; turn < 10; turn++) await Promise.resolve();
+    }
+  };
+
+  beforeEach(() => {
+    mock.timers.enable({ apis: ['setTimeout'] });
+    win = { location: { hostname: 'www.bilibili.com', pathname: '', search: '' }, __INITIAL_STATE__: null };
+    globalThis.window = win as any;
+    globalThis.document = { documentElement: { hasAttribute: () => false }, querySelector: () => null } as any;
+    // Metadata requests fail fast; only the page state is under test.
+    globalThis.fetch = (async () => { throw new TypeError('offline'); }) as typeof fetch;
+  });
+  afterEach(() => {
+    // A read's settle deadline outlives it; fire it so the next case starts with no timers pending.
+    mock.timers.runAll();
+    mock.timers.reset();
+    globalThis.window = oldWindow; globalThis.document = oldDocument; globalThis.fetch = oldFetch;
+  });
+
+  it('waits for videoData to describe the video the page already names', async () => {
+    show(inPlaceSwitch.lagging);
+    const read = readBilibiliSnapshot();
+    await advance(500);
+    show(inPlaceSwitch.settled);
+    await advance(100);
+    const snapshot = await read;
+    assert.equal(snapshot?.videoId, `${inPlaceSwitch.settled.state.aid}:${inPlaceSwitch.settled.state.cid}`);
+    assert.equal(snapshot?.title, inPlaceSwitch.settled.state.videoData.title);
+    assert.deepEqual(snapshot?.authors?.map(author => [author.name, author.verified]), [['饥困荒野官方', true]]);
+  });
+
+  it('names neither the previous title nor its uploaders when videoData never catches up', async () => {
+    show(inPlaceSwitch.lagging);
+    // Another visit, so the read the previous case shared is not reused.
+    win.location.search = '?p=1';
+    const read = readBilibiliSnapshot();
+    await advance(3100);
+    const snapshot = await read;
+    assert.equal(snapshot?.videoId, `${inPlaceSwitch.lagging.state.aid}:${inPlaceSwitch.lagging.state.cid}`);
+    assert.equal(snapshot?.title, undefined);
+    assert.deepEqual(snapshot?.authors, []);
   });
 });
 

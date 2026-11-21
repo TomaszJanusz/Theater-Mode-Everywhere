@@ -11,6 +11,12 @@ function integrationEnabled(): boolean {
   return isBilibiliHost() && mediaProviderIntegrationEnabled('bilibili');
 }
 
+type BilibiliWindow = Window & { __INITIAL_STATE__?: Record<string, any> };
+
+/** How long a read waits for `videoData` to describe the video `aid` names, and how often it looks. */
+const SETTLE_TIMEOUT_MS = 3000;
+const SETTLE_STEP_MS = 100;
+
 let cached: { key: string; visit: object; expires: number; pending: Promise<BilibiliSnapshot | null> } | null = null;
 
 /** A visit is one video part: tracking parameters and timestamps do not start another. */
@@ -73,9 +79,26 @@ export function readBilibiliSnapshot(signal?: AbortSignal): Promise<BilibiliSnap
   return untilAborted(readSnapshot(), signal);
 }
 
+/**
+ * Bilibili switches videos in place (autoplay, its own lists): `aid` and `cid` name the next video about a second
+ * before `videoData`, which holds its title and uploaders, stops describing the previous one. Waits briefly for the
+ * two to agree; null when they never do or the visit ends, so a lagging `videoData` is never read as the new video.
+ */
+async function settledVideo(aid: number): Promise<Record<string, any> | null> {
+  let signal: AbortSignal | null = null;
+  for (;;) {
+    const state = (window as BilibiliWindow).__INITIAL_STATE__ || {};
+    const video = state.videoData;
+    if (!video || video.aid === undefined || Number(video.aid) === aid) return video || state.epInfo || {};
+    signal ??= visits.signal(SETTLE_TIMEOUT_MS);
+    if (signal.aborted) return null;
+    await new Promise(resolve => setTimeout(resolve, SETTLE_STEP_MS));
+  }
+}
+
 async function readSnapshot(): Promise<BilibiliSnapshot | null> {
   if (!integrationEnabled()) { cached = null; return null; }
-  const win = window as Window & { __INITIAL_STATE__?: Record<string, any> };
+  const win = window as BilibiliWindow;
   const state = win.__INITIAL_STATE__ || {};
   const video = state.videoData || state.epInfo || {};
   const cid = Number(state.cid || video.cid);
@@ -84,19 +107,20 @@ async function readSnapshot(): Promise<BilibiliSnapshot | null> {
   const key = `${aid}:${cid}`;
   const visit = visits.current();
   if (cached?.key === key && cached.visit === visit && cached.expires > Date.now()) return cached.pending;
-  const page = Array.isArray(video.pages) ? video.pages.find((p: Record<string, unknown>) => Number(p.cid) === cid) : null;
-  const title = video.title || video.long_title || document.querySelector('h1')?.textContent;
-  const duration = Number(page?.duration || video.duration);
-  const authors = readBilibiliAuthors(state, aid);
   const pending = Promise.all([
-    metadata('v2', aid, cid), metadata('videoshot', aid, cid), readPbp(aid, cid), readSubtitleView(aid, cid)
-  ]).then(([info, shot, pbp, subtitles]) => {
+    metadata('v2', aid, cid), metadata('videoshot', aid, cid), readPbp(aid, cid), readSubtitleView(aid, cid), settledVideo(aid)
+  ]).then(([info, shot, pbp, subtitles, described]) => {
     // Ignore a late response after a SPA episode change, a later visit or RTE has been disabled.
     const current = win.__INITIAL_STATE__ || {};
     if (!integrationEnabled() || visits.current() !== visit || Number(current.cid || current.videoData?.cid || current.epInfo?.cid) !== cid) {
       if (cached?.pending === pending) cached = null;
       return null;
     }
+    // Without a settled `videoData` the title and uploaders are unknown, not the previous video's.
+    const page = Array.isArray(described?.pages) ? described.pages.find((p: Record<string, unknown>) => Number(p.cid) === cid) : null;
+    const title = described ? described.title || described.long_title || document.querySelector('h1')?.textContent : null;
+    const duration = Number(page?.duration || described?.duration);
+    const authors = described ? readBilibiliAuthors(current, aid) : [];
     const snapshot = { ...normalizeBilibiliSnapshot(key, title, duration, info, shot, pbp, subtitles), authors };
     // An empty subtitle list is often a timed-out view, not proof the film has none.
     // Keep it briefly so the next probe can retry without hammering every duration event.

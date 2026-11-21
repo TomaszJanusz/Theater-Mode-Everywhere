@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On YouTube live streams that cannot be rewound, the progress bar shows LIVE and cannot be dragged, the seek keys do nothing, and play/pause is a Stop button that resumes at the live edge, as on YouTube. Before, seeking back left a spinner turning and play/pause could fall out of step with the video.
 - After leaving theater mode on YouTube, YouTube's own player controls fit the player again when fullscreen was switched on or off in theater mode, including when leaving theater mode from fullscreen: the chapters on the progress bar stay on one line, and the settings menu opens at its full height instead of as a thin strip.
 - On Twitch, opening another live channel or following a raid in theater mode now shows the new stream's title in the title row. Before, it could keep the previous stream's title for a moment and then stay empty.
+- On bilibili.com (CN), when bilibili moves on to the next video by itself in theater mode, the title row now names that video instead of keeping the previous video's title.
 
 ## [2.1.0] - 2026-11-02
 

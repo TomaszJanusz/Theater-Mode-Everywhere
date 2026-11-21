@@ -1,0 +1,104 @@
+{
+  "source": "bilibili.com watch page of a joint upload (BV1jVyWzoEZE, three uploaders) playing on into the next recommended video (BV1vLnq6JE5o) by bilibili's own autoplay, logged out, /en/ route",
+  "captured": "2026-11-21",
+  "environment": "Playwright Chromium (headless=new) on runner02 with a desktop Chrome user agent; window.__INITIAL_STATE__ sampled every 30 ms",
+  "evidence": "Recorded host fixture (page state during an in-place switch), not live extension verification",
+  "notes": "Only the fields the provider reads are kept. 'lagging' is the state ~0.9 s before 'settled': aid, cid, bvid and the path already name the next video while videoData and upData still describe the previous one.",
+  "lagging": {
+    "path": "/en/video/BV1vLnq6JE5o",
+    "state": {
+      "aid": 117477790975688,
+      "cid": 42914877090,
+      "bvid": "BV1vLnq6JE5o",
+      "upData": {
+        "mid": "4976111",
+        "name": "龚琳娜",
+        "Official": {
+          "type": 0
+        }
+      },
+      "videoData": {
+        "aid": 117648029387345,
+        "bvid": "BV1jVyWzoEZE",
+        "cid": 43763633946,
+        "title": "Dai Yuqiang × Gong Linna | World-class voices, wild-style letting loose! A mesmerizing performance of the Don't Starve: Newhome November 24 launch theme song",
+        "duration": 225,
+        "owner": {
+          "mid": 4976111,
+          "name": "龚琳娜",
+          "face": "https://i2.hdslb.com/bfs/face/f923dd1794462070f9aea3aba80f0b3d597845db.jpg"
+        },
+        "staff": [
+          {
+            "mid": 4976111,
+            "name": "龚琳娜",
+            "face": "https://i2.hdslb.com/bfs/face/f923dd1794462070f9aea3aba80f0b3d597845db.jpg",
+            "official": {
+              "type": 0
+            },
+            "title": "creator"
+          },
+          {
+            "mid": 607586426,
+            "name": "男高音歌唱家戴玉强",
+            "face": "https://i2.hdslb.com/bfs/face/f31a89ad72337bc0a68df42984256f5104aec20a.jpg",
+            "official": {
+              "type": -1
+            },
+            "title": "Singing"
+          },
+          {
+            "mid": 1307689118,
+            "name": "饥困荒野官方",
+            "face": "https://i2.hdslb.com/bfs/face/82b9307138d4672e62629625e25164dd5e85228f.jpg",
+            "official": {
+              "type": 1
+            },
+            "title": "Sponsor"
+          }
+        ],
+        "pages": [
+          {
+            "cid": 43763633946,
+            "page": 1,
+            "duration": 225
+          }
+        ]
+      }
+    }
+  },
+  "settled": {
+    "path": "/en/video/BV1vLnq6JE5o",
+    "state": {
+      "aid": 117477790975688,
+      "cid": 42914877090,
+      "bvid": "BV1vLnq6JE5o",
+      "upData": {
+        "mid": "1307689118",
+        "name": "饥困荒野官方",
+        "Official": {
+          "type": 1
+        }
+      },
+      "videoData": {
+        "aid": 117477790975688,
+        "bvid": "BV1vLnq6JE5o",
+        "cid": 42914877090,
+        "title": "No more delays! \"Starvation Wilds\" is officially set to launch on all platforms on November 24th!",
+        "duration": 114,
+        "owner": {
+          "mid": 1307689118,
+          "name": "饥困荒野官方",
+          "face": "https://i2.hdslb.com/bfs/face/82b9307138d4672e62629625e25164dd5e85228f.jpg"
+        },
+        "pages": [
+          {
+            "cid": 42914877090,
+            "page": 1,
+            "duration": 114
+          }
+        ]
+      }
+    }
+  }
+}
