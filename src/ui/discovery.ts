@@ -4,6 +4,7 @@ import {
   prepareProviderShadowRoot,
   providerRankedVideo
 } from '../providers/discovery';
+import { remountProviderStages } from '../providers/stage';
 import { STATUS_HUD_SWITCH_ICON } from './hud';
 import type { PlayerChromeContext } from './runtime-context';
 import { markTheaterVideo, unmarkTheaterVideo } from './theater-layout';
@@ -243,6 +244,8 @@ export function createDiscovery(ctx: PlayerChromeContext) {
       injectStylesIntoShadowRoot(rootNode);
     }
     markTheaterVideo(newVideo);
+    // As on a host's replacement: stages that act on the pinned player follow it to the new one.
+    remountProviderStages(window.location.hostname, newVideo);
     ctx.actions.applyTheaterElementInlineStyles(newVideo);
     ctx.actions.bindTheaterAncestors(newVideo);
 

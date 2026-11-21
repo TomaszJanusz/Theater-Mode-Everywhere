@@ -27,15 +27,17 @@ const bundle = bundlePlayer([
  * The recording plus what Reddit's stylesheets and hls.js add at run time: the player's size, a playable clip and the
  * empty `subtitles/en "English"` rendition hls.js creates from the stream's playlist.
  */
-function page({ captionsOn = true } = {}): string {
+function page({ captionsOn = true, second = false } = {}): string {
   assert.ok(RECORDED_PLAYER.includes(RECORDED_VIDEO) && RECORDED_PLAYER.includes(' captions-enabled>'), 'recording shape');
   let player = RECORDED_PLAYER.replace(RECORDED_VIDEO, '<template shadowrootmode="open"><style>video { width: 100%; height: 100%; }</style>'
     + `<video aria-label="video player" muted playsinline src="data:video/webm;base64,${VOD}"></video>`);
   if (!captionsOn) player = player.replace(' captions-enabled>', '>');
+  // A second post below, as in a feed.
+  if (second) player += player.replaceAll('1fx7rec', '2fx7rec').replaceAll('Recorded post title for fixture', 'Second post');
   return `<!doctype html><html><head><meta charset="utf-8"><title>Recorded post title for fixture : r/fixture</title>
 <style>body { margin: 0; } shreddit-player { display: block; width: 960px; height: 540px; }</style></head><body>${player}
 <video id="inline" muted playsinline></video>
-<script>document.querySelector('shreddit-player').shadowRoot.querySelector('video').addTextTrack('subtitles', 'English', 'en');</script>
+<script>for (const player of document.querySelectorAll('shreddit-player')) player.shadowRoot.querySelector('video').addTextTrack('subtitles', 'English', 'en');</script>
 </body></html>`;
 }
 
@@ -58,11 +60,11 @@ const run = <T>(page: Page, body: string) => page.evaluate(`(async () => {
   ${body} })()`) as Promise<T>;
 
 /** Reddit's own caption box, inside the controls' shadow root. */
-const redditOverlay = (page: Page) => page.evaluate(() => {
-  const ui = document.querySelector('shreddit-player')!.shadowRoot!.querySelector('shreddit-media-ui')!;
+const redditOverlay = (page: Page, index = 0) => page.evaluate(index => {
+  const ui = document.querySelectorAll('shreddit-player')[index]!.shadowRoot!.querySelector('shreddit-media-ui')!;
   const overlay = ui.shadowRoot!.querySelector<HTMLElement>('shreddit-caption-overlay')!;
   return { shown: getComputedStyle(overlay).display !== 'none', style: overlay.getAttribute('style'), enabled: ui.hasAttribute('captions-enabled') };
-});
+}, index);
 
 const ccEntries = (page: Page) => page.locator('.theater-cc-menu button').evaluateAll(buttons => buttons.map(button => button.textContent?.trim() ?? ''));
 
@@ -109,6 +111,22 @@ describe('Reddit provider', () => {
       await run(tab, 'video.currentTime = 1.6;');
       await tab.locator('.theater-caption-overlay.visible', { hasText: 'amet' }).waitFor();
       assert.equal((await redditOverlay(tab)).enabled, false, 'turning ours on does not switch Reddit\'s on');
+    });
+
+    it(`moves the hidden caption box and the title along when Shift+T switches to the next post's player in ${engine}`, { timeout: 40_000 }, async t => {
+      const tab = await newPage(t, page({ second: true }));
+      await tab.waitForFunction(() => [...document.querySelectorAll('shreddit-player')].every(player => (player.shadowRoot!.querySelector('video')!.readyState) >= 2));
+      await enterTheater(tab);
+      await tab.locator('.theater-title-hud-text', { hasText: 'Recorded post title for fixture' }).first().waitFor({ state: 'attached' });
+      assert.deepEqual([(await redditOverlay(tab, 0)).shown, (await redditOverlay(tab, 1)).shown], [false, true]);
+      await tab.keyboard.press('Shift+T');
+      await tab.locator('.theater-title-hud-text', { hasText: 'Second post' }).first().waitFor({ state: 'attached' });
+      await tab.waitForFunction(() => document.querySelectorAll('shreddit-player')[1]!.shadowRoot!.querySelector('shreddit-media-ui')!
+        .shadowRoot!.querySelector<HTMLElement>('shreddit-caption-overlay')!.style.getPropertyValue('display') === 'none');
+      assert.deepEqual([(await redditOverlay(tab, 0)).shown, (await redditOverlay(tab, 1)).shown], [true, false], 'the box follows the theater player');
+      await tab.keyboard.press('Escape');
+      await tab.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+      assert.deepEqual([(await redditOverlay(tab, 0)).style, (await redditOverlay(tab, 1)).style], ['', ''], 'exit restores both');
     });
 
     it(`follows the player to another post and drops what arrives for the one it left in ${engine}`, { timeout: 40_000 }, async t => {
