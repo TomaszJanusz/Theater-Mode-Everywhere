@@ -80,7 +80,7 @@ import {
   seekToMediaTime
 } from '../playback-window';
 import { hasLeftPlaybackSurface, isInactiveStandbyVideo, isOnMiniplayerSurface } from '../switchable-videos';
-import { THEATER_VIDEO_ATTR } from '../platform/active-video';
+import { THEATER_PARENT_CLASS, THEATER_VIDEO_ATTR } from '../platform/active-video';
 import { providerSharesPlaybackHost, providerVideoAbandoned } from '../providers/discovery';
 import {
   bindProviderPlayback,
@@ -2526,14 +2526,14 @@ function refreshTheaterAncestors(element: HTMLElement): void {
       continue;
     }
     if (parent instanceof HTMLElement) {
-      parent.classList.add('theater-everywhere-parent-active');
+      parent.classList.add(THEATER_PARENT_CLASS);
       next.push(parent);
     }
     parent = parent.parentNode;
   }
   for (const previous of refs.ancestorsList) {
     if (previous?.classList && !next.includes(previous)) {
-      previous.classList.remove('theater-everywhere-parent-active');
+      previous.classList.remove(THEATER_PARENT_CLASS);
     }
   }
   refs.ancestorsList = next;
@@ -2715,7 +2715,7 @@ function exitTheaterMode(
   // Restore ancestors styling
   refs.ancestorsList.forEach(parent => {
     if (parent && parent.classList) {
-      parent.classList.remove('theater-everywhere-parent-active');
+      parent.classList.remove(THEATER_PARENT_CLASS);
     }
   });
   refs.ancestorsList = [];
