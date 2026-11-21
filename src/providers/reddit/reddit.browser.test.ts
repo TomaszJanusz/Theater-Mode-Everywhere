@@ -129,57 +129,73 @@ describe('Reddit provider', () => {
       assert.deepEqual([(await redditOverlay(tab, 0)).style, (await redditOverlay(tab, 1)).style], ['', ''], 'exit restores both');
     });
 
-    it(`follows the player to another post and drops what arrives for the one it left in ${engine}`, { timeout: 40_000 }, async t => {
+    it(`lists the caption file once it loads, follows the player to another post and drops what arrives for the one it left in ${engine}`, { timeout: 40_000 }, async t => {
       const tab = await newPage(t, page());
       const result = await run<Record<string, unknown>>(tab, `
-        const releases = [];
-        const adapter = new T.RedditAdapter(video, { parseCaptionPayload: T.parseCaptionPayload,
-          requestPageFetch: url => new Promise(resolve => releases.push(() => resolve(url === ${JSON.stringify(CAPTIONS)} || url.includes('nextvid') ? ${JSON.stringify(RECORDED_CAPTIONS)} : null))) });
-        const inline = new T.RedditAdapter(document.getElementById('inline'), { parseCaptionPayload: T.parseCaptionPayload, requestPageFetch: async () => null });
-        const [track] = await adapter.listCaptionTracks();
-        const first = { id: adapter.mediaId(), title: adapter.getTitle(), track: track.id + ':' + track.label + ':' + track.language, host: adapter.hostCaptionTrack() === track.id,
+        const pending = new Map();
+        const requests = [];
+        const release = (url, body) => { pending.get(url)(body); pending.delete(url); };
+        const services = { parseCaptionPayload: T.parseCaptionPayload,
+          requestPageFetch: url => { requests.push(url.split('/')[3]); return new Promise(resolve => pending.set(url, resolve)); } };
+        const adapter = new T.RedditAdapter(video, services);
+        const inline = new T.RedditAdapter(document.getElementById('inline'), services);
+        const post = (id, title, file) => { player.setAttribute('post-id', id); player.setAttribute('post-title', title); player.setAttribute('caption-url', file); };
+        const NEXT = 'https://v.redd.it/nextvid0001/wh_ben_en.vtt', THIRD = 'https://v.redd.it/thirdvid001/wh_ben_en.vtt';
+
+        // The track waits for its file; one request serves the listing, Reddit's toggle and the activation.
+        const listing = adapter.listCaptionTracks();
+        const beforeLoad = adapter.hostCaptionTrack();
+        release(${JSON.stringify(CAPTIONS)}, ${JSON.stringify(RECORDED_CAPTIONS)});
+        const [track] = await listing;
+        const active = await adapter.activateCaptionTrack(track.id);
+        const first = { id: adapter.mediaId(), title: adapter.getTitle(), track: track.id + ':' + track.label + ':' + track.language, beforeLoad,
+          host: adapter.hostCaptionTrack() === track.id, active: active.status + ':' + active.cues.length + ':' + active.cues[0]?.text,
           replaces: adapter.replacesElementCaptions(), inline: inline.replacesElementCaptions(), inlineTracks: (await inline.listCaptionTracks()).length };
+
         const notified = [];
         const stop = adapter.observeTitle(() => notified.push(adapter.mediaId()));
-        const pending = adapter.activateCaptionTrack(track.id);
-        // Reddit points the same player at the next post while the file is loading.
-        player.setAttribute('post-id', 't3_next01');
-        player.setAttribute('post-title', 'Next post');
-        player.setAttribute('caption-url', 'https://v.redd.it/nextvid0001/wh_ben_en.vtt');
-        releases.shift()();
-        const stale = (await pending).status;
-        const [next] = await adapter.listCaptionTracks();
-        const moved = { id: adapter.mediaId(), title: adapter.getTitle(), track: next.id };
+        // Reddit points the player at the next post while its file loads, then at a third one.
+        post('t3_next01', 'Next post', NEXT);
         const oldPick = (await adapter.activateCaptionTrack(track.id)).status;
-        const superseded = adapter.activateCaptionTrack(next.id);
+        const nextListing = adapter.listCaptionTracks();
+        const nextPick = adapter.activateCaptionTrack('reddit:t3_next01:' + NEXT);
+        const moved = { id: adapter.mediaId(), title: adapter.getTitle() };
+        post('t3_third1', 'Third post', THIRD);
+        release(NEXT, ${JSON.stringify(RECORDED_CAPTIONS)});
+        const stale = { listed: (await nextListing).length, pick: (await nextPick).status };
+
+        // Reddit has no captions for the third video: its file answers 403.
+        const thirdListing = adapter.listCaptionTracks();
+        release(THIRD, null);
+        const missing = { listed: (await thirdListing).length, host: adapter.hostCaptionTrack(), pick: (await adapter.activateCaptionTrack('reddit:t3_third1:' + THIRD)).status };
+
+        // A pick replaced before its file arrived is dropped.
+        post('t3_next01', 'Next post', NEXT);
+        const superseded = adapter.activateCaptionTrack('reddit:t3_next01:' + NEXT);
         const off = (await adapter.activateCaptionTrack(null)).status;
-        releases.shift()();
+        release(NEXT, ${JSON.stringify(RECORDED_CAPTIONS)});
         const supersededStatus = (await superseded).status;
-        const picked = adapter.activateCaptionTrack(next.id);
-        releases.shift()();
-        const active = await picked;
+
         player.setAttribute('caption-url', 'https://evil.test/nextvid0001/wh_ben_en.vtt');
         const hostile = (await adapter.listCaptionTracks()).length;
+        await new Promise(resolve => queueMicrotask(resolve));
         const beforeStop = notified.length;
         stop();
         player.setAttribute('post-title', 'After stop');
         await new Promise(resolve => queueMicrotask(resolve));
-        player.shadowRoot.querySelector('shreddit-media-ui').removeAttribute('captions-enabled');
-        player.setAttribute('caption-url', 'https://v.redd.it/nextvid0001/wh_ben_en.vtt');
-        return { first, stale, next: moved, notified: notified.length > 0 && notified.every(id => id === 't3_next01'),
-          oldPick, off, supersededStatus, active: { status: active.status, lines: active.cues.length, text: active.cues[0]?.text }, hostile,
-          quiet: notified.length === beforeStop, hostOff: adapter.hostCaptionTrack() };`);
-      assert.deepEqual(result.first, { id: 't3_1fx7rec', title: 'Recorded post title for fixture', track: `reddit:t3_1fx7rec:${CAPTIONS}:English:en`, host: true,
-        replaces: true, inline: false, inlineTracks: 0 });
-      assert.equal(result.stale, 'failed', 'the file of the post the player left is not shown');
-      assert.deepEqual(result.next, { id: 't3_next01', title: 'Next post', track: 'reddit:t3_next01:https://v.redd.it/nextvid0001/wh_ben_en.vtt' });
-      assert.equal(result.notified, true, 'the title observer reports the new post');
+        return { first, oldPick, moved, stale, missing, off, supersededStatus, hostile, requests,
+          notified: notified.length > 0 && notified.includes('t3_next01'), quiet: notified.length === beforeStop };`);
+      assert.deepEqual(result.first, { id: 't3_1fx7rec', title: 'Recorded post title for fixture', track: `reddit:t3_1fx7rec:${CAPTIONS}:English:en`, beforeLoad: null,
+        host: true, active: 'active:4:amet', replaces: true, inline: false, inlineTracks: 0 });
       assert.equal(result.oldPick, 'failed', 'the previous post\'s track cannot be picked any more');
+      assert.deepEqual(result.moved, { id: 't3_next01', title: 'Next post' });
+      assert.deepEqual(result.stale, { listed: 0, pick: 'failed' }, 'a file for the post the player left is neither listed nor shown');
+      assert.deepEqual(result.missing, { listed: 0, host: null, pick: 'failed' }, 'no captions, no track: nothing to fail on');
       assert.equal(result.off, 'off');
       assert.equal(result.supersededStatus, 'failed', 'a pick replaced before its file arrived is dropped');
-      assert.deepEqual(result.active, { status: 'active', lines: 4, text: 'amet' });
       assert.equal(result.hostile, 0, 'a caption URL off Reddit\'s CDN is not offered');
-      assert.equal(result.hostOff, null, 'Reddit\'s captions off: no host track');
+      assert.deepEqual(result.requests, ['fx7rec0vid01', 'nextvid0001', 'thirdvid001', 'nextvid0001'], 'one request per file, none for a foreign URL');
+      assert.equal(result.notified, true, 'the title observer reports the new post');
       assert.equal(result.quiet, true, 'cleanup stops the observer');
     });
   }
