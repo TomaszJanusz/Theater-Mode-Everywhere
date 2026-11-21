@@ -13,7 +13,7 @@ import type {
 import type { ProviderServices } from '../provider-api';
 
 import { encodeTwitchCaptions, TWITCH_CC_ACK_EVENT, TWITCH_CC_EVENT } from './captions';
-import { readTwitchChannelHeader, TWITCH_CHANNEL_HEADER, twitchLiveChannel } from './channel-header';
+import { TWITCH_CHANNEL_HEADER, twitchHeaderChannel, twitchHeaderReader, twitchLiveChannel } from './channel-header';
 import {
   collectTwitchStoryboardUrls,
   isSafeTwitchCaptionUrl,
@@ -235,6 +235,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
   private snapshot: TwitchPlayerSnapshot | null = null;
   /** The live channel the snapshot was loaded for. */
   private liveChannel: string | null = null;
+  private readonly readHeader = twitchHeaderReader();
   private storyboard: TwitchStoryboardSet | null = null;
   private tracks: TwitchPageCaption[] = [];
   private moments: TwitchPageMoment[] = [];
@@ -392,30 +393,46 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     return this.snapshot?.videoId || twitchPageVideoId(window.location.href);
   }
 
+  /**
+   * A VOD's title comes from its metadata. A live page's title is the stream title in the header that names the page's
+   * channel, read again with every publication: after in-app navigation (another channel, a raid) the snapshot and the
+   * header can still describe the previous channel, and the header's change republishes the title once it catches up.
+   */
   getTitle(): string | null {
-    return sanitizeContentTitle(this.snapshot?.title);
+    const href = window.location.href;
+    const videoId = twitchPageVideoId(href);
+    // A VOD's title only while the snapshot still describes the video the URL names.
+    if (videoId) return this.snapshot?.videoId === videoId ? sanitizeContentTitle(this.snapshot.title) : null;
+    const channel = twitchLiveChannel(href);
+    if (!channel) return sanitizeContentTitle(this.snapshot?.title);
+    const shown = twitchHeaderChannel();
+    const loaded = this.liveChannel === channel ? sanitizeContentTitle(this.snapshot?.title) : null;
+    if (!shown) return loaded;
+    const header = shown === channel ? this.readHeader(channel) : null;
+    return header ? header.title || loaded : null;
   }
 
   /**
-   * The channel of the loaded title: the live page's channel (while the URL still names it) or the VOD's owner. The
-   * header adds the display name, avatar and badge when it shows that same channel; without it the channel's login
-   * name stands in.
+   * The channel of the title: the live page's channel, as `getTitle` names it (with or without a loaded snapshot, which
+   * a media reset drops), or the VOD's owner from the loaded metadata. The header adds the display name, avatar and badge when it shows that same channel; without it the
+   * channel's login name stands in. A header that still shows another channel, wholly or in part, names nobody.
    */
   getAuthors(): ContentAuthor[] | null {
     const href = window.location.href;
     const videoId = twitchPageVideoId(href);
     let channel: string | null | undefined;
     if (videoId) channel = this.snapshot?.videoId === videoId ? this.snapshot.owner?.channel : null;
-    else channel = this.liveChannel === twitchLiveChannel(href) ? this.liveChannel : null;
-    if (!channel || !this.snapshot) return null;
-    const header = readTwitchChannelHeader(channel);
+    else channel = twitchLiveChannel(href);
+    const shown = videoId ? null : twitchHeaderChannel();
+    const header = channel && (!shown || shown === channel) ? this.readHeader(channel) : null;
+    if (!channel || (shown && !header)) return null;
     return [{
-      id: channel, name: header?.name || this.snapshot.owner?.name || channel, url: `https://www.twitch.tv/${channel}`,
+      id: channel, name: header?.name || this.snapshot?.owner?.name || channel, url: `https://www.twitch.tv/${channel}`,
       avatarUrl: header?.avatarUrl ?? null, verified: header?.verified ?? false, stat: null
     }];
   }
 
-  /** The header renders after the stream starts and follows in-app navigation; its name and avatar republish the title. */
+  /** The header renders after the stream starts and follows in-app navigation; its name, avatar and title republish the title. */
   observeTitle(onChange: () => void): () => void {
     return this.services.observeProviderDom({ root: document, selector: TWITCH_CHANNEL_HEADER, changed: onChange, needsFallback: () => false });
   }
