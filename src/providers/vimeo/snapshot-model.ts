@@ -1,3 +1,5 @@
+import { parseVimeoOwner, type VimeoOwner } from './owner';
+
 export type VimeoThumbPreview = {
   url: string;
   width: number;
@@ -14,6 +16,7 @@ export type VimeoPlayerSnapshot = {
   title?: string;
   chapters?: Array<{ startTime: number; title: string }>;
   thumbPreview?: VimeoThumbPreview;
+  owner?: VimeoOwner;
 };
 
 const text = (value: unknown, max: number): string | undefined => (typeof value === 'string' && value ? value.slice(0, max) : undefined);
@@ -45,6 +48,7 @@ export function normalizeVimeoSnapshot(value: unknown): VimeoPlayerSnapshot | nu
     title: text(raw.title, 300),
     duration: finite(raw.duration),
     chapters,
-    thumbPreview
+    thumbPreview,
+    ...(raw.owner !== undefined ? { owner: parseVimeoOwner(raw.owner) } : {})
   };
 }

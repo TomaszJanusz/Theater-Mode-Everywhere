@@ -7,6 +7,7 @@ import { chromium, firefox, type Page } from 'playwright';
 import { LANGUAGES } from '../src/language';
 import { MEDIA_PROVIDER_FLAG_KEYS } from '../src/media-features/provider-flags';
 import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
+import { PROVIDER_SETTINGS } from '../src/providers/catalog';
 import { bundleModules } from '../src/test-utils/player-boot';
 import { readStylesheet } from '../src/test-utils/styles';
 import { sharedTestBrowser } from '../src/test-utils/test-browser';
@@ -114,8 +115,11 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
     assert.equal(await button.evaluate(button => document.activeElement === button), true);
     const other = supported.find(provider => provider.id !== 'youtube')!;
     await page.locator(`[data-provider="${other.id}"] .rte-settings-button`).click();
-    assert.equal(await dialog.getByRole('switch').count(), 1);
-    assert.equal(await dialog.getByRole('switch').isChecked(), true, 'another provider keeps its default');
+    // As many switches as the service declares; each still shows its own default.
+    const declared = PROVIDER_SETTINGS.find(provider => provider.id === other.id)!.settings;
+    assert.equal(await dialog.getByRole('switch').count(), declared.length);
+    assert.deepEqual(await dialog.getByRole('switch').evaluateAll(switches => switches.map(item => (item as HTMLInputElement).checked)),
+      declared.map(setting => setting.default), 'another provider keeps its defaults');
     await page.keyboard.press('Escape');
     await button.click();
     assert.equal(await recommendations.isChecked(), false);

@@ -29,4 +29,12 @@ describe('Vimeo snapshot model', () => {
     assert.equal(snapshot?.chapters?.[0].title.length, 120);
     assert.equal(snapshot?.title?.length, 300);
   });
+
+  it('keeps the owner only with its clip id and a usable name', () => {
+    const author = { id: '152184', name: 'Vimeo', url: 'https://vimeo.com/staff', avatarUrl: 'https://i.vimeocdn.com/portrait/1_120x120', verified: false, stat: null };
+    assert.deepEqual(normalizeVimeoSnapshot({ owner: { clipId: '76979871', author } })?.owner, { clipId: '76979871', author });
+    for (const owner of [{ author }, { clipId: 'abc', author }, { clipId: '1', author: { ...author, id: 'staff' } }, { clipId: '1', author: { ...author, name: ' ' } }, 'Vimeo']) {
+      assert.equal(normalizeVimeoSnapshot({ owner })?.owner, undefined, JSON.stringify(owner));
+    }
+  });
 });

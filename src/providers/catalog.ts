@@ -330,6 +330,13 @@ export const PROVIDER_SETTINGS = [
         "default": true,
         "label": "autoEnterTheaterTitle",
         "description": "autoEnterTheaterDescription"
+      },
+      {
+        "id": "showAuthor",
+        "type": "boolean",
+        "default": true,
+        "label": "providerShowAuthor",
+        "description": "providerShowAuthorDescription"
       }
     ]
   },
