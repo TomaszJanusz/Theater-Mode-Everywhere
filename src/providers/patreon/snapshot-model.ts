@@ -1,3 +1,5 @@
+import { parsePatreonCreator, type PatreonCreator } from './creator';
+
 export type PatreonCaptionMeta = {
   id: string;
   language: string;
@@ -15,6 +17,7 @@ export type PatreonPlayerSnapshot = {
   description?: string;
   chapters?: Array<{ startTime?: number; title?: string }>;
   captionTracks?: PatreonCaptionMeta[];
+  creator?: PatreonCreator;
 };
 
 const text = (value: unknown, max: number): string | undefined => (typeof value === 'string' && value ? value.slice(0, max) : undefined);
@@ -50,6 +53,7 @@ export function normalizePatreonSnapshot(value: unknown): PatreonPlayerSnapshot 
     storyboardUrl: text(raw.storyboardUrl, 2000),
     description: text(raw.description, 20000),
     chapters,
-    captionTracks
+    captionTracks,
+    ...(raw.creator !== undefined ? { creator: parsePatreonCreator(raw.creator) } : {})
   };
 }
