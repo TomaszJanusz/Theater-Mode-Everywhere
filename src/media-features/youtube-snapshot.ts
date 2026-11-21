@@ -25,8 +25,8 @@ export type YoutubePlayerSnapshot = {
     svgPath?: string;
     floor?: number;
   };
-  /** The channel that published `videoId` (MAIN reads it); only ever taken from a snapshot naming that video. */
-  owner?: ContentAuthor;
+  /** The channels behind `videoId`, owner first (MAIN reads them); only ever taken from a snapshot naming that video. */
+  authors?: ContentAuthor[];
 };
 
 export const YOUTUBE_SNAPSHOT_SCRIPT_ID = 'theater-everywhere-youtube-snapshot';
@@ -95,8 +95,8 @@ export function firstMatchingYoutubeSnapshot(
     ) {
       match = { ...match, heatmap: snapshot.heatmap };
     }
-    if (!match.owner && snapshot.owner && match.videoId && match.videoId === snapshot.videoId) {
-      match = { ...match, owner: snapshot.owner };
+    if (!match.authors && snapshot.authors && match.videoId && match.videoId === snapshot.videoId) {
+      match = { ...match, authors: snapshot.authors };
     }
     if (
       !match.title
@@ -211,16 +211,23 @@ export function normalizeYoutubeSnapshot(raw: unknown): YoutubePlayerSnapshot | 
     storyboardSpec: typeof data.storyboardSpec === 'string' ? data.storyboardSpec.slice(0, 4000) : undefined,
     markers: findYoutubeChapterMarkers({ markersMap: [{ chapters: data.markers }] }),
     heatmap: normalizeYoutubeHeatmap(data.heatmap),
-    ...publishedOwner(data.owner)
+    ...publishedAuthors(data.authors)
   };
 }
 
-/** The owner as MAIN published it, shaped as an author; the byline view checks lengths, links and avatars again. */
-function publishedOwner(raw: unknown): { owner?: ContentAuthor } {
-  const data = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+/**
+ * The authors as MAIN published them, shaped as authors; the byline view checks lengths, links and avatars again and
+ * keeps at most its limit, which MAIN already applied.
+ */
+function publishedAuthors(raw: unknown): { authors?: ContentAuthor[] } {
   const text = (value: unknown) => typeof value === 'string' && value.length <= 2000 ? value : null;
-  const id = text(data.id);
-  const name = text(data.name);
-  if (!id || !name) return {};
-  return { owner: { id, name, url: text(data.url), avatarUrl: text(data.avatarUrl), verified: data.verified === true, stat: text(data.stat) } };
+  const authors = (Array.isArray(raw) ? raw : []).slice(0, 8).flatMap((value: unknown): ContentAuthor[] => {
+    const data = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+    const id = text(data.id);
+    const name = text(data.name);
+    return id && name
+      ? [{ id, name, url: text(data.url), avatarUrl: text(data.avatarUrl), verified: data.verified === true, stat: text(data.stat) }]
+      : [];
+  });
+  return authors.length ? { authors } : {};
 }

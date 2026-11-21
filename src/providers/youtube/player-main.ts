@@ -32,7 +32,7 @@ import { MINIPLAYER_SURFACE } from '../video-candidates';
 import { installYouTubeAudio } from './audio-main';
 import { YOUTUBE_HARVEST_EVENT, youtubeEvents } from './events';
 import { youtubeHarvestTarget } from './harvest-target';
-import { readYoutubeOwner, withOwnerRenderer } from './owner-main';
+import { readYoutubeOwner, youtubeAuthors } from './owner-main';
 import { seekForbiddenInMain } from './playback-main';
 import { youtubePlayerControl } from './player-controls';
 import { installYouTubePlaylist } from './playlist-panel-main';
@@ -64,6 +64,8 @@ let captionMintInFlight: Promise<string | null> | null = null;
 const lastCaptionMintFailedAt = new Map<string, number>();
 let youtubeHeatmapHarvest: (YoutubeHeatmap & { videoId: string | null }) | null = null;
 const navigatedChapters = new WatchChapterMemory();
+/** The last in-app navigation's watch-next response; its owner renderer is current before the rendered page's is. */
+let navigatedWatch: unknown = null;
 let youtubeHarvestNotifyTimer = 0;
 
 function notifyYoutubeHarvest(): void {
@@ -645,10 +647,12 @@ function readYoutubeDomTitle(): string | null {
   return usableYoutubeDomTitle(sanitizeContentTitle(document.title.replace(/\s+-\s+YouTube$/i, '')));
 }
 
-/** The response's channel, completed from the watch page's owner renderer when that names the same channel. */
-function ownerOf(raw: unknown): { owner?: ContentAuthor } {
+/** The response's channel, or every collaborator, completed from the watch-next response for the same video. */
+function authorsOf(raw: unknown): { authors?: ContentAuthor[] } {
   const owner = readYoutubeOwner(raw);
-  return owner ? { owner: withOwnerRenderer(owner) } : {};
+  const videoId = youtubeResponseVideoId(raw);
+  const responses = [navigatedWatch, (window as Window & { ytInitialData?: unknown }).ytInitialData];
+  return owner && videoId ? { authors: youtubeAuthors(owner, videoId, responses) } : {};
 }
 
 export function readYoutubeSnapshot(): Record<string, unknown> | null {
@@ -686,7 +690,7 @@ export function readYoutubeSnapshot(): Record<string, unknown> | null {
     return {
       ...metadata,
       ...(metadata.title || domTitle ? { title: metadata.title || domTitle } : {}),
-      ...ownerOf(raw),
+      ...authorsOf(raw),
       markers,
       ...(heatmap ? { heatmap } : {})
     };
@@ -846,9 +850,13 @@ export function installYoutubeMain(pageMedia: NonNullable<typeof fetchPageMedia>
   }, true);
 
   // In-app navigation hands over the page data it fetched; YouTube streams that get_watch body, so no harvest sees it.
-  // Captured, so the chapters are known before the publishes below read them.
+  // Captured, so the chapters and the channels are known before the publishes below read them.
   document.addEventListener('yt-navigate-finish', (event) => {
-    navigatedChapters.remember(navigationChapters(youtubeRecord((event as CustomEvent<unknown>).detail)?.response));
+    const pageData = youtubeRecord((event as CustomEvent<unknown>).detail)?.response;
+    navigatedChapters.remember(navigationChapters(pageData));
+    // Only a watch page's response replaces it, so a miniplayer keeps its video's while the tab browses.
+    const response = youtubeRecord(pageData)?.response;
+    if (youtubeWatchJsonVideoId(response)) navigatedWatch = response;
   }, true);
   ['yt-navigate-finish', 'yt-page-data-updated', 'yt-player-updated'].forEach((name) => {
     window.addEventListener(name, publishCurrentYoutubeSnapshot);

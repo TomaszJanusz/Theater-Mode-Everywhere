@@ -339,10 +339,10 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     return sanitizeContentTitle(this.titleSnapshot()?.title);
   }
 
-  /** The channel the title's snapshot names; a snapshot without a video id cannot vouch for one. */
+  /** The channels the title's snapshot names; a snapshot without a video id cannot vouch for them. */
   getAuthors(): ContentAuthor[] | null {
     const snapshot = this.titleSnapshot();
-    return snapshot?.videoId && snapshot.owner ? [snapshot.owner] : null;
+    return snapshot?.videoId && snapshot.authors ? snapshot.authors : null;
   }
 
   private snapshotMatchesPage(): boolean {
