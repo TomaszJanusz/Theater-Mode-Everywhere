@@ -41,17 +41,25 @@ declare global { interface Window { SoopTest: Api } }
 const LIVE = 'https://play.sooplive.com/battleland/297994793';
 const VOD = 'https://vod.sooplive.com/player/211006561';
 
+// Fixture evidence: the streamer block under the player as recorded on play.sooplive.com and vod.sooplive.com
+// (2026-11-21): the logo links to the station, the nickname follows, the sidebar lists other streamers' logos.
+const info = (station: string, nickname: string) => `<div class="wrapping player_bottom"><div class="broadcast_information">
+<div class="column" number="1"><div class="thumbnail_box live" id="bjThumbnail"><a class="thumb" href="https://www.sooplive.com/station/${station}" target="_blank">
+<img src="https://stimg.sooplive.com/LOGO/${station.slice(0, 2)}/${station}/${station}.jpg" class="thum"></a></div>
+<div class="nickname"><a id="infoNickName" data-bj_id="${station}">${nickname}</a></div></div></div></div>
+<ul class="sidebar"><li><a href="https://www.sooplive.com/station/other"><img src="https://stimg.sooplive.com/LOGO/ot/other/m/other.webp"></a></li></ul>`;
+
 // Structure recorded from sooplive.com. A live page fills `#broadTitle` after load and holds the
 // stream in `video#livePlayer`; a recording's title is `.broadcast_title`, its stream `video#video`.
 // The ad element and the pre-agreement placeholder are separate video elements.
 const LIVE_PAGE = `<!doctype html><body><div id="webplayer"><div id="player" class="play_start">
 <div id="videoLayer"><video id="livePlayer" class="af_video"></video></div></div></div>
-<h1 id="broadTitle" class="title"></h1><div class="nickname">battleland</div></body>`;
+<h1 id="broadTitle" class="title"></h1>${info('battleland', 'battleland')}</body>`;
 const VOD_PAGE = `<!doctype html><body><div id="webplayer"><div id="player" class="video">
 <video id="video" class="af_video"></video><video id="adVideo" class="af_video"></video>
 <button class="play prev" style="display:none">Previous</button><button class="play next"></button>
 <div class="message_player_wrap"><div class="prev_next_play" style="display:none"><a href="/player/211006562"><span class="thumb"></span><div><strong>Next video</strong><p>Another week</p></div></a><button class="close">Close</button></div></div>
-</div></div><div class="broadcast_title">[ENG/한] ANOTHER DAY</div><div class="nickname">#SNAP</div></body>`;
+</div></div><div class="broadcast_title">[ENG/한] ANOTHER DAY</div>${info('snapgg', '#SNAP')}</body>`;
 
 async function open(t: TestContext, engine: keyof typeof browsers, url: string, body: string): Promise<Page> {
   const page = await (await browsers[engine].newContext(t)).newPage();
@@ -76,18 +84,41 @@ for (const engine of testEngines()) describe(`${engine} SOOP provider`, () => {
       stop();
       return { empty, title: adapter.getTitle(), subtitle: adapter.getSubtitle(), id: adapter.mediaId() };
     });
-    assert.deepEqual(report, { empty: null, title: 'PLAY LIVE now', subtitle: 'battleland', id: 'live:battleland/297994793' });
+    assert.deepEqual(report, { empty: null, title: 'PLAY LIVE now', subtitle: null, id: 'live:battleland/297994793' });
     const vod = await open(t, engine, VOD, VOD_PAGE);
     assert.deepEqual(await vod.evaluate(() => {
       const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
       return [adapter.getTitle(), adapter.getSubtitle(), adapter.mediaId()];
-    }), ['[ENG/한] ANOTHER DAY', '#SNAP', 'vod:211006561']);
+    }), ['[ENG/한] ANOTHER DAY', null, 'vod:211006561']);
     const channel = await open(t, engine, 'https://play.sooplive.com/battleland', LIVE_PAGE);
     assert.deepEqual(await channel.evaluate(() => {
       document.getElementById('broadTitle')!.textContent = 'x';
       const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
       return [adapter.getTitle(), adapter.mediaId()];
     }), [null, null], 'a bare channel address is not a watch route');
+  });
+
+  it('names the streamer in the byline from the block under the player, and keeps the subtitle when it cannot', async t => {
+    const live = await open(t, engine, LIVE, LIVE_PAGE);
+    const read = () => live.evaluate(() => {
+      const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
+      document.getElementById('broadTitle')!.textContent = 'PLAY LIVE';
+      return { subtitle: adapter.getSubtitle(), authors: adapter.getAuthors() };
+    });
+    assert.deepEqual(await read(), { subtitle: null, authors: [{
+      id: 'battleland', name: 'battleland', url: 'https://www.sooplive.com/station/battleland',
+      avatarUrl: 'https://stimg.sooplive.com/LOGO/ba/battleland/battleland.jpg', verified: false, stat: null
+    }] });
+    // Another streamer's block (the page has not caught up with the URL yet) names nobody; the nickname stays.
+    await live.evaluate(() => { document.querySelector<HTMLAnchorElement>('.broadcast_information a.thumb')!.href = 'https://www.sooplive.com/station/other'; });
+    assert.deepEqual(await read(), { subtitle: 'battleland', authors: null });
+    const vod = await open(t, engine, VOD, VOD_PAGE);
+    assert.deepEqual(await vod.evaluate(() => {
+      const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
+      const named = adapter.getAuthors()?.map(author => [author.id, author.name, author.url]);
+      document.querySelector('.broadcast_information a.thumb')!.setAttribute('href', 'https://evil.test/station/snapgg');
+      return { named, foreign: adapter.getAuthors(), subtitle: adapter.getSubtitle() };
+    }), { named: [['snapgg', '#SNAP', 'https://www.sooplive.com/station/snapgg']], foreign: null, subtitle: '#SNAP' });
   });
 
   it('requests the recording chapters once, and rejects an answer for another recording', async t => {
