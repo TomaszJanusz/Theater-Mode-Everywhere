@@ -116,6 +116,9 @@ for (const engine of testEngines()) describe(`${engine} Twitch provider`, () => 
     // Twitch changes the address first; the header and the loaded snapshot still describe the previous channel.
     await page.evaluate(`history.pushState(null, '', '/bottlewright')`);
     assert.deepEqual(await read(), { title: null, authors: null }, 'the previous channel is never shown for the new one');
+    // Twitch can point the header's link at the new channel before its name, avatar and title follow.
+    await page.evaluate(`document.querySelector('.channel-info-content a').setAttribute('href', '/bottlewright')`);
+    assert.deepEqual(await read(), { title: null, authors: null }, 'a half-switched header names nobody');
     const before = await page.evaluate('window.published');
     await page.evaluate(`document.querySelector('main').innerHTML = ${JSON.stringify(header('bottlewright', 'Bottlewright', 'Bottle stream'))}`);
     await page.waitForFunction(`window.published > ${before}`);

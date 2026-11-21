@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { readTwitchChannelHeader, twitchHeaderChannel } from './channel-header';
+import { readTwitchChannelHeader, twitchHeaderChannel, twitchHeaderReader } from './channel-header';
 
 /** The channel header's shape as read live on 2026-11-20 (a live channel and a VOD share it); class hashes dropped. */
 function header(login: string, name: string, options: { badge?: boolean; avatar?: string; title?: string } = {}): HTMLElement {
@@ -51,5 +51,22 @@ describe('Twitch channel header', () => {
     expect(readTwitchChannelHeader('blastpremier', document.createElement('div'))).toBeNull();
     expect(twitchHeaderChannel(header('Quiet_Harbor', 'QuietHarbor'))).toBe('quiet_harbor');
     expect(twitchHeaderChannel(document.createElement('div'))).toBeNull();
+  });
+
+  test('refuses a header Twitch has pointed at the new channel before its name and avatar follow', () => {
+    const root = document.createElement('div');
+    const show = (link: string, name: string, avatarOf: string) => {
+      root.replaceChildren(header(link, name, { avatar: `https://static-cdn.jtvnw.net/jtv_user_pictures/${avatarOf}.png`, title: `${name} live` }));
+    };
+    const read = twitchHeaderReader(root);
+    show('quiet_harbor', 'QuietHarbor', 'quiet_harbor');
+    expect(read('quiet_harbor')?.name).toBe('QuietHarbor');
+    // Measured live on 2026-11-21: the link changed about 0.6 s before the name, avatar and stream title.
+    show('bottlewright', 'QuietHarbor', 'quiet_harbor');
+    expect(read('bottlewright')).toBeNull();
+    show('bottlewright', 'Bottlewright', 'bottlewright');
+    expect(read('bottlewright')).toMatchObject({ name: 'Bottlewright', title: 'Bottlewright live' });
+    show('quiet_harbor', 'QuietHarbor', 'quiet_harbor');
+    expect(read('quiet_harbor')?.name).toBe('QuietHarbor');
   });
 });

@@ -13,7 +13,7 @@ import type {
 import type { ProviderServices } from '../provider-api';
 
 import { encodeTwitchCaptions, TWITCH_CC_ACK_EVENT, TWITCH_CC_EVENT } from './captions';
-import { readTwitchChannelHeader, TWITCH_CHANNEL_HEADER, twitchHeaderChannel, twitchLiveChannel } from './channel-header';
+import { TWITCH_CHANNEL_HEADER, twitchHeaderChannel, twitchHeaderReader, twitchLiveChannel } from './channel-header';
 import {
   collectTwitchStoryboardUrls,
   isSafeTwitchCaptionUrl,
@@ -235,6 +235,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
   private snapshot: TwitchPlayerSnapshot | null = null;
   /** The live channel the snapshot was loaded for. */
   private liveChannel: string | null = null;
+  private readonly readHeader = twitchHeaderReader();
   private storyboard: TwitchStoryboardSet | null = null;
   private tracks: TwitchPageCaption[] = [];
   private moments: TwitchPageMoment[] = [];
@@ -407,13 +408,14 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     const shown = twitchHeaderChannel();
     const loaded = this.liveChannel === channel ? sanitizeContentTitle(this.snapshot?.title) : null;
     if (!shown) return loaded;
-    return shown === channel ? readTwitchChannelHeader(channel)?.title || loaded : null;
+    const header = shown === channel ? this.readHeader(channel) : null;
+    return header ? header.title || loaded : null;
   }
 
   /**
    * The channel of the title: the live page's channel, as `getTitle` names it (with or without a loaded snapshot, which
    * a media reset drops), or the VOD's owner from the loaded metadata. The header adds the display name, avatar and badge when it shows that same channel; without it the
-   * channel's login name stands in. A header that still shows another channel names nobody.
+   * channel's login name stands in. A header that still shows another channel, wholly or in part, names nobody.
    */
   getAuthors(): ContentAuthor[] | null {
     const href = window.location.href;
@@ -422,8 +424,8 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     if (videoId) channel = this.snapshot?.videoId === videoId ? this.snapshot.owner?.channel : null;
     else channel = twitchLiveChannel(href);
     const shown = videoId ? null : twitchHeaderChannel();
-    if (!channel || (shown && shown !== channel)) return null;
-    const header = readTwitchChannelHeader(channel);
+    const header = channel && (!shown || shown === channel) ? this.readHeader(channel) : null;
+    if (!channel || (shown && !header)) return null;
     return [{
       id: channel, name: header?.name || this.snapshot?.owner?.name || channel, url: `https://www.twitch.tv/${channel}`,
       avatarUrl: header?.avatarUrl ?? null, verified: header?.verified ?? false, stat: null

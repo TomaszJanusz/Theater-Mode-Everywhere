@@ -44,3 +44,26 @@ export function readTwitchChannelHeader(channel: string, root: ParentNode = docu
     title: sanitizeContentTitle(stream?.getAttribute('title')) || sanitizeContentTitle(stream?.textContent)
   };
 }
+
+/**
+ * Reads the header for a channel like `readTwitchChannelHeader`, and refuses a half-switched one: after in-app
+ * navigation Twitch can point the header's link at the new channel about half a second before its name, avatar and
+ * stream title follow. A header whose name and avatar are still those last read for another channel is not yet the
+ * new channel's.
+ */
+export function twitchHeaderReader(root: ParentNode = document): (channel: string) => ReturnType<typeof readTwitchChannelHeader> {
+  const seen = new Map<string, string>();
+  return channel => {
+    const header = readTwitchChannelHeader(channel, root);
+    if (!header) return null;
+    const key = `${header.name}\n${header.avatarUrl ?? ''}`;
+    for (const [other, previous] of seen) if (other !== channel && previous === key) return null;
+    seen.delete(channel);
+    seen.set(channel, key);
+    for (const other of seen.keys()) {
+      if (seen.size <= 8) break;
+      seen.delete(other);
+    }
+    return header;
+  };
+}
