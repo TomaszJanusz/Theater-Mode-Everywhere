@@ -1,6 +1,7 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 
+import { readVimeoOwner } from './owner';
 import { vimeoPageTitle } from './title';
 
 export function vimeoIntegrationEnabled(): boolean {
@@ -21,7 +22,8 @@ export function readVimeoSnapshot(): Record<string, unknown> | null {
     };
     const config = (win.playerConfig || win._player_config || null) as Record<string, any> | null;
     const domTitle = readVimeoDomTitle();
-    if (!config) return domTitle ? { title: domTitle } : null;
+    const owner = readVimeoOwner(document, config);
+    if (!config) return domTitle ? { title: domTitle, ...(owner ? { owner } : {}) } : null;
     const chapters = Array.isArray(config?.embed?.chapters) ? config.embed.chapters : [];
     const normalizedChapters = chapters.slice(0, 80).map((chapter: any) => ({
       startTime: Number(chapter.startTime ?? chapter.timecode ?? chapter.start),
@@ -50,7 +52,8 @@ export function readVimeoSnapshot(): Record<string, unknown> | null {
       ...(title ? { title } : {}),
       duration: Number(config?.video?.duration || config?.duration || config?.embed?.duration) || undefined,
       chapters: normalizedChapters,
-      thumbPreview
+      thumbPreview,
+      ...(owner ? { owner } : {})
     };
   } catch {
     return null;

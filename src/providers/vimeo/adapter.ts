@@ -1,4 +1,4 @@
-import { sanitizeContentTitle } from '../../media-features/content-title';
+import { sanitizeContentTitle, type ContentAuthor } from '../../media-features/content-title';
 import type { MediaProbeSnapshot } from '../../media-features/probe';
 import type {
   CaptionActivationResult,
@@ -12,6 +12,7 @@ import type {
 
 import { normalizeVimeoSnapshot, type VimeoPlayerSnapshot } from './snapshot-model';
 import { getVimeoPreviewFrame, parseVimeoThumbPreview, type VimeoThumbSprite } from './thumbs';
+import { vimeoWatchPageId } from './watch-playback';
 
 /** The isolated runtime's shared probe owner, lent by the registry so the provider bundles no second copy. */
 export type VimeoServices = {
@@ -86,6 +87,12 @@ export class VimeoAdapter implements MediaFeaturesAdapter {
 
   getTitle(): string | null {
     return sanitizeContentTitle(this.snapshot?.title);
+  }
+
+  /** The owner read with the title, only while the page still shows the clip it was read for. */
+  getAuthors(): ContentAuthor[] | null {
+    const owner = this.snapshot?.owner;
+    return owner && owner.clipId === vimeoWatchPageId(new URL(window.location.href)) ? [owner.author] : null;
   }
 
   async reload(): Promise<void> {
