@@ -17,6 +17,7 @@ import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario
 import { assertNetflixProvider } from './netflix';
 import { assertPinStorage } from './pin-storage';
 import { assertPatreonProvider, assertProviderScripts, assertIqiyiProvider, assertTwitchProvider, assertVimeoProvider, assertYoutubeProvider } from './providers';
+import { assertRedditProvider } from './reddit-provider';
 import { assertRteSettings, assertPictureLayout, assertSleepTimer } from './settings';
 import type { QuotaClock } from './sync-quota';
 import { installSyncQuota } from './sync-quota-guard';
@@ -43,6 +44,7 @@ const PROVIDER_SCENARIOS: ReadonlyArray<{ name: string; syncWrites: number; run:
   { name: 'assertTwitchProvider', syncWrites: 10, run: assertTwitchProvider },
   { name: 'assertDisneyProvider', syncWrites: 3, run: assertDisneyProvider },
   { name: 'assertVikiProvider', syncWrites: 7, run: assertVikiProvider },
+  { name: 'assertRedditProvider', syncWrites: 7, run: assertRedditProvider },
   { name: 'assertNetflixProvider', syncWrites: 8, run: assertNetflixProvider },
   { name: 'assertTencentProvider', syncWrites: 8, run: assertTencentProvider }
 ];

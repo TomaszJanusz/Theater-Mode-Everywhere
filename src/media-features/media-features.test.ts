@@ -974,7 +974,7 @@ describe('F-05 composite adapter isolation', () => {
 
   it('drops the element\'s own tracks when a provider replaces them, also before it lists one', async () => {
     const providerTrack = { id: 'p:en', language: 'en', label: 'English', kind: 'captions' as const, source: 'vimeo' as const };
-    const replacing = (tracks: import('./types').CaptionTrack[]) => stubAdapter({ replacesElementCaptions: () => true, listCaptionTracks: async () => tracks });
+    const replacing = (tracks: Array<typeof providerTrack>) => stubAdapter({ replacesElementCaptions: () => true, listCaptionTracks: async () => tracks });
     assert.deepEqual((await new CompositeMediaAdapter([stubAdapter(), replacing([providerTrack])]).listCaptionTracks()).map(track => track.id), ['p:en']);
     assert.deepEqual(await new CompositeMediaAdapter([stubAdapter(), replacing([])]).listCaptionTracks(), [], 'an empty decoy is not offered');
     const broken = stubAdapter({ replacesElementCaptions: () => { throw new Error('host gone'); }, listCaptionTracks: async () => [] });

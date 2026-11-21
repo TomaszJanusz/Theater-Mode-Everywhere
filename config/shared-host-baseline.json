@@ -1,7 +1,7 @@
 {
   "bilibili": {
     "src/media-features": {
-      "serviceId": 3,
+      "serviceId": 2,
       "identifier": 2
     },
     "src/providers": {
@@ -10,7 +10,7 @@
   },
   "bilibiliIntl": {
     "src/media-features": {
-      "serviceId": 3,
+      "serviceId": 2,
       "identifier": 2
     },
     "src/providers": {
@@ -19,7 +19,7 @@
   },
   "crunchyroll": {
     "src/media-features": {
-      "serviceId": 7,
+      "serviceId": 6,
       "domain": 4,
       "identifier": 116,
       "file": 2
@@ -39,7 +39,7 @@
   },
   "disney": {
     "src/media-features": {
-      "serviceId": 7,
+      "serviceId": 6,
       "domain": 2,
       "identifier": 4
     },
@@ -49,7 +49,7 @@
   },
   "iqiyi": {
     "src/media-features": {
-      "serviceId": 3,
+      "serviceId": 2,
       "identifier": 2
     },
     "src/providers": {
@@ -58,7 +58,7 @@
   },
   "netflix": {
     "src/media-features": {
-      "serviceId": 3,
+      "serviceId": 2,
       "identifier": 4
     },
     "src/providers": {
@@ -67,7 +67,7 @@
   },
   "patreon": {
     "src/media-features": {
-      "serviceId": 6,
+      "serviceId": 5,
       "identifier": 4
     },
     "src/providers": {
@@ -87,7 +87,7 @@
   },
   "tencent": {
     "src/media-features": {
-      "serviceId": 2,
+      "serviceId": 1,
       "identifier": 2
     },
     "src/providers": {
@@ -96,7 +96,7 @@
   },
   "twitch": {
     "src/media-features": {
-      "serviceId": 7,
+      "serviceId": 6,
       "domain": 8,
       "identifier": 4
     },
@@ -106,7 +106,7 @@
   },
   "viki": {
     "src/media-features": {
-      "serviceId": 2,
+      "serviceId": 1,
       "identifier": 2
     },
     "src/providers": {
@@ -115,7 +115,7 @@
   },
   "vimeo": {
     "src/media-features": {
-      "serviceId": 3,
+      "serviceId": 2,
       "domain": 3,
       "identifier": 4
     },
@@ -126,7 +126,7 @@
   "youtube": {
     "src/media-features": {
       "hostCheck": 1,
-      "serviceId": 9,
+      "serviceId": 8,
       "domain": 29,
       "identifier": 215,
       "file": 10
