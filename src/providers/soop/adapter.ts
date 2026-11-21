@@ -1,16 +1,17 @@
+import type { ContentAuthor } from '../../media-features/content-title';
 import type { CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from '../../media-features/types';
 import { observeProviderDom } from '../dom-watch';
 
 import { parseSoopChapters, soopChaptersUrl } from './chapters';
 import { soopRoute, soopRouteKey } from './dom';
-import { readSoopTitle } from './page';
+import { readSoopAuthor, readSoopTitle, SOOP_TITLE_SELECTOR } from './page';
 
 function currentRoute() {
   return soopRoute(new URL(window.location.href));
 }
 
 /**
- * SOOP: broadcast or recording title and streamer from the page. SOOP offers no subtitle track
+ * SOOP: broadcast or recording title and streamer from the page, read again with every title publication. SOOP offers no subtitle track
  * list; the streamer's own on-screen captions are part of the stream.
  */
 export class SoopAdapter implements MediaFeaturesAdapter {
@@ -28,13 +29,20 @@ export class SoopAdapter implements MediaFeaturesAdapter {
     return route ? readSoopTitle(document, route)?.title ?? null : null;
   }
 
+  /** The streamer, unless the byline names them: then the title row says it once, at its start. */
   getSubtitle(): string | null {
     const route = currentRoute();
-    return route ? readSoopTitle(document, route)?.subtitle ?? null : null;
+    return route && !readSoopAuthor(document, route) ? readSoopTitle(document, route)?.subtitle ?? null : null;
+  }
+
+  getAuthors(): ContentAuthor[] | null {
+    const route = currentRoute();
+    const author = route && readSoopAuthor(document, route);
+    return author ? [author] : null;
   }
 
   observeTitle(onChange: () => void): () => void {
-    return observeProviderDom({ root: document, selector: '#broadTitle, .broadcast_title, .nickname', changed: onChange });
+    return observeProviderDom({ root: document, selector: SOOP_TITLE_SELECTOR, changed: onChange });
   }
 
   async probe(): Promise<MediaCapabilities> {
