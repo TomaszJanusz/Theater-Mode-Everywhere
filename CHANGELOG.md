@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Space now pauses and resumes the video in theater mode on sites whose player keeps its video inside a web component, such as Reddit posts, the Reddit feed and Reddit embeds. Before, Space did nothing there, while the play button and a click on the picture worked. Space in a text field still types a space.
 - On Twitch past broadcasts behind Twitch's content warning ("intended for certain audiences"), AutoTheater now waits until you choose Start Watching instead of entering theater behind the warning.
 - YouTube chapters show in theater mode again on videos opened from another YouTube page, such as Home, search, a recommendation or autoplay: the timeline marks them and the preview names them, as YouTube's own player does. Before, only a video loaded directly in a new tab had them. Chapters written in a description with the time after the title, such as "Intro - 0:00", are also recognized: on YouTube when it supplies no chapter list, and on Patreon.
 - Recommended videos on the end curtain are real links again on YouTube and bilibili.com (CN): right-click offers Open link in new tab, Ctrl/Cmd-click, Shift-click and middle-click open the video in a new tab or window, and the browser shows the address on hover. A plain click or Enter still continues in theater mode, and keyboard focus stays on the same video when the list updates. Bilibili tiles that cannot be matched to a video stay plain buttons.

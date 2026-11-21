@@ -19,7 +19,7 @@ import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shor
 import { findPlayerUiRoot, UI_ACTIVATION_SELECTOR } from '../ui/root-host';
 import { matchesShortcut } from '../ui/shortcuts';
 
-import { findActiveVideo } from './active-video';
+import { findActiveVideo, findMarkedTheaterElement } from './active-video';
 import { readCurrentBlobText } from './blob-text';
 import { MAX_BINARY_HARVEST_BYTES } from './bounded-body';
 import { createEchoLoader } from './echo-reduction';
@@ -374,7 +374,7 @@ export function installMainWorldRuntime(): void {
     }
     if (isChatDocument(window.location.href) || isNativeChatEvent(event)) return;
     if (event.type === 'keypress') return;
-    const marked = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]');
+    const marked = findMarkedTheaterElement(document);
     if (event.composedPath().some(isEditableKeyboardTarget) || isEditableKeyboardTarget(document.activeElement)) return;
     // Netflix cancels Space at window capture, including its keyup default.
     // Stop host listeners while retaining the focused button's native action.
