@@ -1087,6 +1087,12 @@
   "vikiIntegrationDescription": {
     "message": "视频或播放器提供时可用：标题、字幕、片头/片尾字幕标记、缩略图。快捷操作：跳过片头和下一集。"
   },
+  "redditIntegrationTitle": {
+    "message": "Reddit 集成"
+  },
+  "redditIntegrationDescription": {
+    "message": "在影院模式中显示帖子标题及其字幕，并在 Reddit 自身字幕开启时开启字幕。"
+  },
   "aboutTitle": {
     "message": "关于"
   },
@@ -1312,6 +1318,9 @@
   },
   "rteNoteViki": {
     "message": "可用时提供字幕和预览；通过播放器切换下一集。"
+  },
+  "rteNoteReddit": {
+    "message": "视频提供字幕时显示字幕。"
   },
   "rteSaveError": {
     "message": "无法保存服务设置，请重试。"

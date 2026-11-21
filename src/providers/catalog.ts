@@ -59,6 +59,23 @@ export const PROVIDER_CATALOG = [
     ]
   },
   {
+    "id": "reddit",
+    "hosts": [
+      {
+        "domain": "reddit.com",
+        "includeSubdomains": true
+      }
+    ],
+    "home": "https://www.reddit.com/",
+    "mediaFetch": [
+      {
+        "kind": "caption-track",
+        "host": "v.redd.it",
+        "pathname": "^/[A-Za-z0-9]{6,32}/[A-Za-z0-9_-]{1,64}\\.vtt$"
+      }
+    ]
+  },
+  {
     "id": "soop",
     "hosts": [
       {

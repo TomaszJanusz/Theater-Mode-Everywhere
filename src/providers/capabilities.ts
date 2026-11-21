@@ -6,6 +6,7 @@ import { disneyCapabilities } from './disney/capabilities';
 import { iqiyiCapabilities } from './iqiyi/capabilities';
 import { netflixCapabilities } from './netflix/capabilities';
 import { patreonCapabilities } from './patreon/capabilities';
+import { redditCapabilities } from './reddit/capabilities';
 import { soopCapabilities } from './soop/capabilities';
 import { tencentCapabilities } from './tencent/capabilities';
 import { twitchCapabilities } from './twitch/capabilities';
@@ -29,4 +30,5 @@ export const PROVIDER_CAPABILITIES: readonly ProviderCapabilities[] = [
   iqiyiCapabilities,
   soopCapabilities,
   vikiCapabilities,
+  redditCapabilities,
 ];

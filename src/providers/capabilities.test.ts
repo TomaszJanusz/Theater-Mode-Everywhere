@@ -16,7 +16,7 @@ import { providerDefinition } from './registry';
 import { VimeoAdapter } from './vimeo/adapter';
 
 const read = (path: string) => readFileSync(resolve(__dirname, path), 'utf8');
-const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'disney', 'netflix', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'patreon', 'viki', 'vimeo', 'twitch']);
+const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'disney', 'netflix', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'patreon', 'viki', 'vimeo', 'twitch', 'reddit']);
 
 /** Static method/source checks deliberately complement the existing behavioral
  * adapter and service-action suites without reproducing their host fixtures.
@@ -160,6 +160,7 @@ describe('provider capability declarations', () => {
       youtube: ['#F70000', '#EAEAEA'],
       vimeo: ['#15D5FF', '#141A20'],
       viki: ['#0C9BFF', '#1A1A1A'],
+      reddit: ['#FF4500', '#FFFFFF', '#0B1416'],
     };
     assert.deepEqual(Object.fromEntries(PROVIDER_CAPABILITIES.map(provider => [provider.id, [...provider.brandColors]])), palettes);
   });

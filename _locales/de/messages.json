@@ -1087,6 +1087,12 @@
   "vikiIntegrationDescription": {
     "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Intro-/Abspannmarken, Vorschaubilder. Schnellaktionen: Intro überspringen und nächste Folge."
   },
+  "redditIntegrationTitle": {
+    "message": "Reddit-Integration"
+  },
+  "redditIntegrationDescription": {
+    "message": "Zeigt im Kinomodus den Titel des Beitrags und seine Untertitel und schaltet die Untertitel ein, wenn Reddits eigene Untertitel aktiv sind."
+  },
   "aboutTitle": {
     "message": "Über"
   },
@@ -1312,6 +1318,9 @@
   },
   "rteNoteViki": {
     "message": "Untertitel und Vorschauen, wenn verfügbar; Weiter über den Player."
+  },
+  "rteNoteReddit": {
+    "message": "Untertitel, wenn das Video welche hat."
   },
   "rteSaveError": {
     "message": "Diensteinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen."

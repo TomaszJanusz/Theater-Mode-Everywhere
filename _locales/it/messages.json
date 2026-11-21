@@ -1087,6 +1087,12 @@
   "vikiIntegrationDescription": {
     "message": "Disponibili se forniti dal video o dal lettore: Titolo, Sottotitoli, marcatori di intro/titoli di coda, Miniature. Azioni rapide: salta intro ed episodio successivo."
   },
+  "redditIntegrationTitle": {
+    "message": "Integrazione Reddit"
+  },
+  "redditIntegrationDescription": {
+    "message": "Mostra in modalità cinema il titolo del post e i suoi sottotitoli, e li attiva quando i sottotitoli di Reddit sono attivi."
+  },
   "aboutTitle": {
     "message": "Informazioni"
   },
@@ -1312,6 +1318,9 @@
   },
   "rteNoteViki": {
     "message": "Sottotitoli e anteprime se disponibili; successivo tramite il lettore."
+  },
+  "rteNoteReddit": {
+    "message": "Sottotitoli quando il video li ha."
   },
   "rteSaveError": {
     "message": "Impossibile salvare le impostazioni dei servizi. Riprova."

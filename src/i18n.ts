@@ -91,6 +91,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   soopIntegrationDescription: "Shows the broadcast or recording title and the streamer, marks chapters from a recording's title history, offers the player's previous/next recording and its next-video countdown, and AutoTheater works on live broadcasts and recordings. SOOP's own chat can be shown beside the video.",
   vikiIntegrationTitle: 'Rakuten Viki integration',
   vikiIntegrationDescription: "Available when provided by the video or player: Title, Subtitles, intro/credits markers, Thumbnails. Quick actions: skip intro and next episode.",
+  redditIntegrationTitle: 'Reddit integration',
+  redditIntegrationDescription: "Shows the post's title and its captions in theater, and turns the captions on when Reddit's own captions are on.",
   websiteExclusionsTitle: 'Website Exclusions',
   websiteExclusionsDescription: 'Exclude websites where you do not want theater mode to activate automatically.',
   domainInputPlaceholder: 'e.g., youtube.com or paste a URL',
@@ -175,6 +177,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   rteNoteIqiyi: "Subtitles, intro/outro markers and previous/next when the episode offers them; no timeline previews.",
   rteNoteSoop: "Chapters, previous/next and the next-video countdown on recordings only; no subtitles or timeline previews.",
   rteNoteViki: "Subtitles and previews when provided; next via the player.",
+  rteNoteReddit: "Captions when the video has them.",
   rteSaveError: "Could not save service settings. Please try again.",
 };
 

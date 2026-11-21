@@ -1087,6 +1087,12 @@
   "vikiIntegrationDescription": {
     "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, repères d’introduction/générique, Miniatures. Actions rapides : passer l’introduction et épisode suivant."
   },
+  "redditIntegrationTitle": {
+    "message": "Intégration Reddit"
+  },
+  "redditIntegrationDescription": {
+    "message": "Affiche en mode cinéma le titre de la publication et ses sous-titres, et active les sous-titres lorsque ceux de Reddit sont activés."
+  },
   "aboutTitle": {
     "message": "À propos"
   },
@@ -1312,6 +1318,9 @@
   },
   "rteNoteViki": {
     "message": "Sous-titres et aperçus si disponibles ; suivant via le lecteur."
+  },
+  "rteNoteReddit": {
+    "message": "Sous-titres lorsque la vidéo en propose."
   },
   "rteSaveError": {
     "message": "Impossible d’enregistrer les réglages des services. Réessayez."

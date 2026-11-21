@@ -1,4 +1,5 @@
 import type { ContentAuthor } from './content-title';
+import type { MediaProviderId } from './provider-flags';
 
 export type CaptionWord = {
   start: number;
@@ -31,21 +32,8 @@ export type CaptionActivationResult =
  */
 export type CaptionCueRefresh = () => Promise<CaptionActivationResult>;
 
-export type CaptionTrackSource =
-  | 'native-text-track'
-  | 'youtube'
-  | 'vimeo'
-  | 'dailymotion'
-  | 'patreon'
-  | 'twitch'
-  | 'disney'
-  | 'netflix'
-  | 'bilibili'
-  | 'bilibiliIntl'
-  | 'tencent'
-  | 'crunchyroll'
-  | 'iqiyi'
-  | 'viki';
+/** Who lists a track: the element's own text tracks, or a provider by its id. */
+export type CaptionTrackSource = 'native-text-track' | 'dailymotion' | MediaProviderId;
 
 export type CaptionTrack = {
   id: string;
@@ -148,6 +136,12 @@ export interface MediaFeaturesAdapter {
   observeHostCaptionLayout?(onChange: () => void): () => void;
   probe(): Promise<MediaCapabilities>;
   listCaptionTracks(): Promise<CaptionTrack[]>;
+  /**
+   * The host's player draws its captions from its own source and leaves the element's text tracks empty (an HLS
+   * player's subtitle rendition that never receives cues), so the element's tracks are not offered beside this
+   * adapter's. Cheap and side-effect free.
+   */
+  replacesElementCaptions?(): boolean;
   activateCaptionTrack(id: string | null): Promise<CaptionActivationResult>;
   /**
    * The listed track the host itself shows now, so the menu opens on it instead of Off. Read once per media, after

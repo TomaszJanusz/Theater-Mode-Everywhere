@@ -1087,6 +1087,12 @@
   "vikiIntegrationDescription": {
     "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, marcas de intro/créditos, Miniaturas. Acciones rápidas: saltar intro y siguiente episodio."
   },
+  "redditIntegrationTitle": {
+    "message": "Integración con Reddit"
+  },
+  "redditIntegrationDescription": {
+    "message": "Muestra en el modo cine el título de la publicación y sus subtítulos, y activa los subtítulos cuando los de Reddit están activados."
+  },
   "aboutTitle": {
     "message": "Acerca de"
   },
@@ -1312,6 +1318,9 @@
   },
   "rteNoteViki": {
     "message": "Subtítulos y vistas previas si están disponibles; siguiente mediante el reproductor."
+  },
+  "rteNoteReddit": {
+    "message": "Subtítulos cuando el vídeo los tiene."
   },
   "rteSaveError": {
     "message": "No se pudieron guardar los ajustes. Inténtalo de nuevo."

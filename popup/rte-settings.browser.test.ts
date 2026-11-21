@@ -60,7 +60,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
     const hostOf: Record<(typeof MEDIA_PROVIDER_IDS)[number], string> = {
       youtube: 'www.youtube.com', vimeo: 'player.vimeo.com', patreon: 'www.patreon.com', twitch: 'player.twitch.tv', disney: 'www.disneyplus.com',
       netflix: 'www.netflix.com', bilibili: 'www.bilibili.com', bilibiliIntl: 'www.bilibili.tv', tencent: 'wetv.vip', crunchyroll: 'static.crunchyroll.com',
-      iqiyi: 'www.iq.com', soop: 'play.sooplive.com', viki: 'www.viki.com'
+      iqiyi: 'www.iq.com', soop: 'play.sooplive.com', viki: 'www.viki.com', reddit: 'www.reddit.com'
     };
     for (const id of MEDIA_PROVIDER_IDS) {
       assert.equal(providerDefinition(id).matchesHost(hostOf[id]), true);

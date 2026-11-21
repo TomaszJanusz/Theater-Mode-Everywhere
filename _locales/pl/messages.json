@@ -1087,6 +1087,12 @@
   "vikiIntegrationDescription": {
     "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, znaczniki intra/napisów końcowych, Miniatury. Szybkie akcje: pomijanie intra i następny odcinek."
   },
+  "redditIntegrationTitle": {
+    "message": "Integracja z Reddit"
+  },
+  "redditIntegrationDescription": {
+    "message": "Pokazuje tytuł posta i jego napisy w trybie kinowym oraz włącza napisy, gdy włączone są napisy Reddita."
+  },
   "aboutTitle": {
     "message": "O rozszerzeniu"
   },
@@ -1312,6 +1318,9 @@
   },
   "rteNoteViki": {
     "message": "Napisy i podglądy, gdy dostępne; następny odcinek przez odtwarzacz."
+  },
+  "rteNoteReddit": {
+    "message": "Napisy, gdy film je ma."
   },
   "rteSaveError": {
     "message": "Nie udało się zapisać ustawień serwisów. Spróbuj ponownie."
