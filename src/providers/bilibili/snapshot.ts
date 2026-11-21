@@ -2,6 +2,7 @@ import { mediaProviderIntegrationEnabled } from '../../media-features/provider-f
 import type { NavigationObserver } from '../../platform/navigation-visit';
 import { createPageVisits, untilAborted } from '../page-visits';
 
+import { readBilibiliAuthors } from './authors';
 import { isBilibiliHost } from './hosts';
 import { normalizeBilibiliSnapshot, type BilibiliSnapshot } from './metadata';
 import { signBilibiliWbi } from './wbi';
@@ -86,6 +87,7 @@ async function readSnapshot(): Promise<BilibiliSnapshot | null> {
   const page = Array.isArray(video.pages) ? video.pages.find((p: Record<string, unknown>) => Number(p.cid) === cid) : null;
   const title = video.title || video.long_title || document.querySelector('h1')?.textContent;
   const duration = Number(page?.duration || video.duration);
+  const authors = readBilibiliAuthors(state, aid);
   const pending = Promise.all([
     metadata('v2', aid, cid), metadata('videoshot', aid, cid), readPbp(aid, cid), readSubtitleView(aid, cid)
   ]).then(([info, shot, pbp, subtitles]) => {
@@ -95,7 +97,7 @@ async function readSnapshot(): Promise<BilibiliSnapshot | null> {
       if (cached?.pending === pending) cached = null;
       return null;
     }
-    const snapshot = normalizeBilibiliSnapshot(key, title, duration, info, shot, pbp, subtitles);
+    const snapshot = { ...normalizeBilibiliSnapshot(key, title, duration, info, shot, pbp, subtitles), authors };
     // An empty subtitle list is often a timed-out view, not proof the film has none.
     // Keep it briefly so the next probe can retry without hammering every duration event.
     if (cached?.pending === pending && snapshot.captionTracks.length === 0) {

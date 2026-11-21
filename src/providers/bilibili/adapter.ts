@@ -63,6 +63,8 @@ export class BilibiliAdapter implements MediaFeaturesAdapter {
   getPreviewFrame(time: number) { return this.snapshot?.storyboard ? bilibiliPreviewFrame(this.snapshot.storyboard, time) : null; }
   mediaId() { return this.snapshot?.videoId || null; }
   getTitle() { return sanitizeContentTitle(this.snapshot?.title); }
+  /** From the snapshot that names the title, so the same part and visit checks cover both. */
+  getAuthors() { return this.snapshot?.authors?.length ? this.snapshot.authors : null; }
   invalidate(): void { this.loadGeneration++; this.cueGeneration++; this.snapshot = null; this.pending = null; }
   async reload(): Promise<void> {
     const previous = this.snapshot;
