@@ -16,6 +16,10 @@ export type TwitchPlayerSnapshot = {
   title?: string;
   /** The channel that owns `videoId`, from Twitch's video metadata. */
   owner?: { channel: string; name?: string };
+  /** The live channel MAIN read `collaborators` for. */
+  channel?: string;
+  /** A live channel's Stream Together members, the channel first, from Twitch's collaborator list. */
+  collaborators?: Array<{ channel: string; name?: string; avatarUrl?: string }>;
   duration?: number;
   seekPreviewsURL?: string;
   moments?: Array<{ startTime?: number; endTime?: number; title?: string }>;
@@ -49,6 +53,12 @@ export function parseTwitchSnapshot(value: unknown): TwitchPlayerSnapshot | null
     videoId: text(data.videoId),
     title: text(data.title),
     owner: parseTwitchOwner(data.owner),
+    channel: typeof data.channel === 'string' && isTwitchLogin(data.channel) ? data.channel : undefined,
+    collaborators: Array.isArray(data.collaborators) ? list(data.collaborators).slice(0, 16).flatMap(member => {
+      const owner = parseTwitchOwner(member);
+      const avatarUrl = text(member.avatarUrl);
+      return owner ? [{ ...owner, ...(avatarUrl && avatarUrl.length <= 2000 ? { avatarUrl } : {}) }] : [];
+    }) : undefined,
     duration: finite(data.duration),
     seekPreviewsURL: text(data.seekPreviewsURL),
     moments: list(data.moments).map(moment => ({ startTime: finite(moment.startTime), endTime: finite(moment.endTime), title: text(moment.title) })),

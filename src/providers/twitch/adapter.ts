@@ -236,6 +236,11 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
   /** The live channel the snapshot was loaded for. */
   private liveChannel: string | null = null;
   private readonly readHeader = twitchHeaderReader();
+  /**
+   * The Stream Together members MAIN last reported for a live channel. Kept apart from the snapshot, which a media
+   * reset drops: they stay valid while the page names that channel, and the next probe replaces them.
+   */
+  private collaboration: { channel: string; members: NonNullable<TwitchPlayerSnapshot['collaborators']> | null } | null = null;
   private storyboard: TwitchStoryboardSet | null = null;
   private tracks: TwitchPageCaption[] = [];
   private moments: TwitchPageMoment[] = [];
@@ -247,6 +252,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     this.liveChannel = pageVideoId ? null : twitchLiveChannel(window.location.href);
     if (!pageVideoId) {
       const probed = parseTwitchSnapshot((await this.services.requestMediaProbe(800)).providers?.twitch);
+      this.keepCollaboration(probed);
       const harvested = readTwitchHarvestFromDom();
       const title = sanitizeContentTitle(probed?.title) || sanitizeContentTitle(harvested?.title) || undefined;
       this.snapshot = { videoId: undefined, ...(title ? { title } : {}) };
@@ -304,6 +310,16 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
         break;
       }
     }
+  }
+
+  /**
+   * A live probe's members for this channel replace the last ones; without such an answer (none, or one for a page the
+   * URL moved on to meanwhile), members already read for this channel stay.
+   */
+  private keepCollaboration(probed: TwitchPlayerSnapshot | null): void {
+    const channel = this.liveChannel;
+    if (channel && probed?.channel === channel) this.collaboration = { channel, members: probed.collaborators ?? null };
+    else if (this.collaboration?.channel !== channel) this.collaboration = null;
   }
 
   async probe(): Promise<MediaCapabilities> {
@@ -426,10 +442,17 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     const shown = videoId ? null : twitchHeaderChannel();
     const header = channel && (!shown || shown === channel) ? this.readHeader(channel) : null;
     if (!channel || (shown && !header)) return null;
-    return [{
+    const author: ContentAuthor = {
       id: channel, name: header?.name || this.snapshot?.owner?.name || channel, url: `https://www.twitch.tv/${channel}`,
       avatarUrl: header?.avatarUrl ?? null, verified: header?.verified ?? false, stat: null
-    }];
+    };
+    // Streaming together: the page's channel, then the others in Twitch's order. Twitch's list has no partner badge.
+    const members = !videoId && this.collaboration?.channel === channel ? this.collaboration.members : null;
+    if (members?.[0]?.channel !== channel) return [author];
+    return [author, ...members.slice(1).map(member => ({
+      id: member.channel, name: member.name || member.channel, url: `https://www.twitch.tv/${member.channel}`,
+      avatarUrl: member.avatarUrl ?? null, verified: false, stat: null
+    }))];
   }
 
   /** The header renders after the stream starts and follows in-app navigation; its name, avatar and title republish the title. */
@@ -457,6 +480,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
 
   dispose(): void {
     this.snapshot = null;
+    this.collaboration = null;
     this.storyboard = null;
     this.tracks = [];
     this.moments = [];

@@ -30,6 +30,11 @@ export const TWITCH_HOST_CAPTION_ID = 'twitch:host-cc';
 /** The channel that owns a video, as Twitch's video metadata names it. */
 export type TwitchOwner = { channel: string; name?: string };
 
+/** A channel in a Stream Together session, as Twitch's collaborator list names it. */
+export type TwitchCollaborator = { id: string; channel: string; name?: string; avatarUrl?: string };
+/** One channel's Stream Together session from Twitch's own collaborator query; `members` is null when it has none. */
+export type TwitchCollaboration = { channelId: string; members: TwitchCollaborator[] | null };
+
 export type TwitchPageAssets = {
   videoId: string | null;
   title?: string;
@@ -361,6 +366,48 @@ export function extractTwitchPayloadFromJson(raw: unknown, videoId?: string | nu
     moments: moments.slice(0, 80),
     captions: []
   };
+}
+
+const TWITCH_ID = /^\d{1,20}$/;
+
+function twitchCollaborator(value: unknown): TwitchCollaborator[] {
+  const user = value && typeof value === 'object' ? (value as Record<string, unknown>).user : null;
+  if (!user || typeof user !== 'object') return [];
+  const record = user as Record<string, unknown>;
+  const id = typeof record.id === 'string' && TWITCH_ID.test(record.id) ? record.id : '';
+  const channel = typeof record.login === 'string' ? record.login.toLowerCase() : '';
+  if (!id || !isTwitchLogin(channel)) return [];
+  const name = sanitizeContentTitle(record.displayName)?.slice(0, 80);
+  const avatarUrl = typeof record.profileImageURL === 'string' && record.profileImageURL.length <= 2000 ? record.profileImageURL : undefined;
+  return [{ id, channel, ...(name ? { name } : {}), ...(avatarUrl ? { avatarUrl } : {}) }];
+}
+
+/**
+ * The Stream Together sessions in a GraphQL response: each `Channel` with a `collaboration` field (Twitch's
+ * `CollaboratorListQuery`, which the channel page requests for logged-out viewers too). A session counts only when it
+ * lists the channel itself among its active members.
+ */
+export function parseCollaborations(data: unknown): TwitchCollaboration[] {
+  const found: TwitchCollaboration[] = [];
+  let budget = 2000;
+  const walk = (node: unknown, depth: number) => {
+    if (budget-- <= 0 || depth > 8 || !node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item, depth + 1);
+      return;
+    }
+    const record = node as Record<string, unknown>;
+    if ('collaboration' in record && typeof record.id === 'string' && TWITCH_ID.test(record.id)) {
+      const collaboration = record.collaboration && typeof record.collaboration === 'object' ? record.collaboration as Record<string, unknown> : null;
+      const rows = Array.isArray(collaboration?.collaborators) ? collaboration.collaborators.slice(0, 16) : [];
+      const members = rows.filter(row => (row as Record<string, unknown> | null)?.status === 'ACTIVE').flatMap(twitchCollaborator);
+      found.push({ channelId: record.id, members: members.some(member => member.id === record.id) ? members : null });
+      return;
+    }
+    for (const value of Object.values(record)) walk(value, depth + 1);
+  };
+  walk(data, 0);
+  return found;
 }
 
 /** XHR/Response JSON is already parsed; inspect it without serializing the body. */

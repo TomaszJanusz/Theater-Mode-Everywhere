@@ -1,0 +1,70 @@
+{
+  "source": "Twitch live channel page in a Stream Together session (twitch.tv/tallemi_ella with narupxq and be_kooo), logged out, English UI",
+  "captured": "2026-11-21",
+  "environment": "Playwright Chromium (headless=new) on runner02 with a desktop Chrome user agent; the page's own gql.twitch.tv responses",
+  "evidence": "Recorded host fixture (Twitch's CollaboratorListQuery response), not live extension verification",
+  "notes": "Descriptions, colours and request extensions are removed. Twitch's header showed 'タルレミエラ +2' and a 'Streaming Together' link for this session. 'none' is the same query for a channel without a session (twitch.tv/evelone2004).",
+  "operationName": "CollaboratorListQuery",
+  "together": {
+    "data": {
+      "channel": {
+        "id": "1020349410",
+        "collaboration": {
+          "id": "3MPVgAMLGPpLYpt14Sp0mPONzNk",
+          "collaborators": [
+            {
+              "id": "3MPVgAMLGPpLYpt14Sp0mPONzNk-1020349410",
+              "role": "MEMBER",
+              "status": "ACTIVE",
+              "user": {
+                "id": "1020349410",
+                "login": "tallemi_ella",
+                "displayName": "タルレミエラ",
+                "profileImageURL": "https://static-cdn.jtvnw.net/jtv_user_pictures/b0bf074b-ab52-44ad-aa04-0cf642ee04e8-profile_image-70x70.png",
+                "__typename": "User"
+              },
+              "__typename": "Collaborator"
+            },
+            {
+              "id": "3MPVgAMLGPpLYpt14Sp0mPONzNk-421179917",
+              "role": "LEADER",
+              "status": "ACTIVE",
+              "user": {
+                "id": "421179917",
+                "login": "narupxq",
+                "displayName": "_なるる_",
+                "profileImageURL": "https://static-cdn.jtvnw.net/jtv_user_pictures/2cba1b1c-3d7a-4fd6-b705-59e0d421eae9-profile_image-70x70.png",
+                "__typename": "User"
+              },
+              "__typename": "Collaborator"
+            },
+            {
+              "id": "3MPVgAMLGPpLYpt14Sp0mPONzNk-494020714",
+              "role": "MEMBER",
+              "status": "ACTIVE",
+              "user": {
+                "id": "494020714",
+                "login": "be_kooo",
+                "displayName": "べこぉ",
+                "profileImageURL": "https://static-cdn.jtvnw.net/jtv_user_pictures/8de360ea-bac4-4e80-90e4-2b89ed3dfcbd-profile_image-70x70.png",
+                "__typename": "User"
+              },
+              "__typename": "Collaborator"
+            }
+          ],
+          "__typename": "CollaborationGroupForViewers"
+        },
+        "__typename": "Channel"
+      }
+    }
+  },
+  "none": {
+    "data": {
+      "channel": {
+        "id": "738000896",
+        "collaboration": null,
+        "__typename": "Channel"
+      }
+    }
+  }
+}
