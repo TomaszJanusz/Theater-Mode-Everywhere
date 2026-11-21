@@ -61,6 +61,24 @@ for (const engine of testEngines()) describe(`${engine} Twitch provider`, () => 
     assert.deepEqual([snapshot?.title, snapshot?.seekPreviewsURL], ['Fixture VOD', STORYBOARD]);
   });
 
+  it('names the owner again on returning in-app to a video whose metadata Twitch serves from its cache', async t => {
+    const page = await open(t, engine, VOD);
+    const video = (id: string, login: string) => JSON.stringify({ data: { video: { id, lengthSeconds: 600, title: `VOD ${id}`, owner: { login, displayName: login } } } });
+    let body = video('123', 'quiet_harbor');
+    await page.unroute('https://gql.twitch.tv/**');
+    await page.route('https://gql.twitch.tv/**', route => route.fulfill({ contentType: 'application/json', headers: CORS, body }));
+    const owner = () => page.evaluate(`TwitchMain.requestMediaProbe().then(result => result.providers.twitch?.videoId + ':' + result.providers.twitch?.owner?.channel)`);
+    await xhr(page, 'https://gql.twitch.tv/gql', 'json');
+    assert.equal(await owner(), '123:quiet_harbor');
+    await page.evaluate(`history.pushState(null, '', '/videos/456')`);
+    body = video('456', 'bottlewright');
+    await xhr(page, 'https://gql.twitch.tv/gql', 'json');
+    assert.equal(await owner(), '456:bottlewright');
+    // Back to the first video: Twitch answers from its cache, so no response arrives for it.
+    await page.evaluate(`history.pushState(null, '', '/videos/123')`);
+    assert.equal(await owner(), '123:quiet_harbor');
+  });
+
   it('reports no snapshot and harvests nothing with the integration off', async t => {
     const page = await open(t, engine, VOD, true);
     await xhr(page, 'https://gql.twitch.tv/gql', 'json');

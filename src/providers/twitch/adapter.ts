@@ -393,12 +393,16 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
   }
 
   /**
-   * A live page's title is the stream title in the header that names the page's channel, read again with every
-   * publication: after in-app navigation (another channel, a raid) the snapshot and the header can still describe the
-   * previous channel, and the header's change republishes the title once it catches up.
+   * A VOD's title comes from its metadata. A live page's title is the stream title in the header that names the page's
+   * channel, read again with every publication: after in-app navigation (another channel, a raid) the snapshot and the
+   * header can still describe the previous channel, and the header's change republishes the title once it catches up.
    */
   getTitle(): string | null {
-    const channel = twitchLiveChannel(window.location.href);
+    const href = window.location.href;
+    const videoId = twitchPageVideoId(href);
+    // A VOD's title only while the snapshot still describes the video the URL names.
+    if (videoId) return this.snapshot?.videoId === videoId ? sanitizeContentTitle(this.snapshot.title) : null;
+    const channel = twitchLiveChannel(href);
     if (!channel) return sanitizeContentTitle(this.snapshot?.title);
     const shown = twitchHeaderChannel();
     const loaded = this.liveChannel === channel ? sanitizeContentTitle(this.snapshot?.title) : null;

@@ -27,6 +27,25 @@ type TwitchHarvest = {
 
 let twitchHarvest: TwitchHarvest = { moments: [], captions: [] };
 let twitchHarvestNotifyTimer = 0;
+/**
+ * Owners of the videos seen in this tab. Twitch's client caches video metadata, so returning to a video in-app may
+ * send no response to harvest again; its owner is still the same.
+ */
+const ownersByVideo = new Map<string, TwitchOwner>();
+
+function rememberOwner(videoId: string, owner: TwitchOwner): void {
+  ownersByVideo.delete(videoId);
+  ownersByVideo.set(videoId, owner);
+  for (const id of ownersByVideo.keys()) {
+    if (ownersByVideo.size <= 20) break;
+    ownersByVideo.delete(id);
+  }
+}
+
+function ownerOf(videoId: string): { owner?: TwitchOwner } {
+  const owner = twitchHarvest.owner ?? ownersByVideo.get(videoId);
+  return owner ? { owner } : {};
+}
 
 function twitchPageVideoId(href: string): string | null {
   try {
@@ -295,6 +314,7 @@ function mergeTwitchGqlData(parsed: Partial<TwitchPageAssets>, videoId: string |
   }
   if (videoId && parsed.videoId === videoId && parsed.owner && JSON.stringify(parsed.owner) !== JSON.stringify(twitchHarvest.owner)) {
     twitchHarvest.owner = parsed.owner;
+    rememberOwner(videoId, parsed.owner);
     changed = true;
   }
   for (const caption of parsed.captions || []) {
@@ -362,7 +382,7 @@ export function readTwitchSnapshot(): Record<string, unknown> | null {
     return {
       videoId,
       ...(title ? { title } : {}),
-      ...(twitchHarvest.owner ? { owner: twitchHarvest.owner } : {}),
+      ...ownerOf(videoId),
       duration: twitchHarvest.duration,
       seekPreviewsURL,
       moments: [...twitchHarvest.moments],
