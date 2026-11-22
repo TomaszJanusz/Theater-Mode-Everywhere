@@ -52,7 +52,7 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
 
 const browsers = sharedEngineBrowsers();
 
-it('Settings groups AutoTheater and accessibility, persists countdown choices, and fits narrow layouts', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
+it('Settings groups AutoTheater and accessibility, persists countdown and author byline choices, and fits narrow layouts', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
   const context = await browsers.chromium.newContext(t);
   try {
     const page = await context.newPage();
@@ -76,6 +76,16 @@ it('Settings groups AutoTheater and accessibility, persists countdown choices, a
     assert.equal(await skip.isChecked(), false, 'invalid saved values retain the countdown');
     await page.locator('#tab-appearance').click();
     assert.equal(await page.locator('#appearance label[for=keep-controls-visible-toggle]').isVisible(), true);
+    const byline = page.locator('#appearance').getByRole('switch', { name: 'Channel beside the title', exact: true });
+    assert.equal(await byline.isChecked(), true, 'the author byline is on by default');
+    await page.locator('label[for=author-byline-toggle]').click();
+    assert.equal(await page.evaluate(async () => (await chrome.storage.sync.get('authorByline')).authorByline), false);
+    await page.evaluate(() => chrome.storage.sync.set({ authorByline: true }));
+    assert.equal(await byline.isChecked(), true, 'external changes update the author byline switch');
+    await page.evaluate(() => chrome.storage.sync.set({ authorByline: false }));
+    assert.equal(await byline.isChecked(), false);
+    await page.evaluate(() => chrome.storage.sync.set({ authorByline: 'false' }));
+    assert.equal(await byline.isChecked(), true, 'an invalid saved value reads as on, as the player reads it');
     assert.equal(await page.getByRole('group', { name: 'Accessibility', exact: true }).locator('.choice-combobox').count(), 3);
     for (const width of [1280, 390]) {
       await page.setViewportSize({ width, height: 900 });

@@ -1744,5 +1744,13 @@
   "providerShowAuthorDescription": {
     "message": "제목 옆에 동영상을 게시한 채널을 표시하고 채널 링크를 제공합니다.",
     "description": "Description of that switch."
+  },
+  "authorBylineTitle": {
+    "message": "제목 옆 채널",
+    "description": "Switch label in Settings > Appearance: shows the channel beside the video title on every service; when off, no service shows it."
+  },
+  "authorBylineDescription": {
+    "message": "제목 옆에 동영상을 게시한 채널을 표시합니다. 끄면 모든 서비스에서 숨겨지고, 켜져 있으면 각 서비스의 ‘채널 표시’ 설정을 따릅니다.",
+    "description": "Description of that switch; the quoted name is the per-service switch labelled by providerShowAuthor."
   }
 }

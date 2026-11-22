@@ -1744,5 +1744,13 @@
   "providerShowAuthorDescription": {
     "message": "タイトルの横に動画の投稿者を表示し、チャンネルへのリンクを付けます。",
     "description": "Description of that switch."
+  },
+  "authorBylineTitle": {
+    "message": "タイトル横のチャンネル",
+    "description": "Switch label in Settings > Appearance: shows the channel beside the video title on every service; when off, no service shows it."
+  },
+  "authorBylineDescription": {
+    "message": "タイトルの横に動画の投稿者を表示します。オフにするとすべてのサービスで非表示になり、オンのときは各サービスの「チャンネルを表示」設定に従います。",
+    "description": "Description of that switch; the quoted name is the per-service switch labelled by providerShowAuthor."
   }
 }

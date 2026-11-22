@@ -1744,5 +1744,13 @@
   "providerShowAuthorDescription": {
     "message": "Zeigt neben dem Titel, wer das Video veröffentlicht hat, mit einem Link zum Kanal.",
     "description": "Description of that switch."
+  },
+  "authorBylineTitle": {
+    "message": "Kanal neben dem Titel",
+    "description": "Switch label in Settings > Appearance: shows the channel beside the video title on every service; when off, no service shows it."
+  },
+  "authorBylineDescription": {
+    "message": "Zeigt neben dem Titel, wer das Video veröffentlicht hat. Ausgeschaltet ist er bei keinem Dienst zu sehen; eingeschaltet entscheidet die Einstellung „Kanal anzeigen“ des jeweiligen Dienstes.",
+    "description": "Description of that switch; the quoted name is the per-service switch labelled by providerShowAuthor."
   }
 }

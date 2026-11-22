@@ -1,3 +1,4 @@
+import { BYLINE_STORAGE_KEY, resolveBylineEnabled } from '../src/providers/settings-values';
 import { createSvgIcon } from '../src/ui/svg-icon';
 import { saveAutoTheaterEnabled } from '../src/ui/auto-theater-settings';
 import { setupAppearanceChoices } from './appearance-choices';
@@ -108,6 +109,7 @@ const FEATURE_TOGGLES = [
   { id: 'auto-theater-skip-countdown-toggle', key: AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolve: resolveAutoTheaterSkipCountdown },
   { id: 'video-activator-toggle', key: VIDEO_ACTIVATOR_STORAGE_KEY, resolve: resolveVideoActivator },
   { id: 'keep-controls-visible-toggle', key: KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolve: resolveKeepControlsVisible },
+  { id: 'author-byline-toggle', key: BYLINE_STORAGE_KEY, resolve: resolveBylineEnabled },
   { id: 'volume-boost-toggle', key: VOLUME_BOOST_STORAGE_KEY, resolve: resolveVolumeBoostEnabled },
   SEEK_HOLD_TOGGLE
 ] as const;

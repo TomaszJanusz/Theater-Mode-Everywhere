@@ -1744,5 +1744,13 @@
   "providerShowAuthorDescription": {
     "message": "Zobrazí vedle názvu videa, kdo ho zveřejnil, s odkazem na jeho kanál.",
     "description": "Description of that switch."
+  },
+  "authorBylineTitle": {
+    "message": "Kanál vedle názvu",
+    "description": "Switch label in Settings > Appearance: shows the channel beside the video title on every service; when off, no service shows it."
+  },
+  "authorBylineDescription": {
+    "message": "Zobrazí vedle názvu videa, kdo ho zveřejnil. Vypnutím ho skryjete ve všech službách; když je zapnuto, rozhoduje nastavení „Zobrazovat kanál“ každé služby.",
+    "description": "Description of that switch; the quoted name is the per-service switch labelled by providerShowAuthor."
   }
 }

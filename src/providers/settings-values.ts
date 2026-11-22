@@ -16,3 +16,15 @@ export function serviceAutoEnabled(settings: unknown, provider: string): boolean
 export function providerAutoEnabled(global: boolean, settings: unknown, provider: string): boolean {
   return global && serviceAutoEnabled(settings, provider);
 }
+
+/**
+ * Settings > Appearance > "Channel beside the title": the author byline on every service, on by default. Off wins over
+ * each service's own "Show the channel" (`showAuthor`); on defers to it. Settings and the byline view
+ * (`author-byline-setting.ts`) both read it here, so they agree on a missing or malformed value.
+ */
+export const BYLINE_STORAGE_KEY = 'authorByline';
+export const DEFAULT_AUTHOR_BYLINE = true;
+
+export function resolveBylineEnabled(value: unknown): boolean {
+  return settingBoolean(value, DEFAULT_AUTHOR_BYLINE);
+}

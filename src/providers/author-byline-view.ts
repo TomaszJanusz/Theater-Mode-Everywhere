@@ -6,6 +6,7 @@ import type { ContentAuthor } from '../media-features/content-title';
 import { createSvgIcon } from '../ui/svg-icon';
 
 import { bylineNames, checkedAuthors, monogram, type AuthorHosts } from './author-byline';
+import { watchAuthorBylineSetting, type AuthorBylineSetting } from './author-byline-setting';
 import css from './author-byline-view.css?inline';
 import { avatarAccent } from './avatar-accent';
 import { rowKeyTarget } from './playlist-panel-view';
@@ -189,7 +190,9 @@ function renderRow(author: ContentAuthor): HTMLLIElement {
  * title, and under the plate one block listing a row per author, in the player's menu shell (hover, click, Enter, Space
  * or ↓; ↑/↓ move between rows; Escape and outside presses close it; focus returns to the panel). The stylesheet holds
  * hover intent: the popup shows after 250 ms of hover and stays 300 ms after the pointer leaves. It shows only what
- * `checkedAuthors` admits, only while the provider's `showAuthor` setting is on, and repaints only when that changed.
+ * `checkedAuthors` admits, only while both the global Author byline switch and the provider's `showAuthor` setting are
+ * on (global off wins), and repaints only when that changed. While either is off, or still unread, nothing is built:
+ * no panel, popup, avatar image or accent read.
  */
 export function mountAuthorByline(
   host: AuthorBylineHost,
@@ -197,6 +200,8 @@ export function mountAuthorByline(
     provider: string; hosts: AuthorHosts; settings: ProviderSettingsStore;
     /** Stories and tests stand in for the network; providers leave it out. */
     readAccent?: (avatarUrl: string) => Promise<string | null>;
+    /** Tests hand in the global switch they control; providers leave it out and the view follows storage. */
+    global?: AuthorBylineSetting;
   }
 ): AuthorBylineControl {
   const { scope } = host;
@@ -255,9 +260,10 @@ export function mountAuthorByline(
   let authors: readonly ContentAuthor[] | null | undefined;
   let plate: HTMLElement | null = null;
   let signature: string | undefined;
+  const global = options.global ?? watchAuthorBylineSetting();
   const update = () => {
     if (scope.isDisposed) return;
-    const shown = options.settings.loaded && options.settings.values[options.provider]?.showAuthor
+    const shown = global.enabled && options.settings.loaded && options.settings.values[options.provider]?.showAuthor
       ? checkedAuthors(authors, options.hosts)
       : [];
     const next = JSON.stringify([shown, t('authorChannelNewTab'), t('authorVerified')]);
@@ -293,9 +299,11 @@ export function mountAuthorByline(
       plate.prepend(root);
     }
   };
-  // The view owns the settings store it was given.
+  // The view owns the settings store it was given, and the global switch it follows.
   scope.add(() => options.settings.dispose());
+  scope.add(() => global.dispose());
   scope.add(options.settings.subscribe(update));
+  scope.add(global.subscribe(update));
   scope.add(languageRuntime.subscribe(update));
   scope.add(() => root.remove());
 

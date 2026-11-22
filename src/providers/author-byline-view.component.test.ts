@@ -10,7 +10,9 @@ import { bindMenuPopover } from '../ui/menu-popover';
 import { getPlayerUiRoot, queryPlayerUi } from '../ui/root';
 
 import { providerAuthorHosts } from './author-byline';
+import { watchAuthorBylineSetting } from './author-byline-setting';
 import { mountAuthorByline, readAvatarAccent } from './author-byline-view';
+import { BYLINE_STORAGE_KEY } from './settings-values';
 import { createYouTubeSettings } from './youtube/settings';
 
 const HOSTS = providerAuthorHosts([{ domain: 'youtube.com', includeSubdomains: true }], ['yt3.ggpht.com']);
@@ -30,12 +32,14 @@ function tooltip(node: Element | null): string | null {
 }
 
 type ReadAccent = (avatarUrl: string) => Promise<string | null>;
+/** Saves Settings > Appearance > the author byline switch, as the Settings page does. */
+const setGlobal = (enabled: boolean) => chrome.storage.sync.set({ [BYLINE_STORAGE_KEY]: enabled });
 /** Tests stay off the network: without a reader of their own, no avatar has a color. */
 const noAccent: ReadAccent = () => Promise.resolve(null);
 
 async function mount(
   authors: readonly ContentAuthor[] | null,
-  options: { showAuthor?: boolean; dir?: 'rtl'; readAccent?: ReadAccent } = {},
+  options: { showAuthor?: boolean; global?: boolean; dir?: 'rtl'; readAccent?: ReadAccent } = {},
   firstTitle = 'Building a cedar-strip canoe',
   beforePublish?: () => void
 ) {
@@ -47,7 +51,11 @@ async function mount(
   const settings = createYouTubeSettings();
   await settings.ready;
   if (options.showAuthor === false) await settings.set('youtube', 'showAuthor', false);
-  const byline = mountAuthorByline({ scope, bindMenu: bindMenuPopover }, { provider: 'youtube', hosts: HOSTS, settings, readAccent: options.readAccent ?? noAccent });
+  await setGlobal(options.global ?? true);
+  // The global switch the view follows, read from the same storage the Settings page writes.
+  const global = watchAuthorBylineSetting();
+  await global.ready;
+  const byline = mountAuthorByline({ scope, bindMenu: bindMenuPopover }, { provider: 'youtube', hosts: HOSTS, settings, global, readAccent: options.readAccent ?? noAccent });
   const publish = (next: readonly ContentAuthor[] | null, title = 'Building a cedar-strip canoe') =>
     hud.syncContentTitle({ title, subtitle: null, authors: next }, byline);
   publish(authors, firstTitle);
@@ -245,6 +253,36 @@ describe('author byline in the title plate', () => {
     expect(view.names()).toBe('One');
     await view.settings.set('youtube', 'showAuthor', false);
     expect(view.panel()).toBeNull();
+  });
+
+  test('the global switch off wins over the provider setting, builds nothing and reads no avatar; on restores it live', async () => {
+    const reads: string[] = [];
+    const readAccent: ReadAccent = url => { reads.push(url); return Promise.resolve('#3792c7'); };
+    const plain = await mount(null, { global: false });
+    const bare = plain.plate().innerHTML;
+    scope!.dispose();
+    const view = await mount([author('Harbour', { avatarUrl: AVATAR }), author('Two', { avatarUrl: AVATAR })], { global: false, readAccent });
+    // Off: the title row is the one a title without authors gets, with no panel, popup or avatar image anywhere.
+    expect(view.plate().innerHTML).toBe(bare);
+    expect(getPlayerUiRoot().querySelector('.theater-byline, img')).toBeNull();
+    await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 }));
+    expect(reads).toEqual([]);
+    // On again, without a new title: the panel returns with its accent.
+    await setGlobal(true);
+    expect(view.names()).toBe('Harbour&Two');
+    await expect.poll(() => view.panel()!.style.getPropertyValue('--accent-color')).toBe('#3792c7');
+    // On defers to the provider: its own switch off still hides the panel.
+    await view.settings.set('youtube', 'showAuthor', false);
+    expect(view.panel()).toBeNull();
+    await view.settings.set('youtube', 'showAuthor', true);
+    expect(view.names()).toBe('Harbour&Two');
+    // Off while showing takes the panel and its accent out; a later title stays bare.
+    await setGlobal(false);
+    expect(view.panel()).toBeNull();
+    view.publish([author('Three', { avatarUrl: 'https://yt3.ggpht.com/three=s88' })], 'Another video');
+    expect(view.plate().querySelector('.theater-byline')).toBeNull();
+    await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 }));
+    expect(reads).toEqual([AVATAR]);
   });
 
   test('a title without authors takes the panel out; an equal publication leaves its nodes alone', async () => {

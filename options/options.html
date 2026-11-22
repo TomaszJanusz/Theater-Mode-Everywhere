@@ -162,6 +162,16 @@
             </div>
             <div class="options-row">
               <div class="options-info">
+                <label id="author-byline-label" for="author-byline-toggle" class="options-label" data-i18n="authorBylineTitle">Channel beside the title</label>
+                <p id="author-byline-description" class="options-desc" data-i18n="authorBylineDescription">Show who published the video beside its title. Turning this off hides it on every service; while it is on, each service’s “Show the channel” setting decides.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="author-byline-toggle" role="switch" aria-labelledby="author-byline-label" aria-describedby="author-byline-description">
+                <span class="toggle-slider" aria-hidden="true"></span>
+              </label>
+            </div>
+            <div class="options-row">
+              <div class="options-info">
                 <div class="options-label-line">
                   <label id="language-label" for="language-combobox" class="options-label" data-i18n="languageTitle">Language</label>
                   <a id="translation-issue-link" class="options-inline-link" target="_blank" rel="noopener noreferrer" data-i18n="reportTranslationIssue">Report a translation issue</a>

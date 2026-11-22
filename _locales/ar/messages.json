@@ -1744,5 +1744,13 @@
   "providerShowAuthorDescription": {
     "message": "عرض ناشر الفيديو بجانب عنوانه، مع رابط إلى قناته.",
     "description": "Description of that switch."
+  },
+  "authorBylineTitle": {
+    "message": "القناة بجانب العنوان",
+    "description": "Switch label in Settings > Appearance: shows the channel beside the video title on every service; when off, no service shows it."
+  },
+  "authorBylineDescription": {
+    "message": "عرض ناشر الفيديو بجانب عنوانه. إيقافه يخفيه في كل الخدمات، وأثناء تشغيله يحدّد ذلك إعداد «عرض القناة» في كل خدمة.",
+    "description": "Description of that switch; the quoted name is the per-service switch labelled by providerShowAuthor."
   }
 }
