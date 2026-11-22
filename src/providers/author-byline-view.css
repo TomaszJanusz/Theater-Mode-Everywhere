@@ -8,7 +8,11 @@
   --tip: 22px;
   --text-end: 44px;
   --dir: to right;
+  /* How far the arrowhead steps towards the title on hover, focus and open. */
+  --nudge: 2px;
   position: relative;
+  /* Above the scrolling title's start fade, which reaches under the tip. */
+  z-index: 1;
   display: flex;
   flex: none;
   align-self: stretch;
@@ -23,7 +27,7 @@
 .theater-byline,
 .theater-byline-panel { --edge: color-mix(in srgb, var(--accent-color, #6366f1) 55%, var(--appearance-ink, #ffffff)); }
 
-.theater-everywhere-title-hud[dir="rtl"] .theater-byline { --dir: to left; }
+.theater-everywhere-title-hud[dir="rtl"] .theater-byline { --dir: to left; --nudge: -2px; }
 
 .theater-byline-panel {
   position: relative;
@@ -65,39 +69,18 @@
   clip-path: polygon(var(--tip) 0, 100% 0, 100% 100%, var(--tip) 100%, 0 50%);
 }
 
-/* Two layers cross-fade by opacity only, so nothing changes size or flickers. */
+/* The accent ramp is the panel at rest; the lift over it fades in by opacity only, so nothing changes size or
+   flickers (the shadow root never animates registered properties). */
 .theater-byline-fill::before,
 .theater-byline-fill::after {
   content: "";
   position: absolute;
   inset: 0;
-  transition: opacity 0.16s ease-out;
 }
 
-/* Rest: linear to black .32 where the names end, then an ease-in (u²) to .5 at the apex. */
+/* Linear to 25% accent where the names end (WCAG AA for every accent, author-byline-contrast.test.ts), then u² to 85% at
+   the apex; the lit edge supplies the full accent. */
 .theater-byline-fill::before {
-  background: linear-gradient(var(--dir),
-    rgb(0 0 0 / 0) 0%,
-    rgb(0 0 0 / 0.08) calc((100% - var(--text-end)) * 0.25),
-    rgb(0 0 0 / 0.16) calc((100% - var(--text-end)) * 0.5),
-    rgb(0 0 0 / 0.24) calc((100% - var(--text-end)) * 0.75),
-    rgb(0 0 0 / 0.32) calc((100% - var(--text-end)) * 1),
-    rgb(0 0 0 / 0.3218) calc(100% - 39.6px),
-    rgb(0 0 0 / 0.3272) calc(100% - 35.2px),
-    rgb(0 0 0 / 0.3362) calc(100% - 30.8px),
-    rgb(0 0 0 / 0.3488) calc(100% - 26.4px),
-    rgb(0 0 0 / 0.365) calc(100% - 22px),
-    rgb(0 0 0 / 0.3848) calc(100% - 17.6px),
-    rgb(0 0 0 / 0.4082) calc(100% - 13.2px),
-    rgb(0 0 0 / 0.4352) calc(100% - 8.8px),
-    rgb(0 0 0 / 0.4658) calc(100% - 4.4px),
-    rgb(0 0 0 / 0.5) calc(100% - 0px));
-}
-
-/* Hover, focus and open: linear to 25% accent where the names end (WCAG AA for every accent,
-   author-byline-contrast.test.ts), then u² to 85% at the apex; the lit edge supplies the full accent. */
-.theater-byline-fill::after {
-  opacity: 0;
   background: linear-gradient(var(--dir),
     color-mix(in srgb, var(--accent-color, #6366f1) 0%, transparent) 0%,
     color-mix(in srgb, var(--accent-color, #6366f1) 6.25%, transparent) calc((100% - var(--text-end)) * 0.25),
@@ -116,11 +99,18 @@
     color-mix(in srgb, var(--accent-color, #6366f1) 85%, transparent) calc(100% - 0px));
 }
 
-.theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) .theater-byline-fill::after { opacity: 1; }
-.theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) .theater-byline-fill::before { opacity: 0; }
+/* Hover, focus and open lift the panel as a pointer lifts a popup row or an end tile: the ink laid over it, 5% under
+   the names (still WCAG AA, author-byline-contrast.test.ts), rising into the tip. The arrowhead steps forward too. */
+.theater-byline-fill::after {
+  opacity: 0;
+  transition: opacity 0.16s ease-out;
+  background: linear-gradient(var(--dir),
+    color-mix(in srgb, var(--appearance-ink, #ffffff) 5%, transparent) 0%,
+    color-mix(in srgb, var(--appearance-ink, #ffffff) 5%, transparent) calc(100% - var(--text-end)),
+    color-mix(in srgb, var(--appearance-ink, #ffffff) 22%, transparent) calc(100% - 0px));
+}
 
-:host([data-motion="reduced"]) .theater-byline-fill::before,
-:host([data-motion="reduced"]) .theater-byline-fill::after { transition: none; }
+.theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) .theater-byline-fill::after { opacity: 1; }
 
 .theater-byline-panel:focus-visible .theater-byline-fill { box-shadow: inset 0 0 0 2px var(--appearance-ink, #ffffff); }
 
@@ -159,6 +149,22 @@
 }
 
 .theater-byline-panel:focus-visible .theater-byline-rim { background: var(--appearance-ink, #ffffff); }
+
+/* The arrowhead steps forward and its glow brightens; Reduce motion keeps it in place. */
+.theater-byline-rim,
+.theater-byline-glow { transition: transform 0.16s ease-out, opacity 0.16s ease-out; }
+
+.theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) :is(.theater-byline-rim, .theater-byline-glow) { transform: translateX(var(--nudge)); }
+.theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) .theater-byline-glow { opacity: 1; }
+
+:host([data-motion="reduced"]) .theater-byline-panel :is(.theater-byline-rim, .theater-byline-glow) { transform: none; }
+
+/* Forced colors drop the fills and the lit edge: the system's highlight rings the lifted panel instead, thicker for
+   the keyboard. */
+@media (forced-colors: active) {
+  .theater-byline-panel:is(:hover, [aria-expanded="true"]) { outline: 1px solid Highlight; outline-offset: -1px; }
+  .theater-byline-panel:focus-visible { outline: 2px solid Highlight; outline-offset: -2px; }
+}
 
 .theater-byline-avatars {
   display: flex;

@@ -2422,7 +2422,10 @@ button.theater-time-end:focus-visible,
   animation-play-state: running !important;
 }
 
-.theater-everywhere-header-hud.visible .theater-everywhere-title-hud.marquee:hover .theater-title-hud-track {
+/* The title's own hover: the plate under the pointer, but not through content it hosts (the author panel and its
+   popup) before the title, its last child (hud.ts). That content leaves the scrolling, the Reduce motion reveal and the
+   tooltip alone. */
+.theater-everywhere-header-hud.visible .theater-everywhere-title-hud.marquee:hover:not(:has(> :not(:last-child):hover)) .theater-title-hud-track {
   animation-play-state: paused !important;
 }
 
@@ -2502,11 +2505,11 @@ button.theater-time-end:focus-visible,
   flex: none !important;
 }
 
-:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee:is(:hover, :focus-visible) .theater-title-hud-smart {
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee:is(:hover:not(:has(> :not(:last-child):hover)), :focus-visible) .theater-title-hud-smart {
   display: none !important;
 }
 
-:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee:is(:hover, :focus-visible) .theater-title-hud-track {
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee:is(:hover:not(:has(> :not(:last-child):hover)), :focus-visible) .theater-title-hud-track {
   position: static !important;
   width: 100% !important;
   height: auto !important;
@@ -2514,7 +2517,7 @@ button.theater-time-end:focus-visible,
   clip-path: none !important;
 }
 
-:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee:is(:hover, :focus-visible) .theater-title-hud-text:not(.theater-title-hud-text-clone) {
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee:is(:hover:not(:has(> :not(:last-child):hover)), :focus-visible) .theater-title-hud-text:not(.theater-title-hud-text-clone) {
   flex: 0 1 auto !important;
   min-width: 0 !important;
   padding-inline-end: 0 !important;
@@ -2531,7 +2534,8 @@ button.theater-time-end:focus-visible,
   outline: 2px solid var(--accent-color, #6366f1) !important;
 }
 
-/* The revealed title grows downward; the home pill keeps its resting height. */
+/* The revealed title grows downward; the home pill keeps its resting height. Over content the plate hosts nothing grows,
+   and the pill, as tall as the plate, stays where it was. */
 :host([data-motion="reduced"]) .theater-everywhere-header-hud:has(.theater-everywhere-title-hud.marquee:is(:hover, :focus-visible)) .theater-home-pill {
   align-self: flex-start !important;
 }

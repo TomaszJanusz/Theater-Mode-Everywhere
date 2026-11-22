@@ -201,6 +201,8 @@ export function mountAuthorByline(
 ): AuthorBylineControl {
   const { scope } = host;
   const root = element('div', 'theater-byline');
+  // The plate's tooltip is its scrolling title (hud.ts); an empty title keeps it off the panel and its popup.
+  root.title = '';
   const style = element('style', '');
   style.textContent = css;
   const trigger = element('button', 'theater-byline-panel');

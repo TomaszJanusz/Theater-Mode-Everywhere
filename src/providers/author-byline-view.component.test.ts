@@ -22,12 +22,25 @@ const author = (name: string, overrides: Partial<ContentAuthor> = {}): ContentAu
 let scope: DisposableScope | undefined;
 afterEach(() => { scope?.dispose(); scope = undefined; });
 
+const LONG_TITLE = 'Building a cedar-strip canoe, part 3: fibreglass, epoxy, the first coat of varnish and every mistake left in on purpose';
+/** The tooltip a browser shows over `node`: the nearest `title` from it outwards, where an empty one means none. */
+function tooltip(node: Element | null): string | null {
+  for (let current = node; current; current = current.parentElement) if (current.hasAttribute('title')) return current.getAttribute('title');
+  return null;
+}
+
 type ReadAccent = (avatarUrl: string) => Promise<string | null>;
 /** Tests stay off the network: without a reader of their own, no avatar has a color. */
 const noAccent: ReadAccent = () => Promise.resolve(null);
 
-async function mount(authors: readonly ContentAuthor[] | null, options: { showAuthor?: boolean; dir?: 'rtl'; readAccent?: ReadAccent } = {}) {
+async function mount(
+  authors: readonly ContentAuthor[] | null,
+  options: { showAuthor?: boolean; dir?: 'rtl'; readAccent?: ReadAccent } = {},
+  firstTitle = 'Building a cedar-strip canoe',
+  beforePublish?: () => void
+) {
   const stage = mountHudStage();
+  beforePublish?.();
   const hud = createHud(stage.host, () => {}, stage.clock);
   scope = new DisposableScope();
   stage.onDispose(() => hud.syncContentTitle(null));
@@ -37,7 +50,7 @@ async function mount(authors: readonly ContentAuthor[] | null, options: { showAu
   const byline = mountAuthorByline({ scope, bindMenu: bindMenuPopover }, { provider: 'youtube', hosts: HOSTS, settings, readAccent: options.readAccent ?? noAccent });
   const publish = (next: readonly ContentAuthor[] | null, title = 'Building a cedar-strip canoe') =>
     hud.syncContentTitle({ title, subtitle: null, authors: next }, byline);
-  publish(authors);
+  publish(authors, firstTitle);
   const plate = () => queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS}`)!;
   if (options.dir) plate().dir = options.dir;
   const panel = () => plate()?.querySelector<HTMLButtonElement>('.theater-byline-panel') ?? null;
@@ -266,6 +279,88 @@ describe('author byline in the title plate', () => {
     expect(stat.right).toBeCloseTo(name.right, 0);
     view.plate().dir = 'ltr';
     expect(getComputedStyle(fill).clipPath.startsWith('polygon(0px 0px')).toBe(true);
+  });
+
+  test('shows the accent at rest; hover, focus and open lift the panel and step the arrowhead forward', async () => {
+    const view = await mount([author('One')]);
+    const fill = view.panel()!.querySelector('.theater-byline-fill')!;
+    const rim = view.panel()!.querySelector<HTMLElement>('.theater-byline-rim')!;
+    const glow = view.panel()!.querySelector<HTMLElement>('.theater-byline-glow')!;
+    const ramp = getComputedStyle(fill, '::before');
+    const lift = () => getComputedStyle(fill, '::after').opacity;
+    // The resting layer is the accent ramp, always shown.
+    expect(ramp.opacity).toBe('1');
+    expect(ramp.backgroundImage).toContain('linear-gradient');
+    expect(ramp.backgroundImage).not.toMatch(/rgba\(0, 0, 0/);
+    expect(lift()).toBe('0');
+    expect(getComputedStyle(rim).transform).toBe('none');
+    const rest = getComputedStyle(glow).opacity;
+    await userEvent.hover(view.panel()!);
+    await expect.poll(lift).toBe('1');
+    expect(getComputedStyle(fill, '::before').opacity).toBe('1');
+    await expect.poll(() => getComputedStyle(rim).transform).toBe('matrix(1, 0, 0, 1, 2, 0)');
+    await expect.poll(() => getComputedStyle(glow).opacity).not.toBe(rest);
+    // The keyboard gets the same lift, and the ink ring.
+    await userEvent.unhover(view.panel()!);
+    await userEvent.click(document.body, { position: { x: 600, y: 600 } });
+    await expect.poll(lift).toBe('0');
+    view.panel()!.focus();
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}{Tab}');
+    expect(view.panel()!.matches(':focus-visible')).toBe(true);
+    await expect.poll(lift).toBe('1');
+    expect(getComputedStyle(view.panel()!.querySelector('.theater-byline-fill')!).boxShadow).toContain('inset');
+    // Right to left, it steps towards the title on the left; Reduce motion keeps it in place.
+    view.plate().dir = 'rtl';
+    await expect.poll(() => getComputedStyle(rim).transform).toBe('matrix(1, 0, 0, 1, -2, 0)');
+    (view.plate().getRootNode() as ShadowRoot).host.setAttribute('data-motion', 'reduced');
+    await expect.poll(() => getComputedStyle(rim).transform).toBe('none');
+    expect(lift()).toBe('1');
+  });
+
+  test('over the panel or its popup the scrolling title keeps running and shows no tooltip; over the title it pauses', async () => {
+    const view = await mount([author('One'), author('Two')], {}, LONG_TITLE);
+    await expect.poll(() => view.plate().classList.contains('marquee')).toBe(true);
+    const track = view.plate().querySelector('.theater-title-hud-track')!;
+    const viewport = view.plate().querySelector('.theater-title-hud-viewport')!;
+    const state = () => getComputedStyle(track).animationPlayState;
+    expect(state()).toBe('running');
+    expect(view.plate().title).toBe(LONG_TITLE);
+    await userEvent.hover(view.panel()!);
+    expect(view.panel()!.matches(':hover')).toBe(true);
+    expect(state()).toBe('running');
+    expect(tooltip(view.panel()!.querySelector('.theater-byline-name'))).toBe('');
+    // The popup's rows are the panel's too.
+    await userEvent.click(view.panel()!);
+    await userEvent.hover(view.rows()[1]);
+    expect(state()).toBe('running');
+    expect(tooltip(view.rows()[1].querySelector('.theater-byline-row-title'))).toBe('');
+    // The arrowhead stays the panel's where the title's start fade reaches under it.
+    const panel = view.panel()!.getBoundingClientRect();
+    const tip = getPlayerUiRoot().elementFromPoint(panel.right - 4, (panel.top + panel.bottom) / 2);
+    expect(view.panel()!.contains(tip)).toBe(true);
+    // The title itself: paused, with the full title as its tooltip.
+    await userEvent.hover(viewport);
+    await expect.poll(state).toBe('paused');
+    expect(tooltip(view.plate().querySelector('.theater-title-hud-text'))).toBe(LONG_TITLE);
+    await userEvent.hover(view.panel()!);
+    await expect.poll(state).toBe('running');
+  });
+
+  test('with Reduce motion, hovering the panel leaves the shortened title as it is; hovering the title reveals it', async () => {
+    document.documentElement.dataset.motion = 'reduced';
+    try {
+      const view = await mount([author('One')], {}, LONG_TITLE, () => getPlayerUiRoot().host.setAttribute('data-motion', 'reduced'));
+      await expect.poll(() => view.plate().classList.contains('marquee')).toBe(true);
+      const smart = () => getComputedStyle(view.plate().querySelector('.theater-title-hud-smart')!).display;
+      expect(smart()).toBe('flex');
+      expect(view.plate().hasAttribute('title')).toBe(false);
+      await userEvent.hover(view.panel()!);
+      expect(smart()).toBe('flex');
+      await userEvent.hover(view.plate().querySelector('.theater-title-hud-viewport')!);
+      await expect.poll(smart).toBe('none');
+    } finally {
+      delete document.documentElement.dataset.motion;
+    }
   });
 
   test('the open popup has no blocking accessibility violations', async () => {

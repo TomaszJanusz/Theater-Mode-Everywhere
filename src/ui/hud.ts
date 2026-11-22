@@ -573,6 +573,7 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     // Reduced motion shows a static head…tail and reveals the full title on hover/focus
     // (see shadow.css). Assistive technology reads the whole text either way.
     overlay.classList.add('marquee');
+    // The full title as the plate's tooltip; content the plate hosts, such as the author panel, clears it.
     if (!isMotionReduced()) overlay.title = parts.text.textContent ?? '';
     const clone = parts.text.cloneNode(true) as HTMLElement;
     clone.classList.add('theater-title-hud-text-clone');

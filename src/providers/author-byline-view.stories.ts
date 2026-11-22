@@ -60,7 +60,7 @@ const HOSTS = providerAuthorHosts([{ domain: 'youtube.com', includeSubdomains: t
 const TITLE = 'Building a cedar-strip canoe, part 3: fibreglass';
 const LONG_TITLE = 'Building a cedar-strip canoe, part 3: fibreglass, epoxy, the first coat of varnish and every mistake left in';
 
-interface Args extends HudArgs { authors: number; accent: AccentColorPreset; avatar: Avatar; title: string; open: 'closed' | 'click' | 'keyboard' }
+interface Args extends HudArgs { authors: number; accent: AccentColorPreset; avatar: Avatar; title: string; open: 'closed' | 'click' | 'keyboard' | 'focus' | 'hover' }
 const meta: Meta<Args> = {
   title: 'Components/Author byline',
   args: { phase: 'steady', live: false, authors: 1, accent: 'red', avatar: 'none', title: TITLE, open: 'closed' },
@@ -68,7 +68,7 @@ const meta: Meta<Args> = {
     authors: { control: { type: 'range', min: 0, max: 3 } },
     accent: { control: 'select', options: ['red', 'purple', 'pink', 'yellow', 'blue', 'green', 'gray'] },
     avatar: { control: 'select', options: ['none', ...Object.keys(AVATARS)] },
-    open: { control: 'inline-radio', options: ['closed', 'click', 'keyboard'] },
+    open: { control: 'inline-radio', options: ['closed', 'click', 'keyboard', 'focus', 'hover'] },
     title: { control: 'text' }, phase: { control: false }, live: { control: false }
   }
 };
@@ -105,12 +105,30 @@ function byline(args: Partial<Args> = {}) {
         panel()!.focus();
         await userEvent.keyboard('{Enter}');
       }
+      // Focus alone lifts the panel without opening it.
+      if (values.open === 'focus') {
+        panel()!.focus();
+        await expect(panel()!.matches(':focus-visible')).toBe(true);
+        await expect(panel()!.getAttribute('aria-expanded')).toBe('false');
+        return;
+      }
+      if (values.open === 'hover') {
+        await userEvent.hover(panel()!);
+        // The pointer on the panel or its popup leaves the scrolling title running and without a tooltip.
+        const track = queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS} .theater-title-hud-track`)!;
+        if (queryPlayerUi(`.${TITLE_HUD_CLASS}.marquee`)) {
+          await expect(getComputedStyle(track).animationPlayState).toBe('running');
+          await expect(panel()!.closest('[title]')!.getAttribute('title')).toBe('');
+        }
+      }
       if (values.open !== 'closed') await expect(panel()!.getAttribute('aria-expanded')).toBe('true');
     }
   });
 }
 
+// The accent ramp shows at rest; hover, focus and open lift the panel and step the arrowhead forward.
 export const OneAuthor = byline();
+export const OneAuthorFocused = byline({ open: 'focus' });
 export const OneAuthorOpen = byline({ open: 'click' });
 // Also shot in German and Arabic (right-to-left): see .storybook/profiles.ts.
 export const TwoAuthorsOpen = byline({ authors: 2, accent: 'purple', open: 'click' });
@@ -121,8 +139,10 @@ export const ThreeAuthorsOpen = byline({ authors: 3, accent: 'green', open: 'cli
 export const KeyboardOpen = byline({ authors: 2, open: 'keyboard', accent: 'blue' });
 export const YellowAccentOpen = byline({ accent: 'yellow', open: 'click' });
 export const LongTitle = byline({ title: LONG_TITLE, authors: 2 });
+// The pointer on the panel opens its popup and leaves the scrolling title running, without the title's tooltip.
+export const LongTitleOverPanel = byline({ title: LONG_TITLE, authors: 2, open: 'hover' });
 export const NoAuthor = byline({ authors: 0 });
-// The first author's avatar colors the panel, open here so its fill shows; the popup keeps the user's accent.
+// The first author's avatar colors the panel; open, the popup keeps the user's accent.
 export const AvatarBlueOpen = byline({ avatar: 'blue', open: 'click' });
 export const AvatarOrange = byline({ avatar: 'orange', authors: 2 });
 export const AvatarNavyOpen = byline({ avatar: 'navy', authors: 2, open: 'click' });
