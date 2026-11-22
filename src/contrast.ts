@@ -1,15 +1,17 @@
-/** WCAG 2 relative luminance for opaque sRGB colors. */
+/** WCAG 2 relative luminance of an opaque `#rrggbb` color. */
+export function relativeLuminance(hex: string): number {
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) throw new Error(`Expected six-digit sRGB color: ${hex}`);
+  const channels = hex.slice(1).match(/../g)!;
+  const [r, g, b] = channels.map(channel => {
+    const c = parseInt(channel, 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** WCAG 2 contrast ratio of two opaque sRGB colors. */
 export function contrastRatio(foreground: string, background: string): number {
-  const luminance = (hex: string) => {
-    if (!/^#[0-9a-f]{6}$/i.test(hex)) throw new Error(`Expected six-digit sRGB color: ${hex}`);
-    const channels = hex.slice(1).match(/../g)!;
-    const [r, g, b] = channels.map(channel => {
-      const c = parseInt(channel, 16) / 255;
-      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-    });
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  };
-  const a = luminance(foreground), b = luminance(background);
+  const a = relativeLuminance(foreground), b = relativeLuminance(background);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
