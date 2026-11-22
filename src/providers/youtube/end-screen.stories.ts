@@ -20,10 +20,12 @@ interface Args { count: number; missingThumbnail: boolean; recommendations: bool
  * story's own origin, which stands in for the host's; only same-origin links render as links.
  */
 const watch = (id: string) => new URL(`/watch?v=${id}`, location.href).href;
+const channelPage = (handle: string) => new URL(`/@${handle}`, location.href).href;
+/** The third suggestion's channel has no link, as a collaboration's "A and B" has none on YouTube. */
 const items: readonly EndScreenItem[] = [
-  { id: 'one', href: watch('one'), kind: 'video', title: 'A quiet journey through the mountains — a long title that wraps onto two lines', channel: 'Open landscapes', meta: '125K views • 2 weeks ago', durationText: '18:06' },
-  { id: 'two', href: watch('two'), kind: 'video', title: 'The night sky above us', channel: 'After dark', meta: '1M views • 1 year ago', durationText: '1:01:17' },
-  { id: 'three', href: watch('three'), kind: 'video', title: 'Small moments by the sea', channel: 'Coastal stories', meta: '48K views • 3 days ago', durationText: '6:43' }
+  { id: 'one', href: watch('one'), kind: 'video', title: 'A quiet journey through the mountains — a long title that wraps onto two lines', channel: 'Open landscapes', channelHref: channelPage('openlandscapes'), meta: '125K views • 2 weeks ago', durationText: '18:06' },
+  { id: 'two', href: watch('two'), kind: 'video', title: 'The night sky above us', channel: 'After dark', channelHref: channelPage('afterdark'), meta: '1M views • 1 year ago', durationText: '1:01:17' },
+  { id: 'three', href: watch('three'), kind: 'video', title: 'Small moments by the sea', channel: 'Coastal stories and Friends', meta: '48K views • 3 days ago', durationText: '6:43' }
 ];
 const image = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="480" height="270"><rect width="480" height="270" fill="#263845"/><path d="M0 240L150 65L270 200L350 120L480 270H0" fill="#557064"/></svg>');
 
@@ -73,15 +75,36 @@ async function expectLayout(above: string): Promise<void> {
   await expect(getComputedStyle(queryPlayerUi('.theater-caption-overlay')!).visibility).toBe('hidden');
 }
 
-export const ThreeSuggestions: StoryObj<Args> = { play: async () => {
+const tiles = async () => {
   await waitFor(() => expect(queryPlayerUi('.theater-end-screen')?.querySelectorAll('a.theater-end-screen-tile').length).toBe(3));
+  return queryPlayerUi('.theater-end-screen')!;
+};
+
+export const ThreeSuggestions: StoryObj<Args> = { play: async () => {
+  const grid = await tiles();
   await expect(queryPlayerUi<HTMLAnchorElement>('.theater-end-screen-tile')?.href).toBe(watch('one'));
+  // Linked channels sit beside their tile, never inside it; the unlinked one stays text.
+  await expect([...grid.querySelectorAll<HTMLAnchorElement>('a.theater-end-screen-channel')].map(link => link.href))
+    .toEqual([channelPage('openlandscapes'), channelPage('afterdark')]);
+  await expect(grid.querySelector('.theater-end-screen-tile a')).toBeNull();
   await expectLayout('.theater-end-screen');
+} };
+/** Keyboard focus on a video: the ring around its card, the raised surface and the enlarged thumbnail that pointing shows too. */
+export const VideoFocused: StoryObj<Args> = { play: async () => {
+  const tile = (await tiles()).querySelector<HTMLElement>('.theater-end-screen-tile')!;
+  tile.focus();
+  await expect(tile.matches(':focus-visible')).toBe(true);
+} };
+/** Keyboard focus on a channel link: its own ring, with its card raised. */
+export const ChannelFocused: StoryObj<Args> = { play: async () => {
+  const link = (await tiles()).querySelector<HTMLElement>('a.theater-end-screen-channel')!;
+  link.focus();
+  await expect(link.matches(':focus-visible')).toBe(true);
 } };
 export const TwoSuggestions: StoryObj<Args> = { args: { count: 2 } };
 export const OneSuggestion: StoryObj<Args> = { args: { count: 1 } };
 export const MissingThumbnails: StoryObj<Args> = { args: { missingThumbnail: true }, play: async () => {
-  await waitFor(() => expect(queryPlayerUi('.theater-end-screen')?.querySelectorAll('.theater-end-screen-tile').length).toBe(3));
+  await tiles();
   await expect(queryPlayerUi('.theater-end-screen')?.querySelector('img')).toBeNull();
 } };
 

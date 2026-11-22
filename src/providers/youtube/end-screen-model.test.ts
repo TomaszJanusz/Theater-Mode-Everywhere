@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { normalizeSuggestion } from './end-screen-model';
+import { normalizeSuggestion, suggestionChannelHref } from './end-screen-model';
 
 // Recorded public, logged-out Chromium DOM, 2026-10-31. Fixture evidence, not an installed-extension pass.
 const fixture = readFileSync(new URL('../../../test/host-fixtures/youtube-end-screen.html', import.meta.url), 'utf8');
@@ -32,5 +32,21 @@ describe('YouTube end-screen normalization (recorded host fixture)', () => {
     const item = normalizeSuggestion({ ...fields, href: `${fields.href}&list=PL123` })!;
     assert.equal(item.kind, 'playlist');
     assert.ok(item.href?.endsWith('&list=PL123'));
+  });
+});
+
+describe('YouTube end-screen channel links', () => {
+  const item = normalizeSuggestion(fields)!;
+  const channel = { videoId: 'YQ8wOO9bvps', name: 'Channel', url: 'https://www.youtube.com/@channel' };
+  it('links the channel YouTube\'s data names for the same tile, on YouTube only', () => {
+    assert.equal(suggestionChannelHref(item, channel), 'https://www.youtube.com/@channel');
+    assert.equal(suggestionChannelHref(item, undefined), undefined);
+    // Another name means the reply describes another list; the tile keeps its text.
+    assert.equal(suggestionChannelHref(item, { ...channel, name: 'Someone else' }), undefined);
+    assert.equal(suggestionChannelHref({ ...item, channel: '' }, channel), undefined);
+    for (const url of ['https://evil.test/@channel', 'http://www.youtube.com/@channel', 'javascript:alert(1)',
+      'https://user@www.youtube.com/@channel', 'https://www.youtube.com:444/@channel', '/@channel']) {
+      assert.equal(suggestionChannelHref(item, { ...channel, url }), undefined, url);
+    }
   });
 });

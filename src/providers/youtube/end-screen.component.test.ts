@@ -13,7 +13,7 @@ afterEach(() => scope?.dispose());
 
 const title = 'A long title about watching the seasons change across the mountains and valleys of a distant landscape';
 const item: EndScreenItem = { id: 'one', href: '/watch', kind: 'video', title,
-  channel: 'A channel', meta: '125K views • 2 weeks ago', durationText: '18:06' };
+  channel: 'A channel', channelHref: new URL('/@achannel', location.href).href, meta: '125K views • 2 weeks ago', durationText: '18:06' };
 
 function mount(count: number, thumbnail = false) {
   scope = new DisposableScope();
