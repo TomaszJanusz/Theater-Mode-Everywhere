@@ -13,6 +13,14 @@ import type { EndScreenItem } from '../end-screen-view';
 
 const recorded = readFileSync(new URL('../../../test/host-fixtures/youtube-end-screen.html', import.meta.url), 'utf8');
 const url = 'https://www.youtube.com/watch?v=jNQXAC9IVRw';
+/** The watch-next end screen MAIN reads the tiles' channels from: the first tile's channel, and another name for the second. */
+const CHANNEL_URL = 'https://www.youtube.com/@wojanplus';
+const byline = (text: string, canonicalBaseUrl: string) => ({ runs: [{ text, navigationEndpoint: { browseEndpoint: { browseId: 'UC1nMQUe6G6tm5Q35Y7Un73g', canonicalBaseUrl } } }] });
+const initialData = { currentVideoEndpoint: { watchEndpoint: { videoId: 'jNQXAC9IVRw' } }, playerOverlays: { playerOverlayRenderer: { endScreen: {
+  watchNextEndScreenRenderer: { results: [
+    { endScreenVideoRenderer: { videoId: 'YQ8wOO9bvps', shortBylineText: byline('Wojan PLUS', '/@wojanplus') } },
+    { endScreenVideoRenderer: { videoId: 'rXnu-4_vDaY', shortBylineText: byline('Not Czajnik', '/@other') } }
+  ] } } } } };
 const fixture = vodVideoFixture({ title: 'End-screen fixture' }).replace('<body>',
   '<body><ytd-watch-flexy video-id="jNQXAC9IVRw">' + recorded).replace('</body>', '</ytd-watch-flexy></body>');
 
@@ -27,7 +35,8 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
       await page.route('https://*.ytimg.com/**', route => route.fulfill({ contentType: 'image/svg+xml',
         body: '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="270"><rect width="480" height="270" fill="#334155"/></svg>' }));
       await serveFixture(page, fixture, url);
-      await page.evaluate(() => {
+      await page.evaluate(data => {
+        Object.assign(window, { ytInitialData: data });
         const player = document.querySelector('#movie_player')!;
         const video = document.querySelector('video')!;
         player.prepend(video);
@@ -42,7 +51,7 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
           video.currentTime = 0;
           document.dispatchEvent(new Event('yt-navigate-finish', { bubbles: true }));
         });
-      });
+      }, initialData);
       await bootPlayer(page, { mainWorld: true, bundle: bundlePlayer([
         "export { createYouTubeEndScreen } from './providers/youtube/end-screen';",
         "export { readYouTubeSuggestions } from './providers/youtube/end-screen-model';",
@@ -70,6 +79,10 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
       };
       await end();
       assert.equal(await page.locator('.theater-end-screen-tile').count(), 3);
+      // MAIN's end-screen data links the first tile's channel; a name that differs from the tile's stays text.
+      const channelLinks = page.locator('a.theater-end-screen-channel');
+      assert.deepEqual(await channelLinks.evaluateAll(links => links.map(link => [link.textContent, link.getAttribute('href')])),
+        [['Wojan PLUS', CHANNEL_URL]]);
       const switchInput = page.locator('.theater-recommendations-setting input');
       await switchInput.click();
       await page.locator('.theater-end-screen').waitFor({ state: 'detached' });
@@ -146,6 +159,17 @@ describe('YouTube end tiles (recorded DOM fixture, not live host evidence)', () 
         assert.equal(page.url(), url, `${JSON.stringify(options)} leaves the page`);
         assert.equal(await page.locator('.theater-end-screen-tile').count(), 3);
       }
+      // The channel opens in another tab on a plain click; the video does not open and the tiles stay.
+      opened.length = 0;
+      await Promise.all([context.waitForEvent('requestfinished', request => request.url() === CHANNEL_URL), channelLinks.first().click()]);
+      assert.deepEqual(opened, [CHANNEL_URL], 'the channel link opens the channel in another tab');
+      assert.equal(page.url(), url, 'the channel link leaves the video page and theater in place');
+      assert.equal(await page.locator('.theater-end-screen-tile').count(), 3);
+      opened.length = 0;
+      await channelLinks.first().focus();
+      await Promise.all([context.waitForEvent('requestfinished', request => request.url() === CHANNEL_URL), page.keyboard.press('Enter')]);
+      assert.deepEqual(opened, [CHANNEL_URL], 'Enter on the channel link opens it the same way');
+      assert.equal(page.url(), url);
       for (const other of context.pages()) if (other !== page) await other.close();
       await page.locator('.theater-end-screen-tile').first().click();
       await page.waitForURL('**v=YQ8wOO9bvps');

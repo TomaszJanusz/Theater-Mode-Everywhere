@@ -82,9 +82,13 @@ function collaborator(value: unknown): ContentAuthor | null {
   };
 }
 
-/** The owner renderer of the first watch-next response (ytInitialData, a navigation's) that describes `videoId`. */
+/** The first watch-next response (ytInitialData, a navigation's) that describes `videoId`. */
+const watchResponse = (videoId: string, responses: readonly unknown[]) =>
+  responses.find(candidate => youtubeWatchJsonVideoId(candidate) === videoId);
+
+/** The owner renderer of the watch-next response that describes `videoId`. */
 function watchOwnerRenderer(videoId: string, responses: readonly unknown[]): Record<string, unknown> | null {
-  const response = responses.find(candidate => youtubeWatchJsonVideoId(candidate) === videoId);
+  const response = watchResponse(videoId, responses);
   const results = record(record(record(record(response)?.contents)?.twoColumnWatchNextResults)?.results)?.results;
   for (const item of list(record(results)?.contents).slice(0, 8)) {
     const owner = record(record(record(record(item)?.videoSecondaryInfoRenderer)?.owner)?.videoOwnerRenderer);
@@ -112,4 +116,27 @@ export function youtubeAuthors(owner: ContentAuthor, videoId: string, responses:
   const items = record(record(dialog?.customContent)?.listViewModel)?.listItems;
   const authors = list(items).slice(0, MAX_AUTHORS * 2).flatMap(item => collaborator(item) ?? []);
   return authors.some(author => author.id === owner.id) ? authors.slice(0, MAX_AUTHORS) : [owner];
+}
+
+/** The channel a suggestion is by, keyed by the suggested video's id. */
+export type YouTubeSuggestionChannel = { videoId: string; name: string; url: string };
+
+/**
+ * The channels of the suggestions YouTube shows when `videoId` ends, from that video's watch-next end screen, the data
+ * its player builds those tiles from. Only a byline of one run that opens a channel: a collaboration's "A and B"
+ * opens a dialog and names no single channel, so it stays text.
+ */
+export function youtubeEndScreenChannels(videoId: string, responses: readonly unknown[]): YouTubeSuggestionChannel[] {
+  const overlay = record(record(record(watchResponse(videoId, responses))?.playerOverlays)?.playerOverlayRenderer);
+  const results = record(record(overlay?.endScreen)?.watchNextEndScreenRenderer)?.results;
+  return list(results).slice(0, 24).flatMap(result => {
+    const video = record(record(result)?.endScreenVideoRenderer);
+    const runs = list(record(video?.shortBylineText ?? video?.longBylineText)?.runs);
+    const run = runs.length === 1 ? record(runs[0]) : null;
+    const endpoint = record(record(run?.navigationEndpoint)?.browseEndpoint);
+    const id = endpoint?.browseId;
+    const name = sanitizeContentTitle(run?.text);
+    if (typeof video?.videoId !== 'string' || typeof id !== 'string' || !CHANNEL_ID.test(id) || !name) return [];
+    return [{ videoId: video.videoId.slice(0, 20), name: name.slice(0, 80), url: channelUrl(endpoint?.canonicalBaseUrl, id) }];
+  });
 }

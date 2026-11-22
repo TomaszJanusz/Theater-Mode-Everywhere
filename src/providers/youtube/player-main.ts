@@ -30,6 +30,7 @@ import { isYouTubeHost } from '../hosts';
 import type { ProviderServices } from '../provider-api';
 import { MINIPLAYER_SURFACE } from '../video-candidates';
 import { installYouTubeAudio } from './audio-main';
+import { installEndScreenChannels } from './end-screen-main';
 import { YOUTUBE_HARVEST_EVENT, youtubeEvents } from './events';
 import { youtubeHarvestTarget } from './harvest-target';
 import { readYoutubeOwner, youtubeAuthors } from './owner-main';
@@ -647,12 +648,14 @@ function readYoutubeDomTitle(): string | null {
   return usableYoutubeDomTitle(sanitizeContentTitle(document.title.replace(/\s+-\s+YouTube$/i, '')));
 }
 
+/** The watch-next responses MAIN holds: the latest in-app navigation's, then the tab's first page's. */
+const watchResponses = () => [navigatedWatch, (window as Window & { ytInitialData?: unknown }).ytInitialData];
+
 /** The response's channel, or every collaborator, completed from the watch-next response for the same video. */
 function authorsOf(raw: unknown): { authors?: ContentAuthor[] } {
   const owner = readYoutubeOwner(raw);
   const videoId = youtubeResponseVideoId(raw);
-  const responses = [navigatedWatch, (window as Window & { ytInitialData?: unknown }).ytInitialData];
-  return owner && videoId ? { authors: youtubeAuthors(owner, videoId, responses) } : {};
+  return owner && videoId ? { authors: youtubeAuthors(owner, videoId, watchResponses()) } : {};
 }
 
 export function readYoutubeSnapshot(): Record<string, unknown> | null {
@@ -817,6 +820,7 @@ export function installYoutubeMain(pageMedia: NonNullable<typeof fetchPageMedia>
   fetchPageMedia = pageMedia;
   installYouTubeQueueNavigation();
   installYouTubePlaylist();
+  installEndScreenChannels(watchResponses);
   installYouTubeAudio();
   timedtextCache.notePageVideo(expectedYoutubeVideo().id);
   window.addEventListener('message', (event: MessageEvent) => {

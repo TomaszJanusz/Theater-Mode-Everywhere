@@ -5,7 +5,7 @@ import { describe, it } from 'node:test';
 import { firstMatchingYoutubeSnapshot as firstMatch, normalizeYoutubeSnapshot } from '../../media-features/youtube-snapshot';
 import { MAX_AUTHORS } from '../author-byline';
 
-import { readYoutubeOwner, youtubeAuthors } from './owner-main';
+import { readYoutubeOwner, youtubeAuthors, youtubeEndScreenChannels } from './owner-main';
 
 const CHANNEL = 'UCSMOQeBJ2RAnuFungnQOxLg';
 const response = (details: Record<string, unknown> = {}, ownerProfileUrl?: unknown) => ({
@@ -110,5 +110,38 @@ describe('YouTube video owner', () => {
     assert.equal(normalizeYoutubeSnapshot({ videoId: 'video-b', authors: owner })?.authors, undefined);
     assert.deepEqual(normalizeYoutubeSnapshot({ videoId: 'video-b', authors: [{ ...owner, avatarUrl: 9, verified: 'yes', stat: '1M' }] })?.authors,
       [{ ...owner, avatarUrl: null, verified: false, stat: '1M' }]);
+  });
+});
+
+// Recorded logged-out watch-next end screen; fixture evidence, not an installed-extension pass.
+const endScreen = JSON.parse(readFileSync(new URL('../../../test/host-fixtures/youtube-end-screen-channels.json', import.meta.url), 'utf8')) as {
+  watch: { playerOverlays: { playerOverlayRenderer: { endScreen: { watchNextEndScreenRenderer: { results: unknown[] } } } } };
+};
+const END_VIDEO = 'jNQXAC9IVRw';
+
+describe('YouTube end-screen channels', () => {
+  it('links each suggestion with one channel run to its handle page, and leaves a collaboration unlinked', () => {
+    assert.deepEqual(youtubeEndScreenChannels(END_VIDEO, [null, endScreen.watch]), [
+      { videoId: 'RFahjn6vfYY', name: 'Sthenics Films', url: 'https://www.youtube.com/@sthenicsfilms' },
+      { videoId: 'Cv4SyBVeUWA', name: 'World Data 3D', url: 'https://www.youtube.com/@WorldData_3D' },
+      { videoId: 'vYx0sjhUSqk', name: 'Gorzka Sława', url: 'https://www.youtube.com/@GorzkaS%C5%82awa' }
+    ]);
+  });
+
+  it('reads only the response of the video that ended, and checks each run', () => {
+    assert.deepEqual(youtubeEndScreenChannels('video-b', [endScreen.watch]), []);
+    const results = endScreen.watch.playerOverlays.playerOverlayRenderer.endScreen.watchNextEndScreenRenderer.results;
+    const suggestion = (runs: unknown[]) => ({ endScreenVideoRenderer: { videoId: 'aaaaaaaaaaa', shortBylineText: { runs } } });
+    const run = (text: string, browseEndpoint: unknown) => ({ text, navigationEndpoint: { browseEndpoint } });
+    const watch = (items: unknown[]) => ({ ...endScreen.watch, playerOverlays: { playerOverlayRenderer: { endScreen: {
+      watchNextEndScreenRenderer: { results: [...items, ...results.slice(0, 1)] } } } } });
+    const channels = youtubeEndScreenChannels(END_VIDEO, [watch([
+      suggestion([run('A', { browseId: CHANNEL, canonicalBaseUrl: '//evil.test/x' })]),
+      suggestion([run('Two', { browseId: CHANNEL }), run(' and ', null)]),
+      suggestion([run('Bad id', { browseId: 'not-a-channel', canonicalBaseUrl: '/@bad' })]),
+      suggestion([run(' ', { browseId: CHANNEL })])
+    ])]);
+    // A path that is not YouTube's falls back to the channel id's page; several runs, a bad id or no name link nothing.
+    assert.deepEqual(channels.map(channel => channel.url), [`https://www.youtube.com/channel/${CHANNEL}`, 'https://www.youtube.com/@sthenicsfilms']);
   });
 });

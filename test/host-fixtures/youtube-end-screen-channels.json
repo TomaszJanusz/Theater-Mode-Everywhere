@@ -1,0 +1,117 @@
+{
+  "source": "YouTube watch page /watch?v=jNQXAC9IVRw (Me at the zoo), logged out",
+  "captured": "2026-11-22",
+  "environment": "curl on runner02 with a desktop Chrome user agent and Accept-Language en-US; ytInitialData of the page",
+  "evidence": "Recorded host fixture (the watch-next end screen the player builds its end-of-video tiles from), not live extension verification",
+  "notes": "Four of the twelve results, trimmed to the video id, title, byline runs and length; tracking parameters, command metadata and thumbnails are removed. A collaboration's single byline run opens a dialog (showDialogCommand, emptied here) instead of a channel; handles may be percent-encoded.",
+  "watch": {
+    "currentVideoEndpoint": {
+      "watchEndpoint": {
+        "videoId": "jNQXAC9IVRw"
+      }
+    },
+    "playerOverlays": {
+      "playerOverlayRenderer": {
+        "endScreen": {
+          "watchNextEndScreenRenderer": {
+            "results": [
+              {
+                "endScreenVideoRenderer": {
+                  "videoId": "RFahjn6vfYY",
+                  "title": {
+                    "simpleText": "Zack D films Vs Original"
+                  },
+                  "shortBylineText": {
+                    "runs": [
+                      {
+                        "text": "Sthenics Films",
+                        "navigationEndpoint": {
+                          "browseEndpoint": {
+                            "browseId": "UC1nMQUe6G6tm5Q35Y7Un73g",
+                            "canonicalBaseUrl": "/@sthenicsfilms"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "lengthText": {
+                    "simpleText": "11:13"
+                  }
+                }
+              },
+              {
+                "endScreenVideoRenderer": {
+                  "videoId": "5iAPh-_xC78",
+                  "title": {
+                    "simpleText": "camman18 Was Right All Along"
+                  },
+                  "shortBylineText": {
+                    "runs": [
+                      {
+                        "text": "Glider Guy and Glider Guy Movies",
+                        "navigationEndpoint": {
+                          "showDialogCommand": {}
+                        }
+                      }
+                    ]
+                  },
+                  "lengthText": {
+                    "simpleText": "30:32"
+                  }
+                }
+              },
+              {
+                "endScreenVideoRenderer": {
+                  "videoId": "Cv4SyBVeUWA",
+                  "title": {
+                    "simpleText": "Comparison: OLDEST People in the World History"
+                  },
+                  "shortBylineText": {
+                    "runs": [
+                      {
+                        "text": "World Data 3D",
+                        "navigationEndpoint": {
+                          "browseEndpoint": {
+                            "browseId": "UCk2HlXV-nDOjNzommmvcYPQ",
+                            "canonicalBaseUrl": "/@WorldData_3D"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "lengthText": {
+                    "simpleText": "3:23"
+                  }
+                }
+              },
+              {
+                "endScreenVideoRenderer": {
+                  "videoId": "vYx0sjhUSqk",
+                  "title": {
+                    "simpleText": "Z BLASKU W NĘDZĘ: 6 gwiazd PRL, które po sławie zostały bez pieniędzy"
+                  },
+                  "shortBylineText": {
+                    "runs": [
+                      {
+                        "text": "Gorzka Sława",
+                        "navigationEndpoint": {
+                          "browseEndpoint": {
+                            "browseId": "UCLQIDNAAT0DRpWUEPRnpS8g",
+                            "canonicalBaseUrl": "/@GorzkaS%C5%82awa"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "lengthText": {
+                    "simpleText": "33:24"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

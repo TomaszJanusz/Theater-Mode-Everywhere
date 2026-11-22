@@ -3,6 +3,7 @@ import { providerOffAttribute } from '../../media-features/provider-flags';
 import { mountEndScreenSettings, type EndScreenSnapshot, type SuggestionSource } from '../end-screen-view';
 
 import { readYouTubeAutonav } from './autonav';
+import { queryYouTubeEndChannels } from './end-screen-bridge';
 import { readYouTubeSuggestions } from './end-screen-model';
 import { createYouTubeSettings } from './settings';
 import { youtubeWatchPlayback } from './watch-playback';
@@ -32,9 +33,10 @@ export function createYouTubeEndScreen(element: HTMLElement): EndScreenSource & 
     && !root.matches('.ad-showing, .ad-interrupting') && !hostEndsPlayback();
   const read = (): EndScreenSnapshot | null => {
     if (!available()) return null;
-    const mediaId = JSON.stringify([identity(), visit, video?.currentSrc]);
+    const id = identity()!;
+    const mediaId = JSON.stringify([id, visit, video?.currentSrc]);
     if (dirty || snapshot?.mediaId !== mediaId) {
-      snapshot = { mediaId, items: readYouTubeSuggestions(root!).map(entry => entry.item) };
+      snapshot = { mediaId, items: readYouTubeSuggestions(root!, queryYouTubeEndChannels(doc, id)).map(entry => entry.item) };
       dirty = false;
     }
     return snapshot;

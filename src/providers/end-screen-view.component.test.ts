@@ -143,3 +143,88 @@ describe('End-screen tiles as links', () => {
     expect(activations).toEqual(['one', 'one']);
   });
 });
+
+describe('End-screen channel links', () => {
+  const channelPage = (handle: string) => new URL(`/@${handle}`, location.href).href;
+  const linked = (id: string): EndScreenItem => ({ ...item(id, watch(id)), meta: '1M views', channelHref: channelPage(id) });
+
+  test('a valid channel link sits beside the tile, above it, opens a new tab and never opens the video', async () => {
+    const { tiles, replay, activations, events } = mount([linked('one'), { ...item('two', watch('two')), channelHref: 'https://evil.test/@two' }]);
+    const card = tiles[0]!.parentElement!;
+    const link = card.querySelector<HTMLAnchorElement>('a.theater-end-screen-channel')!;
+    expect(link.href).toBe(channelPage('one'));
+    expect([link.target, link.rel]).toEqual(['_blank', 'noopener noreferrer']);
+    // Siblings, not nested: the tile holds no other interactive element.
+    expect(tiles[0]!.contains(link)).toBe(false);
+    expect(tiles[0]!.querySelector('a, button, input, [tabindex]')).toBeNull();
+    await expect.element(link).toHaveAccessibleName('A channel');
+    await expect.element(tiles[0]!).toHaveAccessibleName('Video one A channel 1M views');
+    // A foreign channel URL keeps plain, hidden text; the tile's name still carries it.
+    const plain = tiles[1]!.parentElement!.querySelector('.theater-end-screen-channel')!;
+    expect([plain.localName, plain.getAttribute('aria-hidden')]).toEqual(['span', 'true']);
+    // The channel link takes its own clicks; anywhere else on the card, the meta line included, opens the video.
+    const at = (node: Element) => {
+      const box = node.getBoundingClientRect();
+      return getPlayerUiRoot().elementFromPoint(box.left + Math.min(box.width / 2, 8), box.top + box.height / 2);
+    };
+    expect(at(link)).toBe(link);
+    expect(at(card.querySelector('.theater-end-screen-meta')!)).toBe(tiles[0]);
+    expect(at(plain)).toBe(tiles[1]);
+    await userEvent.click(link);
+    expect(activations).toEqual([]);
+    expect(events.map(event => [event.type, event.prevented])).toEqual([['click', false]]);
+    // Keyboard order: the video, its channel, then the next video.
+    replay.focus();
+    for (const expected of [tiles[0], link, tiles[1]]) {
+      await userEvent.tab();
+      expect(getPlayerUiRoot().activeElement).toBe(expected);
+    }
+    expect(await blockingViolations(getPlayerUiRoot().host as HTMLElement)).toEqual([]);
+  });
+
+  test('pointing at or focusing a card raises its surface and thumbnail; reduced motion makes it instant', async () => {
+    const host = getPlayerUiRoot().host as HTMLElement;
+    host.dataset.motion = 'reduced';
+    scope = new DisposableScope();
+    scope.add(() => { delete host.dataset.motion; });
+    const { tiles, replay } = mount([{ ...linked('one'), thumbnailUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>' }, linked('two')]);
+    const card = tiles[0]!.parentElement!;
+    const surface = () => getComputedStyle(card, '::before').opacity;
+    const scaled = () => getComputedStyle(card.querySelector('img')!).transform !== 'none';
+    expect([surface(), scaled()]).toEqual(['0', false]);
+    expect(parseFloat(getComputedStyle(card, '::before').transitionDuration)).toBeLessThan(0.001);
+    await userEvent.hover(card);
+    expect([surface(), scaled()]).toEqual(['1', true]);
+    await userEvent.hover(tiles[1]!);
+    expect([surface(), scaled()]).toEqual(['0', false]);
+    // The same states from the keyboard, with the focus ring on the whole card.
+    replay.focus();
+    await userEvent.tab();
+    expect([surface(), scaled()]).toEqual(['1', true]);
+    expect(getComputedStyle(tiles[0]!, '::after').outlineStyle).toBe('solid');
+  });
+
+  test('a snapshot update keeps focus on the same channel link while it remains', async () => {
+    scope = new DisposableScope();
+    const curtain = document.createElement('div');
+    curtain.className = 'theater-ended-curtain';
+    mountPlayerUi(curtain);
+    scope.add(() => curtain.remove());
+    const settings = createYouTubeSettings();
+    scope.add(() => settings.dispose());
+    await settings.ready;
+    await settings.set('youtube', 'showRecommendations', true);
+    let items = [linked('a'), linked('b')];
+    const refresh = mountEndScreenSettings(curtain, { read: () => ({ mediaId: 'first', items }), activate: () => true },
+      { label: 'Suggested videos', scope, settings, provider: 'youtube' });
+    const channel = (handle: string) => curtain.querySelector<HTMLElement>(`a.theater-end-screen-channel[href="${channelPage(handle)}"]`);
+    channel('b')!.focus();
+    items = [linked('x'), linked('b')];
+    refresh();
+    expect(getPlayerUiRoot().activeElement).toBe(channel('b'));
+    // Its link gone, focus falls back to the first tile.
+    items = [linked('x'), item('b', watch('b'))];
+    refresh();
+    expect(getPlayerUiRoot().activeElement).toBe(curtain.querySelector('.theater-end-screen-tile'));
+  });
+});

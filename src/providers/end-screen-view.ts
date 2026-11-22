@@ -13,6 +13,8 @@ export interface EndScreenItem {
   title: string;
   thumbnailUrl?: string;
   channel?: string;
+  /** The channel's absolute page URL on the host page's own origin; it makes the channel a link of its own. */
+  channelHref?: string;
   meta?: string;
   durationText?: string;
 }
@@ -38,15 +40,62 @@ function linkHref(href: string | undefined): string | null {
   } catch { return null; }
 }
 
-/** The recommendation each rendered tile shows, so a rebuild can keep focus on it. */
+/** The recommendation (and, for its channel link, the part) each focusable shows, so a rebuild can keep focus on it. */
 const tileIds = new WeakMap<Element, string>();
+const FOCUSABLE = '.theater-end-screen-tile, .theater-end-screen-channel[href]';
 
 /** Browser-owned clicks: new tab or window, download. The context menu and middle click never fire `click`. */
 const opensElsewhere = (event: MouseEvent) => event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey;
 
+/** A line of text, or nothing for an empty value. */
+function line(value: string | undefined, className: string, parent: HTMLElement, node: HTMLElement = document.createElement('span')) {
+  if (!value) return null;
+  node.className = className;
+  node.textContent = value;
+  parent.append(node);
+  return node;
+}
+
+/** The tile's picture and title, then screen-reader copies of the card's other lines for its name, title first. */
+function fillTile(tile: HTMLElement, item: EndScreenItem): void {
+  const picture = document.createElement('span');
+  picture.className = 'theater-end-screen-picture';
+  picture.setAttribute('aria-hidden', 'true');
+  if (item.thumbnailUrl) {
+    const image = document.createElement('img');
+    image.src = item.thumbnailUrl;
+    image.alt = '';
+    image.referrerPolicy = 'no-referrer';
+    picture.append(image);
+  }
+  line(item.durationText, 'theater-end-screen-duration', picture);
+  tile.append(picture);
+  line(item.title, 'theater-end-screen-title', tile);
+  for (const value of [item.channel, item.meta, item.durationText]) line(value, 'theater-sr-only', tile);
+}
+
+/**
+ * The card's lines beside the tile, shown to the eye only (the tile's name carries them): the channel, a link of its
+ * own when valid, and the meta line. The channel opens in a new tab, as the byline's channels do, so theater keeps
+ * the curtain it came from.
+ */
+function appendCardLines(card: HTMLElement, item: EndScreenItem): void {
+  const href = item.channel && linkHref(item.channelHref);
+  const link = href ? Object.assign(document.createElement('a'), { href, target: '_blank', rel: 'noopener noreferrer' }) : undefined;
+  const channel = line(item.channel, 'theater-end-screen-channel', card, link);
+  if (link) tileIds.set(link, `${item.id}\nchannel`);
+  else channel?.setAttribute('aria-hidden', 'true');
+  line(item.meta, 'theater-end-screen-meta', card)?.setAttribute('aria-hidden', 'true');
+}
+
 /**
  * One activation path: a plain click and Enter (Space too on a button tile) run the same host command. A tile with a
  * valid `href` is a real link, so the browser keeps its own new-tab, context-menu and status-bar behaviour.
+ *
+ * Each card holds the tile and, beside it rather than inside, the channel: a link of its own when the provider gave a
+ * valid `channelHref`. The tile stretches over the whole card, and the channel link sits above it, so a click anywhere
+ * else still opens the video and no link is nested in another. The tile's name keeps the card's text, read from
+ * screen-reader-only copies of the lines the card shows outside it.
  */
 export function renderEndScreen(source: SuggestionSource, label: string, scope: DisposableScope): HTMLElement | null {
   const snapshot = source.read();
@@ -60,34 +109,15 @@ export function renderEndScreen(source: SuggestionSource, label: string, scope: 
   grid.append(style);
   for (const item of snapshot.items.slice(0, 3)) {
     const href = linkHref(item.href);
+    const card = document.createElement('div');
+    card.className = 'theater-end-screen-card';
     // Firefox and Safari on macOS skip plain links on Tab by default; tabIndex keeps the tile one tab stop like a button.
     const tile: HTMLElement = href ? Object.assign(document.createElement('a'), { href, rel: 'noopener noreferrer', tabIndex: 0 })
       : Object.assign(document.createElement('button'), { type: 'button' });
     tile.className = 'theater-end-screen-tile';
-    const picture = document.createElement('span');
-    picture.className = 'theater-end-screen-picture';
-    // The duration is repeated after the visible text for the accessible name, title first.
-    picture.setAttribute('aria-hidden', 'true');
-    if (item.thumbnailUrl) {
-      const image = document.createElement('img');
-      image.src = item.thumbnailUrl;
-      image.alt = '';
-      image.referrerPolicy = 'no-referrer';
-      picture.append(image);
-    }
-    const text = (value: string | undefined, className: string, parent: HTMLElement) => {
-      if (!value) return;
-      const node = document.createElement('span');
-      node.className = className;
-      node.textContent = value;
-      parent.append(node);
-    };
-    text(item.durationText, 'theater-end-screen-duration', picture);
-    tile.append(picture);
-    text(item.title, 'theater-end-screen-title', tile);
-    text(item.channel, 'theater-end-screen-channel', tile);
-    text(item.meta, 'theater-end-screen-meta', tile);
-    text(item.durationText, 'theater-sr-only', tile);
+    fillTile(tile, item);
+    card.append(tile);
+    appendCardLines(card, item);
     // Removed nodes can still receive a queued click; the provider checks the visit again too. A link left from an
     // older snapshot opens nothing, here or in a new tab, and drops its href so its context menu offers none.
     const current = (event: MouseEvent) => {
@@ -106,7 +136,7 @@ export function renderEndScreen(source: SuggestionSource, label: string, scope: 
     });
     if (href) for (const type of ['auxclick', 'contextmenu'] as const) tile.addEventListener(type, current);
     tileIds.set(tile, item.id);
-    grid.append(tile);
+    grid.append(card);
   }
   return grid;
 }
@@ -156,13 +186,15 @@ export function mountEndScreenSettings(
     const key = JSON.stringify(settings.loaded && input.checked ? snapshot : null);
     if (key === previous) return;
     previous = key;
-    // Focus stays on the same recommendation when it remains, else moves to the first tile or the switch.
+    // Focus stays on the same recommendation (or its channel) when it remains, else moves to the first tile or the switch.
     const focused = grid?.matches(':focus-within') ? tileIds.get(grid.querySelector(':focus')!) ?? '' : undefined;
     grid?.remove();
     grid = settings.loaded && input.checked ? renderEndScreen(source, label, scope) : null;
     if (grid) container.insertBefore(grid, row);
-    const tiles = [...grid?.querySelectorAll<HTMLElement>('.theater-end-screen-tile') ?? []];
-    if (focused !== undefined) (tiles.find(tile => tileIds.get(tile) === focused) ?? tiles[0] ?? input).focus();
+    const focusables = [...grid?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []];
+    if (focused !== undefined) {
+      (focusables.find(node => tileIds.get(node) === focused) ?? grid?.querySelector<HTMLElement>('.theater-end-screen-tile') ?? input).focus();
+    }
   };
   scope.listen(input, 'click', event => { if (event.detail) input.blur(); });
   scope.listen(input, 'change', () => {

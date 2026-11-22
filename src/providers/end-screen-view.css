@@ -6,7 +6,8 @@
 .theater-end-screen {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  /* With each card's own padding, the content stays 16px apart. */
+  gap: 4px;
   flex-basis: 100%;
   max-width: min(1000px, 88%);
   /* A short stage keeps room for Replay's line above (when it wraps) and the switch's line below. */
@@ -16,13 +17,39 @@
   pointer-events: auto;
 }
 
+/* The card is the tile's hover and focus surface; the tile itself stretches over it (see ::after). */
+.theater-end-screen-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  border-radius: 12px;
+  padding: 6px;
+}
+
+/* Fades in by opacity: the player UI's shadow root never animates registered properties. */
+.theater-end-screen-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: rgb(255 255 255 / 10%);
+  opacity: 0;
+  transition: opacity 150ms ease;
+  pointer-events: none;
+}
+
+.theater-end-screen-card:is(:hover, :has(:focus-visible))::before { opacity: 1; }
+
 .theater-end-screen-tile {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
   border: 0;
-  border-radius: 8px;
   padding: 0;
   background: transparent;
   color: #ffffff;
@@ -32,9 +59,19 @@
   cursor: pointer;
 }
 
-.theater-end-screen-tile:focus-visible {
+/* The whole card opens the video; the channel link is raised above this. */
+.theater-end-screen-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+}
+
+.theater-end-screen-tile:focus-visible { outline: none; }
+
+.theater-end-screen-tile:focus-visible::after {
   outline: 2px solid var(--accent-color, #6366f1);
-  outline-offset: 4px;
+  outline-offset: -2px;
 }
 
 .theater-end-screen-picture {
@@ -52,6 +89,11 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 200ms ease;
+}
+
+.theater-end-screen-card:is(:hover, :has(.theater-end-screen-tile:focus-visible)) .theater-end-screen-picture img {
+  transform: scale(1.05);
 }
 
 .theater-end-screen-duration {
@@ -88,6 +130,30 @@
   line-height: 1.4;
 }
 
+.theater-end-screen-channel {
+  align-self: flex-start;
+}
+
+a.theater-end-screen-channel {
+  position: relative;
+  z-index: 1;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+a.theater-end-screen-channel:hover {
+  color: var(--appearance-ink, #ffffff);
+  text-decoration: underline;
+}
+
+a.theater-end-screen-channel:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1);
+  outline-offset: 2px;
+}
+
+:host([data-motion="reduced"]) .theater-end-screen-card::before,
+:host([data-motion="reduced"]) .theater-end-screen-picture img { transition: none; }
+
 .theater-end-screen .theater-sr-only {
   position: absolute;
   width: 1px;
@@ -97,7 +163,8 @@
 }
 
 @media (max-width: 500px) {
-  .theater-end-screen { gap: 8px; max-width: 94%; }
+  .theater-end-screen { gap: 0; max-width: 94%; }
+  .theater-end-screen-card { padding: 4px; }
   .theater-end-screen-title { font-size: 12px; }
 }
 
