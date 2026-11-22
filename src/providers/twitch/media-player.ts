@@ -8,6 +8,7 @@ export type TwitchQuality = { group?: unknown; name?: unknown; height?: unknown 
 export type TwitchMediaPlayer = {
   getHTMLVideoElement?: () => unknown;
   getLoadedChannelLogin?: () => unknown;
+  getPath?: () => unknown;
   getSessionData?: () => unknown;
   getState?: () => unknown;
   getQualities?: () => unknown;
@@ -55,6 +56,16 @@ export function twitchMediaPlayer(video: HTMLVideoElement): TwitchMediaPlayer | 
 export function twitchLoadedChannel(player: TwitchMediaPlayer): string | null {
   const login = player.getLoadedChannelLogin?.();
   return typeof login === 'string' && login ? login.toLowerCase() : null;
+}
+
+/**
+ * The past broadcast the player loaded, from the playlist it plays (measured logged out, 2026-11:
+ * `https://usher.ttvnw.net/vod/v2/<id>.m3u8?…`; a live channel's is `…/api/v2/channel/hls/<login>.m3u8`).
+ * The player names no channel for a VOD, so this is what tells one recording from the next.
+ */
+export function twitchLoadedVideo(player: TwitchMediaPlayer): string | null {
+  const path = player.getPath?.();
+  return typeof path === 'string' ? /^https:\/\/usher\.ttvnw\.net\/vod\/(?:v\d+\/)?(\d{1,20})\.m3u8(?:\?|$)/.exec(path)?.[1] ?? null : null;
 }
 
 /**
