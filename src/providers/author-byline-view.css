@@ -8,8 +8,6 @@
   --tip: 22px;
   --text-end: 44px;
   --dir: to right;
-  /* The lit edge: the accent lifted towards the ink. */
-  --edge: color-mix(in srgb, var(--accent-color, #6366f1) 55%, var(--appearance-ink, #ffffff));
   position: relative;
   display: flex;
   flex: none;
@@ -19,6 +17,11 @@
   font-size: 15px;
   line-height: 1.2;
 }
+
+/* The lit edge: the accent lifted towards the ink. The panel declares it again, so the first author's avatar color,
+   set on the panel (author-byline-view.ts), reaches its edge while the popup's rows keep the user's accent. */
+.theater-byline,
+.theater-byline-panel { --edge: color-mix(in srgb, var(--accent-color, #6366f1) 55%, var(--appearance-ink, #ffffff)); }
 
 .theater-everywhere-title-hud[dir="rtl"] .theater-byline { --dir: to left; }
 

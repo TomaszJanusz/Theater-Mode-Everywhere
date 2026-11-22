@@ -10,7 +10,7 @@ import { bindMenuPopover } from '../ui/menu-popover';
 import { getPlayerUiRoot, queryPlayerUi } from '../ui/root';
 
 import { providerAuthorHosts } from './author-byline';
-import { mountAuthorByline } from './author-byline-view';
+import { mountAuthorByline, readAvatarAccent } from './author-byline-view';
 import { createYouTubeSettings } from './youtube/settings';
 
 const HOSTS = providerAuthorHosts([{ domain: 'youtube.com', includeSubdomains: true }], ['yt3.ggpht.com']);
@@ -22,7 +22,11 @@ const author = (name: string, overrides: Partial<ContentAuthor> = {}): ContentAu
 let scope: DisposableScope | undefined;
 afterEach(() => { scope?.dispose(); scope = undefined; });
 
-async function mount(authors: readonly ContentAuthor[] | null, options: { showAuthor?: boolean; dir?: 'rtl' } = {}) {
+type ReadAccent = (avatarUrl: string) => Promise<string | null>;
+/** Tests stay off the network: without a reader of their own, no avatar has a color. */
+const noAccent: ReadAccent = () => Promise.resolve(null);
+
+async function mount(authors: readonly ContentAuthor[] | null, options: { showAuthor?: boolean; dir?: 'rtl'; readAccent?: ReadAccent } = {}) {
   const stage = mountHudStage();
   const hud = createHud(stage.host, () => {}, stage.clock);
   scope = new DisposableScope();
@@ -30,7 +34,7 @@ async function mount(authors: readonly ContentAuthor[] | null, options: { showAu
   const settings = createYouTubeSettings();
   await settings.ready;
   if (options.showAuthor === false) await settings.set('youtube', 'showAuthor', false);
-  const byline = mountAuthorByline({ scope, bindMenu: bindMenuPopover }, { provider: 'youtube', hosts: HOSTS, settings });
+  const byline = mountAuthorByline({ scope, bindMenu: bindMenuPopover }, { provider: 'youtube', hosts: HOSTS, settings, readAccent: options.readAccent ?? noAccent });
   const publish = (next: readonly ContentAuthor[] | null, title = 'Building a cedar-strip canoe') =>
     hud.syncContentTitle({ title, subtitle: null, authors: next }, byline);
   publish(authors);
@@ -268,5 +272,100 @@ describe('author byline in the title plate', () => {
     const view = await mount([author('Harbour Films', { avatarUrl: AVATAR, verified: true, stat: '1.26M subscribers' }), author('Two')]);
     await userEvent.click(view.panel()!);
     expect(await blockingViolations(view.plate())).toEqual([]);
+  });
+  test('colors the panel with the first author\'s avatar and leaves the popup with the user\'s accent', async () => {
+    const reads: string[] = [];
+    const readAccent: ReadAccent = url => { reads.push(url); return Promise.resolve(url === AVATAR ? '#3792c7' : '#b14c7d'); };
+    const view = await mount([author('Harbour', { avatarUrl: AVATAR }), author('Two', { avatarUrl: 'https://yt3.ggpht.com/two=s88' })], { readAccent });
+    const edge = (node: Element) => getComputedStyle(node).getPropertyValue('--edge');
+    await expect.poll(() => getComputedStyle(view.panel()!).getPropertyValue('--accent-color')).toBe('#3792c7');
+    // Only the first author's avatar is read.
+    expect(reads).toEqual([AVATAR]);
+    const rim = view.panel()!.querySelector('.theater-byline-rim')!;
+    expect(edge(rim)).toContain('#3792c7');
+    expect(getComputedStyle(view.panel()!).getPropertyValue('--contrast-accent')).toMatch(/^#[0-9a-f]{6}$/);
+    await userEvent.click(view.panel()!);
+    expect(edge(view.rows()[0])).not.toContain('#3792c7');
+    // Another first author brings its own color; a title without authors takes it away with the panel.
+    view.publish([author('Two', { avatarUrl: 'https://yt3.ggpht.com/two=s88' })], 'Another video');
+    await expect.poll(() => getComputedStyle(view.panel()!).getPropertyValue('--accent-color')).toBe('#b14c7d');
+    view.publish(null, 'A third video');
+    view.publish([author('Three')], 'A fourth video');
+    expect(view.panel()!.style.getPropertyValue('--accent-color')).toBe('');
+  });
+
+  test('keeps the user\'s accent without an avatar or a color, and drops a color read for an author who left', async () => {
+    const pending = new Map<string, (accent: string | null) => void>();
+    const readAccent: ReadAccent = url => new Promise(resolve => pending.set(url, resolve));
+    const view = await mount([author('Plain')], { readAccent });
+    const accent = () => view.panel()!.style.getPropertyValue('--accent-color');
+    await new Promise(resolve => requestIdleCallback(resolve));
+    expect(pending.size).toBe(0);
+    view.publish([author('Gray', { avatarUrl: 'https://yt3.ggpht.com/gray=s88' })]);
+    await expect.poll(() => pending.size).toBe(1);
+    pending.get('https://yt3.ggpht.com/gray=s88')!(null);
+    view.publish([author('First', { avatarUrl: AVATAR })]);
+    await expect.poll(() => pending.has(AVATAR)).toBe(true);
+    // The first author is replaced before the read returns: the late color is not applied.
+    view.publish([author('Second', { avatarUrl: 'https://yt3.ggpht.com/second=s88' })], 'Another video');
+    pending.get(AVATAR)!('#3792c7');
+    await expect.poll(() => pending.has('https://yt3.ggpht.com/second=s88')).toBe(true);
+    expect(accent()).toBe('');
+    pending.get('https://yt3.ggpht.com/second=s88')!('#07803f');
+    await expect.poll(accent).toBe('#07803f');
+  });
+
+  test('the same channel with another size of its avatar keeps its color until that one is read; another channel resets it', async () => {
+    const pending = new Map<string, (accent: string | null) => void>();
+    const readAccent: ReadAccent = url => new Promise(resolve => pending.set(url, resolve));
+    const small = 'https://yt3.ggpht.com/same=s48', large = 'https://yt3.ggpht.com/same=s88';
+    const view = await mount([author('Harbour', { avatarUrl: small })], { readAccent });
+    const accent = () => view.panel()!.style.getPropertyValue('--accent-color');
+    await expect.poll(() => pending.has(small)).toBe(true);
+    pending.get(small)!('#3792c7');
+    await expect.poll(accent).toBe('#3792c7');
+    view.publish([author('Harbour', { avatarUrl: large })]);
+    expect(accent()).toBe('#3792c7');
+    await expect.poll(() => pending.has(large)).toBe(true);
+    pending.get(large)!('#3b94c8');
+    await expect.poll(accent).toBe('#3b94c8');
+    view.publish([author('Other', { avatarUrl: 'https://yt3.ggpht.com/other=s88' })], 'Another video');
+    expect(accent()).toBe('');
+  });
+
+  test('a panel that ends before the page is idle reads nothing', async () => {
+    const reads: string[] = [];
+    await mount([author('Harbour', { avatarUrl: AVATAR })], { readAccent: url => { reads.push(url); return Promise.resolve(null); } });
+    scope!.dispose();
+    // Idle callbacks run in order, so this one runs after the panel's would have.
+    await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 }));
+    expect(reads).toEqual([]);
+  });
+});
+
+describe('readAvatarAccent', () => {
+  /** A PNG data URL: a white square with a colored disc, the way many avatars look. */
+  function avatarImage(color: string): string {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 88;
+    const context = canvas.getContext('2d')!;
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, 88, 88);
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(44, 44, 30, 0, Math.PI * 2);
+    context.fill();
+    return canvas.toDataURL('image/png');
+  }
+
+  test('reads the dominant color of a readable avatar once, and gives none for a gray or failing one', async () => {
+    const blue = avatarImage('#3792c7');
+    const accent = await readAvatarAccent(blue);
+    // Downscaling blends the disc's edge with the white around it, a little differently in each engine.
+    const channels = (hex: string) => hex.slice(1).match(/../g)!.map(channel => parseInt(channel, 16));
+    channels(accent!).forEach((channel, index) => expect(Math.abs(channel - channels('#3792c7')[index])).toBeLessThan(12));
+    expect(await readAvatarAccent(blue)).toBe(accent);
+    expect(await readAvatarAccent(avatarImage('#9a9a9a'))).toBeNull();
+    expect(await readAvatarAccent(`${location.origin}/missing-avatar.png`)).toBeNull();
   });
 });

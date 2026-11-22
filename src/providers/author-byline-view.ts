@@ -1,14 +1,20 @@
+import { contrastSafeAccent } from '../contrast';
 import type { AuthorBylineControl, AuthorBylineHost } from '../core/author-byline';
+import type { DisposableScope } from '../core/disposable-scope';
 import { languageRuntime, translateMessage } from '../i18n-runtime';
 import type { ContentAuthor } from '../media-features/content-title';
 import { createSvgIcon } from '../ui/svg-icon';
 
 import { bylineNames, checkedAuthors, monogram, type AuthorHosts } from './author-byline';
 import css from './author-byline-view.css?inline';
+import { avatarAccent } from './avatar-accent';
 import { rowKeyTarget } from './playlist-panel-view';
 import type { ProviderSettingsStore } from './settings';
 
 const STACKED_AVATARS = 3;
+/** The avatar is read at this size: enough for its dominant color, and cheap to scan. */
+const ACCENT_SAMPLE = 24;
+const MAX_ACCENTS = 64;
 
 /** Provider-only fallbacks: these bytes never join content.js. */
 const FALLBACKS: Record<string, string> = {
@@ -51,6 +57,84 @@ function avatar(author: ContentAuthor, className: string): HTMLElement {
   image.addEventListener('error', () => image.replaceWith(fallback()), { once: true });
   image.src = author.avatarUrl;
   return image;
+}
+
+/** Plate accents by avatar URL: the color, null for none (gray, unreadable or failed), or the read under way. */
+const accents = new Map<string, string | null | Promise<string | null>>();
+
+/**
+ * The plate's accent from the avatar at `url`, read once per URL. It reads a CORS copy of the avatar, so the image on
+ * show is left as it is: a plain cross-origin image cannot be read back. Every avatar CDN sends
+ * Access-Control-Allow-Origin today; one that stops, or any other failure, leaves the user's accent.
+ */
+export function readAvatarAccent(url: string): Promise<string | null> {
+  const known = accents.get(url);
+  if (known !== undefined) return Promise.resolve(known);
+  if (accents.size >= MAX_ACCENTS) accents.delete(accents.keys().next().value!);
+  const image = new Image();
+  image.crossOrigin = 'anonymous';
+  image.referrerPolicy = 'no-referrer';
+  image.src = url;
+  // Decoding runs off the main thread; drawing and reading wait for the page to be idle again.
+  const read = image.decode().then(() => new Promise(resolve => requestIdleCallback(resolve, { timeout: 1000 }))).then(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = ACCENT_SAMPLE;
+    const context = canvas.getContext('2d');
+    if (!context) return null;
+    context.drawImage(image, 0, 0, ACCENT_SAMPLE, ACCENT_SAMPLE);
+    return avatarAccent(context.getImageData(0, 0, ACCENT_SAMPLE, ACCENT_SAMPLE).data);
+  }).catch(() => null).then(accent => {
+    if (accents.get(url) === read) accents.set(url, accent);
+    return accent;
+  });
+  accents.set(url, read);
+  return read;
+}
+
+/** Runs `task` when the page is idle, at the latest after a second; the scope's end cancels it. */
+function whenIdle(scope: DisposableScope, task: () => void): () => void {
+  const handle = requestIdleCallback(task, { timeout: 1000 });
+  const forget = scope.add(() => cancelIdleCallback(handle));
+  return () => { cancelIdleCallback(handle); forget(); };
+}
+
+/**
+ * The first author's avatar colors the panel (its fill, lit edge and tip) in place of the user's accent; the popup
+ * keeps the user's. The color is read when the page is idle and applied only while that avatar still leads the panel;
+ * until then, and for an avatar with no usable color, the panel keeps the user's accent. High contrast takes the
+ * color's contrast-safe shade, as it does for the user's accent. Returns the function that follows the leading avatar.
+ */
+function avatarAccentFollower(
+  panel: HTMLElement, scope: DisposableScope, readAccent: (avatarUrl: string) => Promise<string | null>
+): (author: ContentAuthor | null) => void {
+  let current: { id: string; url: string | null } | null = null;
+  let cancel = () => {};
+  const paint = (accent: string | null) => {
+    if (accent) {
+      panel.style.setProperty('--accent-color', accent);
+      panel.style.setProperty('--contrast-accent', contrastSafeAccent(accent));
+    } else {
+      panel.style.removeProperty('--accent-color');
+      panel.style.removeProperty('--contrast-accent');
+    }
+  };
+  return author => {
+    const url = author?.avatarUrl ?? null;
+    if (author?.id === current?.id && url === current?.url) return;
+    // The same channel republished with another size of its avatar keeps its color until the new one is read.
+    const sameAuthor = author !== null && author.id === current?.id;
+    current = author && { id: author.id, url };
+    cancel();
+    const known = url ? accents.get(url) : null;
+    const pending = url !== null && (known === undefined || known instanceof Promise);
+    if (!pending || !sameAuthor) paint(typeof known === 'string' ? known : null);
+    if (!pending) return;
+    cancel = whenIdle(scope, () => {
+      void readAccent(url).then(accent => {
+        if (!scope.isDisposed && current?.url === url) paint(accent);
+      });
+    });
+  };
 }
 
 /** A disc with the check cut out, so the plate shows through it. */
@@ -109,7 +193,11 @@ function renderRow(author: ContentAuthor): HTMLLIElement {
  */
 export function mountAuthorByline(
   host: AuthorBylineHost,
-  options: { provider: string; hosts: AuthorHosts; settings: ProviderSettingsStore }
+  options: {
+    provider: string; hosts: AuthorHosts; settings: ProviderSettingsStore;
+    /** Stories and tests stand in for the network; providers leave it out. */
+    readAccent?: (avatarUrl: string) => Promise<string | null>;
+  }
 ): AuthorBylineControl {
   const { scope } = host;
   const root = element('div', 'theater-byline');
@@ -161,6 +249,7 @@ export function mountAuthorByline(
     if (!event.composedPath().includes(root)) menu.close();
   }, { capture: true });
 
+  const followAvatar = avatarAccentFollower(trigger, scope, options.readAccent ?? readAvatarAccent);
   let authors: readonly ContentAuthor[] | null | undefined;
   let plate: HTMLElement | null = null;
   let signature: string | undefined;
@@ -174,9 +263,11 @@ export function mountAuthorByline(
     signature = next;
     if (!shown.length || !plate) {
       menu.close();
+      followAvatar(null);
       root.remove();
       return;
     }
+    followAvatar(shown[0]);
     const { names: visible, more } = bylineNames(shown);
     avatars.replaceChildren(...shown.slice(0, STACKED_AVATARS).map(author => avatar(author, 'theater-byline-avatar')));
     names.replaceChildren();

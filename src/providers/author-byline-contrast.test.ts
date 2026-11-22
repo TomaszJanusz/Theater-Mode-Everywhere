@@ -5,6 +5,8 @@ import { it } from 'node:test';
 import { ACCENT_COLOR_OPTIONS } from '../accentTheme';
 import { contrastRatio, contrastSafeAccent } from '../contrast';
 
+import { legibleAccent } from './avatar-accent';
+
 const CSS = readFileSync(new URL('./author-byline-view.css', import.meta.url), 'utf8');
 const SHADOW = readFileSync(new URL('../ui/shadow.css', import.meta.url), 'utf8');
 const TOKENS = readFileSync(new URL('../appearance-tokens.css', import.meta.url), 'utf8');
@@ -142,6 +144,44 @@ it('marks the hovered row with the panel\'s lit edge at 3:1 against every row to
         const rim = hex(over(rgb(swatch), share, rgb(mode.ink)));
         const ratio = contrastRatio(rim, hex(rowFill(rgb(mode.ink), tone, color(mode.surface), picture)));
         assert.ok(ratio >= 3, `${accent.preset} (${mode.name}), ${tone * 100}% tone, ${video} video: ${ratio.toFixed(2)}:1`);
+      }
+    }
+  }
+});
+
+/** Avatar colors across the wheel, from dark to pale and from muted to vivid, as `legibleAccent` places them. */
+function avatarAccents(): string[] {
+  const accents = new Set<string>();
+  for (let hue = 0; hue < 360; hue += 10) for (const saturation of [0.3, 0.6, 1]) for (const lightness of [0.08, 0.3, 0.5, 0.7, 0.92]) {
+    const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+    const x = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
+    const [r, g, b] = [[chroma, x, 0], [x, chroma, 0], [0, chroma, x], [0, x, chroma], [x, 0, chroma], [chroma, 0, x]][Math.floor(hue / 60)];
+    const m = lightness - chroma / 2;
+    const accent = legibleAccent([(r + m) * 255, (g + m) * 255, (b + m) * 255]);
+    if (accent) accents.add(accent);
+  }
+  assert.ok(accents.size > 300, 'the sweep yields many accents');
+  return [...accents];
+}
+
+it('keeps the names at WCAG AA over the hover gradient and the lit tip at 3:1 on the plate for every avatar accent', () => {
+  const shares = accentUnderNames();
+  const edge = /--edge: color-mix\(in srgb, var\(--accent-color, #[0-9a-f]{6}\) ([\d.]+)%, var\(--appearance-ink, (#[0-9a-f]{6})\)\)/.exec(CSS);
+  assert.ok(edge, 'the lit edge lifts the accent towards the ink');
+  // At rest the tip lies under the black ramp's last stop, which the rest layer declares as its 100% stop.
+  const tip = /rgb\(0 0 0 \/ ([\d.]+)\) calc\(100% - 0px\)\);/.exec(CSS);
+  assert.ok(tip, 'the rest layer ends at the apex');
+  for (const accent of avatarAccents()) {
+    // High contrast takes the accent's contrast-safe shade with the high-contrast ink, as it does for the user's accent.
+    for (const [mode, swatch] of [['normal', accent], ['high contrast', contrastSafeAccent(accent)]] as const) {
+      const rim = over(rgb(swatch), Number(edge[1]) / 100, rgb(edge[2]));
+      for (const plate of plates()) for (const [video, picture] of Object.entries(VIDEOS)) {
+        for (const share of shares) {
+          const ratio = contrastRatio('#ffffff', hex(over(rgb(swatch), share, plate.over(picture))));
+          assert.ok(ratio >= 4.5, `${accent} (${mode}), ${plate.name}, ${video} video, ${share * 100}% accent: ${ratio.toFixed(2)}:1`);
+        }
+        const ratio = contrastRatio(hex(rim), hex(over([0, 0, 0], Number(tip[1]), plate.over(picture))));
+        assert.ok(ratio >= 3, `${accent} (${mode}) lit tip, ${plate.name}, ${video} video: ${ratio.toFixed(2)}:1`);
       }
     }
   }
