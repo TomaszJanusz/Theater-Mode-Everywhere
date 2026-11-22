@@ -9,6 +9,7 @@ import { ECHO_PRESETS, type EchoPreset } from './echo-reduction-presets';
 const RATE = 48000;
 const QUANTUM = 128;
 const LATENCY = 896;
+const GAIN_BINS = 513;
 // The shipped binary, not a fresh build: verify:bundles proves it matches its source.
 const BINARY = readFileSync(new URL('../../assembly/echo-reduction.wasm', import.meta.url));
 
@@ -19,8 +20,11 @@ type Dsp = {
   process(): void;
   inputBuffer(channel: number): number;
   outputBuffer(channel: number): number;
+  gainBuffer(): number;
   LATENCY_FRAMES: WebAssembly.Global;
 };
+/** Receives the gain of bins 0 to 512 after each frame, with the time the frame's newest input sample has. */
+type GainProbe = (gain: Float32Array, seconds: number) => void;
 
 function instantiate(preset: EchoPreset): Dsp {
   const { exports } = new WebAssembly.Instance(new WebAssembly.Module(BINARY), {});
@@ -29,9 +33,10 @@ function instantiate(preset: EchoPreset): Dsp {
   return dsp;
 }
 
-function run(dsp: Dsp, left: Float64Array, right: Float64Array): [Float64Array, Float64Array] {
+function run(dsp: Dsp, left: Float64Array, right: Float64Array, probe?: GainProbe): [Float64Array, Float64Array] {
   const view = (pointer: number) => new Float32Array(dsp.memory.buffer, pointer, QUANTUM);
   const [inL, inR, outL, outR] = [dsp.inputBuffer(0), dsp.inputBuffer(1), dsp.outputBuffer(0), dsp.outputBuffer(1)].map(view);
+  const gain = new Float32Array(dsp.memory.buffer, dsp.gainBuffer(), GAIN_BINS);
   const out: [Float64Array, Float64Array] = [new Float64Array(left.length), new Float64Array(left.length)];
   for (let start = 0; start + QUANTUM <= left.length; start += QUANTUM) {
     inL.set(left.subarray(start, start + QUANTUM));
@@ -39,8 +44,32 @@ function run(dsp: Dsp, left: Float64Array, right: Float64Array): [Float64Array, 
     dsp.process();
     out[0].set(outL, start);
     out[1].set(outR, start);
+    // A frame is transformed on every second quantum.
+    if (probe && (start / QUANTUM) % 2 === 1) probe(gain, (start + QUANTUM) / RATE);
   }
   return out;
+}
+
+/**
+ * How restless a run of gain frames is, over 190 Hz to 16 kHz: the mean step in dB between
+ * neighbouring bins (`across`) and between consecutive frames (`along`), and the share of bins
+ * standing 6 dB or more above both bins 140 Hz away (`specks`). Specks are what musical noise is made of.
+ */
+function restlessness(frames: Float32Array[]) {
+  const level = frames.map(frame => Array.from(frame, value => 20 * Math.log10(value)));
+  let across = 0;
+  let along = 0;
+  let specks = 0;
+  let cells = 0;
+  for (const [f, frame] of level.entries()) {
+    for (let k = 4; k < 340; k++) {
+      across += Math.abs(frame[k + 1] - frame[k]);
+      if (f > 0) along += Math.abs(frame[k] - level[f - 1][k]);
+      if (frame[k] - Math.max(frame[k - 3], frame[k + 3]) > 6) specks++;
+      cells++;
+    }
+  }
+  return { across: across / cells, along: along / (cells - 336), specks: 100 * specks / cells };
 }
 
 /** Deterministic noise in [-1, 1). */
@@ -150,17 +179,50 @@ describe('echo reduction DSP (WebAssembly)', () => {
     const { dry, left, right } = reverberantBursts(4, 0.8);
     const input = projection(left, dry, 0);
     const [light, strong] = (['light', 'strong'] as const).map(level => {
-      const [outL] = run(instantiate(ECHO_PRESETS[level]), left, right);
+      const tailGains: Float32Array[] = [];
+      const [outL] = run(instantiate(ECHO_PRESETS[level]), left, right, (gain, seconds) => {
+        if (seconds > 1 && inTail(seconds - LATENCY / RATE)) tailGains.push(gain.slice());
+      });
       return {
         tail: dB(energy(outL, LATENCY, inTail), energy(left, 0, inTail)),
-        voice: 2 * dB(projection(outL, dry, LATENCY), input)
+        voice: 2 * dB(projection(outL, dry, LATENCY), input),
+        ...restlessness(tailGains)
       };
     });
-    assert.ok(light.tail < -4, `Light lowers the tail (${light.tail.toFixed(1)} dB)`);
-    assert.ok(strong.tail < light.tail - 3, `Strong lowers it further (${strong.tail.toFixed(1)} dB)`);
-    assert.ok(light.voice > -2.5, `Light keeps the voice (${light.voice.toFixed(1)} dB)`);
-    assert.ok(strong.voice > -4.5, `Strong keeps most of the voice (${strong.voice.toFixed(1)} dB)`);
+    // A steadier gain must not be bought with reverb reduction: these are the levels before it was smoothed.
+    assert.ok(light.tail < -6.2, `Light lowers the tail (${light.tail.toFixed(1)} dB)`);
+    assert.ok(strong.tail < -9.7, `Strong lowers it further (${strong.tail.toFixed(1)} dB)`);
+    assert.ok(strong.tail < light.tail - 3, `by at least 3 dB (${(strong.tail - light.tail).toFixed(1)} dB)`);
+    assert.ok(light.voice > -2, `Light keeps the voice (${light.voice.toFixed(1)} dB)`);
+    assert.ok(strong.voice > -3.8, `Strong keeps most of the voice (${strong.voice.toFixed(1)} dB)`);
+    for (const [name, level] of [['Light', light], ['Strong', strong]] as const) {
+      assert.ok(level.across < 0.3, `${name} lowers the tail evenly across bins (${level.across.toFixed(2)} dB per bin)`);
+      assert.equal(level.specks, 0, `${name} leaves no isolated bins open in the tail`);
+    }
   });
+
+  for (const level of ['light', 'strong'] as const) {
+    // Steady sound is the hard case: nothing in it is an onset, yet every bin's power jitters from
+    // frame to frame. A gain that follows the jitter turns it into musical noise (TME-275).
+    it(`holds its gain steady on steady noise at ${level}`, () => {
+      const [left, right] = [5, 6].map(seed => {
+        const source = noise(seed);
+        let low = 0;
+        return Float64Array.from({ length: 3 * RATE }, () => {
+          low += 0.2 * (source() - low);
+          return 0.4 * low;
+        });
+      });
+      const gains: Float32Array[] = [];
+      run(instantiate(ECHO_PRESETS[level]), left, right, (gain, seconds) => {
+        if (seconds > 1) gains.push(gain.slice());
+      });
+      const { across, along, specks } = restlessness(gains);
+      assert.ok(across < 1.7, `neighbouring bins move together (${across.toFixed(2)} dB per bin)`);
+      assert.ok(along < 1, `the gain drifts rather than flickers (${along.toFixed(2)} dB per frame)`);
+      assert.ok(specks < 1.2, `almost no bin opens on its own (${specks.toFixed(2)} %)`);
+    });
+  }
 
   it('recovers from a non-finite sample instead of carrying it in its history', () => {
     const dsp = instantiate(ECHO_PRESETS.strong);

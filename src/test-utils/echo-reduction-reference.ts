@@ -11,7 +11,7 @@ const QUANTUM = 128;
 const HISTORY = 32;
 const EPSILON = 1e-20;
 const ALPHA = 0.9;
-const SMOOTHING_SECONDS = 0.008;
+const SMOOTHING_SECONDS = 0.03;
 
 type Complex = { re: number[]; im: number[] };
 
@@ -55,7 +55,7 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
   });
   for (let start = 0; start + N <= padded[0].length; start += HOP) {
     const spectra = padded.map(data => fft(Array.from({ length: N }, (_, i) => data[start + i] * window[i]), new Array<number>(N).fill(0), false));
-    const gains = new Float64Array(bins);
+    const raw = new Float64Array(bins);
     for (let k = 0; k < bins; k++) {
       const p = spectra.reduce((sum, s) => sum + s.re[k] ** 2 + s.im[k] ** 2, 0) + EPSILON;
       smoothed[k] = smoothing * smoothed[k] + (1 - smoothing) * p;
@@ -65,8 +65,10 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
       const prior = ALPHA * direct[k] / late + (1 - ALPHA) * Math.max(posterior - 1, 0);
       const g = Math.max(prior / (prior + 1), floor);
       direct[k] = g * g * p;
-      gains[k] = g;
+      raw[k] = g;
     }
+    // [1 2 1] / 4 across frequency; the spectrum's symmetry supplies the neighbour beyond each edge.
+    const gains = raw.map((g, k) => 0.5 * g + 0.25 * (raw[Math.abs(k - 1)] + raw[k + 1 < bins ? k + 1 : k - 1]));
     history.push(Float64Array.from(smoothed));
     for (const [channel, s] of spectra.entries()) {
       const re = s.re.map((value, k) => value * gains[Math.min(k, N - k)]);

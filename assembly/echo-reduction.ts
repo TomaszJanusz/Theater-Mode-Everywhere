@@ -6,13 +6,18 @@
 // with delta = 3 ln 10 / RT60; a decision-directed Wiener gain with a floor removes it.
 // Light and Strong are the same code with different `configure` arguments.
 //
+// The gain must not flicker. Left alone, each bin switches between the floor and 0 dB on its own,
+// and those isolated specks are musical noise: a rustling that sounds like a low-bitrate codec and
+// is worst on one, whose spectrum is already patchy (TME-275). So the late estimate averages 30 ms
+// of input, and the gain is smoothed across neighbouring bins before it is applied.
+//
 // Stereo shares one transform: left is the real part and right the imaginary part of one
 // complex frame. A real, conjugate-symmetric gain applied to that spectrum scales each
 // channel's spectrum alike, so both channels get the same gain and the image stays put.
 //
 // Frame 1024, hop 256, sqrt-Hann analysis and synthesis. Every call takes one 128-sample
 // render quantum, so the added latency is 1024 - 128 = 896 samples (18.7 ms at 48 kHz).
-// Keep src/platform/echo-reduction-reference.test.ts in step with any change here.
+// Keep src/test-utils/echo-reduction-reference.ts in step with any change here.
 
 const N: i32 = 1024;
 const HOP: i32 = 256;
@@ -24,8 +29,9 @@ const HISTORY: i32 = 32;
 const EPSILON: f32 = 1e-20;
 // Decision-directed weight on the previous frame's direct-sound estimate.
 const ALPHA: f32 = 0.9;
-// Time constant of the input power smoothing, in seconds.
-const SMOOTHING_SECONDS: f32 = 0.008;
+// Time constant of the input power smoothing, in seconds. Shorter, and the late estimate is as
+// noisy as the frame it is compared with.
+const SMOOTHING_SECONDS: f32 = 0.03;
 
 const inputLeft = memory.data(QUANTUM << 2, 16);
 const inputRight = memory.data(QUANTUM << 2, 16);
@@ -52,6 +58,8 @@ const power = memory.data(BINS << 2, 16);
 const smoothed = memory.data(BINS << 2, 16);
 const direct = memory.data(BINS << 2, 16);
 const gain = memory.data(N << 2, 16);
+// The gain of each bin before smoothing, with one lane in front for the mirrored bin -1.
+const rawGain = memory.data((BINS + 8) << 2, 16) + 16;
 const history = memory.data((HISTORY * BINS) << 2, 16);
 
 let pending: i32 = 0;
@@ -224,9 +232,21 @@ function frame(): void {
     );
     const g = f32x4.max(f32x4.div(prior, f32x4.add(prior, oneV)), floorV);
     v128.store(at(direct, k), f32x4.mul(f32x4.mul(g, g), p));
-    v128.store(at(gain, k), g);
+    v128.store(at(rawGain, k), g);
   }
   slot = (slot + 1) % HISTORY;
+
+  // [1 2 1] / 4 across frequency. The gain is even around bins 0 and N/2, which gives both edges
+  // their missing neighbour. The decision-directed estimate above keeps the unsmoothed gain.
+  store<f32>(rawGain - 4, load<f32>(at(rawGain, 1)));
+  store<f32>(at(rawGain, (N >> 1) + 1), load<f32>(at(rawGain, (N >> 1) - 1)));
+  const halfV = f32x4.splat(0.5);
+  const quarterV = f32x4.splat(0.25);
+  for (let k = 0; k < BINS; k += 4) {
+    const centre = at(rawGain, k);
+    const sides = f32x4.add(v128.load(centre - 4), v128.load(centre + 4));
+    v128.store(at(gain, k), f32x4.add(f32x4.mul(halfV, v128.load(centre)), f32x4.mul(quarterV, sides)));
+  }
   for (let n = (N >> 1) + 1; n < N; n++) store<f32>(at(gain, n), load<f32>(at(gain, N - n)));
 
   for (let i = 0; i < N; i += 4) {
@@ -272,6 +292,11 @@ export function inputBuffer(channel: i32): usize {
 
 export function outputBuffer(channel: i32): usize {
   return channel == 0 ? outputLeft : outputRight;
+}
+
+/** The gain applied to the latest frame, bins 0 to N/2. Read by tests and offline measurement only. */
+export function gainBuffer(): usize {
+  return gain;
 }
 
 export const QUANTUM_FRAMES = QUANTUM;
