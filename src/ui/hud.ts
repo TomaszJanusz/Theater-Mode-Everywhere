@@ -403,6 +403,7 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     if (!cleaned) {
       stopTitleWatch?.();
       existing?.remove();
+      byline?.render(null, null);
       return;
     }
 

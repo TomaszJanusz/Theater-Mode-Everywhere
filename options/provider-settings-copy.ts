@@ -7,6 +7,7 @@ const FALLBACKS: Record<string, string> = {
   providerShowRecommendations: "Show recommendations",
   providerShowRecommendationsDescription: "Show recommended videos when playback ends.",
   providerAutoTheaterGlobalOff: 'AutoTheater is off globally. Enable it in Features first.',
+  providerShowAuthorGlobalOff: '“Channel beside the title” is off for every service. Turn it on in Appearance first.',
 };
 
 /** Page-only copy stays out of content.js; existing labels use the page catalog. */

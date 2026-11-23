@@ -1750,7 +1750,11 @@
     "description": "Switch label in Settings > Appearance: shows the channel beside the video title on every service; when off, no service shows it."
   },
   "authorBylineDescription": {
-    "message": "在标题旁显示视频的发布者。关闭后所有服务都不显示；开启时由各服务的「显示频道」设置决定。",
+    "message": "在标题旁显示视频的发布者。此选项关闭时，任何服务都不显示频道；开启时由各服务的「显示频道」设置决定。",
     "description": "Description of that switch; the quoted name is the per-service switch labelled by providerShowAuthor."
+  },
+  "providerShowAuthorGlobalOff": {
+    "message": "「标题旁的频道」已对所有服务关闭。请先在「外观」中启用。",
+    "description": "Note below a disabled per-service \u201cShow the channel\u201d switch while the global Settings > Appearance switch (authorBylineTitle) is off. Appearance is an options-page section."
   }
 }

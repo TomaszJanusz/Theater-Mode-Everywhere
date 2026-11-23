@@ -1,4 +1,5 @@
-import { BYLINE_STORAGE_KEY, DEFAULT_AUTHOR_BYLINE, resolveBylineEnabled } from './settings-values';
+import type { ProviderSettingsStore } from './settings';
+import { BYLINE_STORAGE_KEY, DEFAULT_AUTHOR_BYLINE, providerBylineEnabled, resolveBylineEnabled } from './settings-values';
 
 /** The saved switch, followed live: `enabled` is null until the first read lands, then follows every sync change. */
 export interface AuthorBylineSetting {
@@ -46,4 +47,14 @@ export function watchAuthorBylineSetting(): AuthorBylineSetting {
       try { storage?.onChanged.removeListener(onStorage); } catch { /* Never subscribed. */ }
     }
   };
+}
+
+/**
+ * Whether `provider`'s byline may show now: the global switch and the provider's own `showAuthor`, both read and on.
+ * The byline view and a provider that changes its title for the byline (SOOP) both decide by it, so they agree.
+ */
+export function bylineAllowed(
+  global: Pick<AuthorBylineSetting, 'enabled'>, settings: Pick<ProviderSettingsStore, 'loaded' | 'values'>, provider: string
+): boolean {
+  return settings.loaded && providerBylineEnabled(global.enabled === true, settings.values, provider);
 }

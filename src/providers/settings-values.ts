@@ -28,3 +28,11 @@ export const DEFAULT_AUTHOR_BYLINE = true;
 export function resolveBylineEnabled(value: unknown): boolean {
   return settingBoolean(value, DEFAULT_AUTHOR_BYLINE);
 }
+
+/**
+ * Effective byline preference, shared by the provider modal and the byline view (and SOOP's title, which drops the
+ * streamer while the byline names them). `settings` are resolved provider settings, so `showAuthor` is always set.
+ */
+export function providerBylineEnabled(global: boolean, settings: unknown, provider: string): boolean {
+  return global && settingsRecord(settingsRecord(settings)[provider]).showAuthor === true;
+}

@@ -48,7 +48,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   pictureAlignSubtitlesOnlyTitle: 'Raised only with subtitles',
   pictureAlignSubtitlesOnlyDescription: 'Use Raised when subtitles are on and Centered when they are off.',
   authorBylineTitle: 'Channel beside the title',
-  authorBylineDescription: 'Show who published the video beside its title. Turning this off hides it on every service; while it is on, each service’s “Show the channel” setting decides.',
+  authorBylineDescription: 'Show who published the video beside its title. When this is off, no service shows the channel; when it is on, each service’s “Show the channel” setting decides.',
   accentColorLabel: 'Accent color',
   accentColorSystem: 'System',
   accentColorTeal: 'Teal',
