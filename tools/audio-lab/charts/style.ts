@@ -79,10 +79,14 @@ th small { display: block; max-width: 70ch; }
 .audio-label { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .audio-label span { color: var(--muted); font-weight: 400; }
 audio { display: block; width: 100%; margin-block-start: 8px; }
+@media (max-width: 960px) {
+  .comparison { grid-template-columns: 1fr; }
+  .tail-scroll .chart { min-width: 560px; }
+  .tail-scroll .chart text { font-size: 19px; }
+}
 @media (max-width: 660px) {
   main { width: calc(100% - 20px); }
-  .comparison { grid-template-columns: 1fr; }
+  .chart text { font-size: 16px; }
   .trace-key { margin-inline-start: 0; }
-  .tail-scroll .chart { min-width: 560px; }
 }
 `;

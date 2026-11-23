@@ -177,22 +177,22 @@ Regenerate the committed WAVs with Python, NumPy 2.5.5 and Flite 2.2 (Ubuntu
 generation against the manifest without replacing the checked-in fixtures.
 
 ```sh
-/tmp/tme279-harness/.venv/bin/python tools/audio-lab/corpus/generate.py --out /tmp/audio-lab-corpus
+uv run --no-project --with numpy==2.5.5 \
+  python tools/audio-lab/corpus/generate.py --out /tmp/audio-lab-corpus
 ```
 
 The external excerpts (`youtube-echo`, 2:13–2:17, and `iron-man`, 2:10–2:30)
-use the original English Opus track of the same YouTube video. On runner02,
-fetch both using the uv environment from the offline echo harness:
+use the original English Opus track of the same YouTube video. With Node on
+your path, fetch and verify both excerpts:
 
 ```sh
-/tmp/tme279-harness/.venv/bin/python tools/audio-lab/corpus/fetch.py \
-  --yt-dlp /tmp/tme279-harness/.venv/bin/yt-dlp \
-  --ffmpeg /tmp/tme279-harness/ffmpeg
+uv run --no-project --with yt-dlp==2026.10.26 --with yt-dlp-ejs==0.8.0 \
+  --with imageio-ffmpeg==0.8.1 python tools/audio-lab/corpus/fetch.py
 ```
 
 The checksums were frozen with yt-dlp 2026.10.26 and FFmpeg 9.0.2
-(`imageio-ffmpeg`). The script uses Node for yt-dlp's YouTube JS challenge
-solver. It verifies the decoded WAV bytes before caching the clip. The lab
+(`imageio-ffmpeg` 0.8.1). yt-dlp uses the pinned local EJS package with Node.
+It verifies the decoded WAV bytes before caching the clip. The lab
 looks for them under `${XDG_CACHE_HOME:-$HOME/.cache}/theater-everywhere/audio-lab`.
 Use a WAV path as the material if you chose a different `--cache-dir`.
 Keep those WAVs and any HTML or run JSON that embeds them outside the

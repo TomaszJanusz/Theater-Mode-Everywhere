@@ -21,8 +21,13 @@ it('places frequency octaves at equal intervals and keeps short tail ticks disti
   const lastOctave = logFraction(3200, 100, 3200) - logFraction(1600, 100, 3200);
   assert.ok(Math.abs(firstOctave - lastOctave) < 1e-12);
   const timeline = timeAxis(118.5, 120);
-  assert.deepEqual(timeline.ticks, [118.5, 118.875, 119.25, 119.625, 120]);
-  assert.equal(new Set(timeline.ticks.map(timeline.format!)).size, timeline.ticks.length);
+  assert.deepEqual(timeline.ticks, [118.5, 119, 119.5, 120]);
+  assert.deepEqual(timeline.ticks.map(timeline.format!), ['118.5', '119.0', '119.5', '120.0']);
+  const offset = timeAxis(4.279, 5.779);
+  assert.deepEqual([offset.from, offset.to], [4.279, 5.779]);
+  assert.deepEqual(offset.ticks, [4.5, 5, 5.5]);
+  assert.deepEqual(timeAxis(0, 5.779).ticks, [0, 2, 4]);
+  assert.deepEqual(timeAxis(0, 0.003).ticks, [0, 0.001, 0.002, 0.003]);
   assert.deepEqual(spectrumColor(DB_MIN - 15), spectrumColor(DB_MIN));
   assert.notDeepEqual(spectrumColor(-40), spectrumColor(-20));
   assert.deepEqual(spectrumColor(3), spectrumColor(0));
@@ -73,6 +78,10 @@ it('respects both metric directions and leaves unspecified or unavailable deltas
   assert.deepEqual(metricDelta({ ...row, higherIsBetter: true }), { value: -5, status: 'regressed' });
   assert.equal(metricDelta(row).status, 'neutral');
   assert.equal(metricDelta({ ...row, after: NaN, higherIsBetter: true }).status, 'neutral');
+  for (const delta of [0.0004, -0.0004]) {
+    assert.equal(metricDelta({ ...row, after: row.before + delta, higherIsBetter: true }).status, 'neutral');
+  }
+  assert.equal(metricDelta({ ...row, after: row.before + 0.0006, higherIsBetter: true }).status, 'improved');
 });
 
 it('round-trips portable LabRun JSON and escapes untrusted labels in the standalone HTML', () => {

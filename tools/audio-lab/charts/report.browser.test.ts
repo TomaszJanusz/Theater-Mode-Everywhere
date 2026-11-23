@@ -7,6 +7,7 @@ import { it } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
+import axe from 'axe-core';
 import { chromium } from 'playwright';
 
 import { sharedTestBrowser } from '../../../src/test-utils/test-browser';
@@ -45,7 +46,31 @@ it('exports standalone HTML and readable PNGs through the report CLI', { skip: s
   await page.goto(pathToFileURL(join(out, 'index.html')).href);
   assert.equal(await page.locator('h1').textContent(), 'Fixture');
   assert.ok((await page.locator('.delta.improved').textContent())?.includes('Improved'));
-  assert.equal(await page.locator('#spectrogram svg image').count(), 2);
+  assert.deepEqual(await page.getByRole('row', { name: /Tail level/ }).getByRole('cell').allTextContents(), [
+    '-20.000', '-26.000', '-6.000Improved',
+  ]);
+  const imageSizes = await page.locator('#spectrogram svg image').evaluateAll((images) => Promise.all(images.map(async (el) => {
+    const src = el.getAttribute('href');
+    if (!src?.startsWith('data:image/png;base64,')) throw new Error('Expected an embedded PNG spectrogram');
+    const image = new Image();
+    image.src = src;
+    await image.decode();
+    return [image.naturalWidth, image.naturalHeight];
+  })));
+  assert.deepEqual(imageSizes, [[8, 120], [8, 120]]);
+  const labelSizes = await page.locator('svg text').evaluateAll((labels) => labels.map((label) => {
+    if (!(label instanceof SVGGraphicsElement)) throw new Error('Expected an SVG label');
+    const scale = label.getScreenCTM()!;
+    return parseFloat(getComputedStyle(label).fontSize) * Math.hypot(scale.a, scale.b);
+  }));
+  assert.ok(labelSizes.length > 0 && Math.min(...labelSizes) >= 10, 'chart labels are at least 10 px at 390 px wide');
+  await page.addScriptTag({ content: axe.source });
+  const duplicateLandmarks = await page.evaluate(async () => {
+    const browser = window as Window & { axe?: typeof axe };
+    const results = await browser.axe!.run({ runOnly: ['landmark-unique'] });
+    return results.violations.flatMap(({ nodes }) => nodes.map(({ target }) => target.join(' ')));
+  });
+  assert.deepEqual(duplicateLandmarks, []);
   assert.equal(await page.locator('body').evaluate((el) => getComputedStyle(el).backgroundColor), 'rgb(21, 26, 36)');
   assert.ok(await page.locator('main').evaluate((el) => el.scrollWidth <= innerWidth));
   const [before, after] = await page.locator('#spectrogram figure').all();

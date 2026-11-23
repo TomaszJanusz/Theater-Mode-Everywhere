@@ -6,24 +6,24 @@ import { comparisonPanels } from './panels';
 import { reportStyle } from './style';
 
 type Delta = { value: number; status: 'improved' | 'regressed' | 'neutral' };
+const METRIC_DECIMALS = 3;
+const shown = (value: number) => Number(value.toFixed(METRIC_DECIMALS));
 
 export function metricDelta(row: MetricRow): Delta {
   const value = row.after - row.before;
-  if (!Number.isFinite(value) || value === 0 || row.higherIsBetter === undefined) return { value, status: 'neutral' };
+  if (!Number.isFinite(value) || shown(value) === 0 || row.higherIsBetter === undefined) return { value, status: 'neutral' };
   return { value, status: (value > 0) === row.higherIsBetter ? 'improved' : 'regressed' };
 }
 
-const number = new Intl.NumberFormat('en', { maximumFractionDigits: 3, useGrouping: false });
-
 function format(value: number): string {
   if (!Number.isFinite(value)) return '—';
-  return Math.abs(value) > 0 && Math.abs(value) < 0.001 ? value.toExponential(2) : number.format(value);
+  return (shown(value) === 0 ? 0 : value).toFixed(METRIC_DECIMALS);
 }
 
 function metrics(rows: MetricRow[]): string {
   const body = rows.map((row) => {
     const { value, status } = metricDelta(row);
-    const sign = Number.isFinite(value) && value > 0 ? '+' : '';
+    const sign = Number.isFinite(value) && shown(value) > 0 ? '+' : '';
     const unit = row.unit ? `<span class="unit">${escapeHtml(row.unit)}</span>` : '';
     const note = row.note ? `<small>${escapeHtml(row.note)}</small>` : '';
     const direction = status === 'improved' ? 'Improved' : 'Worsened';
@@ -31,7 +31,7 @@ function metrics(rows: MetricRow[]): string {
     return `<tr><th scope="row">${escapeHtml(row.label)}${unit}${note}</th>
 <td>${format(row.before)}</td><td>${format(row.after)}</td><td class="delta ${status}">${sign}${format(value)}${verdict}</td></tr>`;
   }).join('');
-  const table = rows.length > 0 ? `<div class="table-wrap" tabindex="0" role="region" aria-labelledby="metrics-title">
+  const table = rows.length > 0 ? `<div class="table-wrap" tabindex="0" role="region" aria-label="Metric values">
 <table><thead><tr><th scope="col">Measurement</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Δ</th></tr></thead>
 <tbody>${body}</tbody></table></div>` : '<p>No measurements were supplied for this run.</p>';
   return `<section class="panel" id="metrics" aria-labelledby="metrics-title"><h2 id="metrics-title">Metrics</h2>

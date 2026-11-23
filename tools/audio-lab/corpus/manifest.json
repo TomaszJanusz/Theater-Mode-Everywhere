@@ -2,30 +2,30 @@
   "committedAudioBytes": 1413976,
   "committedAudioLimitBytes": 1500000,
   "notes": [
-    "Only the synthetic fixtures and frozen impulse responses are committed (16 kHz PCM16 WAV); original fixture content is dedicated under CC0-1.0 (https://creativecommons.org/publicdomain/zero/1.0/).",
+    "The committed synthetic fixtures and frozen impulse responses use 16 kHz PCM16 WAV. The original fixtures are contributed under the repository licence.",
     "Nominal RT60 is the synthetic decay parameter in seconds. Room WAVs share the dry timeline and reserve 1.5 seconds after speech for the decay.",
-    "The two external excerpts use the same video. The fetch script puts the SHA-256-verified PCM WAVs in an external cache; see docs/browser-tests.md for the runner02 toolchain."
+    "The two external excerpts use the same video. The fetch script puts the SHA-256-verified PCM WAVs in an external cache. See docs/browser-tests.md for the pinned toolchain."
   ],
   "entries": [
     {
       "id": "dry-speech",
       "kind": "speech",
       "file": "dry-speech.wav",
-      "source": "Original phrases synthesized with Flite 2.2, CMU US English RMS. https://github.com/festvox/flite/blob/v2.2/COPYING",
-      "licence": "CC0-1.0",
+      "source": "Project-authored phrases. The WAV contains synthesized speech output from Flite 2.2 (CMU US English RMS voice). https://github.com/festvox/flite/blob/v2.2/COPYING",
+      "licence": "MIT (repository licence)",
       "sha256": "ad35bb9c9951e82bb20380231ae8990305d1f382b4f4e91f64476d77b30e6d97",
       "duration": 5.779,
-      "regenerate": "python tools/audio-lab/corpus/generate.py"
+      "regenerate": "uv run --no-project --with numpy==2.5.5 python tools/audio-lab/corpus/generate.py"
     },
     {
       "id": "speech-over-music",
       "kind": "mix",
       "file": "speech-over-music.wav",
       "source": "dry-speech mixed with original synthesized stereo arpeggios.",
-      "licence": "CC0-1.0",
+      "licence": "MIT (repository licence)",
       "sha256": "3bd8152a8467498ddbd142cc4d1842f7df60cd7ae9624ef7097a971b0ba22373",
       "duration": 5.779,
-      "regenerate": "python tools/audio-lab/corpus/generate.py",
+      "regenerate": "uv run --no-project --with numpy==2.5.5 python tools/audio-lab/corpus/generate.py",
       "dry": "dry-speech"
     },
     {
@@ -33,10 +33,10 @@
       "kind": "room",
       "file": "room-rt030.wav",
       "source": "dry-speech convolved with room-rt030-ir.",
-      "licence": "CC0-1.0",
+      "licence": "MIT (repository licence)",
       "sha256": "c44821d5b8e00e6e4e8243861e090ee3b7a48c775d47e52242d5d670144473cc",
       "duration": 5.779,
-      "regenerate": "python tools/audio-lab/corpus/generate.py",
+      "regenerate": "uv run --no-project --with numpy==2.5.5 python tools/audio-lab/corpus/generate.py",
       "nominalRt60": 0.3,
       "impulseResponse": "room-rt030-ir",
       "dry": "dry-speech"
@@ -46,10 +46,10 @@
       "kind": "impulse-response",
       "file": "room-rt030-ir.wav",
       "source": "Synthetic seeded response. Short decay with direct sound and early reflections.",
-      "licence": "CC0-1.0",
+      "licence": "MIT (repository licence)",
       "sha256": "7cde7ea476c0193953ff2ae1f7e3bf933844f5ff573518ca7e1ae859831c415c",
       "duration": 0.38,
-      "regenerate": "python tools/audio-lab/corpus/generate.py",
+      "regenerate": "uv run --no-project --with numpy==2.5.5 python tools/audio-lab/corpus/generate.py",
       "nominalRt60": 0.3
     },
     {
@@ -57,10 +57,10 @@
       "kind": "room",
       "file": "room-rt080.wav",
       "source": "dry-speech convolved with room-rt080-ir.",
-      "licence": "CC0-1.0",
+      "licence": "MIT (repository licence)",
       "sha256": "7045aab21760fadd1727a7f71d43f89dda9eaf84541e270e07647077ba23b135",
       "duration": 5.779,
-      "regenerate": "python tools/audio-lab/corpus/generate.py",
+      "regenerate": "uv run --no-project --with numpy==2.5.5 python tools/audio-lab/corpus/generate.py",
       "nominalRt60": 0.8,
       "impulseResponse": "room-rt080-ir",
       "dry": "dry-speech"
@@ -70,10 +70,10 @@
       "kind": "impulse-response",
       "file": "room-rt080-ir.wav",
       "source": "Synthetic seeded response. Longer diffuse decay with the same early taps.",
-      "licence": "CC0-1.0",
+      "licence": "MIT (repository licence)",
       "sha256": "d69750a0ce6be4ba722add7f088744e490d273fe9a25d10d6e58067b27758eb3",
       "duration": 0.88,
-      "regenerate": "python tools/audio-lab/corpus/generate.py",
+      "regenerate": "uv run --no-project --with numpy==2.5.5 python tools/audio-lab/corpus/generate.py",
       "nominalRt60": 0.8
     },
     {
@@ -81,10 +81,10 @@
       "kind": "room",
       "file": "room-rt150.wav",
       "source": "dry-speech convolved with room-rt150-ir.",
-      "licence": "CC0-1.0",
+      "licence": "MIT (repository licence)",
       "sha256": "9c16603b30f1cd28558e7b371f02931c56a5e739d600b331bb4c3ef63ac5b1fa",
       "duration": 5.779,
-      "regenerate": "python tools/audio-lab/corpus/generate.py",
+      "regenerate": "uv run --no-project --with numpy==2.5.5 python tools/audio-lab/corpus/generate.py",
       "nominalRt60": 1.5,
       "impulseResponse": "room-rt150-ir",
       "dry": "dry-speech"
@@ -94,10 +94,10 @@
       "kind": "impulse-response",
       "file": "room-rt150-ir.wav",
       "source": "Synthetic seeded response. Long diffuse decay with the same early taps.",
-      "licence": "CC0-1.0",
+      "licence": "MIT (repository licence)",
       "sha256": "a22ac9a01cfa97ae46237f59e6c4d953c2314bb1915d42ba7371a290eeccfbfd",
       "duration": 1.58,
-      "regenerate": "python tools/audio-lab/corpus/generate.py",
+      "regenerate": "uv run --no-project --with numpy==2.5.5 python tools/audio-lab/corpus/generate.py",
       "nominalRt60": 1.5
     },
     {
@@ -105,10 +105,10 @@
       "kind": "room",
       "file": "wall-reflection.wav",
       "source": "dry-speech convolved with wall-reflection-ir.",
-      "licence": "CC0-1.0",
+      "licence": "MIT (repository licence)",
       "sha256": "b8261bba58153209a32391bfef824a265658effbd0b81623063677ea699835bd",
       "duration": 5.779,
-      "regenerate": "python tools/audio-lab/corpus/generate.py",
+      "regenerate": "uv run --no-project --with numpy==2.5.5 python tools/audio-lab/corpus/generate.py",
       "nominalRt60": 0.8,
       "impulseResponse": "wall-reflection-ir",
       "dry": "dry-speech"
@@ -118,10 +118,10 @@
       "kind": "impulse-response",
       "file": "wall-reflection-ir.wav",
       "source": "Synthetic seeded response. Off-axis mic model with the dominant wall reflection at 42 ms, a second reflection at 76 ms and weaker direct sound.",
-      "licence": "CC0-1.0",
+      "licence": "MIT (repository licence)",
       "sha256": "71a231413296971e032292caf0130aa3a592f04957b2edc6cbdfbca25b0d7c60",
       "duration": 0.88,
-      "regenerate": "python tools/audio-lab/corpus/generate.py",
+      "regenerate": "uv run --no-project --with numpy==2.5.5 python tools/audio-lab/corpus/generate.py",
       "nominalRt60": 0.8
     },
     {
@@ -135,7 +135,7 @@
       "duration": 4.0,
       "start": 133,
       "format": "English (original), Opus itag 251, decoded to stereo 48 kHz PCM16",
-      "regenerate": "python tools/audio-lab/corpus/fetch.py youtube-echo",
+      "regenerate": "uv run --no-project --with yt-dlp==2026.10.26 --with yt-dlp-ejs==0.8.0 --with imageio-ffmpeg==0.8.1 python tools/audio-lab/corpus/fetch.py youtube-echo",
       "cache": true
     },
     {
@@ -149,7 +149,7 @@
       "duration": 20.0,
       "start": 130,
       "format": "English (original), Opus itag 251, decoded to stereo 48 kHz PCM16",
-      "regenerate": "python tools/audio-lab/corpus/fetch.py iron-man",
+      "regenerate": "uv run --no-project --with yt-dlp==2026.10.26 --with yt-dlp-ejs==0.8.0 --with imageio-ffmpeg==0.8.1 python tools/audio-lab/corpus/fetch.py iron-man",
       "cache": true
     }
   ]

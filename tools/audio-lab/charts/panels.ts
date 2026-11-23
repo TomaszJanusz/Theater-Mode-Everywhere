@@ -26,12 +26,18 @@ const yOf = (value: number, view: View) => TOP + view.height * (1 - Math.max(0, 
 
 /** Both columns share tick positions and endpoints, and never renormalize the before and after data. */
 export function timeAxis(start: number, end: number): Axis {
-  const step = (end - start) / 4;
-  const decimalPlaces = Math.max(0, Math.ceil(-Math.log10(step)) + 1);
-  return {
-    from: start, to: end, ticks: [start, start + step, start + 2 * step, start + 3 * step, end], label: 'Time (s)',
-    format: (value) => value.toFixed(decimalPlaces),
-  };
+  const interval = (end - start) / 4;
+  const order = Math.floor(Math.log10(interval));
+  const unit = 10 ** order;
+  const factor = [1, 2, 5, 10].find((multiple) => multiple * unit >= interval) ?? 10;
+  const step = factor * unit;
+  const decimals = Math.max(0, -order - (factor === 10 ? 1 : 0));
+  const ticks: number[] = [];
+  // The tolerance only compensates for binary arithmetic at a tick boundary.
+  for (let tick = Math.ceil(start / step - 1e-9); tick <= end / step + 1e-9; tick++) {
+    ticks.push(Number((tick * step).toFixed(decimals)));
+  }
+  return { from: start, to: end, ticks, label: 'Time (s)', format: (value) => value.toFixed(decimals) };
 }
 
 function plot(view: View, description: string, content: string): string {
@@ -103,8 +109,8 @@ function pair(before: string, after: string): string {
 
 function waveforms(input: Signal, output: Signal, x: Axis): string {
   const ranges = [envelope(input, 444), envelope(output, 444)];
-  const peak = Math.max(1, ...ranges.flatMap((bins) => bins.flatMap(({ min, max }) => [-min, max])));
-  const limit = Math.ceil(peak * 2) / 2;
+  const peak = Math.max(...ranges.flatMap((bins) => bins.flatMap(({ min, max }) => [-min, max])));
+  const limit = Math.max(0.05, Math.ceil(peak * 1.1 * 20) / 20);
   const view: View = { x, y: { from: -limit, to: limit, ticks: [-limit, 0, limit], label: 'Amplitude' }, width: 444, height: 106 };
   const [before, after] = ranges.map((bins, side) => {
     const path = bins.map(({ min, max }, index) => {
@@ -115,7 +121,7 @@ function waveforms(input: Signal, output: Signal, x: Axis): string {
   });
   return `<section class="panel" id="waveform" aria-labelledby="waveform-title">
 <h2 id="waveform-title">Waveform envelope</h2>
-<p class="description">Minimum and maximum sample values across channels, with a shared amplitude scale.</p>
+<p class="description">Minimum and maximum sample values across channels. Both plots use the same amplitude scale with at least 10% headroom.</p>
 ${pair(before, after)}</section>`;
 }
 
@@ -134,6 +140,6 @@ function tail(input: Signal, output: Signal, end: number): string {
 <h2 id="tail-title">Reverb tail</h2>
 <p class="description">RMS in 20 ms windows over the final ${label(end - start)} s. Use this view where the excerpt ends with a decay.</p>
 <div class="trace-key"><span class="before">Before</span><span class="after">After</span></div>
-<div class="tail-scroll" tabindex="0" role="region" aria-labelledby="tail-title">
+<div class="tail-scroll" tabindex="0" role="region" aria-label="Reverb tail plot">
 ${plot(view, 'Before and after energy over the closing part of the excerpt', lines.join(''))}</div></section>`;
 }
