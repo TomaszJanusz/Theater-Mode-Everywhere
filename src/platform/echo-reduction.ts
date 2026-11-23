@@ -40,7 +40,8 @@ export function createEchoLoader(workletUrl: () => string | null): EchoLoader {
 /**
  * The first stage of the chain. It stays dry until the worklet has compiled the DSP, so a level chosen
  * meanwhile starts with its fade-in once ready. A failure (a CSP without 'wasm-unsafe-eval', no
- * AudioWorklet, a revoked extension URL) reports `onUnavailable` and leaves the stage dry for good.
+ * AudioWorklet, a revoked extension URL, a processor that throws) reports `onUnavailable` and leaves
+ * the stage dry for good.
  * While off, the worklet node is disconnected and returns at once.
  */
 export function echoStage(ctx: BaseAudioContext, support: EchoSupport | undefined) {
@@ -64,6 +65,8 @@ export function echoStage(ctx: BaseAudioContext, support: EchoSupport | undefine
   const fail = () => {
     if (done) return;
     stop();
+    // A processor that dies while the effect is on leaves the wet path with nothing in it: back to dry.
+    fade.setActive(false);
     if (support) support.onUnavailable();
   };
   const sync = () => {
