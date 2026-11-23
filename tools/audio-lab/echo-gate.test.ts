@@ -38,10 +38,16 @@ const GATE: Record<string, Room> = {
     light: { voice: -2.0 /* -1.62 */, ending: -4.9 /* -4.15 */, movement: 2.4 /* 2.05 */ },
     strong: { voice: -3.8 /* -3.37 */, ending: -9.1 /* -8.34 */, movement: 3.9 /* 3.58 */ }
   },
+  // The wall room's tail limits are those of TME-279, measured on its DSP with a 0.5 dB margin; dev had
+  // -7.00, -10.00 and 3.00 here. This room's reflections end 50 ms after the voice, and its tail is short
+  // and weak (9 % of the reflected energy). Dev lowered everything after an onset to the floor, the voice
+  // included. TME-279 keeps the level through the end of a word, and in this room that reaches into the
+  // first 30 ms of the measured tail, where most of its energy is; from 100 ms after the voice the gain is
+  // at the floor as before. A nearly intact voice for less tail in short wall rooms is the accepted trade.
   'synthetic-wall': {
-    light: { voice: -1.9 /* -1.53 */, ending: -3.9 /* -3.12 */, movement: 2.0 /* 1.71 */, tail: -6.0 /* -7.00 */ },
-    strong: { voice: -3.3 /* -2.93 */, ending: -7.2 /* -6.38 */, movement: 3.4 /* 3.14 */, tail: -9.0 /* -10.00 */ },
-    separation: 2.0 /* 3.00 */
+    light: { voice: -1.9 /* -1.53 */, ending: -3.9 /* -3.12 */, movement: 2.0 /* 1.71 */, tail: -3.0 /* -3.47 */ },
+    strong: { voice: -3.3 /* -2.93 */, ending: -7.2 /* -6.38 */, movement: 3.4 /* 3.14 */, tail: -3.9 /* -4.42 */ },
+    separation: 0.5 /* 0.96 */
   },
   'synthetic-room-0.8s': {
     light: { voice: -1.7 /* -1.31 */, ending: -4.0 /* -3.22 */, movement: 1.8 /* 1.47 */, tail: -4.9 /* -5.88 */ },

@@ -11,6 +11,9 @@ export type EchoLevel = Exclude<AudioSettings['echo'], 'off'>;
  * settings cost far more voice for little extra intelligibility, and the residual turns watery.
  * Both floors sit 1 dB above the spike's: the smoothed gain (TME-275) reaches its floor more often, so
  * the tail drops as far as before in echoing rooms while steady sound and music are coloured less.
+ * These are the assumptions about the room and the depth in the decay after a sound. The DSP learns
+ * from the recording how far to trust them: where a band is being fed by a source it uses the decay it
+ * has measured, if that is lower, and three tenths of the floor in dB (TME-279).
  * Only the worklet module reads these, so they stay out of the shared bundles.
  */
 export const ECHO_PRESETS: Record<EchoLevel, EchoPreset> = {
