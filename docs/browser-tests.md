@@ -137,6 +137,45 @@ pactl unload-module module-null-sink
 
 On macOS and Windows the system audio device is used and nothing needs starting.
 
+### Audio lab: metrics and the echo regression gate
+
+`pnpm audio:lab <effect> <material> [--json run.json]` runs one audio effect over one
+piece of test material and prints each metric without and with the effect. It is the
+one place where the audio metrics are defined (`tools/audio-lab/metrics/`, one file
+per metric with its definition in the header); nothing under `tools/audio-lab/` ships
+in the extension.
+
+- **Effect:** `echo-light` and `echo-strong` run the shipped `assembly/echo-reduction.wasm`
+  in node. `voice-*`, `bass-*` and `leveling-*` render through the real audio chain in
+  Chromium (`OfflineAudioContext`), so they need the Playwright Chromium.
+- **Material:** an id from `tools/audio-lab/corpus/manifest.json`, a built-in id
+  (`synthetic-dry`, `synthetic-wall`, `synthetic-room-0.3s`, `-0.8s`, `-1.5s`; generated
+  in code from fixed seeds) or a path to a WAV file. Everything is resampled to 48 kHz
+  stereo first, and the output is aligned with the input (latency removed).
+- **Rows:** what can be measured depends on what the material knows. A room built from
+  a dry voice and an impulse response gives the voice and the room's sound separately,
+  at each reference point (direct sound, first 10, 20 and 50 ms). A dry voice over
+  other sound gives the voice and that sound. A bare clip gives rows for the whole mix
+  only (`-mix`), which describe the mix and not a room. Notes under the table say what
+  a row cannot tell (SRMR in particular).
+- **`--json`** writes the whole run (aligned samples and rows) for `pnpm audio:report`.
+
+When changing the echo-reduction DSP or its presets:
+
+1. Run the gate: `pnpm test tools/audio-lab/echo-gate.test.ts`. It holds voice loss,
+   word-ending loss, level movement and tail drop on the built-in rooms to the limits
+   in that file, in node, with no browser and no audio files.
+2. Run `pnpm audio:lab echo-light <material>` and `echo-strong` on the rooms the change
+   is about, on the base commit and on the change, and compare the tables.
+3. If a limit has to move, move it in the same PR and state the measured values there.
+
+`tools/audio-lab/echo-dsp.test.ts` ties the lab to the binary: the WebAssembly must
+match the float64 reference, and the gain it reports must reproduce its output on the
+lab's own frame grid (`metrics/grid.ts`). A change to the DSP's frame size, hop or
+window fails there first.
+
+### Audio effect spectra
+
 `pnpm audio:charts [dir]` (default `output/audio-charts`) renders one self-contained
 HTML page showing, for voice, stereo ambience, bass and volume leveling, the spectrum
 of the audio graph's test tones without and with the effect. It renders offline through

@@ -1,5 +1,12 @@
+import { LAB_EFFECTS } from './effects';
+import { loadMaterial } from './load-material';
+import { measure } from './measure';
 import type { RunLab } from './types';
 
-/** Placeholder so consumers can build against the contract; the implementation follows on this branch. */
-export const runLab: RunLab = (effect, material) =>
-  Promise.reject(new Error(`audio lab: runLab('${effect}', '${material}') is not implemented yet`));
+export const runLab: RunLab = async (effectId, materialId) => {
+  const effect = LAB_EFFECTS.find(candidate => candidate.id === effectId);
+  if (!effect) throw new Error(`Unknown effect '${effectId}'. Known: ${LAB_EFFECTS.map(candidate => candidate.id).join(', ')}`);
+  const material = loadMaterial(materialId);
+  const result = await effect.run(material.mix);
+  return { effect: effect.id, material: material.id, input: material.mix, output: result.output, metrics: measure(material, result) };
+};

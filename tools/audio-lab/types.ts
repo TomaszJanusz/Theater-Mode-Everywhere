@@ -8,8 +8,8 @@
 export type Signal = { sampleRate: number; channels: Float32Array[] };
 
 /**
- * One metric measured without (`before`) and with (`after`) the effect, in `unit`. A value the
- * material cannot provide (no known room, no speech) is NaN, never a made-up number.
+ * One metric measured without (`before`) and with (`after`) the effect, in `unit`. A value is NaN
+ * when there are no frames to measure. Rows requiring an unavailable reference are omitted.
  */
 export type MetricRow = { id: string; label: string; unit: string; before: number; after: number; higherIsBetter?: boolean; note?: string };
 
@@ -21,5 +21,3 @@ export type LabRun = { effect: string; material: string; input: Signal; output: 
 
 /** `effect` is an id from `LAB_EFFECTS`; `material` a corpus manifest id, a built-in synthetic id or a WAV path. */
 export type RunLab = (effect: string, material: string) => Promise<LabRun>;
-
-export { runLab } from './run-lab';
