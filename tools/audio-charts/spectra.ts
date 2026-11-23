@@ -4,11 +4,11 @@ import {
   type Render, type RenderOptions
 } from '../../src/test-utils/audio-render';
 
+import { amplitudeDb } from './plot';
+
 /** One tone of the test signal: its frequency and level without the effect and with each variant, in dBFS. */
 export type SpectrumPoint = { hz: number; before: number; after: Record<string, number> };
 export type Panel = { id: string; title: string; caption: string; signal: 'Mid' | 'Side' | 'Quiet passage' | 'Loud passage'; variants: string[]; points: SpectrumPoint[] };
-
-const dbfs = (level: number) => 20 * Math.log10(Math.max(level, 1e-6));
 
 /**
  * Renders `options` untouched and once per variant through the real audio chain, using the same
@@ -22,8 +22,8 @@ async function measure(
   for (const [name, applied] of Object.entries(variants)) after[name] = await render(applied, options);
   return Object.entries(bands).map(([band, hz]) => ({
     hz,
-    before: dbfs(before[band]),
-    after: Object.fromEntries(Object.keys(variants).map((name) => [name, dbfs(after[name][band])]))
+    before: amplitudeDb(before[band]),
+    after: Object.fromEntries(Object.keys(variants).map((name) => [name, amplitudeDb(after[name][band])]))
   }));
 }
 
