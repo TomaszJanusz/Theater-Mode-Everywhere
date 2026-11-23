@@ -70,7 +70,7 @@ export const surfaceRegistrations: SurfaceRegistration[] = [
     policy: 'anchored-menu',
     mount({ stage, owner }) {
       // The title plate in its header at the top of the player, as the title HUD builds it (a plate takes pointer
-      // input only in a visible header), with the provider setting already loaded and on.
+      // input only in a visible header), with the provider setting and the global switch already loaded and on.
       const header = document.createElement('div');
       header.className = 'theater-everywhere-header-hud visible';
       const plate = document.createElement('div');
@@ -79,8 +79,9 @@ export const surfaceRegistrations: SurfaceRegistration[] = [
       header.append(plate);
       stage.append(header);
       const settings = { loaded: true, values: { sample: { showAuthor: true } }, subscribe: () => () => {}, dispose() {} } as unknown as ProviderSettingsStore;
+      const global = { enabled: true, ready: Promise.resolve(), subscribe: () => () => {}, dispose() {} };
       const byline = mountAuthorByline({ scope: owner, bindMenu: bindMenuPopover }, {
-        provider: 'sample', settings, hosts: providerAuthorHosts([{ domain: 'example.com', includeSubdomains: true }], [])
+        provider: 'sample', settings, global, hosts: providerAuthorHosts([{ domain: 'example.com', includeSubdomains: true }], [])
       });
       byline.render([1, 2].map(index => ({ id: String(index), name: `Channel ${index}`, url: `https://www.example.com/c/${index}`,
         avatarUrl: null, verified: false, stat: null })), plate);

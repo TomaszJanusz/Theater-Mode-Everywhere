@@ -6,6 +6,7 @@ import type { ContentAuthor } from '../media-features/content-title';
 import { createSvgIcon } from '../ui/svg-icon';
 
 import { bylineNames, checkedAuthors, monogram, type AuthorHosts } from './author-byline';
+import { bylineAllowed, watchAuthorBylineSetting, type AuthorBylineSetting } from './author-byline-setting';
 import css from './author-byline-view.css?inline';
 import { avatarAccent } from './avatar-accent';
 import { rowKeyTarget } from './playlist-panel-view';
@@ -59,36 +60,55 @@ function avatar(author: ContentAuthor, className: string): HTMLElement {
   return image;
 }
 
+type ReadAccent = (avatarUrl: string, signal: AbortSignal) => Promise<string | null>;
+/** A read under way: its result, and how many callers still want it; the last one to give up cancels it. */
+interface AccentRead { result: Promise<string | null>; wanted: number; controller: AbortController }
 /** Plate accents by avatar URL: the color, null for none (gray, unreadable or failed), or the read under way. */
-const accents = new Map<string, string | null | Promise<string | null>>();
+const accents = new Map<string, string | null | AccentRead>();
+const settledAccent = (value: string | null | AccentRead | undefined): value is string | null => value === null || typeof value === 'string';
 
 /**
  * The plate's accent from the avatar at `url`, read once per URL. It reads a CORS copy of the avatar, so the image on
  * show is left as it is: a plain cross-origin image cannot be read back. Every avatar CDN sends
- * Access-Control-Allow-Origin today; one that stops, or any other failure, leaves the user's accent.
+ * Access-Control-Allow-Origin today; one that stops, or any other failure, leaves the user's accent. When every caller
+ * has aborted, the read stops before it draws or samples anything, gives null and leaves the URL unread.
  */
-export function readAvatarAccent(url: string): Promise<string | null> {
+export function readAvatarAccent(url: string, signal?: AbortSignal): Promise<string | null> {
   const known = accents.get(url);
-  if (known !== undefined) return Promise.resolve(known);
-  if (accents.size >= MAX_ACCENTS) accents.delete(accents.keys().next().value!);
-  const image = new Image();
-  image.crossOrigin = 'anonymous';
-  image.referrerPolicy = 'no-referrer';
-  image.src = url;
-  // Decoding runs off the main thread; drawing and reading wait for the page to be idle again.
-  const read = image.decode().then(() => new Promise(resolve => requestIdleCallback(resolve, { timeout: 1000 }))).then(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = ACCENT_SAMPLE;
-    const context = canvas.getContext('2d');
-    if (!context) return null;
-    context.drawImage(image, 0, 0, ACCENT_SAMPLE, ACCENT_SAMPLE);
-    return avatarAccent(context.getImageData(0, 0, ACCENT_SAMPLE, ACCENT_SAMPLE).data);
-  }).catch(() => null).then(accent => {
-    if (accents.get(url) === read) accents.set(url, accent);
-    return accent;
-  });
-  accents.set(url, read);
-  return read;
+  if (settledAccent(known)) return Promise.resolve(known);
+  if (signal?.aborted) return Promise.resolve(null);
+  let read = known;
+  if (!read) {
+    if (accents.size >= MAX_ACCENTS) accents.delete(accents.keys().next().value!);
+    const controller = new AbortController();
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.referrerPolicy = 'no-referrer';
+    image.src = url;
+    // Decoding runs off the main thread; drawing and reading wait for the page to be idle again.
+    const result = image.decode().then(() => new Promise(resolve => requestIdleCallback(resolve, { timeout: 1000 }))).then(() => {
+      if (controller.signal.aborted) return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = ACCENT_SAMPLE;
+      const context = canvas.getContext('2d');
+      if (!context) return null;
+      context.drawImage(image, 0, 0, ACCENT_SAMPLE, ACCENT_SAMPLE);
+      return avatarAccent(context.getImageData(0, 0, ACCENT_SAMPLE, ACCENT_SAMPLE).data);
+    }).catch(() => null).then(accent => {
+      if (accents.get(url) === entry) {
+        if (controller.signal.aborted) accents.delete(url);
+        else accents.set(url, accent);
+      }
+      return accent;
+    });
+    const entry: AccentRead = { result, wanted: 0, controller };
+    accents.set(url, entry);
+    read = entry;
+  }
+  const entry = read;
+  entry.wanted++;
+  signal?.addEventListener('abort', () => { if (--entry.wanted === 0) entry.controller.abort(); }, { once: true });
+  return entry.result;
 }
 
 /** Runs `task` when the page is idle, at the latest after a second; the scope's end cancels it. */
@@ -104,11 +124,11 @@ function whenIdle(scope: DisposableScope, task: () => void): () => void {
  * until then, and for an avatar with no usable color, the panel keeps the user's accent. High contrast takes the
  * color's contrast-safe shade, as it does for the user's accent. Returns the function that follows the leading avatar.
  */
-function avatarAccentFollower(
-  panel: HTMLElement, scope: DisposableScope, readAccent: (avatarUrl: string) => Promise<string | null>
-): (author: ContentAuthor | null) => void {
+function avatarAccentFollower(panel: HTMLElement, scope: DisposableScope, readAccent: ReadAccent): (author: ContentAuthor) => void {
   let current: { id: string; url: string | null } | null = null;
   let cancel = () => {};
+  // The panel's end (the byline turned off, theater left) stops a read that has not drawn yet.
+  scope.add(() => cancel());
   const paint = (accent: string | null) => {
     if (accent) {
       panel.style.setProperty('--accent-color', accent);
@@ -119,21 +139,23 @@ function avatarAccentFollower(
     }
   };
   return author => {
-    const url = author?.avatarUrl ?? null;
-    if (author?.id === current?.id && url === current?.url) return;
+    const url = author.avatarUrl;
+    if (author.id === current?.id && url === current.url) return;
     // The same channel republished with another size of its avatar keeps its color until the new one is read.
-    const sameAuthor = author !== null && author.id === current?.id;
-    current = author && { id: author.id, url };
+    const sameAuthor = author.id === current?.id;
+    current = { id: author.id, url };
     cancel();
     const known = url ? accents.get(url) : null;
-    const pending = url !== null && (known === undefined || known instanceof Promise);
+    const pending = url !== null && !settledAccent(known);
     if (!pending || !sameAuthor) paint(typeof known === 'string' ? known : null);
     if (!pending) return;
-    cancel = whenIdle(scope, () => {
-      void readAccent(url).then(accent => {
-        if (!scope.isDisposed && current?.url === url) paint(accent);
+    const controller = new AbortController();
+    const forgetIdle = whenIdle(scope, () => {
+      void readAccent(url, controller.signal).then(accent => {
+        if (!controller.signal.aborted && current?.url === url) paint(accent);
       });
     });
+    cancel = () => { forgetIdle(); controller.abort(); };
   };
 }
 
@@ -184,22 +206,20 @@ function renderRow(author: ContentAuthor): HTMLLIElement {
   return item;
 }
 
+interface BylinePanel {
+  show(shown: readonly ContentAuthor[], plate: HTMLElement): void;
+  /** Closes the popup, takes the panel out and ends its listeners and any avatar read. */
+  dispose(): void;
+}
+
 /**
- * The author panel at the start of the title plate and its popup: an arrow-shaped button whose gradient leads into the
- * title, and under the plate one block listing a row per author, in the player's menu shell (hover, click, Enter, Space
- * or ↓; ↑/↓ move between rows; Escape and outside presses close it; focus returns to the panel). The stylesheet holds
- * hover intent: the popup shows after 250 ms of hover and stays 300 ms after the pointer leaves. It shows only what
- * `checkedAuthors` admits, only while the provider's `showAuthor` setting is on, and repaints only when that changed.
+ * The panel and its popup, built in a child of the controls' scope: an arrow-shaped button whose gradient leads into
+ * the title, and under the plate one block listing a row per author, in the player's menu shell (hover, click, Enter,
+ * Space or ↓; ↑/↓ move between rows; Escape and outside presses close it; focus returns to the panel). The stylesheet
+ * holds hover intent: the popup shows after 250 ms of hover and stays 300 ms after the pointer leaves.
  */
-export function mountAuthorByline(
-  host: AuthorBylineHost,
-  options: {
-    provider: string; hosts: AuthorHosts; settings: ProviderSettingsStore;
-    /** Stories and tests stand in for the network; providers leave it out. */
-    readAccent?: (avatarUrl: string) => Promise<string | null>;
-  }
-): AuthorBylineControl {
-  const { scope } = host;
+function buildPanel(host: AuthorBylineHost, readAccent: ReadAccent): BylinePanel {
+  const scope = host.scope.child();
   const root = element('div', 'theater-byline');
   // The plate's tooltip is its scrolling title (hud.ts); an empty title keeps it off the panel and its popup.
   root.title = '';
@@ -250,54 +270,84 @@ export function mountAuthorByline(
   scope.listen(window, 'pointerdown', (event: PointerEvent) => {
     if (!event.composedPath().includes(root)) menu.close();
   }, { capture: true });
+  const followAvatar = avatarAccentFollower(trigger, scope, readAccent);
+  scope.add(() => root.remove());
 
-  const followAvatar = avatarAccentFollower(trigger, scope, options.readAccent ?? readAvatarAccent);
-  let authors: readonly ContentAuthor[] | null | undefined;
-  let plate: HTMLElement | null = null;
   let signature: string | undefined;
-  const update = () => {
-    if (scope.isDisposed) return;
-    const shown = options.settings.loaded && options.settings.values[options.provider]?.showAuthor
-      ? checkedAuthors(authors, options.hosts)
-      : [];
-    const next = JSON.stringify([shown, t('authorChannelNewTab'), t('authorVerified')]);
-    if (next === signature && (!shown.length || root.parentElement === plate)) return;
-    signature = next;
-    if (!shown.length || !plate) {
+  return {
+    show(shown, plate) {
+      const next = JSON.stringify([shown, t('authorChannelNewTab'), t('authorVerified')]);
+      if (next === signature && root.parentElement === plate) return;
+      signature = next;
+      followAvatar(shown[0]);
+      const { names: visible, more } = bylineNames(shown);
+      avatars.replaceChildren(...shown.slice(0, STACKED_AVATARS).map(author => avatar(author, 'theater-byline-avatar')));
+      names.replaceChildren();
+      visible.forEach((name, index) => {
+        if (index) names.append(element('span', 'theater-byline-and', '&'));
+        names.append(nameText(name, 'theater-byline-name'));
+      });
+      if (shown.length === 1 && shown[0].verified) names.append(verifiedMark());
+      // The visible label is the accessible name; with three or more authors it starts the list of every name, and the
+      // count, which a listener would not need, stays out of it.
+      if (more) {
+        const count = element('span', 'theater-byline-more', `+${more}`);
+        count.setAttribute('aria-hidden', 'true');
+        names.append(count);
+        trigger.setAttribute('aria-label', listedNames(shown));
+      } else trigger.removeAttribute('aria-label');
+      list.replaceChildren(...shown.map(renderRow));
+      if (root.parentElement !== plate) {
+        // A new plate (another title row) starts closed.
+        menu.close();
+        plate.prepend(root);
+      }
+    },
+    dispose() {
       menu.close();
-      followAvatar(null);
-      root.remove();
-      return;
-    }
-    followAvatar(shown[0]);
-    const { names: visible, more } = bylineNames(shown);
-    avatars.replaceChildren(...shown.slice(0, STACKED_AVATARS).map(author => avatar(author, 'theater-byline-avatar')));
-    names.replaceChildren();
-    visible.forEach((name, index) => {
-      if (index) names.append(element('span', 'theater-byline-and', '&'));
-      names.append(nameText(name, 'theater-byline-name'));
-    });
-    if (shown.length === 1 && shown[0].verified) names.append(verifiedMark());
-    // The visible label is the accessible name; with three or more authors it starts the list of every name, and the
-    // count, which a listener would not need, stays out of it.
-    if (more) {
-      const count = element('span', 'theater-byline-more', `+${more}`);
-      count.setAttribute('aria-hidden', 'true');
-      names.append(count);
-      trigger.setAttribute('aria-label', listedNames(shown));
-    } else trigger.removeAttribute('aria-label');
-    list.replaceChildren(...shown.map(renderRow));
-    if (root.parentElement !== plate) {
-      // A new plate (another title row) starts closed.
-      menu.close();
-      plate.prepend(root);
+      scope.dispose();
     }
   };
-  // The view owns the settings store it was given.
+}
+
+/**
+ * The author panel at the start of the title plate and its popup (`buildPanel`). It shows only what `checkedAuthors`
+ * admits, only while `bylineAllowed` (the global switch and the provider's `showAuthor`, global off wins), and repaints
+ * only when that changed. While it cannot show (either switch off or still unread, no authors, or no title) nothing is
+ * built or bound and no avatar is loaded or read, so the title row is the one without a byline.
+ */
+export function mountAuthorByline(
+  host: AuthorBylineHost,
+  options: {
+    provider: string; hosts: AuthorHosts; settings: ProviderSettingsStore;
+    /** Stories and tests stand in for the network; providers leave it out. */
+    readAccent?: ReadAccent;
+    /** Tests hand in the global switch they control; providers leave it out and the view follows storage. */
+    global?: AuthorBylineSetting;
+  }
+): AuthorBylineControl {
+  const { scope } = host;
+  const global = options.global ?? watchAuthorBylineSetting();
+  let authors: readonly ContentAuthor[] | null | undefined;
+  let plate: HTMLElement | null = null;
+  let panel: BylinePanel | null = null;
+  const update = () => {
+    if (scope.isDisposed) return;
+    const shown = plate && bylineAllowed(global, options.settings, options.provider) ? checkedAuthors(authors, options.hosts) : [];
+    if (!plate || !shown.length) {
+      panel?.dispose();
+      panel = null;
+      return;
+    }
+    panel ??= buildPanel(host, options.readAccent ?? readAvatarAccent);
+    panel.show(shown, plate);
+  };
+  // The view owns the settings store it was given, and the global switch it follows.
   scope.add(() => options.settings.dispose());
+  scope.add(() => global.dispose());
   scope.add(options.settings.subscribe(update));
+  scope.add(global.subscribe(update));
   scope.add(languageRuntime.subscribe(update));
-  scope.add(() => root.remove());
 
   return {
     render(next, target) {

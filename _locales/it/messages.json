@@ -1744,5 +1744,17 @@
   "providerShowAuthorDescription": {
     "message": "Mostra accanto al titolo chi ha pubblicato il video, con un link al suo canale.",
     "description": "Description of that switch."
+  },
+  "authorBylineTitle": {
+    "message": "Canale accanto al titolo",
+    "description": "Switch label in Settings > Appearance: shows the channel beside the video title on every service; when off, no service shows it."
+  },
+  "authorBylineDescription": {
+    "message": "Mostra accanto al titolo chi ha pubblicato il video. Se questa opzione è disattivata, nessun servizio mostra il canale; se è attiva, decide l’impostazione «Mostra il canale» di ogni servizio.",
+    "description": "Description of that switch; the quoted name is the per-service switch labelled by providerShowAuthor."
+  },
+  "providerShowAuthorGlobalOff": {
+    "message": "L’opzione «Canale accanto al titolo» è disattivata per tutti i servizi. Attivala prima in Aspetto.",
+    "description": "Note below a disabled per-service \u201cShow the channel\u201d switch while the global Settings > Appearance switch (authorBylineTitle) is off. Appearance is an options-page section."
   }
 }

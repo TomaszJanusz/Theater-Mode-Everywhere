@@ -1744,5 +1744,17 @@
   "providerShowAuthorDescription": {
     "message": "Muestra junto al título quién publicó el vídeo, con un enlace a su canal.",
     "description": "Description of that switch."
+  },
+  "authorBylineTitle": {
+    "message": "Canal junto al título",
+    "description": "Switch label in Settings > Appearance: shows the channel beside the video title on every service; when off, no service shows it."
+  },
+  "authorBylineDescription": {
+    "message": "Muestra junto al título quién publicó el vídeo. Si esta opción está desactivada, ningún servicio muestra el canal; si está activada, decide el ajuste «Mostrar el canal» de cada servicio.",
+    "description": "Description of that switch; the quoted name is the per-service switch labelled by providerShowAuthor."
+  },
+  "providerShowAuthorGlobalOff": {
+    "message": "La opción «Canal junto al título» está desactivada para todos los servicios. Actívala primero en Apariencia.",
+    "description": "Note below a disabled per-service \u201cShow the channel\u201d switch while the global Settings > Appearance switch (authorBylineTitle) is off. Appearance is an options-page section."
   }
 }

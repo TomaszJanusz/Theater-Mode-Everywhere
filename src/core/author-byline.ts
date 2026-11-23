@@ -17,8 +17,9 @@ export interface AuthorBylineHost {
 export interface AuthorBylineControl {
   /**
    * Called with every title publication: shows `authors` at the start of `plate` (the title HUD), or takes the panel
-   * out for none. The authors were published with that title, so they are never older than it. The panel is content
+   * out for none. The authors were published with that title, so they are never older than it; a cleared title (no
+   * plate) clears them, so a later settings change cannot bring back the previous item's authors. The panel is content
    * the plate hosts, not its title: the plate's hover rules (shadow.css) skip it, and it clears the plate's tooltip.
    */
-  render(authors: readonly ContentAuthor[] | null | undefined, plate: HTMLElement): void;
+  render(authors: readonly ContentAuthor[] | null | undefined, plate: HTMLElement | null): void;
 }

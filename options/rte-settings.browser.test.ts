@@ -84,7 +84,7 @@ async function open(page: Page, empty = false, initial: Record<string, unknown> 
 
 for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) describe(`RTE settings (${kind})`, () => {
   const shared = sharedTestBrowser(engine);
-  it('offers descriptor settings only for supporting services, preserves defaults, and follows the global AutoTheater gate', { timeout: 45000 }, async t => {
+  it('offers descriptor settings only for supporting services, preserves defaults, and follows the global AutoTheater and byline gates', { timeout: 45000 }, async t => {
     const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 900 } })).newPage();
     await open(page);
     const supported = PROVIDER_CAPABILITIES.filter(provider => provider.capabilities.autoTheater.status !== 'no');
@@ -111,6 +111,18 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
     await page.evaluate(() => (window as unknown as Harness).external({ autoEnterTheater: true }));
     assert.equal(await automatic.isDisabled(), false);
     assert.equal(await automatic.isChecked(), false, 'global flips preserve the saved provider preference');
+    // The global byline switch gates the channel switch the same way, with its own note; off wins over the service.
+    await page.evaluate(() => (window as unknown as Harness).external({ authorByline: false }));
+    assert.equal(await channel.isDisabled(), true);
+    assert.equal(await channel.isChecked(), false, 'global off shows the service switch off');
+    assert.equal(await automatic.isDisabled(), false, 'the byline gate leaves AutoTheater alone');
+    assert.equal(await dialog.locator('.provider-setting-unavailable:visible').textContent(),
+      '“Channel beside the title” is off for every service. Turn it on in Appearance first.');
+    assert.match(await channel.getAttribute('aria-describedby') ?? '', /-unavailable$/, 'the note describes the switch');
+    await page.evaluate(() => (window as unknown as Harness).external({ authorByline: true }));
+    assert.equal(await channel.isDisabled(), false);
+    assert.equal(await channel.isChecked(), true, 'global on defers to the saved service setting');
+    assert.equal(await dialog.locator('.provider-setting-unavailable:visible').count(), 0);
     await page.keyboard.press('Escape');
     assert.equal(await button.evaluate(button => document.activeElement === button), true);
     const other = supported.find(provider => provider.id !== 'youtube')!;

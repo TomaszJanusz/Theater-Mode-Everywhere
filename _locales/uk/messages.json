@@ -1744,5 +1744,17 @@
   "providerShowAuthorDescription": {
     "message": "Показує поруч із назвою, хто опублікував відео, з посиланням на канал.",
     "description": "Description of that switch."
+  },
+  "authorBylineTitle": {
+    "message": "Канал поруч із назвою",
+    "description": "Switch label in Settings > Appearance: shows the channel beside the video title on every service; when off, no service shows it."
+  },
+  "authorBylineDescription": {
+    "message": "Показує поруч із назвою, хто опублікував відео. Якщо цей параметр вимкнено, жоден сервіс не показує канал; якщо ввімкнено, вирішує налаштування «Показувати канал» кожного сервісу.",
+    "description": "Description of that switch; the quoted name is the per-service switch labelled by providerShowAuthor."
+  },
+  "providerShowAuthorGlobalOff": {
+    "message": "Параметр «Канал поруч із назвою» вимкнено для всіх сервісів. Спочатку ввімкніть його в розділі «Зовнішній вигляд».",
+    "description": "Note below a disabled per-service \u201cShow the channel\u201d switch while the global Settings > Appearance switch (authorBylineTitle) is off. Appearance is an options-page section."
   }
 }

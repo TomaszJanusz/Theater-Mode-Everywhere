@@ -1,3 +1,4 @@
+import { BYLINE_STORAGE_KEY, resolveBylineEnabled } from '../src/providers/settings-values';
 import { createSvgIcon } from '../src/ui/svg-icon';
 import { saveAutoTheaterEnabled } from '../src/ui/auto-theater-settings';
 import { setupAppearanceChoices } from './appearance-choices';
@@ -108,6 +109,7 @@ const FEATURE_TOGGLES = [
   { id: 'auto-theater-skip-countdown-toggle', key: AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolve: resolveAutoTheaterSkipCountdown },
   { id: 'video-activator-toggle', key: VIDEO_ACTIVATOR_STORAGE_KEY, resolve: resolveVideoActivator },
   { id: 'keep-controls-visible-toggle', key: KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolve: resolveKeepControlsVisible },
+  { id: 'author-byline-toggle', key: BYLINE_STORAGE_KEY, resolve: resolveBylineEnabled },
   { id: 'volume-boost-toggle', key: VOLUME_BOOST_STORAGE_KEY, resolve: resolveVolumeBoostEnabled },
   SEEK_HOLD_TOGGLE
 ] as const;
@@ -183,8 +185,9 @@ async function init() {
   const disposeRte = await setupRteSettings(notifyAllTabs);
   window.addEventListener('unload', disposeRte, { once: true });
 
-  // Load and bind features toggles
-  await loadAndRenderFeatures();
+  // Load and bind features toggles. Changes are followed before the first read, which leaves a newer change alone.
+  const changedFeatures = observeFeatureToggles();
+  await loadAndRenderFeatures(changedFeatures);
   setupFeatureListeners();
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -205,11 +208,6 @@ async function init() {
           ? resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue)
           : selectedPictureAlign();
         renderPictureAlignOptions(align);
-      }
-      for (const feature of FEATURE_TOGGLES) {
-        if (!changes[feature.key]) continue;
-        const toggle = document.getElementById(feature.id) as HTMLInputElement | null;
-        if (toggle) toggle.checked = feature.resolve(changes[feature.key].newValue);
       }
     });
   }
@@ -619,12 +617,29 @@ async function init() {
   // Removed internal declarations (moved to top of file)
 
   // --- Features ---
-  async function loadAndRenderFeatures() {
+  /** Renders every saved toggle change, from another page, another device or a reset; returns the keys it saw. */
+  function observeFeatureToggles(): ReadonlySet<string> {
+    const changed = new Set<string>();
+    if (typeof chrome === 'undefined' || !chrome.storage?.onChanged) return changed;
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'sync') return;
+      for (const feature of FEATURE_TOGGLES) {
+        if (!changes[feature.key]) continue;
+        changed.add(feature.key);
+        const toggle = document.getElementById(feature.id) as HTMLInputElement | null;
+        if (toggle) toggle.checked = feature.resolve(changes[feature.key].newValue);
+      }
+    });
+    return changed;
+  }
+
+  async function loadAndRenderFeatures(changed: ReadonlySet<string>) {
     try {
       const data = await safeGetStorage(FEATURE_TOGGLES.map((item) => item.key));
       for (const item of FEATURE_TOGGLES) {
         const toggle = document.getElementById(item.id) as HTMLInputElement | null;
-        if (!toggle) continue;
+        // A change seen while the snapshot was read is newer than it.
+        if (!toggle || changed.has(item.key)) continue;
         toggle.checked = item.resolve(data[item.key]);
       }
 

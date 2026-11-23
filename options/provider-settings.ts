@@ -2,17 +2,35 @@ import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater } from '../src/auto-t
 import { createModal, type ModalOptions } from '../src/dialog';
 import { languageRuntime } from '../src/i18n-runtime';
 import type { ProviderSettingsStore, SettingsProvider } from '../src/providers/settings';
-import { providerAutoEnabled } from '../src/providers/settings-values';
+import { BYLINE_STORAGE_KEY, providerAutoEnabled, providerBylineEnabled, resolveBylineEnabled } from '../src/providers/settings-values';
 
 import { settingsMessage as t } from './provider-settings-copy';
+
+/**
+ * Service settings that a global switch can override: while the switch is off, the service's own switch shows off and
+ * unavailable, with a note naming where to turn the global one on. The service's saved choice is kept.
+ */
+interface GlobalGate {
+  key: string;
+  resolve: (value: unknown) => boolean;
+  /** The service's effective preference, the same rule the runtime applies. */
+  enabled: (global: boolean, settings: unknown, provider: string) => boolean;
+  note: string;
+}
+const GLOBAL_GATES: Record<string, GlobalGate> = {
+  autoTheater: { key: AUTO_THEATER_STORAGE_KEY, resolve: resolveAutoEnterTheater, enabled: providerAutoEnabled, note: 'providerAutoTheaterGlobalOff' },
+  showAuthor: { key: BYLINE_STORAGE_KEY, resolve: resolveBylineEnabled, enabled: providerBylineEnabled, note: 'providerShowAuthorGlobalOff' }
+};
+const GATE_KEYS = Object.values(GLOBAL_GATES).map(gate => gate.key);
 
 /** Descriptor-driven content in the existing accessible page-dialog shell. */
 export function openProviderSettings(
   provider: SettingsProvider & { name: string }, store: ProviderSettingsStore,
   options: Pick<ModalOptions, 'signal' | 'mount' | 'returnFocus'> = {}
 ) {
-  let globalAuto = resolveAutoEnterTheater(undefined);
-  let globalRevision = 0;
+  // The global switches by storage key; a key changed after opening is not overwritten by the initial read.
+  const globals: Record<string, unknown> = {};
+  const changedGlobals = new Set<string>();
   const content = document.createElement('div');
   content.className = 'provider-settings';
   const rows = provider.settings.map(setting => {
@@ -65,27 +83,28 @@ export function openProviderSettings(
     for (const { setting, label, description, input, row, unavailable } of rows) {
       label.textContent = t(setting.label);
       description.textContent = t(setting.description);
-      const automatic = setting.id === 'autoTheater';
-      input.checked = automatic ? providerAutoEnabled(globalAuto, store.values, provider.id) : store.values[provider.id][setting.id];
-      input.disabled = !store.loaded || (automatic && !globalAuto);
-      row.classList.toggle('is-unavailable', automatic && !globalAuto);
-      unavailable.hidden = !automatic || globalAuto;
-      unavailable.textContent = t('providerAutoTheaterGlobalOff');
+      const gate = GLOBAL_GATES[setting.id] as GlobalGate | undefined;
+      const global = gate ? gate.resolve(globals[gate.key]) : true;
+      input.checked = gate ? gate.enabled(global, store.values, provider.id) : store.values[provider.id][setting.id];
+      input.disabled = !store.loaded || !global;
+      row.classList.toggle('is-unavailable', !global);
+      unavailable.hidden = global;
+      unavailable.textContent = gate ? t(gate.note) : '';
       input.setAttribute('aria-describedby', [description.id, ...(unavailable.hidden ? [] : [unavailable.id])].join(' '));
     }
     error.textContent = t('rteSaveError');
   }
   render();
   const onGlobal = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
-    if (!modal.isOpen || area !== 'sync' || !(AUTO_THEATER_STORAGE_KEY in changes)) return;
-    globalRevision++;
-    globalAuto = resolveAutoEnterTheater(changes[AUTO_THEATER_STORAGE_KEY].newValue);
+    const changed = GATE_KEYS.filter(key => key in changes);
+    if (!modal.isOpen || area !== 'sync' || !changed.length) return;
+    for (const key of changed) { changedGlobals.add(key); globals[key] = changes[key].newValue; }
     render();
   };
   chrome.storage.onChanged.addListener(onGlobal);
-  void chrome.storage.sync.get(AUTO_THEATER_STORAGE_KEY).then(data => {
-    if (!modal.isOpen || globalRevision) return;
-    globalAuto = resolveAutoEnterTheater(data[AUTO_THEATER_STORAGE_KEY]);
+  void chrome.storage.sync.get(GATE_KEYS).then(data => {
+    if (!modal.isOpen) return;
+    for (const key of GATE_KEYS) if (!changedGlobals.has(key)) globals[key] = data[key];
     render();
   }).catch(() => { if (modal.isOpen) error.hidden = false; });
   const stopStorage = store.subscribe(render);

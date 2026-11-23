@@ -36,7 +36,7 @@ type Api = {
   findPlaylistActions: typeof findPlaylistActions;
   createWorldMessage: typeof createWorldMessage;
 };
-declare global { interface Window { SoopTest: Api } }
+declare global { interface Window { SoopTest: Api; settleStorage(): Promise<unknown> } }
 
 const LIVE = 'https://play.sooplive.com/battleland/297994793';
 const VOD = 'https://vod.sooplive.com/player/211006561';
@@ -61,10 +61,38 @@ const VOD_PAGE = `<!doctype html><body><div id="webplayer"><div id="player" clas
 <div class="message_player_wrap"><div class="prev_next_play" style="display:none"><a href="/player/211006562"><span class="thumb"></span><div><strong>Next video</strong><p>Another week</p></div></a><button class="close">Close</button></div></div>
 </div></div><div class="broadcast_title">[ENG/한] ANOTHER DAY</div>${info('snapgg', '#SNAP')}</body>`;
 
-async function open(t: TestContext, engine: keyof typeof browsers, url: string, body: string): Promise<Page> {
+/**
+ * Extension sync storage for the page: `set` notifies like the browser, and `settleStorage` resolves once every read
+ * started so far has been answered and its reader has applied it (readers apply right after their read resolves).
+ */
+function installStorage(sync: Record<string, unknown>) {
+  const listeners = new Set<(changes: Record<string, { newValue: unknown }>, area: string) => void>();
+  const reads: Promise<unknown>[] = [];
+  const storage = {
+    sync: {
+      get: (keys: string | string[]) => {
+        const read = Promise.resolve(Object.fromEntries([keys].flat().map(key => [key, sync[key]])));
+        reads.push(read);
+        return read;
+      },
+      set: async (values: Record<string, unknown>) => {
+        Object.assign(sync, values);
+        const changes = Object.fromEntries(Object.entries(values).map(([key, newValue]) => [key, { newValue }]));
+        for (const listener of [...listeners]) listener(changes, 'sync');
+      }
+    },
+    onChanged: { addListener: listeners.add.bind(listeners), removeListener: listeners.delete.bind(listeners) }
+  };
+  Object.defineProperty(window, 'chrome', { configurable: true, value: { ...(window as { chrome?: object }).chrome, storage } });
+  window.settleStorage = () => Promise.all(reads).then(() => Promise.resolve());
+}
+
+async function open(t: TestContext, engine: keyof typeof browsers, url: string, body: string, sync: Record<string, unknown> = {}): Promise<Page> {
   const page = await (await browsers[engine].newContext(t)).newPage();
   await page.route('https://*.sooplive.com/**', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body }));
   await page.goto(url);
+  // tsx names nested callbacks with __name; keep that helper inside the page.
+  await page.evaluate(`window.__name = fn => fn; (${installStorage.toString()})(${JSON.stringify(sync)})`);
   await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
   await page.evaluate("SoopTest.exposeFixtureRuntime('isolated');");
   await page.addScriptTag({ content: provider });
@@ -82,12 +110,14 @@ for (const engine of testEngines()) describe(`${engine} SOOP provider`, () => {
       document.getElementById('broadTitle')!.textContent = '  PLAY LIVE  \n now ';
       while (adapter.getTitle() === null) await new Promise<void>(resolve => { notify = resolve; });
       stop();
+      await window.settleStorage();
       return { empty, title: adapter.getTitle(), subtitle: adapter.getSubtitle(), id: adapter.mediaId() };
     });
     assert.deepEqual(report, { empty: null, title: 'PLAY LIVE now', subtitle: null, id: 'live:battleland/297994793' });
     const vod = await open(t, engine, VOD, VOD_PAGE);
-    assert.deepEqual(await vod.evaluate(() => {
+    assert.deepEqual(await vod.evaluate(async () => {
       const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
+      await window.settleStorage();
       return [adapter.getTitle(), adapter.getSubtitle(), adapter.mediaId()];
     }), ['[ENG/한] ANOTHER DAY', null, 'vod:211006561']);
     const channel = await open(t, engine, 'https://play.sooplive.com/battleland', LIVE_PAGE);
@@ -100,9 +130,11 @@ for (const engine of testEngines()) describe(`${engine} SOOP provider`, () => {
 
   it('names the streamer in the byline from the block under the player, and keeps the subtitle when it cannot', async t => {
     const live = await open(t, engine, LIVE, LIVE_PAGE);
-    const read = () => live.evaluate(() => {
+    const read = () => live.evaluate(async () => {
       const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
       document.getElementById('broadTitle')!.textContent = 'PLAY LIVE';
+      // The byline switches load first; until then the streamer stays in the title.
+      await window.settleStorage();
       return { subtitle: adapter.getSubtitle(), authors: adapter.getAuthors() };
     });
     assert.deepEqual(await read(), { subtitle: null, authors: [{
@@ -113,12 +145,47 @@ for (const engine of testEngines()) describe(`${engine} SOOP provider`, () => {
     await live.evaluate(() => { document.querySelector<HTMLAnchorElement>('.broadcast_information a.thumb')!.href = 'https://www.sooplive.com/station/other'; });
     assert.deepEqual(await read(), { subtitle: 'battleland', authors: null });
     const vod = await open(t, engine, VOD, VOD_PAGE);
-    assert.deepEqual(await vod.evaluate(() => {
+    assert.deepEqual(await vod.evaluate(async () => {
       const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
+      await window.settleStorage();
       const named = adapter.getAuthors()?.map(author => [author.id, author.name, author.url]);
       document.querySelector('.broadcast_information a.thumb')!.setAttribute('href', 'https://evil.test/station/snapgg');
       return { named, foreign: adapter.getAuthors(), subtitle: adapter.getSubtitle() };
     }), { named: [['snapgg', '#SNAP', 'https://www.sooplive.com/station/snapgg']], foreign: null, subtitle: '#SNAP' });
+  });
+
+  it('keeps the streamer in the title while either byline switch is off, and follows both live', async t => {
+    const live = await open(t, engine, LIVE, LIVE_PAGE, { authorByline: false });
+    assert.deepEqual(await live.evaluate(async () => {
+      document.getElementById('broadTitle')!.textContent = 'PLAY LIVE';
+      const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
+      let changes = 0;
+      const stop = adapter.observeTitle(() => changes++);
+      await window.settleStorage();
+      const steps: unknown[] = [];
+      const step = (label: string) => steps.push([label, adapter.getSubtitle(), adapter.getAuthors()?.length ?? 0]);
+      step('global off');
+      const before = changes;
+      await chrome.storage.sync.set({ authorByline: true });
+      step('global on');
+      await chrome.storage.sync.set({ providerSettings: { soop: { showAuthor: false } } });
+      step('SOOP off');
+      await chrome.storage.sync.set({ providerSettings: { soop: { showAuthor: true } } });
+      step('both on');
+      steps.push(['notified', changes - before]);
+      stop();
+      adapter.dispose();
+      await chrome.storage.sync.set({ authorByline: false });
+      steps.push(['after dispose', changes - before]);
+      return steps;
+    }), [
+      ['global off', 'battleland', 1],
+      ['global on', null, 1],
+      ['SOOP off', 'battleland', 1],
+      ['both on', null, 1],
+      ['notified', 3],
+      ['after dispose', 3]
+    ]);
   });
 
   it('requests the recording chapters once, and rejects an answer for another recording', async t => {

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 
 import { mountHudStage } from '../../.storybook/hud-stage';
@@ -10,7 +10,9 @@ import { bindMenuPopover } from '../ui/menu-popover';
 import { getPlayerUiRoot, queryPlayerUi } from '../ui/root';
 
 import { providerAuthorHosts } from './author-byline';
+import { watchAuthorBylineSetting } from './author-byline-setting';
 import { mountAuthorByline, readAvatarAccent } from './author-byline-view';
+import { BYLINE_STORAGE_KEY } from './settings-values';
 import { createYouTubeSettings } from './youtube/settings';
 
 const HOSTS = providerAuthorHosts([{ domain: 'youtube.com', includeSubdomains: true }], ['yt3.ggpht.com']);
@@ -29,13 +31,17 @@ function tooltip(node: Element | null): string | null {
   return null;
 }
 
-type ReadAccent = (avatarUrl: string) => Promise<string | null>;
+type ReadAccent = (avatarUrl: string, signal: AbortSignal) => Promise<string | null>;
+/** Idle callbacks run in order, so this resolves after any the view scheduled before it. */
+const idle = () => new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 }));
+/** Saves Settings > Appearance > the author byline switch, as the Settings page does. */
+const setGlobal = (enabled: boolean) => chrome.storage.sync.set({ [BYLINE_STORAGE_KEY]: enabled });
 /** Tests stay off the network: without a reader of their own, no avatar has a color. */
 const noAccent: ReadAccent = () => Promise.resolve(null);
 
 async function mount(
   authors: readonly ContentAuthor[] | null,
-  options: { showAuthor?: boolean; dir?: 'rtl'; readAccent?: ReadAccent } = {},
+  options: { showAuthor?: boolean; global?: boolean; dir?: 'rtl'; readAccent?: ReadAccent } = {},
   firstTitle = 'Building a cedar-strip canoe',
   beforePublish?: () => void
 ) {
@@ -47,9 +53,15 @@ async function mount(
   const settings = createYouTubeSettings();
   await settings.ready;
   if (options.showAuthor === false) await settings.set('youtube', 'showAuthor', false);
-  const byline = mountAuthorByline({ scope, bindMenu: bindMenuPopover }, { provider: 'youtube', hosts: HOSTS, settings, readAccent: options.readAccent ?? noAccent });
+  await setGlobal(options.global ?? true);
+  // The global switch the view follows, read from the same storage the Settings page writes.
+  const global = watchAuthorBylineSetting();
+  await global.ready;
+  const byline = mountAuthorByline({ scope, bindMenu: bindMenuPopover }, { provider: 'youtube', hosts: HOSTS, settings, global, readAccent: options.readAccent ?? noAccent });
   const publish = (next: readonly ContentAuthor[] | null, title = 'Building a cedar-strip canoe') =>
     hud.syncContentTitle({ title, subtitle: null, authors: next }, byline);
+  /** A navigation between items: the title clears before the next one is published. */
+  const clear = () => hud.syncContentTitle(null, byline);
   publish(authors, firstTitle);
   const plate = () => queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS}`)!;
   if (options.dir) plate().dir = options.dir;
@@ -60,7 +72,7 @@ async function mount(
   const names = () => panel()?.querySelector('.theater-byline-names')?.textContent;
   const links = () => [...plate().querySelectorAll<HTMLAnchorElement>('a.theater-byline-row')];
   const shown = () => getComputedStyle(popup()!).visibility === 'visible';
-  return { hud, publish, plate, panel, names, popup, list, rows, links, shown, settings, stage };
+  return { hud, publish, clear, plate, panel, names, popup, list, rows, links, shown, settings, stage };
 }
 
 describe('author byline in the title plate', () => {
@@ -245,6 +257,86 @@ describe('author byline in the title plate', () => {
     expect(view.names()).toBe('One');
     await view.settings.set('youtube', 'showAuthor', false);
     expect(view.panel()).toBeNull();
+  });
+
+  test('the global switch off wins over the provider setting, builds nothing and reads no avatar; on restores it live', async () => {
+    const reads: string[] = [];
+    const readAccent: ReadAccent = url => { reads.push(url); return Promise.resolve('#3792c7'); };
+    const plain = await mount(null, { global: false });
+    const bare = plain.plate().innerHTML;
+    scope!.dispose();
+    const view = await mount([author('Harbour', { avatarUrl: AVATAR }), author('Two', { avatarUrl: AVATAR })], { global: false, readAccent });
+    // Off: the title row is the one a title without authors gets, with no panel, popup or avatar image anywhere.
+    expect(view.plate().innerHTML).toBe(bare);
+    expect(getPlayerUiRoot().querySelector('.theater-byline, img')).toBeNull();
+    await idle();
+    expect(reads).toEqual([]);
+    // On again, without a new title: the panel returns with its accent.
+    await setGlobal(true);
+    expect(view.names()).toBe('Harbour&Two');
+    await expect.poll(() => view.panel()!.style.getPropertyValue('--accent-color')).toBe('#3792c7');
+    // On defers to the provider: its own switch off still hides the panel.
+    await view.settings.set('youtube', 'showAuthor', false);
+    expect(view.panel()).toBeNull();
+    await view.settings.set('youtube', 'showAuthor', true);
+    expect(view.names()).toBe('Harbour&Two');
+    // Off while showing takes the panel and its accent out; a later title stays bare.
+    await setGlobal(false);
+    expect(view.panel()).toBeNull();
+    view.publish([author('Three', { avatarUrl: 'https://yt3.ggpht.com/three=s88' })], 'Another video');
+    expect(view.plate().querySelector('.theater-byline')).toBeNull();
+    await idle();
+    expect(reads).toEqual([AVATAR]);
+  });
+
+  test('turning the byline off or leaving theater stops an avatar read before it draws', async () => {
+    const signals: AbortSignal[] = [];
+    const readAccent: ReadAccent = (_url, signal) => { signals.push(signal); return new Promise(() => {}); };
+    await mount([author('Harbour', { avatarUrl: AVATAR })], { readAccent });
+    await expect.poll(() => signals.length).toBe(1);
+    await setGlobal(false);
+    expect(signals[0].aborted).toBe(true);
+    await setGlobal(true);
+    await expect.poll(() => signals.length).toBe(2);
+    expect(signals[1].aborted).toBe(false);
+    scope!.dispose();
+    expect(signals[1].aborted).toBe(true);
+  });
+
+  test('a cleared title forgets its authors, so turning the byline on before the next title brings back nothing', async () => {
+    const reads: string[] = [];
+    const view = await mount([author('Harbour', { avatarUrl: AVATAR })], { global: false, readAccent: url => { reads.push(url); return Promise.resolve(null); } });
+    const previous = view.plate();
+    view.clear();
+    expect(previous.isConnected).toBe(false);
+    await setGlobal(true);
+    expect(previous.querySelector('.theater-byline')).toBeNull();
+    expect(getPlayerUiRoot().querySelector('.theater-byline')).toBeNull();
+    await idle();
+    expect(reads).toEqual([]);
+    view.publish([author('Two')], 'The next video');
+    expect(view.names()).toBe('Two');
+  });
+
+  test('while it cannot show, the byline binds nothing to the window; it binds and unbinds with the switch', async () => {
+    const view = await mount([author('One')], { global: false });
+    const added = vi.spyOn(window, 'addEventListener');
+    const removed = vi.spyOn(window, 'removeEventListener');
+    const pointer = (spy: typeof added | typeof removed) => spy.mock.calls.filter(([type]) => type === 'pointerdown').length;
+    try {
+      view.publish([author('Two')], 'Another video');
+      expect(pointer(added)).toBe(0);
+      await setGlobal(true);
+      expect(view.names()).toBe('Two');
+      const bound = pointer(added);
+      expect(bound).toBeGreaterThan(0);
+      await setGlobal(false);
+      expect(view.panel()).toBeNull();
+      expect(pointer(removed)).toBe(bound);
+    } finally {
+      added.mockRestore();
+      removed.mockRestore();
+    }
   });
 
   test('a title without authors takes the panel out; an equal publication leaves its nodes alone', async () => {
@@ -433,7 +525,7 @@ describe('author byline in the title plate', () => {
     await mount([author('Harbour', { avatarUrl: AVATAR })], { readAccent: url => { reads.push(url); return Promise.resolve(null); } });
     scope!.dispose();
     // Idle callbacks run in order, so this one runs after the panel's would have.
-    await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 }));
+    await idle();
     expect(reads).toEqual([]);
   });
 });
@@ -462,5 +554,23 @@ describe('readAvatarAccent', () => {
     expect(await readAvatarAccent(blue)).toBe(accent);
     expect(await readAvatarAccent(avatarImage('#9a9a9a'))).toBeNull();
     expect(await readAvatarAccent(`${location.origin}/missing-avatar.png`)).toBeNull();
+  });
+
+  test('a read every caller gave up draws nothing and leaves the avatar unread', async () => {
+    const red = avatarImage('#c73737');
+    const draw = vi.spyOn(CanvasRenderingContext2D.prototype, 'drawImage');
+    try {
+      const first = new AbortController(), second = new AbortController();
+      const reads = [readAvatarAccent(red, first.signal), readAvatarAccent(red, second.signal)];
+      first.abort();
+      second.abort();
+      expect(await Promise.all(reads)).toEqual([null, null]);
+      expect(draw).not.toHaveBeenCalled();
+      // Nothing was remembered for it, so the next caller reads it.
+      expect(await readAvatarAccent(red)).toMatch(/^#[0-9a-f]{6}$/);
+      expect(draw).toHaveBeenCalledTimes(1);
+    } finally {
+      draw.mockRestore();
+    }
   });
 });

@@ -15,12 +15,23 @@ import { selectTestEngines, skipUnlessEngine } from '../src/test-utils/test-engi
 const root = path.resolve(__dirname, '..');
 const bundles = Promise.all(["import '../options/options';", "import '../popup/popup';"].map(entry => bundleQueryModules([entry])));
 
-async function open(page: Page, surface: 'options' | 'popup', blacklist: string[], url = 'chrome://extensions'): Promise<void> {
-  const initialize = ({ catalogs, blacklist, url }: { catalogs: Record<string, ReturnType<typeof readCatalog>>; blacklist: string[]; url: string }) => {
+/** `duringRead`: saved by another page while the first read that asks for one of its keys is answered. */
+async function open(page: Page, surface: 'options' | 'popup', blacklist: string[], url = 'chrome://extensions', duringRead?: Record<string, unknown>): Promise<void> {
+  type Init = { catalogs: Record<string, ReturnType<typeof readCatalog>>; blacklist: string[]; url: string; duringRead?: Record<string, unknown> };
+  const initialize = ({ catalogs, blacklist, url, duringRead }: Init) => {
     const saved: Record<string, unknown> = { blacklist, shortcuts: { toggle: '', cycle: 'T', playPause: 'T' } };
     const listeners = new Set<(changes: Record<string, { newValue: unknown }>, area: string) => void>();
     const storage = {
-      get: (_keys: unknown, callback?: (data: object) => void) => { callback?.(saved); return Promise.resolve({ ...saved }); },
+      get: (keys: unknown, callback?: (data: object) => void) => {
+        const snapshot = { ...saved };
+        const change = duringRead;
+        if (change && [keys].flat().some(key => typeof key === 'string' && key in change)) {
+          duringRead = undefined;
+          void storage.set(change);
+        }
+        callback?.(snapshot);
+        return Promise.resolve(snapshot);
+      },
       set: async (values: Record<string, unknown>) => {
         Object.assign(saved, values);
         const changes = Object.fromEntries(Object.entries(values).map(([key, newValue]) => [key, { newValue }]));
@@ -36,7 +47,7 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
     } });
   };
   // tsx names nested callbacks with __name; keep that helper inside the fixture.
-  await page.addInitScript({ content: `window.__name = fn => fn; (${initialize.toString()})(${JSON.stringify({ catalogs: Object.fromEntries(LANGUAGES.map(({ locale }) => [locale, readCatalog(locale)])), blacklist, url })});` });
+  await page.addInitScript({ content: `window.__name = fn => fn; (${initialize.toString()})(${JSON.stringify({ catalogs: Object.fromEntries(LANGUAGES.map(({ locale }) => [locale, readCatalog(locale)])), blacklist, url, duringRead })});` });
   const html = readFileSync(path.join(root, surface, `${surface}.html`), 'utf8').replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
   await page.route('http://localization.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://localization.test/');
@@ -52,7 +63,21 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
 
 const browsers = sharedEngineBrowsers();
 
-it('Settings groups AutoTheater and accessibility, persists countdown choices, and fits narrow layouts', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
+it('Settings keeps a switch change saved while its first read is answered', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
+  const context = await browsers.chromium.newContext(t);
+  try {
+    const page = await context.newPage();
+    await open(page, 'options', [], 'chrome://extensions', { authorByline: false });
+    // SponsorBlock is on by default: once it shows checked, the switches have rendered the read.
+    await page.locator('#sponsorblock-toggle:checked').waitFor({ state: 'attached' });
+    // The read's snapshot still had the default (on); the change saved meanwhile is newer and stays.
+    assert.equal(await page.locator('#author-byline-toggle').isChecked(), false);
+  } finally {
+    await context.close();
+  }
+});
+
+it('Settings groups AutoTheater and accessibility, persists countdown and author byline choices, and fits narrow layouts', { skip: skipUnlessEngine('chromium'), timeout: 30_000 }, async t => {
   const context = await browsers.chromium.newContext(t);
   try {
     const page = await context.newPage();
@@ -76,6 +101,16 @@ it('Settings groups AutoTheater and accessibility, persists countdown choices, a
     assert.equal(await skip.isChecked(), false, 'invalid saved values retain the countdown');
     await page.locator('#tab-appearance').click();
     assert.equal(await page.locator('#appearance label[for=keep-controls-visible-toggle]').isVisible(), true);
+    const byline = page.locator('#appearance').getByRole('switch', { name: 'Channel beside the title', exact: true });
+    assert.equal(await byline.isChecked(), true, 'the author byline is on by default');
+    await page.locator('label[for=author-byline-toggle]').click();
+    assert.equal(await page.evaluate(async () => (await chrome.storage.sync.get('authorByline')).authorByline), false);
+    await page.evaluate(() => chrome.storage.sync.set({ authorByline: true }));
+    assert.equal(await byline.isChecked(), true, 'external changes update the author byline switch');
+    await page.evaluate(() => chrome.storage.sync.set({ authorByline: false }));
+    assert.equal(await byline.isChecked(), false);
+    await page.evaluate(() => chrome.storage.sync.set({ authorByline: 'false' }));
+    assert.equal(await byline.isChecked(), true, 'an invalid saved value reads as on, as the player reads it');
     assert.equal(await page.getByRole('group', { name: 'Accessibility', exact: true }).locator('.choice-combobox').count(), 3);
     for (const width of [1280, 390]) {
       await page.setViewportSize({ width, height: 900 });
