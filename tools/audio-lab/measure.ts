@@ -6,11 +6,14 @@
  *   measured separately at every reference point of `metrics/early-late.ts`.
  * - With a known dry voice over other sound, the voice and that other sound are measured.
  * - Otherwise only the whole mix is known, and the rows say so (`-mix`).
+ *
+ * ESTOI and SRMR hear one channel at a time. They are taken per channel and averaged over the
+ * channels that yield a score, so a clip with sound on one side only is judged by that side.
  */
 import type { EffectResult } from './effects';
 import type { Material } from './material';
 import { bandLevel, bandsOf } from './metrics/band-energy';
-import { REFERENCE_POINTS } from './metrics/early-late';
+import { REFERENCE_POINTS, type ReferenceKey } from './metrics/early-late';
 import { estoi } from './metrics/estoi';
 import { describeFrames, speechInDryVoice, speechInMix, type Frames } from './metrics/frames';
 import { framePower, maskedLevel, powerGrid, splitGrids, voiceBand, type Grid } from './metrics/grid';
@@ -41,6 +44,9 @@ function combine(first: Signal, rest: Signal[], sign: 1 | -1): Signal {
 const sum = (signals: Signal[]): Signal => combine(signals[0], signals.slice(1), 1);
 const minus = (a: Signal, b: Signal): Signal => combine(a, [b], -1);
 
+/** The reference point behind which the room's sound counts as late reverb. */
+const LATE_CUT: ReferenceKey = '50ms';
+
 const grids = (pair: Pair<Signal>): Pair<Grid> => ({ before: powerGrid(pair.before), after: powerGrid(pair.after) });
 const each = (pair: Pair<Grid>, measure: (grid: Grid) => number): Pair<number> => ({ before: measure(pair.before), after: measure(pair.after) });
 const speechLevel = (grid: Grid, frames: Frames): number => maskedLevel(framePower(grid, voiceBand(grid)), frames.speech);
@@ -61,16 +67,16 @@ function views(material: Material, { follow }: EffectResult, mix: Pair<Grid>): V
   return [{ key: 'mix', of: 'whole mix', voice: mix, note: 'Measured on the whole mix: music, effects and room count as much as the voice' }];
 }
 
-function viewRows({ key, of, voice, room, note }: View, frames: Frames, first: boolean): MetricRow[] {
+function viewRows({ key, of, voice, room, note }: View, frames: Frames): MetricRow[] {
   const rows: MetricRow[] = [
     { id: `voice-level-${key}`, label: `${key === 'mix' ? 'Level' : 'Voice level'} while speaking (${of})`, unit: 'dBFS', ...each(voice, grid => voiceLevel(grid, frames)), higherIsBetter: true, note },
-    { id: `word-ending-level-${key}`, label: `Word endings, last 60 ms (${of})`, unit: 'dBFS', ...each(voice, grid => wordEndingLevel(grid, frames)), higherIsBetter: true },
+    { id: `word-ending-level-${key}`, label: `Speech in the last 60 ms before a pause (${of})`, unit: 'dBFS', ...each(voice, grid => wordEndingLevel(grid, frames)), higherIsBetter: true },
     { id: `level-movement-${key}`, label: `Level movement while speaking (${of})`, unit: 'dB', before: 0, after: levelMovement(voice.before, voice.after, frames), higherIsBetter: false }
   ];
   if (room) {
     rows.push({ id: `room-level-${key}`, label: `Room sound under the voice (after the ${of})`, unit: 'dBFS', ...each(room, grid => speechLevel(grid, frames)), higherIsBetter: false });
-    // In the pause tails the early reflections have passed, so the reference point no longer matters: one row.
-    if (first) rows.push({ id: 'tail-level', label: 'Reverb in pause tails (50 to 300 ms after the voice stops)', unit: 'dBFS', ...each(room, grid => tailLevel(grid, frames)), higherIsBetter: false });
+    // The tail is the late reverb: early reflections are kept out by the cut, not only by the window.
+    if (key === LATE_CUT) rows.push({ id: 'tail-level', label: `Late reverb in pause tails (after the ${of}; 50 to 300 ms after the voice stops)`, unit: 'dBFS', ...each(room, grid => tailLevel(grid, frames)), higherIsBetter: false });
   }
   if (key === 'mix') {
     rows.push({ id: 'tail-level-mix', label: 'Level 50 to 300 ms after speech stops (whole mix)', unit: 'dBFS', ...each(voice, grid => tailLevel(grid, frames)), note: 'Not a room measure: a dry voice over music shows the same drop as a reverberant one' });
@@ -99,18 +105,35 @@ function voiceReferences({ room, voice }: Material): { key: string; of: string; 
   return voice ? [{ key: 'direct', of: 'dry voice', signal: voice }] : [];
 }
 
-/** Intelligibility of the mix against each known version of the voice (left channel). */
+/** A per-channel score averaged over the channels that have one; NaN when none does. */
+function channelMean(channels: number[], score: (channel: number) => number): number {
+  const scores = channels.map(score).filter(value => !Number.isNaN(value));
+  return scores.length === 0 ? Number.NaN : scores.reduce((sum, value) => sum + value, 0) / scores.length;
+}
+
+/** Every channel, or only the first when they all carry the same samples (mono material costs one pass). */
+function distinctChannels(...signals: Signal[]): number[] {
+  const same = signals.every(({ channels }) => channels.every(channel => channel.every((value, i) => value === channels[0][i])));
+  return same ? [0] : signals[0].channels.map((_, channel) => channel);
+}
+
+/** Intelligibility of the mix against each known version of the voice. */
 function estoiRows(material: Material, output: Signal): MetricRow[] {
   const { mix } = material;
-  const references = voiceReferences(material);
-  return references.map(({ key, of, signal }) => ({
-    id: `estoi-${key}`,
-    label: `ESTOI against the ${of}`,
-    unit: '0 to 1',
-    before: estoi(signal.channels[0], mix.channels[0], mix.sampleRate),
-    after: estoi(signal.channels[0], output.channels[0], mix.sampleRate),
-    higherIsBetter: true
-  }));
+  return voiceReferences(material).map(({ key, of, signal }) => {
+    const channels = distinctChannels(signal, mix, output);
+    const against = (test: Signal) => channelMean(channels, channel => estoi(signal.channels[channel], test.channels[channel], mix.sampleRate));
+    return { id: `estoi-${key}`, label: `ESTOI against the ${of}`, unit: '', before: against(mix), after: against(output), higherIsBetter: true };
+  });
+}
+
+function srmrRow(mix: Signal, output: Signal): MetricRow {
+  const channels = distinctChannels(mix, output);
+  const of = (signal: Signal) => channelMean(channels, channel => srmr(signal.channels[channel], signal.sampleRate));
+  return {
+    id: 'srmr', label: 'SRMR (envelope modulation ratio, whole mix)', unit: 'ratio', before: of(mix), after: of(output),
+    note: 'Rises for anything that deepens the gaps between sounds, a gated voice included; not proof of less reverb'
+  };
 }
 
 function describe(material: Material, mix: Grid): Frames {
@@ -126,7 +149,7 @@ function describe(material: Material, mix: Grid): Frames {
 export function levelRows(material: Material, result: EffectResult): MetricRow[] {
   const mix = grids({ before: material.mix, after: result.output });
   const frames = describe(material, mix.before);
-  return [...views(material, result, mix).flatMap((view, index) => viewRows(view, frames, index === 0)), ...bedRows(material, result, frames)];
+  return [...views(material, result, mix).flatMap(view => viewRows(view, frames)), ...bedRows(material, result, frames)];
 }
 
 export function measure(material: Material, result: EffectResult): MetricRow[] {
@@ -135,17 +158,13 @@ export function measure(material: Material, result: EffectResult): MetricRow[] {
   const frames = describe(material, mixGrids.before);
   const all = views(material, result, mixGrids);
   return [
-    ...all.flatMap((view, index) => viewRows(view, frames, index === 0)),
+    ...all.flatMap(view => viewRows(view, frames)),
     ...bedRows(material, result, frames),
     ...estoiRows(material, result.output),
     ...bandsOf(mixGrids.before).map(band => ({
       id: band.id, label: `${band.label} while speaking (${all[0].of})`, unit: 'dBFS', ...each(all[0].voice, grid => bandLevel(grid, band, frames.speech))
     })),
-    {
-      id: 'srmr', label: 'SRMR (envelope modulation ratio, whole mix)', unit: 'ratio',
-      before: srmr(mix.channels[0], mix.sampleRate), after: srmr(result.output.channels[0], mix.sampleRate),
-      note: 'Rises for anything that deepens the gaps between sounds, a gated voice included; not proof of less reverb'
-    },
+    srmrRow(mix, result.output),
     { id: 'loudness', label: 'Loudness (BS.1770, whole mix)', unit: 'LUFS', before: loudness(mix), after: loudness(result.output) }
   ];
 }

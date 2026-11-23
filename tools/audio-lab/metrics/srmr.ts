@@ -13,7 +13,10 @@
  * A port of the time-domain variant of SRMRpy 1.0 (`fast=False, norm=False`): 16 kHz, 23
  * gammatone channels from 125 Hz, Hilbert envelopes, eight modulation bands from 4 to 128 Hz
  * (Q = 2), 256 ms frames 64 ms apart. Earlier pages used SRMRpy's faster gammatonegram
- * approximation, whose numbers differ from these.
+ * approximation, whose numbers differ from these. SRMRpy is MIT licensed, Copyright (c) 2014
+ * João F. Santos, Tiago H. Falk; its gammatone filters come from the gammatone toolkit (BSD
+ * 3-clause; Malcolm Slaney, Dan Ellis, Jason Heeris). Both notices are in
+ * `THIRD-PARTY-LICENSES.md`.
  */
 import { fft, nextPowerOfTwo } from './fft';
 import { resample } from './resample';

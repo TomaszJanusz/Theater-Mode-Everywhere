@@ -65,44 +65,66 @@ function fromBase64(text: string): Float32Array {
   return new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 }
 
-/** The delay of `output` against `input` (0 to `limit` samples) at which they correlate best. */
-export function latencyOf(input: Float32Array, output: Float32Array, limit: number): number {
+/**
+ * The delay of `output` against `input` (0 to `limit` samples) at which they correlate best, over
+ * all channels together: a clip with sound on one side only is aligned by that side.
+ */
+export function latencyOf(input: Float32Array[], output: Float32Array[], limit: number): number {
   let best = 0;
   let bestScore = Number.NEGATIVE_INFINITY;
   for (let lag = 0; lag <= limit; lag++) {
     let score = 0;
-    for (let i = 0; i < input.length && i + lag < output.length; i++) score += input[i] * output[i + lag];
+    for (const [channel, samples] of input.entries()) {
+      const delayed = output[channel];
+      for (let i = 0; i < samples.length && i + lag < delayed.length; i++) score += samples[i] * delayed[i + lag];
+    }
     if (score > bestScore) { bestScore = score; best = lag; }
   }
   return best;
 }
 
-const graph = (name: 'voice' | 'bass' | 'leveling', level: string): Effect => ({
+/** A page with the audio chain loaded (`AudioGraph`), and how to let go of it. */
+export type ChainRenderer = { evaluate(script: string): Promise<unknown>; close(): Promise<void> };
+
+async function openChainRenderer(): Promise<ChainRenderer> {
+  // Loaded on demand: the module bundles the audio graph for the page when it is imported.
+  const { openAudioRenderer } = await import('../../src/test-utils/audio-render');
+  const renderer = await openAudioRenderer();
+  if (!renderer) throw new Error('The audio chain effects render in Chromium; run `pnpm exec playwright install chromium`.');
+  return { evaluate: script => renderer.page.evaluate(script), close: () => renderer.browser.close() };
+}
+
+const graph = (name: 'voice' | 'bass' | 'leveling', level: string, open: () => Promise<ChainRenderer>): Effect => ({
   id: `${name}-${level}`,
   label: `${name[0].toUpperCase()}${name.slice(1)}, ${level}`,
   run: async mix => {
-    // Loaded on demand: the module bundles the audio graph for the page when it is imported.
-    const { openAudioRenderer } = await import('../../src/test-utils/audio-render');
-    const renderer = await openAudioRenderer();
-    if (!renderer) throw new Error(`${name}-${level} renders in Chromium; run \`pnpm exec playwright install chromium\`.`);
+    const renderer = await open();
     try {
       const lead = Math.round(LEAD_SECONDS * mix.sampleRate);
       const tail = Math.round(MAX_LATENCY_SECONDS * mix.sampleRate);
       const settings: AudioSettings = { ...DEFAULT_AUDIO_SETTINGS, [name]: level };
       const request = JSON.stringify({ settings, sampleRate: mix.sampleRate, channels: mix.channels.map(toBase64), lead, tail });
-      const rendered = (await renderer.page.evaluate(`${RENDER}(${request})`) as string[]).map(fromBase64);
+      const rendered = (await renderer.evaluate(`${RENDER}(${request})`) as string[]).map(fromBase64).map(channel => channel.subarray(lead));
       const length = mix.channels[0].length;
-      const latency = latencyOf(mix.channels[0], rendered[0].subarray(lead), tail);
-      return { output: { sampleRate: mix.sampleRate, channels: rendered.map(channel => channel.slice(lead + latency, lead + latency + length)) } };
+      const latency = latencyOf(mix.channels, rendered, tail);
+      return { output: { sampleRate: mix.sampleRate, channels: rendered.map(channel => channel.slice(latency, latency + length)) } };
     } finally {
-      await renderer.browser.close();
+      await renderer.close();
     }
   }
 });
 
-export const LAB_EFFECTS: Effect[] = [
-  ...ECHO_LEVELS.filter(level => level !== 'off').map(echo),
-  ...VOICE_LEVELS.filter(level => level !== 'off').map(level => graph('voice', level)),
-  ...BASS_LEVELS.filter(level => level !== 'original').map(level => graph('bass', level)),
-  ...LEVELING_LEVELS.filter(level => level !== 'off').map(level => graph('leveling', level))
-];
+/**
+ * Every effect the lab knows. The audio chain effects open a Chromium of their own for each run;
+ * a caller that already owns a page with the chain loaded (a test) passes `open` to lend it.
+ */
+export function labEffects(open: () => Promise<ChainRenderer> = openChainRenderer): Effect[] {
+  return [
+    ...ECHO_LEVELS.filter(level => level !== 'off').map(echo),
+    ...VOICE_LEVELS.filter(level => level !== 'off').map(level => graph('voice', level, open)),
+    ...BASS_LEVELS.filter(level => level !== 'original').map(level => graph('bass', level, open)),
+    ...LEVELING_LEVELS.filter(level => level !== 'off').map(level => graph('leveling', level, open))
+  ];
+}
+
+export const LAB_EFFECTS: Effect[] = labEffects();

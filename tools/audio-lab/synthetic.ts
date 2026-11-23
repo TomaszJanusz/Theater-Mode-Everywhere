@@ -156,5 +156,5 @@ export function syntheticMaterial(id: string, seconds = 8): Material {
     const voice = { sampleRate: LAB_RATE, channels: [dry, dry.slice()] };
     return { id, label: room.label, mix: voice, dry, voice };
   }
-  return { id, label: room.label, dry, ...buildRoom(dry, [room.response(0), room.response(1)], LAB_RATE) };
+  return { id, label: room.label, dry, ...buildRoom(dry, [room.response(0), room.response(1)], 0) };
 }

@@ -19,16 +19,33 @@ export const REFERENCE_POINTS = [
 
 export type ReferenceKey = typeof REFERENCE_POINTS[number]['key'];
 
-/** A band-limited response rises before its peak; this much before the first arrival still belongs to the direct sound. */
+/** A band-limited response rises before its peak; this much before the direct sound still belongs to it. */
 const RISE_MS = 1;
+/** An arrival is taken at its strongest sample within this time of its onset. */
+const ONSET_MS = 0.5;
 
-/** The first sample that reaches half of a channel's peak, earliest across channels: the direct sound. */
-export function firstArrival(response: Float64Array[]): number {
+/** How many samples before the direct sound `splitResponse` keeps: the delay its parts carry against the dry voice. */
+export const leadOf = (arrival: number, sampleRate: number): number => Math.min(Math.round(arrival), Math.round(RISE_MS / 1000 * sampleRate));
+
+/**
+ * Where the direct sound arrives when nobody says: the onset is the first sample within 20 dB of
+ * a channel's peak, the arrival the strongest sample of the half millisecond after it (the ripple
+ * ahead of a band-limited impulse crosses the threshold before the impulse does). The earliest
+ * channel counts. The direct sound need not be the strongest arrival (a wall behind the
+ * microphone can return more than an off-axis talker sends), so the search is not for the peak;
+ * a response whose direct sound is weaker than that has to state its arrival itself.
+ */
+export function firstArrival(response: Float64Array[], sampleRate: number): number {
   let first = Number.POSITIVE_INFINITY;
   for (const channel of response) {
     const peak = channel.reduce((max, value) => Math.max(max, Math.abs(value)), 0);
-    const at = channel.findIndex(value => Math.abs(value) > 0.5 * peak);
-    if (at >= 0) first = Math.min(first, at);
+    const onset = channel.findIndex(value => Math.abs(value) > 0.1 * peak);
+    if (onset < 0) continue;
+    let arrival = onset;
+    for (let i = onset; i < Math.min(channel.length, onset + Math.round(ONSET_MS / 1000 * sampleRate)); i++) {
+      if (Math.abs(channel[i]) > Math.abs(channel[arrival])) arrival = i;
+    }
+    first = Math.min(first, arrival);
   }
   return Number.isFinite(first) ? first : 0;
 }
@@ -37,10 +54,11 @@ export function firstArrival(response: Float64Array[]): number {
  * Cuts a response into consecutive parts at the reference points: `parts[0]` is the direct sound,
  * `parts[i]` what arrives between point `i - 1` and point `i`, and the last part everything after
  * 50 ms. Each part keeps its place in time and the response's leading delay is removed (up to
- * 1 ms before the first arrival, for its rise), so the parts add up to the response as heard.
+ * 1 ms before the direct sound, for its rise), so the parts add up to the response as heard.
+ * `arrival` is the sample at which the direct sound arrives, when the material knows it.
  */
-export function splitResponse(response: Float64Array[], sampleRate: number): Float64Array[][] {
-  const start = Math.max(0, firstArrival(response) - Math.round(RISE_MS / 1000 * sampleRate));
+export function splitResponse(response: Float64Array[], sampleRate: number, arrival = firstArrival(response, sampleRate)): Float64Array[][] {
+  const start = Math.round(arrival) - leadOf(arrival, sampleRate);
   const cuts = [0, ...REFERENCE_POINTS.map(point => Math.round(point.ms / 1000 * sampleRate)), Number.POSITIVE_INFINITY];
   return cuts.slice(0, -1).map((from, part) => response.map(channel => {
     const trimmed = channel.subarray(start);
@@ -51,9 +69,9 @@ export function splitResponse(response: Float64Array[], sampleRate: number): Flo
   }));
 }
 
-/** Of the energy that is not the direct sound, the share arriving before each reference point (0 to 1). */
-export function reflectionShares(response: Float64Array[], sampleRate: number): Record<ReferenceKey, number> {
-  const energies = splitResponse(response, sampleRate).map(part => part.reduce((sum, channel) => sum + channel.reduce((e, value) => e + value * value, 0), 0));
+/** Of the energy of a split response that is not the direct sound, the share arriving before each reference point (0 to 1). */
+export function reflectionShares(parts: Float64Array[][]): Record<ReferenceKey, number> {
+  const energies = parts.map(part => part.reduce((sum, channel) => sum + channel.reduce((e, value) => e + value * value, 0), 0));
   const reflected = energies.slice(1).reduce((sum, energy) => sum + energy, 0);
   let early = 0;
   const shares = {} as Record<ReferenceKey, number>;

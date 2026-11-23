@@ -66,6 +66,11 @@ describe('audio lab: runs', () => {
     assert.equal(row('level-movement-direct').before, 0);
     assert.ok(row('tail-level').after < row('tail-level').before - 8);
     assert.equal(row('tail-level').higherIsBetter, false);
+    // The tail is the late reverb: before the effect it is the room's sound behind the 50 ms cut, heard in the pauses.
+    assert.match(row('tail-level').label, /^Late reverb in pause tails \(after the first 50 ms/);
+    assert.ok(row('tail-level').before < row('room-level-50ms').before);
+    assert.equal(row('estoi-50ms').unit, '');
+    assert.equal(row('word-ending-level-direct').label, 'Speech in the last 60 ms before a pause (direct sound)');
     assert.equal(row('voice-level-direct').higherIsBetter, true);
   });
 
@@ -75,6 +80,17 @@ describe('audio lab: runs', () => {
     const rows = measure(material, await light.run(material.mix));
     assert.deepEqual(ids({ metrics: rows }).filter(id => !id.startsWith('band-')), ['voice-level-direct', 'word-ending-level-direct', 'level-movement-direct', 'estoi-direct', 'srmr', 'loudness']);
     assert.ok(Math.abs(rows.find(row => row.id === 'estoi-direct')!.before - 1) < 1e-9, 'an untouched dry voice is fully intelligible');
+  });
+
+  it('judges a clip with sound on one side only by that side', async () => {
+    const voice = syntheticVoice(2);
+    const material = { id: 'right-only', label: 'right-only', mix: { sampleRate: 48000, channels: [new Float32Array(voice.length), voice] } };
+    const strong = LAB_EFFECTS.find(effect => effect.id === 'echo-strong')!;
+    const rows = measure(material, await strong.run(material.mix));
+    const srmr = rows.find(row => row.id === 'srmr')!;
+    assert.ok(Number.isFinite(srmr.before) && Number.isFinite(srmr.after), `SRMR ${srmr.before} to ${srmr.after}`);
+    const both = measure({ ...material, mix: { sampleRate: 48000, channels: [voice, voice] } }, await strong.run({ sampleRate: 48000, channels: [voice, voice] }));
+    assert.ok(Math.abs(both.find(row => row.id === 'srmr')!.before - srmr.before) < 1e-9, 'the silent side does not change the score');
   });
 
   it('rejects an effect it does not know and names the ones it does', async () => {
@@ -87,8 +103,11 @@ describe('audio lab: runs', () => {
     const input = Float32Array.from({ length: 20000 }, next);
     const delayed = new Float32Array(21000);
     delayed.set(input.map(value => 0.5 * value), 288);
-    assert.equal(latencyOf(input, delayed, 960), 288);
-    assert.equal(latencyOf(input, input, 960), 0);
+    assert.equal(latencyOf([input], [delayed], 960), 288);
+    assert.equal(latencyOf([input], [input], 960), 0);
+    // Sound on the right only: the silent left channel must not vote for "no delay".
+    const silent = new Float32Array(21000);
+    assert.equal(latencyOf([silent.subarray(0, 20000), input], [silent, delayed], 960), 288);
   });
 
   it('prints one line per metric with its change, and each note once', () => {

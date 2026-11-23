@@ -29,8 +29,31 @@ describe('audio lab: early/late split', () => {
   it('measures from the first arrival, the earliest across channels', () => {
     const late = new Float64Array(at(200));
     late[at(4)] = 1;
-    assert.equal(firstArrival([response()]), at(3));
-    assert.equal(firstArrival([late, response()]), at(3));
+    assert.equal(firstArrival([response()], RATE), at(3));
+    assert.equal(firstArrival([late, response()], RATE), at(3));
+  });
+
+  it('finds a direct sound that is weaker than the reflection behind it', () => {
+    // An off-axis talker in front of a wall: the direct tap is 11 dB under the wall's.
+    const h = new Float64Array(at(200));
+    h[at(3)] = 0.22;
+    h[at(45)] = 0.77;
+    assert.equal(firstArrival([h], RATE), at(3));
+    const parts = splitResponse([h], RATE);
+    assert.ok(Math.abs(parts[0][0][at(1)] - 0.22) < 1e-12, 'the weak tap is the direct sound');
+    assert.ok(Math.abs(parts[3][0][at(43)] - 0.77) < 1e-12, 'and the wall is a reflection 42 ms later');
+    // Below 20 dB under the peak the search cannot tell an arrival from noise: the material has to say.
+    h[at(3)] = 0.05;
+    assert.equal(firstArrival([h], RATE), at(45));
+    const stated = splitResponse([h], RATE, at(3));
+    assert.ok(Math.abs(stated[0][0][at(1)] - 0.05) < 1e-12 && Math.abs(stated[3][0][at(43)] - 0.77) < 1e-12, 'a stated arrival wins over the search');
+  });
+
+  it('takes a band-limited arrival at its peak, not at the ripple ahead of it', () => {
+    // A windowed sinc as resampling leaves it: side lobes of 22 % and 13 % of the peak lead the main lobe.
+    const h = new Float64Array(at(20));
+    for (let i = -30; i <= 30; i++) h[at(5) + i] = i === 0 ? 1 : Math.sin(Math.PI * i / 3) / (Math.PI * i / 3) * (0.5 + 0.5 * Math.cos(Math.PI * i / 30));
+    assert.equal(firstArrival([h], RATE), at(5));
   });
 
   it('cuts a response into parts that keep their place and add up to it', () => {
@@ -48,7 +71,7 @@ describe('audio lab: early/late split', () => {
   });
 
   it('states how much of the reflected energy each point counts as early', () => {
-    const shares = reflectionShares([response()], RATE);
+    const shares = reflectionShares(splitResponse([response()], RATE));
     assert.equal(shares.direct, 0);
     assert.ok(Math.abs(shares['10ms'] - 0.2) < 1e-12);
     assert.ok(Math.abs(shares['20ms'] - 0.5) < 1e-12);

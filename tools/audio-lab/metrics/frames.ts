@@ -14,7 +14,11 @@ export type Frames = {
   speech: Uint8Array;
   /** 50 to 300 ms after the voice stopped, while it stays silent: the direct sound and first reflections of the last word are gone and what sounds is the room. */
   tail: Uint8Array;
-  /** The last 60 ms of speech before a pause of at least 100 ms: where words fade out and a gate bites first. */
+  /**
+   * Speech in the last 60 ms before a pause of at least 100 ms: where words fade out and a gate
+   * bites first. A short closure inside those 60 ms is not speech and is left out; the speech on
+   * its far side still counts.
+   */
   wordEnding: Uint8Array;
 };
 
@@ -25,12 +29,18 @@ const ENDING_PAUSE = 0.1;
 
 const levels = (grid: Grid): Float64Array => framePower(grid, voiceBand(grid)).map(dB);
 
-/** A clean voice speaks in the frames within 40 dB of its loud ones (the 95th percentile of its level). */
+/** Below this no frame is speech: a reference that never rises above it is silence, not a quiet voice. */
+const SILENCE_DBFS = -100;
+
+/**
+ * A clean voice speaks in the frames within 40 dB of its loud ones (the 95th percentile of its
+ * level). A silent reference has no loud frames and so no speech.
+ */
 export function speechInDryVoice(grid: Grid): Uint8Array {
   const level = levels(grid);
   const sorted = Float64Array.from(level).sort();
   const loud = sorted[Math.min(sorted.length - 1, Math.floor(0.95 * sorted.length))];
-  return Uint8Array.from(level, value => (value > loud - 40 ? 1 : 0));
+  return Uint8Array.from(level, value => (value > loud - 40 && value > SILENCE_DBFS ? 1 : 0));
 }
 
 /**
@@ -59,7 +69,7 @@ export function describeFrames(speech: Uint8Array, frameHz: number): Frames {
     if (sinceStop >= tailFrom && sinceStop <= tailTo) tail[m] = 1;
     const stops = speech[m] && m + 1 < frames && !speech[m + 1];
     if (stops && m + endingPause < frames && speech.subarray(m + 1, m + 1 + endingPause).every(value => value === 0)) {
-      wordEnding.fill(1, Math.max(0, m - ending), m + 1);
+      wordEnding.fill(1, Math.max(0, m + 1 - ending), m + 1);
     }
   }
   for (let m = 0; m < frames; m++) if (!speech[m]) wordEnding[m] = 0;

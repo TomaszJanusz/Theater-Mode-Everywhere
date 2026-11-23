@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { loadMaterial } from './load-material';
+import { resample } from './metrics/resample';
 import { SYNTHETIC_IDS, syntheticMaterial, syntheticVoice } from './synthetic';
 import { noise } from './test-utils/signals';
 import type { Signal } from './types';
-import { writeWav } from './wav';
+import { readWav, writeWav } from './wav';
 
 const energy = (samples: Float32Array) => samples.reduce((sum, value) => sum + value * value, 0);
 const errorDb = (test: Float32Array, reference: Float32Array) => 10 * Math.log10(energy(test.map((value, i) => value - reference[i])) / energy(reference));
@@ -31,6 +33,15 @@ describe('audio lab: material', () => {
   writeWav(join(directory, 'dry.wav'), mono(dry));
   writeWav(join(directory, 'ir.wav'), mono(response));
   writeWav(join(directory, 'music-mix.wav'), { sampleRate: rate, channels: [dry.map((value, i) => 0.5 * value + music[i]), dry.map((value, i) => 0.25 * value - music[i])] });
+  // An off-axis talker in front of a wall: the direct sound is weaker than the reflection 42 ms behind it.
+  const taps = (direct: number) => {
+    const wall = new Float32Array(1600);
+    wall[40] = direct;
+    wall[40 + 0.042 * rate] = 0.77;
+    return wall;
+  };
+  writeWav(join(directory, 'wall-ir.wav'), mono(taps(0.22)));
+  writeWav(join(directory, 'faint-ir.wav'), mono(taps(0.04)));
   writeFileSync(join(directory, 'manifest.json'), JSON.stringify({
     entries: [
       { id: 'dry', kind: 'speech', file: 'dry.wav', sha256: 'ignored' },
@@ -38,6 +49,10 @@ describe('audio lab: material', () => {
       { id: 'ir', file: 'ir.wav' },
       { id: 'room', file: 'room.wav', dry: 'dry', impulseResponse: 'ir' },
       { id: 'over-music', file: 'music-mix.wav', dry: 'dry' },
+      { id: 'wall-ir', file: 'wall-ir.wav' },
+      { id: 'wall', file: 'wall.wav', dry: 'dry', impulseResponse: 'wall-ir' },
+      { id: 'faint-ir', file: 'faint-ir.wav', directArrivalSample: 40 },
+      { id: 'faint', dry: 'dry', impulseResponse: 'faint-ir' },
       { id: 'fetched', cache: true },
       { id: 'broken', file: 'dry.wav', dry: 'missing' }
     ]
@@ -80,18 +95,23 @@ describe('audio lab: material', () => {
     assert.ok(room && voice);
     assert.equal(voice.length, dry.length * 3);
     assert.equal(mix.channels[0].length, voice.length);
-    // The response's own delay is removed: the direct sound is the dry voice itself, scaled, about 1 ms in (the kept rise).
-    const whole = room.parts[0].channels[0];
-    const errors = [47, 48, 49, 50].map(delay => {
-      const direct = whole.subarray(delay);
-      const gain = direct.reduce((sum, value, i) => sum + value * voice[i], 0) / energy(voice);
-      return errorDb(direct.map(value => value / gain), voice.subarray(0, direct.length));
-    });
-    assert.ok(Math.min(...errors) < -30, `direct sound is the dry voice (${errors.map(error => error.toFixed(0)).join(', ')} dB)`);
-    const direct = whole;
+    // The response's own delay is removed: the direct sound is the dry voice itself, scaled, on the same samples.
+    const direct = room.parts[0].channels[0];
+    const gain = direct.reduce((sum, value, i) => sum + value * voice[i], 0) / energy(voice);
+    assert.ok(errorDb(direct.map(value => value / gain), voice) < -30, `direct sound is the dry voice (${errorDb(direct.map(value => value / gain), voice).toFixed(0)} dB)`);
     assert.ok(energy(room.parts[1].channels[0]) < 1e-6 * energy(direct), 'nothing arrives in the first 10 ms');
     assert.ok(Math.abs(energy(room.parts[2].channels[0]) / energy(direct) - 0.25) < 0.02, 'the 15 ms reflection is 12 dB down');
     assert.ok(Math.abs(room.shares['20ms'] - 0.16 / 0.25) < 0.02 && room.shares['50ms'] === room.shares['20ms']);
+  });
+
+  it('keeps a direct sound that is weaker than a wall reflection, by search or from the manifest', () => {
+    for (const [id, direct] of [['wall', 0.22], ['faint', 0.04]] as const) {
+      const { room } = loadMaterial(id, directory);
+      assert.ok(room);
+      const [first, , , wall] = room.parts.map(part => energy(part.channels[0]));
+      assert.ok(Math.abs(first / wall - (direct / 0.77) ** 2) < 0.1 * (direct / 0.77) ** 2, `${id}: direct sound is ${(10 * Math.log10(first / wall)).toFixed(1)} dB under the wall`);
+      assert.ok(room.shares['50ms'] > 0.99 && room.shares['20ms'] < 0.01, `${id}: the wall is a reflection between 20 and 50 ms`);
+    }
   });
 
   it('finds the dry voice in a mix with other sound, at the gain it has in each channel', () => {
@@ -109,6 +129,27 @@ describe('audio lab: material', () => {
     assert.equal(material.mix.channels[0].length, dry.length * 3);
     assert.throws(() => loadMaterial('no-such-clip', directory), /Unknown material 'no-such-clip'.*synthetic-dry.*over-music/s);
     assert.throws(() => loadMaterial('broken', directory), /refers to 'missing'/);
+    const invalid = mkdtempSync(join(directory, 'invalid-'));
+    writeFileSync(join(invalid, 'manifest.json'), JSON.stringify({ entries: [{ id: 'ir', file: 'ir.wav', directArrivalSample: -1.5 }] }));
+    assert.throws(() => loadMaterial('ir', invalid), /directArrivalSample of 'ir' must be a sample index/);
     assert.throws(() => loadMaterial('fetched', directory), /Material 'fetched' has no audio at .*theater-everywhere.audio-lab.fetched\.wav/);
   });
+
+  // The committed corpus (PR #484) freezes each room as a WAV on the dry voice's timeline; the lab
+  // rebuilds the room from its parts and must land on the same samples.
+  const corpus = fileURLToPath(new URL('./corpus/', import.meta.url));
+  const frozen = existsSync(join(corpus, 'manifest.json'));
+  for (const id of ['wall-reflection', 'room-rt080']) {
+    it(`rebuilds the corpus room ${id} on the timeline of its frozen WAV`, { skip: frozen ? false : 'the corpus is not in this checkout' }, () => {
+      const { mix, room } = loadMaterial(id);
+      assert.ok(room);
+      const file = readWav(join(corpus, `${id}.wav`));
+      const reference = Float32Array.from(resample(file.channels[0], file.sampleRate, mix.sampleRate));
+      const rebuilt = mix.channels[0];
+      const cross = rebuilt.reduce((sum, value, i) => sum + value * reference[i], 0);
+      const correlation = cross / Math.sqrt(energy(rebuilt) * energy(reference));
+      assert.ok(correlation > 0.99, `correlation with the frozen WAV at zero lag: ${correlation.toFixed(3)}`);
+      assert.ok(energy(room.parts[0].channels[0]) > 0.01 * energy(rebuilt), 'the direct sound is there');
+    });
+  }
 });

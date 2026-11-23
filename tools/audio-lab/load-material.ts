@@ -26,6 +26,20 @@ function toMono(signal: Signal): Float32Array {
   return Float32Array.from(channels[0], (_, i) => channels.reduce((sum, channel) => sum + channel[i], 0) / channels.length);
 }
 
+/**
+ * Resampling spreads a response's first sample into the samples before it. A response that starts
+ * with its direct sound gets room for that in front, or the direct sound comes out lopsided.
+ */
+const LEAD_IN = 64;
+const withLeadIn = (signal: Signal): Signal => ({
+  sampleRate: signal.sampleRate,
+  channels: signal.channels.map(channel => {
+    const out = new Float32Array(channel.length + LEAD_IN);
+    out.set(channel, LEAD_IN);
+    return out;
+  })
+});
+
 /** The dry voice as it sits in each channel of a mix: its least-squares gain, the rest being uncorrelated. */
 function voiceInMix(mix: Signal, dry: Float32Array): Signal {
   const own = dry.reduce((sum, value) => sum + value * value, 0);
@@ -42,8 +56,9 @@ function voiceInMix(mix: Signal, dry: Float32Array): Signal {
 /**
  * What the lab reads from a corpus manifest entry; the corpus owns the file and its other fields.
  * `dry` and `impulseResponse` name other entries. An entry of kind `speech` is its own dry voice.
+ * An impulse response may state the sample (of its own file) at which the direct sound arrives.
  */
-type Entry = { id: string; kind?: string; label?: string; file?: string; dry?: string; impulseResponse?: string };
+type Entry = { id: string; kind?: string; label?: string; file?: string; dry?: string; impulseResponse?: string; directArrivalSample?: number };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
@@ -57,7 +72,11 @@ function readManifest(directory: string): Entry[] {
   return entries.map((entry: unknown) => {
     const id = isRecord(entry) ? text(entry.id) : undefined;
     if (!isRecord(entry) || !id) throw new Error(`${path}: an entry has no id`);
-    return { id, kind: text(entry.kind), label: text(entry.label), file: text(entry.file), dry: text(entry.dry), impulseResponse: text(entry.impulseResponse) };
+    const arrival = entry.directArrivalSample;
+    if (arrival !== undefined && !(typeof arrival === 'number' && Number.isInteger(arrival) && arrival >= 0)) {
+      throw new Error(`${path}: directArrivalSample of '${id}' must be a sample index`);
+    }
+    return { id, kind: text(entry.kind), label: text(entry.label), file: text(entry.file), dry: text(entry.dry), impulseResponse: text(entry.impulseResponse), directArrivalSample: arrival };
   });
 }
 
@@ -72,16 +91,20 @@ function entryAudio(entry: Entry, directory: string): Signal {
 }
 
 function fromManifest(entry: Entry, { entries, directory }: Corpus): Material {
-  const audioOf = (id: string) => {
+  const find = (id: string) => {
     const found = entries.find(other => other.id === id);
     if (!found) throw new Error(`Material '${entry.id}' refers to '${id}', which the manifest does not list`);
-    return entryAudio(found, directory);
+    return found;
   };
   const label = entry.label ?? entry.id;
   const dryId = entry.dry ?? (entry.kind === 'speech' ? entry.id : undefined);
-  const dry = dryId ? toMono(audioOf(dryId)) : undefined;
+  const dry = dryId ? toMono(entryAudio(find(dryId), directory)) : undefined;
   if (dry && entry.impulseResponse) {
-    return { id: entry.id, label, dry, ...buildRoom(dry, atLabRate(audioOf(entry.impulseResponse)), LAB_RATE) };
+    const response = find(entry.impulseResponse);
+    const audio = withLeadIn(entryAudio(response, directory));
+    const stated = response.directArrivalSample;
+    const arrival = stated === undefined ? undefined : (stated + LEAD_IN) * LAB_RATE / audio.sampleRate;
+    return { id: entry.id, label, dry, ...buildRoom(dry, atLabRate(audio), arrival) };
   }
   const mix = toStereo(entryAudio(entry, directory));
   return { id: entry.id, label, mix, dry, voice: dry ? voiceInMix(mix, dry) : undefined };

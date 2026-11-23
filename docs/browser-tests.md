@@ -154,17 +154,25 @@ in the extension.
   stereo first, and the output is aligned with the input (latency removed).
 - **Rows:** what can be measured depends on what the material knows. A room built from
   a dry voice and an impulse response gives the voice and the room's sound separately,
-  at each reference point (direct sound, first 10, 20 and 50 ms). A dry voice over
-  other sound gives the voice and that sound. A bare clip gives rows for the whole mix
-  only (`-mix`), which describe the mix and not a room. Notes under the table say what
-  a row cannot tell (SRMR in particular).
-- **`--json`** writes the whole run (aligned samples and rows) for `pnpm audio:report`.
+  at each reference point (direct sound, first 10, 20 and 50 ms); its tail row is the
+  late reverb (behind the 50 ms cut) in the pauses. A dry voice over other sound gives
+  the voice and that sound. A bare clip gives rows for the whole mix only (`-mix`),
+  which describe the mix and not a room. Notes under the table say what a row cannot
+  tell (SRMR in particular). ESTOI and SRMR are taken per channel and averaged over the
+  channels that have sound.
+- **Corpus rooms:** a manifest entry with `dry` and `impulseResponse` is rebuilt from
+  those two on the dry voice's timeline. The lab finds the direct sound as the first
+  arrival within 20 dB of the response's peak; an impulse-response entry whose direct
+  sound is weaker than that states it as `directArrivalSample` (index in its own file).
+- **`--json`** writes the whole run (aligned samples and rows); `pnpm audio:report`
+  turns that file into the HTML and PNG report.
 
 When changing the echo-reduction DSP or its presets:
 
 1. Run the gate: `pnpm test tools/audio-lab/echo-gate.test.ts`. It holds voice loss,
-   word-ending loss, level movement and tail drop on the built-in rooms to the limits
-   in that file, in node, with no browser and no audio files.
+   word-ending loss, level movement, tail drop and the distance between Light and
+   Strong on the built-in rooms to the limits in that file, in node, with no browser
+   and no audio files.
 2. Run `pnpm audio:lab echo-light <material>` and `echo-strong` on the rooms the change
    is about, on the base commit and on the change, and compare the tables.
 3. If a limit has to move, move it in the same PR and state the measured values there.

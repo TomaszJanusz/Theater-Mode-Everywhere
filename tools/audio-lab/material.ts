@@ -4,7 +4,7 @@
  * instead of about the whole mix. Everything is 48 kHz stereo: the echo DSP's 1024-sample frame
  * is only what ships at playback rates, so slower material is resampled before any effect runs.
  */
-import { reflectionShares, splitResponse, type ReferenceKey } from './metrics/early-late';
+import { firstArrival, leadOf, reflectionShares, splitResponse, type ReferenceKey } from './metrics/early-late';
 import { convolveAll } from './metrics/fft';
 import type { Signal } from './types';
 
@@ -31,11 +31,19 @@ export type Material = {
   voice?: Signal;
 };
 
-/** The dry voice convolved with each part of the room's response (one or two channels), peak 0.5. */
-export function buildRoom(dry: Float32Array, response: Float64Array[], sampleRate: number): { mix: Signal; room: Room } {
-  const split = splitResponse(response, sampleRate);
+/**
+ * The dry voice convolved with each part of the room's response (one or two channels), peak 0.5,
+ * on the dry voice's timeline: the direct sound sits where the dry voice does. `arrival` is the
+ * sample of the response at which the direct sound arrives; without it the lab looks for it.
+ */
+export function buildRoom(dry: Float32Array, response: Float64Array[], arrival = firstArrival(response, LAB_RATE)): { mix: Signal; room: Room } {
+  const split = splitResponse(response, LAB_RATE, arrival);
+  // The parts keep the direct sound's rise, which would delay them against the dry voice by as much.
+  const lead = leadOf(arrival, LAB_RATE);
   const kernels = [0, 1].flatMap(channel => split.map(part => part[Math.min(channel, response.length - 1)]));
-  const convolved = convolveAll(dry, kernels);
+  const padded = new Float32Array(dry.length + lead);
+  padded.set(dry);
+  const convolved = convolveAll(padded, kernels).map(part => part.subarray(lead));
   const mix = [new Float64Array(dry.length), new Float64Array(dry.length)];
   let peak = 0;
   for (const [index, part] of convolved.entries()) {
@@ -49,10 +57,10 @@ export function buildRoom(dry: Float32Array, response: Float64Array[], sampleRat
     return out;
   };
   return {
-    mix: { sampleRate, channels: mix.map(scaled) },
+    mix: { sampleRate: LAB_RATE, channels: mix.map(scaled) },
     room: {
-      parts: split.map((_, part) => ({ sampleRate, channels: [scaled(convolved[part]), scaled(convolved[split.length + part])] })),
-      shares: reflectionShares(response, sampleRate)
+      parts: split.map((_, part) => ({ sampleRate: LAB_RATE, channels: [scaled(convolved[part]), scaled(convolved[split.length + part])] })),
+      shares: reflectionShares(split)
     }
   };
 }

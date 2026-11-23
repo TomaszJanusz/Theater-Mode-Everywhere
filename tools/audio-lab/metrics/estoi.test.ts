@@ -34,6 +34,12 @@ describe('audio lab: ESTOI', () => {
     });
   }
 
+  it('is a correlation, not a share: unrelated sound scores around zero, on either side of it', () => {
+    const next = noise(10);
+    const score = estoi(dry, dry.map(() => next()), 48000);
+    assert.ok(Math.abs(score) < 0.15, `${score.toFixed(3)}`);
+  });
+
   it('has no score for less than 384 ms of speech', () => {
     assert.ok(Number.isNaN(estoi(dry.subarray(0, 9600), dry.subarray(0, 9600), 48000)));
     assert.ok(Number.isNaN(estoi(new Float32Array(48000), new Float32Array(48000), 48000)));

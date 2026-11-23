@@ -1,8 +1,10 @@
 /**
  * ESTOI (extended short-time objective intelligibility; Jensen and Taal, 2016): how well the
- * 384 ms patterns of a test signal's third-octave envelopes follow those of a reference, 0 to 1.
- * It predicts intelligibility, and it is the fairest judge of an echo reducer: it rewards a
- * clearer envelope and punishes a voice that is gated away with the reverb.
+ * 384 ms patterns of a test signal's third-octave envelopes follow those of a reference. It is a
+ * mean correlation: 1 for the reference itself, near 0 for unrelated sound, and negative when
+ * the envelopes move against the reference's. It predicts intelligibility, and it is the fairest
+ * judge of an echo reducer: it rewards a clearer envelope and punishes a voice that is gated
+ * away with the reverb.
  *
  * The score depends on the reference as much as on the test signal. Against the direct sound it
  * counts every reflection as damage; against the first 50 ms it forgives the reflections a
@@ -10,7 +12,8 @@
  *
  * A port of the reference algorithm as implemented in pystoi 0.4.1 (10 kHz, 256-sample frames,
  * 15 third-octave bands from 150 Hz, silent frames of the reference removed), without the
- * dithering noise that implementation adds, so the score is deterministic.
+ * dithering noise that implementation adds, so the score is deterministic. pystoi is MIT
+ * licensed, Copyright (c) 2018 Pariente Manuel; the notice is in `THIRD-PARTY-LICENSES.md`.
  */
 import { fft } from './fft';
 import { octaveFilter, resample } from './resample';

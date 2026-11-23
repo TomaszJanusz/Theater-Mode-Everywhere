@@ -43,6 +43,7 @@ function defaultFilter(up: number, down: number): Float64Array {
 /**
  * The filter of Octave's `resample`, which the STOI reference code uses (60 dB rejection, roll-off
  * a tenth of the stopband edge). Kept apart so ESTOI stays comparable with published scores.
+ * Ported from pystoi (MIT; see `THIRD-PARTY-LICENSES.md`).
  */
 export function octaveFilter(up: number, down: number): Float64Array {
   const rejectionDb = 60;

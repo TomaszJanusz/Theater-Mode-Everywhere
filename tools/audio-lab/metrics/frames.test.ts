@@ -44,9 +44,28 @@ describe('audio lab: frame labels', () => {
     speech.fill(0, 150);
     const labelled = describeFrames(speech, FRAME_HZ);
     assert.equal(labelled.wordEnding[49], 0, 'a short closure does not end a word');
+    const count = Math.round(0.06 * FRAME_HZ);
+    assert.equal(labelled.wordEnding.reduce((sum, value) => sum + value, 0), count, '60 ms is 11 frames, not 12');
     assert.equal(labelled.wordEnding[149], 1);
-    assert.equal(labelled.wordEnding[149 - Math.round(0.06 * FRAME_HZ)], 1);
-    assert.equal(labelled.wordEnding[149 - Math.round(0.06 * FRAME_HZ) - 1], 0);
+    assert.equal(labelled.wordEnding[150 - count], 1);
+    assert.equal(labelled.wordEnding[149 - count], 0);
+  });
+
+  it('counts only the speech of the last 60 ms when a closure falls inside them', () => {
+    const speech = new Uint8Array(200).fill(1);
+    // Speech, a 20 ms closure, 20 ms of speech, then the pause.
+    speech.fill(0, 140, 144);
+    speech.fill(0, 148);
+    const { wordEnding } = describeFrames(speech, FRAME_HZ);
+    assert.deepEqual(Array.from(wordEnding.subarray(136, 149)), [0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0]);
+  });
+
+  it('finds no speech in a silent reference instead of calling all of it speech', () => {
+    const silent = powerGrid(stereo(new Float32Array(RATE)));
+    const labelled = describeFrames(speechInDryVoice(silent), silent.frameHz);
+    for (const mask of [labelled.speech, labelled.tail, labelled.wordEnding]) assert.ok(mask.every(value => value === 0));
+    const faint = powerGrid(stereo(bursts(1).map(value => 1e-6 * value)));
+    assert.ok(speechInDryVoice(faint).every(value => value === 0), 'sound under -100 dBFS is no voice either');
   });
 
   it('reads speech from a reverberant mix only roughly, which is why a dry reference is preferred', () => {
