@@ -192,6 +192,59 @@ the real chain with the same band-level helper as `audio-graph.browser.test.ts`
 `tools/audio-charts/audio-charts.browser.test.ts` cross-checks them. Crossfade is not
 charted (it has no steady spectrum), and there is no Storybook story. It needs Chromium.
 
+### Audio lab corpus and reports
+
+Generate a comparison with the same Playwright Chromium installation used by
+`audio:charts`:
+
+```sh
+pnpm audio:lab echo-strong room-rt080 --json /tmp/audio-lab-run.json
+pnpm audio:report /tmp/audio-lab-run.json --out output/audio-lab/room-rt080
+```
+
+`audio:report` reads a full run (aligned before/after samples and metrics) and
+writes `index.html` plus four light-mode PNGs from the same report panels. The
+HTML works offline and follows the viewer's color scheme. A hand-built run can
+use numeric channel arrays in place of base64 Float32LE channels.
+
+Both spectrograms use the same log-frequency axis and −90 to 0 dBFS palette.
+They show Hann-windowed bin amplitudes with channel powers averaged and a
+maximum held across each time/frequency cell. The waveform envelopes keep
+the minimum and maximum over all channels in each time bin. The tail view
+plots 20 ms RMS over the final 1.5 seconds on the same absolute time axis.
+When investigating a decay, use an excerpt that ends in that decay. The
+listening tracks use constant gains that match whole-excerpt, channel-average
+RMS downward with at least 1 dB of sample-peak headroom. The metrics and
+charts use the original signals.
+
+The [corpus manifest](../tools/audio-lab/corpus/manifest.json) records clip
+provenance, the dry reference, impulse responses, duration and SHA-256.
+Regenerate the committed WAVs with Python, NumPy 2.5.5 and Flite 2.2 (Ubuntu
+`libflite1`, CMU US English RMS voice). Use `--out <dir>` to compare a fresh
+generation against the manifest without replacing the checked-in fixtures.
+
+```sh
+uv run --no-project --with numpy==2.5.5 \
+  python tools/audio-lab/corpus/generate.py --out /tmp/audio-lab-corpus
+```
+
+The external excerpts (`youtube-echo`, 2:13–2:17, and `iron-man`, 2:10–2:30)
+use the original English Opus track of the same YouTube video. With Node on
+your path, fetch and verify both excerpts:
+
+```sh
+uv run --no-project --with yt-dlp==2026.10.26 --with yt-dlp-ejs==0.8.0 \
+  --with imageio-ffmpeg==0.8.1 python tools/audio-lab/corpus/fetch.py
+```
+
+The checksums were frozen with yt-dlp 2026.10.26 and FFmpeg 9.0.2
+(`imageio-ffmpeg` 0.8.1). yt-dlp uses the pinned local EJS package with Node.
+It verifies the decoded WAV bytes before caching the clip. The lab
+looks for them under `${XDG_CACHE_HOME:-$HOME/.cache}/theater-everywhere/audio-lab`.
+Use a WAV path as the material if you chose a different `--cache-dir`.
+Keep those WAVs and any HTML or run JSON that embeds them outside the
+repository. Use committed fixtures for PR report images.
+
 ## CI browser image
 
 The Chromium lanes, the Firefox lane and smoke run as job containers (`container:` in

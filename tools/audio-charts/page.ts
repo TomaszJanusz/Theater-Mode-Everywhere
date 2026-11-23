@@ -1,3 +1,4 @@
+import { chartDocument, escapeHtml as escape, logFraction } from './plot';
 import type { Panel } from './spectra';
 
 const W = 720, H = 340;
@@ -6,10 +7,9 @@ const F_MIN = 20, F_MAX = 20000, DB_MIN = -90, DB_MAX = 0;
 export const DIALOGUE_BAND: [number, number] = [300, 3400];
 export const MARKERS = [{ hz: 80, label: '80 Hz bass' }, { hz: 440, label: '440' }, { hz: 880, label: '880' }];
 
-const x = (hz: number) => M.l + (Math.log10(hz / F_MIN) / Math.log10(F_MAX / F_MIN)) * (W - M.l - M.r);
+const x = (hz: number) => M.l + logFraction(hz, F_MIN, F_MAX) * (W - M.l - M.r);
 const y = (level: number) => M.t + ((DB_MAX - Math.max(level, DB_MIN)) / (DB_MAX - DB_MIN)) * (H - M.t - M.b);
 const n = (value: number) => value.toFixed(1);
-const escape = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 function axes(): string {
   const grid: string[] = [];
@@ -70,6 +70,6 @@ table{border-collapse:collapse;margin-top:8px;font-size:12px;font-variant-numeri
 .legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted)}.key i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:currentColor}.signal{margin-left:auto}`;
 
 export function renderPage(panels: Panel[]): string {
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audio effects: spectrum before and after</title><style>${STYLE}</style>
-<main><h1>Audio effects: spectrum before and after</h1><p>Test tones rendered offline through the real audio chain (<code>createAudioChain</code>). Same scale for every chart: ${F_MIN}–${F_MAX} Hz, ${DB_MIN}…${DB_MAX} dBFS per tone.</p>${panels.map(chart).join('')}</main></html>\n`;
+  return chartDocument('Audio effects: spectrum before and after', STYLE,
+    `<main><h1>Audio effects: spectrum before and after</h1><p>Test tones rendered offline through the real audio chain (<code>createAudioChain</code>). Same scale for every chart: ${F_MIN}–${F_MAX} Hz, ${DB_MIN}…${DB_MAX} dBFS per tone.</p>${panels.map(chart).join('')}</main>`);
 }
