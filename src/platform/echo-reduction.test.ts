@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, it } from 'node:test';
 import { echoStage, type EchoCommand, type EchoLoader } from './echo-reduction';
 
 class Param {
-  value = 0;
+  // A gain node passes its input until told otherwise.
+  value = 1;
   cancelScheduledValues() {}
   setValueAtTime(value: number) { this.value = value; }
   linearRampToValueAtTime(value: number) { this.value = value; }
@@ -34,7 +35,7 @@ class FakeWorkletNode extends Node {
 
 /** A suspended context: crossfades settle at once, so reachability shows the effective state. */
 function context() {
-  return Object.assign(new EventTarget(), { currentTime: 0, state: 'suspended', createGain: () => new Node() });
+  return Object.assign(new EventTarget(), { currentTime: 0, sampleRate: 48000, state: 'suspended', createGain: () => new Node() });
 }
 
 function deferred() {
@@ -57,7 +58,18 @@ function setup(loader?: EchoLoader) {
     visit(stage.input as unknown as Node);
     return seen.has(node);
   };
-  return { stage, reaches, unavailable: () => unavailable };
+  /** Whether sound entering the stage can come out: a path to its output on which no gain is zero. */
+  const audible = () => {
+    const seen = new Set<Node>();
+    const visit = (next: Node) => {
+      if (seen.has(next) || next.gain.value === 0) return;
+      seen.add(next);
+      next.outputs.forEach(visit);
+    };
+    visit(stage.input as unknown as Node);
+    return seen.has(stage.output as unknown as Node);
+  };
+  return { stage, reaches, audible, unavailable: () => unavailable };
 }
 
 describe('echo reduction stage', () => {
@@ -107,6 +119,25 @@ describe('echo reduction stage', () => {
     node.reply(true);
     assert.equal(loader.calls, 1, 'no retry on the same page');
     assert.equal(reaches(node), false);
+    assert.equal(unavailable(), 1);
+  });
+
+  it('goes back to the dry path when the processor fails while the effect is on', async () => {
+    const { loader, resolve } = deferred();
+    const { stage, reaches, audible, unavailable } = setup(loader);
+    stage.set('strong');
+    resolve(new ArrayBuffer(8));
+    await flush();
+    const [node] = FakeWorkletNode.created;
+    node.reply(true);
+    assert.equal(reaches(node), true);
+    assert.equal(audible(), true, 'the effect is in the path');
+    node.onprocessorerror?.();
+    assert.equal(unavailable(), 1);
+    assert.equal(reaches(node), false, 'the dead node is out of the graph');
+    assert.equal(audible(), true, 'and the sound still gets through, dry');
+    stage.set('light');
+    assert.equal(audible(), true, 'whatever level is chosen afterwards');
     assert.equal(unavailable(), 1);
   });
 

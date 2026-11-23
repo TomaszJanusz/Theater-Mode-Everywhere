@@ -9,6 +9,7 @@ import { ECHO_PROCESSOR, type EchoCommand } from './echo-reduction';
 import { ECHO_PRESETS } from './echo-reduction-presets';
 
 declare const sampleRate: number;
+declare const currentFrame: number;
 declare class AudioWorkletProcessor {
   readonly port: MessagePort;
 }
@@ -30,6 +31,8 @@ class EchoReductionProcessor extends AudioWorkletProcessor {
   private buffers: Float32Array[] = [];
   private configured = false;
   private idle = true;
+  // The frame the next quantum starts at while this node renders without a break.
+  private next = -1;
 
   constructor() {
     super();
@@ -60,6 +63,10 @@ class EchoReductionProcessor extends AudioWorkletProcessor {
   process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     const input = inputs[0];
     const output = outputs[0];
+    // A disconnected node is not always called with an empty input: Chromium stops calling it at all.
+    // A gap in the frame count is the same pause.
+    if (currentFrame !== this.next) this.idle = true;
+    this.next = currentFrame + QUANTUM;
     // No input means the stage is off and disconnected; outputs stay silent.
     if (!input?.length || !output?.length) {
       this.idle = true;

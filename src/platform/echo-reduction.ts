@@ -5,6 +5,8 @@ import { createAudioCrossfade } from './audio-crossfade';
 import type { EchoLevel } from './echo-reduction-presets';
 
 export const ECHO_PROCESSOR = 'theater-echo-reduction';
+// The DSP answers 896 samples late, and a connection takes effect up to a few render quanta after it is made.
+const WARMUP_FRAMES = 896 + 3 * 128;
 
 /**
  * MAIN to worklet: the WebAssembly bytes once (compiled there, under the page's CSP), then levels.
@@ -40,13 +42,14 @@ export function createEchoLoader(workletUrl: () => string | null): EchoLoader {
 /**
  * The first stage of the chain. It stays dry until the worklet has compiled the DSP, so a level chosen
  * meanwhile starts with its fade-in once ready. A failure (a CSP without 'wasm-unsafe-eval', no
- * AudioWorklet, a revoked extension URL) reports `onUnavailable` and leaves the stage dry for good.
+ * AudioWorklet, a revoked extension URL, a processor that throws) reports `onUnavailable` and leaves
+ * the stage dry for good.
  * While off, the worklet node is disconnected and returns at once.
  */
 export function echoStage(ctx: BaseAudioContext, support: EchoSupport | undefined) {
   const entry = ctx.createGain();
   const exit = ctx.createGain();
-  const fade = createAudioCrossfade(ctx, { input: entry, output: exit });
+  const fade = createAudioCrossfade(ctx, { input: entry, output: exit, latency: WARMUP_FRAMES / ctx.sampleRate });
   let level: AudioSettings['echo'] = 'off';
   let node: AudioWorkletNode | undefined;
   let started = false;
@@ -64,6 +67,8 @@ export function echoStage(ctx: BaseAudioContext, support: EchoSupport | undefine
   const fail = () => {
     if (done) return;
     stop();
+    // A processor that dies while the effect is on leaves the wet path with nothing in it: back to dry.
+    fade.setActive(false);
     if (support) support.onUnavailable();
   };
   const sync = () => {
