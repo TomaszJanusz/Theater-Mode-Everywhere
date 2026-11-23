@@ -14,8 +14,8 @@ export type EchoLevel = Exclude<AudioSettings['echo'], 'off'>;
  * These are the assumptions about the room and the depth in the decay after a sound. The DSP learns
  * from the recording how far to trust them: where a band is being fed by a source it uses the decay it
  * has measured, if that is lower, and three tenths of the floor in dB (TME-279). None of it applies
- * outside the speech bands (80 Hz to 4.8 kHz) or once no syllable has been heard for about a second:
- * there the gain is 1 at both levels.
+ * outside the speech bands (80 Hz to 4.8 kHz), once no syllable has been heard for about a second,
+ * or while the level of the speech bands holds or rises: there the gain is 1 at both levels.
  * Only the worklet module reads these, so they stay out of the shared bundles.
  */
 export const ECHO_PRESETS: Record<EchoLevel, EchoPreset> = {

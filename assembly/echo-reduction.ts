@@ -28,21 +28,28 @@
 // - When even the lowest ratio of the last second stands well above `remain`, several decays in a row
 //   have contradicted it: the scene has changed, and `remain` catches up fast instead of drifting.
 //
-// Only the echo of speech is its business. Music, effects and ambience are no echo, so two limits
-// keep the gain at exactly 1 for them:
+// Only the echo of speech is its business. Music, effects and ambience are no echo, so the gain
+// stays at exactly 1 for them wherever the DSP can tell:
 // - It acts in the speech bands only, 80 Hz to 4.8 kHz: from under the lowest fundamental of a voice
 //   (a male voice reaches down to 85 Hz) to the edge of the band layout above the third formant.
-//   Below lie kick drums and rumble; above, sibilance, cymbals and air, which rooms absorb soonest.
-//   Bins outside are never computed and their gain is never written.
-// - It acts only while speech was just present. The cue is a syllable as the level of the speech
-//   bands shows it, each band weighed against its own recent peak: the level rises over the gap, as
-//   a fed band starts; it then holds for a moment; and within about half a second it falls again.
-//   A voice does that in a dry recording and in a hall. Steady or slowly moving sound never rises,
-//   a drum or a plucked string falls from its first moment, and a chord that starts and stays never
-//   falls. The gain is freed when such a syllable ends and stays free while more are heard: for
-//   0.8 s after the last one, long enough for a long word and the audible part of its tail. It
-//   returns to 1 over the next 0.4 s. An instrument that plays notes as long as syllables (a horn
-//   line, a sung one) passes for a voice, and a syllable shorter than a tenth of a second does not count.
+//   Bins outside are never computed and their gain is never written. The edges are one bin (47 Hz)
+//   wide, as any edge between bins is: a tone that close to one is carried partly by bins inside.
+// - It acts only after speech. The cue is a syllable as the level of the speech bands shows it, each
+//   band weighed against its own recent peak: the level rises over the gap, as a fed band starts,
+//   and then holds for a moment instead of falling at once. A voice does that in a dry recording
+//   and in a hall; steady or slowly moving sound never rises, and a drum or a plucked string falls
+//   from its first moment. The gain is free to fall while a syllable sounds and for 0.8 s after it,
+//   long enough for a long word and the audible part of its tail, and returns to 1 over 0.4 s more.
+// - It acts only on what falls. An echo dies away; music that plays on under a voice, or after a
+//   chord was struck over it, holds its level. So the gain is free only while the level of the
+//   speech bands is falling and for 0.1 s after. This is also what keeps the voice itself: a vowel
+//   that holds is not turned down.
+// - It acts as far as it is sure. One syllable that hardly stands out from the sound around it may
+//   be a chord accent, and gets two fifths of the depth. More of them in a row, one that lasts, or
+//   one that stands 15 dB clear of what sounded before it, get all of it.
+// None of this hears a voice. An instrument that plays notes as long as syllables, one after
+// another, passes for one; a word shorter than a tenth of a second on its own does not count; and
+// a voice under louder music moves the level too little to be found.
 //
 // Stereo shares one transform: left is the real part and right the imaginary part of one
 // complex frame. A real, conjugate-symmetric gain applied to that spectrum scales each
@@ -138,12 +145,29 @@ const SYLLABLE_SPAN: f32 = 0.012;
 // out the little of both that a note falling a bit more slowly shows.
 const CLEAR_FROM: f32 = 0.2;
 const CLEAR_SLOPE: f32 = 5;
-// A syllable is over when the smoothed change shows the level 15 % lower than before the gap (fully
-// at 35 %). By then it must not have lasted long: what a sound that rose and held still counts for
-// as a syllable falls to nothing over this many seconds. A note held for longer is not one.
+// Any hold at all keeps a syllable sounding (fully from 5 ms), until its level falls or rises
+// again, and for this many seconds at most: a note held longer is not one. It counts in full until
+// its last tenth of a second.
+const HELD_SLOPE: f32 = 200;
+const SYLLABLE_SECONDS: f32 = 2;
+const SOUNDING_SLOPE: f32 = 10;
+// The level is falling when the smoothed change shows it 15 % lower than before the gap (fully at
+// 25 %, which a room with an RT60 of 2.9 s does). The gain stays free this long after, seconds.
 const FALL_FROM: f32 = 0.85;
-const FALL_SLOPE: f32 = 5;
-const SYLLABLE_SECONDS: f32 = 0.6;
+const FALL_SLOPE: f32 = 10;
+const FALLING_SECONDS: f32 = 0.1;
+// How sure the DSP is that it hears speech, 0 to 1, with 0.3 to spare. A syllable adds two fifths,
+// or up to all of it when the speech bands are 8 to 32 times (9 to 15 dB) louder than before its
+// rise; every second it sounds adds 1.5; and every second takes 0.5 away, so that syllables more
+// than a second apart, as chord accents are, never add up. What sounded before a rise is kept
+// until a twentieth of the rise is left in memory, 0.24 s on.
+const SURE_STEP: f32 = 0.4;
+const CLEAR_OF_FROM: f32 = 8;
+const CLEAR_OF_SPAN: f32 = 24;
+const RISE_KEPT: f32 = 20;
+const SURE_RISE: f32 = 1.5;
+const SURE_FALL: f32 = 0.5;
+const SURE_TOP: f32 = 1.3;
 
 const inputLeft = memory.data(QUANTUM << 2, 16);
 const inputRight = memory.data(QUANTUM << 2, 16);
@@ -195,11 +219,17 @@ let laneTo: i32 = 0;
 // Seconds since the last syllable in the speech bands, up to the end of the fade.
 let sinceSpeech: f32 = 0;
 // The smoothed change of the speech bands' level over the gap, its latest rise, fading, for how many
-// seconds the level has held since, and how far a syllable is sounding that has not ended yet.
+// seconds the level has held since, and for how many more a syllable may sound on.
 let trend: f32 = 1;
 let risen: f32 = 0;
 let held: f32 = 0;
-let spoken: f32 = 0;
+let sounding: f32 = 0;
+// How far the level is falling or has just fallen; how sure the DSP is of speech; whether the latest
+// rise has still to be counted as a syllable; and the power of the speech bands before that rise.
+let sinking: f32 = 0;
+let sure: f32 = 0;
+let fresh: f32 = 0;
+let quietBefore: f32 = 0;
 // The sum of the bands' recent peaks (`loud`) after the previous frame.
 let peaks: f32 = 0;
 let delayFrames: i32 = 1;
@@ -277,7 +307,11 @@ function forget(): void {
   trend = 1;
   risen = 0;
   held = 0;
-  spoken = 0;
+  sounding = 0;
+  sinking = 0;
+  sure = 0;
+  fresh = 0;
+  quietBefore = 0;
   peaks = 0;
 }
 
@@ -409,11 +443,14 @@ function bandFill(base: usize, from: i32, to: i32, value: f32): void {
  * and the float64 reference cannot part ways on a tie.
  */
 function bands(past: usize): void {
-  // How far the gain may fall in this frame: 1 until `TAIL_SECONDS` after the last syllable, then down to 0.
-  const tail = unit((TAIL_SECONDS + TAIL_FADE_SECONDS - sinceSpeech) / TAIL_FADE_SECONDS);
+  // How far the gain may fall in this frame: all the way until `TAIL_SECONDS` after the last syllable
+  // and then less and less, while the level falls, as far as the DSP is sure of speech.
+  const tail = unit((TAIL_SECONDS + TAIL_FADE_SECONDS - sinceSpeech) / TAIL_FADE_SECONDS) * sinking * unit(sure);
   let level: f32 = 0;
   let before: f32 = 0;
   let recentPeaks: f32 = 0;
+  let totalNow: f32 = 0;
+  let totalWas: f32 = 0;
   for (let b = 0; b < BANDS; b++) {
     const from = load<i32>(at(bandStart, b));
     const to = load<i32>(at(bandStart, b + 1));
@@ -439,6 +476,8 @@ function bands(past: usize): void {
     const weight: f32 = 1 / (heard + now + PEAKS_SHARE * peaks + EPSILON);
     level += now * weight;
     before += was * weight;
+    totalNow += now;
+    totalWas += was;
     const still = min<f32>(unit(2 - now / (heard * QUIET + EPSILON)) * (load<f32>(at(quiet, b)) + hopTime), HOLD_SECONDS + HOLD_SPAN_SECONDS);
     store<f32>(at(quiet, b), still);
     const recent = max<f32>(was, heard * (peakFall + (loudFall - peakFall) * unit((still - HOLD_SECONDS) / HOLD_SPAN_SECONDS)));
@@ -453,21 +492,26 @@ function bands(past: usize): void {
     bandFill(floors, from, to, 1 + (floorGain + (capGain - floorGain) * source - 1) * tail);
   }
   peaks = recentPeaks;
-  // A syllable: the level of the speech bands rises as a fed band does, holds, and falls. `level` is
-  // at most `BANDS` and the divisor never zero, so the change is finite whatever the input.
+  // A syllable: the level of the speech bands rises as a fed band does, and holds. `level` is at most
+  // `BANDS` and no divisor zero, so every ratio here is finite or infinite, never undefined.
   const change = level / (before + EPSILON);
   trend += TREND_SHARE * (min<f32>(change, TREND_TOP) - trend);
   const rising = unit(trend - RISE_FROM);
-  const falling = unit((FALL_FROM - trend) * FALL_SLOPE);
   risen = max<f32>(rising * unit(level / SPEECH_GATE - 1), risen * riseFade);
   // Counted from the end of the rise, so that the quiet before a sound does not count as holding.
   held = (held + hopTime) * unit((change - HOLD_FROM) * HOLD_SLOPE) * (1 - rising);
   const syllable = unit((risen * unit((held - SYLLABLE_FROM) / SYLLABLE_SPAN) - CLEAR_FROM) * CLEAR_SLOPE);
-  spoken = max<f32>(spoken - hopTime / SYLLABLE_SECONDS, syllable);
-  // The gain is freed when a syllable ends; while it is free, each further syllable keeps it so.
-  // Half a syllable frees it for half as long, and no number of weak ones adds up to a whole.
-  const speech = max<f32>(spoken * falling, syllable * tail);
-  sinceSpeech = min<f32>(sinceSpeech, (TAIL_SECONDS + TAIL_FADE_SECONDS) * (1 - speech)) + hopTime;
+  // It sounds on while its level holds, for `SYLLABLE_SECONDS` at most (less for a weak one).
+  sounding = max<f32>(sounding - hopTime, syllable * SYLLABLE_SECONDS) * unit(held * HELD_SLOPE);
+  const spoken = unit(sounding * SOUNDING_SLOPE);
+  // Half a syllable frees the gain for half as long, and no number of weak ones adds up to a whole.
+  sinceSpeech = min<f32>(sinceSpeech, (TAIL_SECONDS + TAIL_FADE_SECONDS) * (1 - spoken)) + hopTime;
+  sinking = max<f32>(unit((FALL_FROM - trend) * FALL_SLOPE), sinking - hopTime / FALLING_SECONDS);
+  // Each rise counts once, by how far it lifted the speech bands above what sounded before it.
+  quietBefore += (1 - unit(risen * RISE_KEPT)) * (totalWas - quietBefore);
+  const step = SURE_STEP + (1 - SURE_STEP) * unit((totalNow / (quietBefore + EPSILON) - CLEAR_OF_FROM) / CLEAR_OF_SPAN);
+  sure = max<f32>(min<f32>(sure + step * syllable * fresh + hopTime * (spoken * SURE_RISE - SURE_FALL), SURE_TOP), 0);
+  fresh = max<f32>(fresh, rising) * (1 - syllable);
 }
 
 function frame(): void {
@@ -525,15 +569,14 @@ function frame(): void {
   }
   slot = (slot + 1) % HISTORY;
 
-  // [1 2 1] / 4 across frequency. An edge of the speech bands is smoothed against itself: the bin
-  // beyond it stays at 1 and would halve what the edge bin takes off, and the lowest one holds the
-  // fundamental of a low voice. The gain is even around bins 0 and N/2, which gives those edges their
-  // missing neighbour. The decision-directed estimate above keeps the unsmoothed gain.
+  // [1 2 1] / 4 across frequency. The lowest bin of the speech bands holds the fundamental of a low
+  // voice, and its neighbour below stays at 1, which would halve what that bin takes off: it is
+  // smoothed against itself. The bin above the bands counts as 1, or at N/2 as its mirror image.
+  // The decision-directed estimate above keeps the unsmoothed gain.
   const first = load<i32>(bandStart);
   const end = load<i32>(at(bandStart, BANDS));
   store<f32>(at(rawGain, first - 1), load<f32>(at(rawGain, first)));
-  store<f32>(at(rawGain, end), load<f32>(at(rawGain, end - 1)));
-  store<f32>(rawGain - 4, load<f32>(at(rawGain, 1)));
+  store<f32>(at(rawGain, end), 1);
   store<f32>(at(rawGain, (N >> 1) + 1), load<f32>(at(rawGain, (N >> 1) - 1)));
   const halfV = f32x4.splat(0.5);
   const quarterV = f32x4.splat(0.25);

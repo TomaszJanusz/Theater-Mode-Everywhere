@@ -149,17 +149,24 @@ in the extension.
   in node. `voice-*`, `bass-*` and `leveling-*` render through the real audio chain in
   Chromium (`OfflineAudioContext`), so they need the Playwright Chromium.
 - **Material:** an id from `tools/audio-lab/corpus/manifest.json`, a built-in id
-  (`synthetic-dry`, `synthetic-wall`, `synthetic-room-0.3s`, `-0.8s`, `-1.5s`,
-  `synthetic-music-sustained`, `synthetic-music-plucked`, `synthetic-room-0.8s-then-music`;
-  generated in code from fixed seeds) or a path to a WAV file. Everything is resampled to
-  48 kHz stereo first, and the output is aligned with the input (latency removed).
+  (generated in code from fixed seeds; `pnpm audio:lab` without arguments lists them)
+  or a path to a WAV file. Everything is resampled to 48 kHz stereo first, and the output
+  is aligned with the input (latency removed). The built-in ids are a voice alone and in
+  rooms (`synthetic-dry`, `synthetic-wall`, `synthetic-room-0.3s`, `-0.8s`, `-1.5s`);
+  speech an envelope can mistake (`synthetic-room-0.3s-short-words`, `-long-vowels`,
+  `-fast`, `-fast-pitched`); music without a voice (`synthetic-music-sustained`,
+  `-plucked`, `-accents`, `synthetic-applause`); and a voice with music
+  (`synthetic-room-0.8s-then-music`, `-under-music`).
 - **Rows:** what can be measured depends on what the material knows. A room built from
   a dry voice and an impulse response gives the voice and the room's sound separately,
   at each reference point (direct sound, first 10, 20 and 50 ms); its tail row is the
   late reverb (behind the 50 ms cut) in the pauses. A dry voice over other sound gives
   the voice and that sound; so does a room with music in it, with one more row for the
   music where no voice has sounded for 1.5 s. A bare clip gives rows for the whole mix
-  only (`-mix`), which describe the mix and not a room. Every material gets the level of
+  only (`-mix`), which describe the mix and not a room. Sound that should pass
+  unchanged also gets its largest dip over any 50 ms (`metrics/largest-dip.ts`): a
+  level over a whole clip hides a gain that falls by 10 dB for a fifth of a second and
+  comes back. Every material gets the level of
   the whole mix inside and outside the speech bands (`metrics/speech-bands.ts`): echo
   reduction acts inside them only, so the level outside should not change, and neither
   should the level inside on music without a voice. Notes under the table say what a
@@ -179,8 +186,9 @@ When changing the echo-reduction DSP or its presets:
 
 1. Run the gate: `pnpm test tools/audio-lab/echo-gate.test.ts`. It holds voice loss,
    word-ending loss, level movement, tail drop and the distance between Light and
-   Strong on the built-in rooms to the limits in that file, and the change to music
-   without a voice and to the level outside the speech bands to about 0 dB, in node,
+   Strong on the built-in rooms to the limits in that file; the change to music
+   without a voice, its largest dip and the level outside the speech bands; and the
+   tail drop on speech that does not look like a run of syllables. It runs in node,
    with no browser and no audio files.
 2. Run `pnpm audio:lab echo-light <material>` and `echo-strong` on the rooms and the
    music the change is about, on the base commit and on the change, and compare the

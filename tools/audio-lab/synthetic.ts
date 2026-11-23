@@ -20,16 +20,17 @@ function random(seed: number): () => number {
 
 type Syllable = { start: number; fricative: number; voiced: number; fall: number; f0: number; glide: number; formants: [number, number]; level: number };
 
-function plan(seconds: number, next: () => number): Syllable[] {
+/** Phrases of one to three syllables. `pace` 1.6 says them 1.6 times as fast at the same pitch. */
+function plan(seconds: number, next: () => number, pace: number): Syllable[] {
   const syllables: Syllable[] = [];
   let t = 0.15;
   while (t < seconds - 0.6) {
     const count = 1 + Math.floor(3 * next());
     const f0 = 95 + 80 * next();
     for (let s = 0; s < count; s++) {
-      const fricative = next() < 0.4 ? 0.04 + 0.05 * next() : 0;
-      const voiced = 0.1 + 0.16 * next();
-      const fall = 0.05 + 0.05 * next();
+      const fricative = (next() < 0.4 ? 0.04 + 0.05 * next() : 0) / pace;
+      const voiced = (0.1 + 0.16 * next()) / pace;
+      const fall = (0.05 + 0.05 * next()) / pace;
       syllables.push({
         start: t, fricative, voiced, fall, f0: f0 * (0.92 + 0.16 * next()), glide: 0.9 + 0.2 * next(),
         formants: [300 + 500 * next(), 900 + 1400 * next()],
@@ -38,17 +39,30 @@ function plan(seconds: number, next: () => number): Syllable[] {
       });
       t += fricative + voiced + 0.6 * fall;
     }
-    t += 0.18 + 0.4 * next();
+    t += (0.18 + 0.4 * next()) / pace;
+  }
+  return syllables;
+}
+
+/** One voiced sound of `length` seconds every `period`, each on its own: a word with nothing around it. */
+function alone(seconds: number, length: number, period: number, next: () => number): Syllable[] {
+  const syllables: Syllable[] = [];
+  for (let start = 0.3; start + length < seconds - 0.6; start += period) {
+    syllables.push({ start, fricative: 0, voiced: length - 0.02, fall: 0.02, f0: 105 + 60 * next(), glide: 0.95 + 0.1 * next(), formants: [300 + 500 * next(), 900 + 1400 * next()], level: 1 });
   }
   return syllables;
 }
 
 /** Mono, peak-normalised to 0.5. */
-export function syntheticVoice(seconds: number, seed = 11): Float32Array {
+export function syntheticVoice(seconds: number, seed = 11, pace = 1): Float32Array {
+  const next = random(seed);
+  return spoken(plan(seconds, next, pace), seconds, next);
+}
+
+function spoken(syllables: Syllable[], seconds: number, next: () => number): Float32Array {
   const rate = LAB_RATE;
   const out = new Float64Array(Math.round(seconds * rate));
-  const next = random(seed);
-  for (const syllable of plan(seconds, next)) {
+  for (const syllable of syllables) {
     const begin = Math.round(syllable.start * rate);
     const frication = Math.round(syllable.fricative * rate);
     let previous = 0;
@@ -232,21 +246,98 @@ function pluckedMusic(seconds: number): Signal {
   return stereoOf(left, right, 0.25);
 }
 
-type Built = { label: string; response?: (channel: number) => Float64Array; music?: (seconds: number) => Signal; voiceShare?: number };
+/**
+ * Accents over an accompaniment: a four-note chord struck every 1.6 s that holds for 180 ms and is
+ * damped, 8 dB above the sustained music it is played over. Each has the length and the shape of a
+ * syllable, and what sounds on after it is the accompaniment, not an echo.
+ */
+function chordAccents(seconds: number): Signal {
+  const length = Math.round(seconds * LAB_RATE);
+  const out = new Float64Array(length);
+  for (let begin = 1.2; begin + 0.2 < seconds; begin += 1.6) {
+    for (const hz of [220, 277.18, 329.63, 440]) {
+      for (let i = 0; i < 0.18 * LAB_RATE; i++) {
+        const t = i / LAB_RATE;
+        const envelope = Math.min(1, t / 0.008, (0.18 - t) / 0.03);
+        let tone = 0;
+        for (let h = 1; h <= 12; h++) tone += Math.sin(2 * Math.PI * h * hz * t + h) / h;
+        out[Math.round(begin * LAB_RATE) + i] += envelope * tone;
+      }
+    }
+  }
+  return stereoOf(out, out, 1);
+}
+
+/** Applause: thirty claps a second on each side, each a burst of noise around 2 kHz that dies in 10 ms. */
+function applause(seconds: number): Signal {
+  const length = Math.round(seconds * LAB_RATE);
+  const next = random(606);
+  const channels = [0, 1].map(() => {
+    const out = new Float64Array(length);
+    for (let begin = 0; begin < length; begin += Math.round(-Math.log(1 - next()) * LAB_RATE / 30) + 1) {
+      const level = 0.3 + 0.7 * next();
+      let [fast, slow] = [0, 0];
+      for (let i = 0; i < 0.06 * LAB_RATE && begin + i < length; i++) {
+        const white = 2 * next() - 1;
+        fast += 0.4 * (white - fast);
+        slow += 0.1 * (white - slow);
+        out[begin + i] += level * (fast - slow) * Math.exp(-i / (0.01 * LAB_RATE));
+      }
+    }
+    return out;
+  });
+  return stereoOf(channels[0], channels[1], 0.3);
+}
+
+const rms = (signal: Signal, to: number): number => Math.sqrt(signal.channels.reduce((sum, channel) => sum + channel.subarray(0, to).reduce((s, value) => s + value * value, 0), 0) / (signal.channels.length * to));
+const scaled = (signal: Signal, gain: number): Signal => ({ sampleRate: signal.sampleRate, channels: signal.channels.map(channel => channel.map(value => gain * value)) });
+
+/** The built-in voice said 1.6 times as fast by playing it faster, so that its pitch rises with its pace. */
+function pitchedFast(seconds: number): Float32Array {
+  const slow = syntheticVoice(1.6 * seconds);
+  return Float32Array.from({ length: Math.round(seconds * LAB_RATE) }, (_, i) => {
+    const at = Math.floor(1.6 * i);
+    const part = 1.6 * i - at;
+    return (1 - part) * slow[at] + part * (slow[at + 1] ?? 0);
+  });
+}
+
+type Built = {
+  label: string;
+  response?: (channel: number) => Float64Array;
+  /** The voice, when it is not the built-in one. */
+  voice?: (seconds: number) => Float32Array;
+  /** The share of the clip in which the voice speaks; 0 for music alone. */
+  voiceShare?: number;
+  music?: (seconds: number) => Signal;
+  /** The level of the music against the voice in its room while it speaks, dB; as generated when absent. */
+  musicDb?: number;
+  /** Sound on top of the music that is no voice either; the music is then followed as the bed. */
+  over?: (seconds: number) => Signal;
+};
+
+const SHORT_ROOM = (channel: number) => exponentialRoom(0.3, 4, 30 + channel);
+const ROOM = (channel: number) => exponentialRoom(0.8, 0, 80 + channel);
 
 const ROOMS: Record<string, Built> = {
   'synthetic-dry': { label: 'Synthetic voice, no room' },
   'synthetic-wall': { label: 'Synthetic voice, wall reflections (91 % of reflected energy within 50 ms)', response: channel => wallRoom(700 + channel) },
-  'synthetic-room-0.3s': { label: 'Synthetic voice, room RT60 0.3 s, DRR +4 dB', response: channel => exponentialRoom(0.3, 4, 30 + channel) },
-  'synthetic-room-0.8s': { label: 'Synthetic voice, room RT60 0.8 s, DRR 0 dB', response: channel => exponentialRoom(0.8, 0, 80 + channel) },
+  'synthetic-room-0.3s': { label: 'Synthetic voice, room RT60 0.3 s, DRR +4 dB', response: SHORT_ROOM },
+  'synthetic-room-0.8s': { label: 'Synthetic voice, room RT60 0.8 s, DRR 0 dB', response: ROOM },
   'synthetic-room-1.5s': { label: 'Synthetic voice, room RT60 1.5 s, DRR -4 dB', response: channel => exponentialRoom(1.5, -4, 150 + channel) },
+  // Speech that an envelope can take for something else: too short, too long or too fast to look like a syllable.
+  'synthetic-room-0.3s-short-words': { label: 'Words of 90 ms on their own, room RT60 0.3 s', response: SHORT_ROOM, voice: seconds => spoken(alone(seconds, 0.09, 1, random(21)), seconds, random(22)) },
+  'synthetic-room-0.3s-long-vowels': { label: 'Vowels held for 1.2 s, room RT60 0.3 s', response: SHORT_ROOM, voice: seconds => spoken(alone(seconds, 1.2, 2.4, random(23)), seconds, random(24)) },
+  'synthetic-room-0.3s-fast': { label: 'Synthetic voice 1.6 times as fast at the same pitch, room RT60 0.3 s', response: SHORT_ROOM, voice: seconds => syntheticVoice(seconds, 11, 1.6) },
+  'synthetic-room-0.3s-fast-pitched': { label: 'Synthetic voice played 1.6 times as fast, room RT60 0.3 s', response: SHORT_ROOM, voice: pitchedFast },
   'synthetic-music-sustained': { label: 'Sustained music, no voice', music: sustainedMusic, voiceShare: 0 },
   'synthetic-music-plucked': { label: 'Plucked and struck music, no voice', music: pluckedMusic, voiceShare: 0 },
+  'synthetic-music-accents': { label: 'Chord accents of 180 ms over sustained music, no voice', music: sustainedMusic, over: chordAccents, voiceShare: 0 },
+  'synthetic-applause': { label: 'Applause, no voice', music: applause, voiceShare: 0 },
   // The voice speaks through the first half and the music plays on alone: a passage with no speech in it.
-  'synthetic-room-0.8s-then-music': {
-    label: 'Synthetic voice in a room (RT60 0.8 s) over sustained music, then the music alone',
-    response: channel => exponentialRoom(0.8, 0, 80 + channel), music: sustainedMusic, voiceShare: 0.5
-  }
+  'synthetic-room-0.8s-then-music': { label: 'Synthetic voice in a room (RT60 0.8 s) over sustained music, then the music alone', response: ROOM, music: sustainedMusic, voiceShare: 0.5 },
+  // The music is louder than the voice it plays over: the level of the mix hardly moves when the voice speaks.
+  'synthetic-room-0.8s-under-music': { label: 'Synthetic voice in a room (RT60 0.8 s) under sustained music 2 dB louder', response: ROOM, music: sustainedMusic, musicDb: 2 }
 };
 
 export const SYNTHETIC_IDS = Object.keys(ROOMS);
@@ -254,15 +345,25 @@ export const SYNTHETIC_IDS = Object.keys(ROOMS);
 export function syntheticMaterial(id: string, seconds = 8): Material {
   const built = ROOMS[id];
   if (!built) throw new Error(`Unknown synthetic material '${id}'. Known: ${SYNTHETIC_IDS.join(', ')}`);
-  const { label, response, music, voiceShare = 1 } = built;
-  const bed = music?.(seconds);
-  if (bed && voiceShare === 0) return { id, label, mix: bed };
-  const dry = new Float32Array(Math.round(seconds * LAB_RATE));
-  dry.set(syntheticVoice(voiceShare * seconds));
+  const { label, response, music, over, musicDb, voice = syntheticVoice, voiceShare = 1 } = built;
+  const length = Math.round(seconds * LAB_RATE);
+  const played = music?.(seconds);
+  if (played && voiceShare === 0) {
+    if (!over) return { id, label, mix: played };
+    // 8 dB above the music it is played over, both measured while the accents sound.
+    const accents = over(seconds);
+    const sounding = accents.channels[0].reduce((count, value) => count + (value === 0 ? 0 : 1), 0) / length;
+    return { id, label, mix: sum([played, scaled(accents, 10 ** 0.4 * rms(played, length) * Math.sqrt(sounding) / rms(accents, length))]), bed: played };
+  }
+  const dry = new Float32Array(length);
+  dry.set(voice(voiceShare * seconds));
   if (!response) {
-    const voice = { sampleRate: LAB_RATE, channels: [dry, dry.slice()] };
-    return { id, label, mix: voice, dry, voice };
+    const alone = { sampleRate: LAB_RATE, channels: [dry, dry.slice()] };
+    return { id, label, mix: alone, dry, voice: alone };
   }
   const room = buildRoom(dry, [response(0), response(1)], 0);
-  return bed ? { id, label, dry, room: room.room, mix: sum([room.mix, bed]), bed } : { id, label, dry, ...room };
+  if (!played) return { id, label, dry, ...room };
+  const spokenLength = Math.round(voiceShare * length);
+  const bed = musicDb === undefined ? played : scaled(played, 10 ** (musicDb / 20) * rms(room.mix, spokenLength) / rms(played, spokenLength));
+  return { id, label, dry, room: room.room, mix: sum([room.mix, bed]), bed };
 }

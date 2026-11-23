@@ -18,6 +18,7 @@ import { REFERENCE_POINTS, type ReferenceKey } from './metrics/early-late';
 import { estoi } from './metrics/estoi';
 import { describeFrames, speechInDryVoice, speechInMix, type Frames } from './metrics/frames';
 import { framePower, maskedLevel, powerGrid, splitGrids, voiceBand, type Grid } from './metrics/grid';
+import { largestDip } from './metrics/largest-dip';
 import { levelMovement } from './metrics/level-movement';
 import { loudness } from './metrics/loudness';
 import { speechBandEdges, speechBandLevels } from './metrics/speech-bands';
@@ -66,6 +67,7 @@ function viewRows({ key, of, voice, room, note }: View, frames: Frames): MetricR
     if (key === LATE_CUT) rows.push({ id: 'tail-level', label: `Late reverb in pause tails (after the ${of}; 50 to 300 ms after the voice stops)`, unit: 'dBFS', ...each(room, grid => tailLevel(grid, frames)), higherIsBetter: false });
   }
   if (key === 'mix') {
+    rows.push({ id: 'largest-dip-mix', label: 'Largest drop of the level over 50 ms (whole mix)', unit: 'dB', before: 0, after: largestDip(voice.before, voice.after), higherIsBetter: false, note: 'On speech this is the echo being lowered; on music it is pumping' });
     rows.push({ id: 'tail-level-mix', label: 'Level 50 to 300 ms after speech stops (whole mix)', unit: 'dBFS', ...each(voice, grid => tailLevel(grid, frames)), note: 'Not a room measure: a dry voice over music shows the same drop as a reverberant one' });
   }
   return rows;
@@ -83,12 +85,21 @@ function bedRows(material: Material, result: EffectResult, frames: Frames): Metr
   if (derived && material.voice && speechLevel(pair.before, frames) < speechLevel(powerGrid(material.voice), frames) - 80) return [];
   const pause = Uint8Array.from(frames.speech, value => 1 - value);
   const level = (mask: Uint8Array) => each(pair, grid => maskedLevel(framePower(grid, voiceBand(grid)), mask));
+  const dip = (id: string, label: string, mask?: Uint8Array): MetricRow => ({ id, label, unit: 'dB', before: 0, after: largestDip(pair.before, pair.after, mask), higherIsBetter: false });
+  // Music with something played over it and no voice: there is no speech to tell the frames apart by.
+  if (!material.dry) {
+    return [
+      { id: 'bed-level', label: 'Accompaniment under the other sound', unit: 'dBFS', ...level(new Uint8Array(pair.before.frames).fill(1)) },
+      dip('bed-largest-dip', 'Largest drop of the accompaniment over 50 ms')
+    ];
+  }
   const rows: MetricRow[] = [
     { id: 'bed-level-speech', label: 'Other sound while the voice speaks', unit: 'dBFS', ...level(frames.speech) },
     { id: 'bed-level-pauses', label: 'Other sound in pauses', unit: 'dBFS', ...level(pause), note: 'A gap to the level while speaking is the voice pumping the sound under it' }
   ];
   if (frames.away.some(value => value === 1)) {
     rows.push({ id: 'bed-level-away', label: 'Other sound with no voice for 1.5 s', unit: 'dBFS', ...level(frames.away), note: 'No speech was just present: a change here is the effect acting on sound that is no echo of the voice' });
+    rows.push(dip('bed-largest-dip-away', 'Largest drop of the other sound over 50 ms, with no voice for 1.5 s', frames.away));
   }
   return rows;
 }

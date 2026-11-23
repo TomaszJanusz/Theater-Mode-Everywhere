@@ -65,7 +65,9 @@ describe('audio lab: material', () => {
   it('builds the built-in rooms the same way every time, parts adding up to the mix', () => {
     assert.deepEqual(SYNTHETIC_IDS, [
       'synthetic-dry', 'synthetic-wall', 'synthetic-room-0.3s', 'synthetic-room-0.8s', 'synthetic-room-1.5s',
-      'synthetic-music-sustained', 'synthetic-music-plucked', 'synthetic-room-0.8s-then-music'
+      'synthetic-room-0.3s-short-words', 'synthetic-room-0.3s-long-vowels', 'synthetic-room-0.3s-fast', 'synthetic-room-0.3s-fast-pitched',
+      'synthetic-music-sustained', 'synthetic-music-plucked', 'synthetic-music-accents', 'synthetic-applause',
+      'synthetic-room-0.8s-then-music', 'synthetic-room-0.8s-under-music'
     ]);
     const first = syntheticMaterial('synthetic-room-0.3s', 2);
     const second = syntheticMaterial('synthetic-room-0.3s', 2);
@@ -100,6 +102,49 @@ describe('audio lab: material', () => {
     };
     assert.ok(spread('synthetic-music-sustained') < 6, `sustained: ${spread('synthetic-music-sustained').toFixed(1)} dB`);
     assert.ok(spread('synthetic-music-plucked') > 12, `plucked: ${spread('synthetic-music-plucked').toFixed(1)} dB`);
+  });
+
+  it('builds speech an envelope can take for something else: short, long and fast', () => {
+    /** The lengths in seconds of the stretches in which the dry voice sounds, with gaps under 30 ms closed. */
+    const stretches = (id: string) => {
+      const { dry: voice, room } = syntheticMaterial(id, 8);
+      assert.ok(voice && room, `${id} is a voice in a room`);
+      const lengths: number[] = [];
+      let [length, gap] = [0, 0];
+      for (let i = 0; i < voice.length; i += 48) {
+        const on = Math.abs(voice[i]) > 1e-4 || Math.abs(voice[i + 12] ?? 0) > 1e-4;
+        gap = on ? 0 : gap + 1;
+        if (on || (length > 0 && gap < 30)) length++;
+        else if (length > 0) { lengths.push((length - gap + 1) / 1000); length = 0; }
+      }
+      return lengths;
+    };
+    const short = stretches('synthetic-room-0.3s-short-words');
+    assert.ok(short.length >= 6 && short.every(length => length > 0.07 && length < 0.1), `words of 90 ms: ${short.join(', ')}`);
+    const long = stretches('synthetic-room-0.3s-long-vowels');
+    assert.ok(long.length >= 3 && long.every(length => length > 1.1 && length < 1.25), `vowels of 1.2 s: ${long.join(', ')}`);
+    // The same phrases 1.6 times as fast: as many again fit into the clip, at the same pitch or a higher one.
+    const [plain, fast, pitched] = ['synthetic-room-0.3s', 'synthetic-room-0.3s-fast', 'synthetic-room-0.3s-fast-pitched'].map(id => stretches(id).length);
+    assert.ok(fast > 1.3 * plain && pitched > 1.3 * plain, `${plain}, ${fast} and ${pitched} phrases`);
+  });
+
+  it('strikes chord accents 8 dB over the music they are played on, and claps without a voice', () => {
+    const { mix, bed, dry: voice } = syntheticMaterial('synthetic-music-accents', 6);
+    assert.ok(bed && !voice);
+    const accents = mix.channels[0].map((value, i) => value - bed.channels[0][i]);
+    const during = (samples: Float32Array) => energy(samples.subarray(1.25 * 48000, 1.35 * 48000));
+    assert.ok(Math.abs(10 * Math.log10(during(accents) / during(bed.channels[0])) - 8) < 2.5, `${(10 * Math.log10(during(accents) / during(bed.channels[0]))).toFixed(1)} dB in the first accent`);
+    assert.ok(energy(accents.subarray(1.5 * 48000, 2.7 * 48000)) < 1e-9, 'and nothing between two accents');
+    const applause = syntheticMaterial('synthetic-applause', 3);
+    assert.ok(!applause.dry && !applause.bed && energy(applause.mix.channels[0]) > 0);
+    assert.notDeepEqual(applause.mix.channels[0], applause.mix.channels[1]);
+  });
+
+  it('plays music 2 dB louder than the voice it plays over', () => {
+    const { mix, bed, room, dry: voice } = syntheticMaterial('synthetic-room-0.8s-under-music', 6);
+    assert.ok(bed && room && voice);
+    const spokenRoom = mix.channels[0].map((value, i) => value - bed.channels[0][i]);
+    assert.ok(Math.abs(10 * Math.log10(energy(bed.channels[0]) / energy(spokenRoom)) - 2) < 1, `${(10 * Math.log10(energy(bed.channels[0]) / energy(spokenRoom))).toFixed(1)} dB`);
   });
 
   it('lets the voice stop while the music plays on, and keeps the music as the bed', () => {
