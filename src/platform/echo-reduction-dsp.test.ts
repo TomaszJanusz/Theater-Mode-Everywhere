@@ -431,6 +431,50 @@ describe('echo reduction DSP (WebAssembly)', () => {
     assert.ok(outL.subarray(3 * RATE).some(value => Math.abs(value) > 1e-4), 'and carries audio');
   });
 
+  it('treats low sound between words as before, not as a new source', () => {
+    // A voice in the TME-275 short room with pauses of 0.7 s, and a rumble 50 dB below it. Once the echo has
+    // faded, the rumble is all there is, and every swell of it stands above what a decay would leave. Taking
+    // those swells for sources would raise the gain below 300 Hz in the pauses to -1 dB at both levels.
+    const voice = voicedSyllables(8).map((value, i) => (i / RATE) % 1 < SYLLABLE ? value : 0);
+    const [roomLeft, roomRight] = inShortRoom(voice);
+    const next = noise(9);
+    let low = 0;
+    const rumble = Float64Array.from(voice, () => {
+      low += 0.01 * (next() - low);
+      return 0.3 * 10 ** (-50 / 20) * 12 * low;
+    });
+    const [left, right] = [roomLeft, roomRight].map(channel => channel.map((value, i) => value + rumble[i]));
+    const [light, strong] = (['light', 'strong'] as const).map(level => {
+      let sum = 0;
+      let count = 0;
+      run(instantiate(ECHO_PRESETS[level]), left, right, (gain, seconds) => {
+        // The middle of a frame, from 330 ms after the word has ended.
+        const u = (seconds - 512 / RATE) % 1;
+        if (seconds < 3 || u < 0.65 || u > 0.97) return;
+        for (let k = 1; k <= 4; k++) sum += gain[k] ** 2;
+        count += 4;
+      });
+      return 10 * Math.log10(sum / count);
+    });
+    // Before TME-279: -4.1 and -7.0 dB.
+    assert.ok(light < -3.6, `Light keeps the rumble down (${light.toFixed(1)} dB)`);
+    assert.ok(strong < -6.5, `Strong too (${strong.toFixed(1)} dB)`);
+  });
+
+  it('hears a phrase 38 dB quieter than the one before it on its own terms', () => {
+    // What counts as low sound is judged against the loudest the band has been. Held for long, that
+    // judgement takes a quiet scene after a loud one for the pauses of the loud one: the voice lost what
+    // it did before TME-279 (vowel -2.8 and -5.7 dB) for as long as the level stayed down.
+    const dry = voicedSyllables(9);
+    const input = Float64Array.from(dry, (value, i) => i < 4 * RATE ? value : value * 10 ** (-38 / 20));
+    for (const level of ['light', 'strong'] as const) {
+      const [out] = run(instantiate(ECHO_PRESETS[level]), input, input);
+      const [vowel, ending] = [syllable.vowel, syllable.ending].map(part => voiceLevel(out, input, dry, part, 6, 8));
+      assert.ok(vowel > -0.3, `${level}: two seconds on, the vowel keeps its level (${vowel.toFixed(2)} dB)`);
+      assert.ok(ending > -0.5, `${level}: and the end of the word is not cut (${ending.toFixed(2)} dB)`);
+    }
+  });
+
   it('starts over silent after reset', () => {
     const dsp = instantiate(ECHO_PRESETS.light);
     const { left, right } = reverberantBursts(0.5, 0.5);

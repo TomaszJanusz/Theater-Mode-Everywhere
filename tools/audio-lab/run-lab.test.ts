@@ -64,7 +64,9 @@ describe('audio lab: runs', () => {
     assert.ok(row('voice-level-50ms').before > row('voice-level-direct').before + 3);
     assert.ok(row('room-level-50ms').before < row('room-level-direct').before - 3);
     assert.equal(row('level-movement-direct').before, 0);
-    assert.ok(row('tail-level').after < row('tail-level').before - 8);
+    // Since TME-279 the DSP keeps the first 30 ms of this room's short tail with the end of the word (see the
+    // gate): -7.1 dB on this clip, where dev had -10.
+    assert.ok(row('tail-level').after < row('tail-level').before - 6);
     assert.equal(row('tail-level').higherIsBetter, false);
     // The tail is the late reverb: before the effect it is the room's sound behind the 50 ms cut, heard in the pauses.
     assert.match(row('tail-level').label, /^Late reverb in pause tails \(after the first 50 ms/);

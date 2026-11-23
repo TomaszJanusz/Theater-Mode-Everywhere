@@ -20,9 +20,11 @@
 // - A band whose power stands well above what `remain` predicts is being fed by a source. While it
 //   is, the band gets the learned estimate and a shallow floor; in the decay after it, the preset's
 //   estimate and floor apply as before. Steady sound keeps `remain` at 1 and is treated as before.
-//   A band can only become fed while its power rises, and within 30 dB of its recent peak: the long,
-//   weak tail of a hall after a close voice, and the hum of a recording once the echo has faded, also
-//   stand above the prediction, but neither is an onset of anything worth protecting.
+//   A band can only become fed while its power rises, and within 30 dB of the loudest it has lately
+//   been: the long, weak tail of a hall after a close voice, and the hum of a recording once the echo
+//   has faded, also stand above the prediction, but neither is an onset of anything worth protecting.
+//   "Lately" lasts through the pauses of speech and no longer, or a quiet scene after a loud one would
+//   be taken for the pauses of the loud one.
 // - When even the lowest ratio of the last second stands well above `remain`, several decays in a row
 //   have contradicted it: the scene has changed, and `remain` catches up fast instead of drifting.
 //
@@ -71,8 +73,16 @@ const RELEASE_SECONDS: f64 = 0.025;
 const RISE_FROM: f32 = 1.5;
 const KEEP_FROM: f32 = 0.05;
 const KEEP_SLOPE: f32 = 20;
-// ...and only within 30 dB of the band's slow peak (fully from 27 dB).
+// ...and only within 30 dB of `loud`, the loudest the band has lately been (fully from 27 dB).
 const START_GATE: f32 = 1e-3;
+// `loud` falls like the slow peak until the band has stayed 20 dB below it for 1.25 s, longer than a
+// pause between sentences, and from then on at 60 dB/s until the band comes within 20 dB of it again.
+// A shorter hold lets the hum between words back in; a common peak with `remain`'s gate would have
+// every long pause teach `remain` the hum.
+const QUIET: f32 = 1e-2;
+const HOLD_SECONDS: f32 = 1.25;
+const HOLD_SPAN_SECONDS: f32 = 0.25;
+const LOUD_FALL_DB_PER_SECOND: f64 = 60;
 // The lowest evidence of the recent past forgets at 12 dB/s, so it spans about a second of decays.
 // `remain` is stale when that minimum stands 2 to 4 times above it, and then rises at up to 30 dB/s.
 const LOW_RISE_DB_PER_SECOND: f64 = 12;
@@ -121,6 +131,9 @@ const fed = memory.data(BANDS << 2, 4);
 const peak = memory.data(BANDS << 2, 4);
 // The lowest evidence (ratio times headroom) each band has shown lately.
 const lowest = memory.data(BANDS << 2, 4);
+// The peak the start of a fed band is judged against, and for how many seconds the band has stayed far below it.
+const loud = memory.data(BANDS << 2, 4);
+const quiet = memory.data(BANDS << 2, 4);
 
 let pending: i32 = 0;
 let readAt: i32 = QUANTUM;
@@ -137,6 +150,8 @@ let peakFall: f32 = 1;
 let release: f32 = 0;
 let lowRise: f32 = 1;
 let staleRise: f32 = 1;
+let loudFall: f32 = 1;
+let hopTime: f32 = 0;
 
 @inline function at(base: usize, index: i32): usize {
   return base + (<usize>index << 2);
@@ -187,6 +202,8 @@ function forget(): void {
     store<f32>(at(fed, b), 0);
     store<f32>(at(peak, b), 0);
     store<f32>(at(lowest, b), 1);
+    store<f32>(at(loud, b), 0);
+    store<f32>(at(quiet, b), 0);
   }
 }
 
@@ -281,6 +298,8 @@ export function configure(rt60: f32, overSubtract: f32, floorDb: f32, gap: f32, 
   release = <f32>Math.exp(-hopSeconds / RELEASE_SECONDS);
   lowRise = <f32>Math.pow(10, (LOW_RISE_DB_PER_SECOND * hopSeconds) / 10);
   staleRise = <f32>Math.pow(10, (STALE_RISE_DB_PER_SECOND * hopSeconds) / 10);
+  loudFall = <f32>Math.pow(10, (-LOUD_FALL_DB_PER_SECOND * hopSeconds) / 10);
+  hopTime = <f32>hopSeconds;
   layout(<f64>rate);
 }
 
@@ -333,8 +352,13 @@ function bands(past: usize): void {
     const up = rise + (staleRise - rise) * unit((low / left - STALE_FROM) / STALE_SPAN);
     left = max<f32>(REMAIN_MIN, min<f32>(1, left * (1 + open * (fall + (up - fall) * turn - 1))));
     store<f32>(at(remain, b), left);
+    const heard = load<f32>(at(loud, b));
+    const still = min<f32>(unit(2 - now / (heard * QUIET + EPSILON)) * (load<f32>(at(quiet, b)) + hopTime), HOLD_SECONDS + HOLD_SPAN_SECONDS);
+    store<f32>(at(quiet, b), still);
+    const recent = max<f32>(was, heard * (peakFall + (loudFall - peakFall) * unit((still - HOLD_SECONDS) / HOLD_SPAN_SECONDS)));
+    store<f32>(at(loud, b), recent);
     const before = load<f32>(at(fed, b));
-    const onset = unit(ratio - RISE_FROM) * unit(now / (top * START_GATE + EPSILON) - 1);
+    const onset = unit(ratio - RISE_FROM) * unit(now / (recent * START_GATE + EPSILON) - 1);
     const start = max<f32>(onset, unit((before - KEEP_FROM) * KEEP_SLOPE));
     const source = max<f32>(unit((ratio / left - FED_FROM) / FED_SPAN) * start, before * release);
     store<f32>(at(fed, b), source);
