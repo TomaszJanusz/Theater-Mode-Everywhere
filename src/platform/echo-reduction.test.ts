@@ -35,7 +35,7 @@ class FakeWorkletNode extends Node {
 
 /** A suspended context: crossfades settle at once, so reachability shows the effective state. */
 function context() {
-  return Object.assign(new EventTarget(), { currentTime: 0, state: 'suspended', createGain: () => new Node() });
+  return Object.assign(new EventTarget(), { currentTime: 0, sampleRate: 48000, state: 'suspended', createGain: () => new Node() });
 }
 
 function deferred() {

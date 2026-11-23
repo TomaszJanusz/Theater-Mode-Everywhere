@@ -1,6 +1,11 @@
 export const AUDIO_FADE_SECONDS = 0.03;
 
-type Stage = { input: AudioNode; output: AudioNode };
+/**
+ * `latency`: seconds a freshly connected effect stays silent before it answers with sound. The dry path
+ * keeps its full level that long and the fade starts after it; fading at once would lower the sound and
+ * then let it jump back when the effect's output arrives.
+ */
+type Stage = { input: AudioNode; output: AudioNode; latency?: number };
 type Scheduler = { set(callback: () => void, delay: number): unknown; clear(handle: unknown): void };
 const scheduler: Scheduler = {
   set: (callback, delay) => setTimeout(callback, delay),
@@ -22,6 +27,8 @@ export function createAudioCrossfade(ctx: BaseAudioContext, effect: Stage, timer
   let disposed = false;
   let timer: unknown;
   let start = ctx.currentTime;
+  // Audio time from which the connected effect answers with sound.
+  let warm = start;
   let from = 0;
   let target = 0;
 
@@ -63,19 +70,22 @@ export function createAudioCrossfade(ctx: BaseAudioContext, effect: Stage, timer
       active = next;
       from = current;
       target = next ? 1 : 0;
-      start = ctx.currentTime;
+      const now = ctx.currentTime;
       if (next && !connected) {
         input.connect(effect.input);
         effect.output.connect(wet);
         connected = true;
+        warm = now + (effect.latency ?? 0);
       }
+      start = next ? Math.max(now, warm) : now;
       if (ctx.state !== 'running') return finish();
       for (const [param, value, end] of [[wet.gain, current, target], [dry.gain, 1 - current, 1 - target]] as const) {
-        param.cancelScheduledValues(start);
-        param.setValueAtTime(value, start);
+        param.cancelScheduledValues(now);
+        param.setValueAtTime(value, now);
+        if (start > now) param.setValueAtTime(value, start);
         param.linearRampToValueAtTime(end, start + AUDIO_FADE_SECONDS);
       }
-      timer = timers.set(check, AUDIO_FADE_SECONDS * 1000);
+      timer = timers.set(check, (start - now + AUDIO_FADE_SECONDS) * 1000);
     },
     dispose() {
       if (disposed) return;

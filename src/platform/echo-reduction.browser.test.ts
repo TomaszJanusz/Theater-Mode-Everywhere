@@ -15,7 +15,7 @@ import { testEngines } from '../test-utils/test-engines';
 // AudioWorklet needs; Chromium does not route worklet requests through Playwright). The audio
 // chain renders offline, so no audio device is involved.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const CHAIN = bundleModules(["export { createAudioChain } from './platform/audio-graph';", "export { createEchoLoader } from './platform/echo-reduction';"], 'EchoChain');
+const CHAIN = bundleModules(["export { createAudioChain } from './platform/audio-graph';", "export { createEchoLoader, echoStage } from './platform/echo-reduction';"], 'EchoChain');
 const WORKLET = bundleModules(["import './platform/echo-reduction-worklet';"], 'EchoWorklet');
 const WASM = readFileSync(path.join(HERE, '../../assembly/echo-reduction.wasm'));
 // What a strict host sends: scripts from itself only, so WebAssembly may not compile.
@@ -129,6 +129,59 @@ const RENDER = `(async ({ echo, seconds, origin }) => {
 const render = (page: Page, echo: 'off' | 'light' | 'strong', seconds = 4) =>
   page.evaluate(`${RENDER}(${JSON.stringify({ echo, seconds, origin })})`) as Promise<Result>;
 
+type Entry = { unavailable: boolean; lowest: number; step: number };
+
+/**
+ * A steady level through the echo stage alone, which is turned off and, at 0.5 s, on again while the
+ * context renders. Reports the lowest output and the largest step between two samples in the 60 ms after
+ * it comes on. Without an echo to remove, the DSP passes the level for longer than that.
+ */
+const ENTER = `(async ({ origin }) => {
+  const rate = 48000, n = rate;
+  const ctx = new OfflineAudioContext(2, n, rate);
+  const buffer = ctx.createBuffer(2, n, rate);
+  for (let ch = 0; ch < 2; ch++) buffer.getChannelData(ch).fill(0.4);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  let answered;
+  const answer = new Promise(resolve => { answered = resolve; });
+  let unavailable = false;
+  const Native = AudioWorkletNode;
+  window.AudioWorkletNode = class extends Native {
+    constructor(...args) {
+      super(...args);
+      this.port.addEventListener('message', () => {
+        const next = new MessageChannel();
+        next.port1.onmessage = () => answered();
+        next.port2.postMessage(0);
+      });
+    }
+  };
+  const stage = EchoChain.echoStage(ctx, {
+    load: EchoChain.createEchoLoader(() => origin + '/echo-reduction.js'),
+    onUnavailable: () => { unavailable = true; answered(); }
+  });
+  source.connect(stage.input);
+  stage.output.connect(ctx.destination);
+  // On once before rendering, so the worklet has compiled by the time it is turned on again.
+  stage.set('strong');
+  source.start();
+  await answer;
+  let on = 0;
+  void ctx.suspend(0.2).then(() => { stage.set('off'); void ctx.resume(); });
+  // Resumed first: the stage fades only in a running context.
+  void ctx.suspend(0.5).then(() => { void ctx.resume(); on = Math.round(ctx.currentTime * rate); stage.set('strong'); });
+  const out = (await ctx.startRendering()).getChannelData(0);
+  window.AudioWorkletNode = Native;
+  stage.dispose();
+  let lowest = Infinity, step = 0;
+  for (let i = on; i < on + 0.06 * rate; i++) {
+    lowest = Math.min(lowest, out[i]);
+    step = Math.max(step, Math.abs(out[i + 1] - out[i]));
+  }
+  return { unavailable, lowest, step };
+})`;
+
 describe('echo reduction in the audio chain', () => {
   for (const engine of testEngines()) {
     it(`${engine}: compiles the shipped DSP in the worklet and shortens the room tail`, async (test) => {
@@ -142,6 +195,17 @@ describe('echo reduction in the audio chain', () => {
       assert.ok(light.tail < -4, `Light lowers the tail (${light.tail.toFixed(1)} dB)`);
       assert.ok(strong.tail < light.tail - 2, `Strong lowers it further (${strong.tail.toFixed(1)} dB)`);
       assert.ok(light.voice > -2.5 && strong.voice > -4.5, `the voice stays (${light.voice.toFixed(1)}, ${strong.voice.toFixed(1)} dB)`);
+    });
+
+    // Firefox has no OfflineAudioContext.suspend, so nothing can change while it renders offline.
+    if (engine === 'chromium') it(`${engine}: comes on during sound without a dip or a jump`, async (test) => {
+      const page = await open(test, engine);
+      const entry = await page.evaluate(`${ENTER}(${JSON.stringify({ origin })})`) as Entry;
+      assert.equal(entry.unavailable, false);
+      // Fading to the worklet before its 896 samples of latency had passed took the level from 0.4 to 0.15
+      // and let it jump back in one sample.
+      assert.ok(entry.lowest > 0.39, `the level holds while the stage fades in (lowest ${entry.lowest.toFixed(3)} of 0.4)`);
+      assert.ok(entry.step < 0.01, `and nothing jumps (largest step ${entry.step.toFixed(4)})`);
     });
 
     it(`${engine}: reports echo reduction unavailable where the page CSP forbids WebAssembly`, async (test) => {

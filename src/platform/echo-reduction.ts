@@ -5,6 +5,8 @@ import { createAudioCrossfade } from './audio-crossfade';
 import type { EchoLevel } from './echo-reduction-presets';
 
 export const ECHO_PROCESSOR = 'theater-echo-reduction';
+// The DSP answers 896 samples late, and a connection takes effect up to a few render quanta after it is made.
+const WARMUP_FRAMES = 896 + 3 * 128;
 
 /**
  * MAIN to worklet: the WebAssembly bytes once (compiled there, under the page's CSP), then levels.
@@ -47,7 +49,7 @@ export function createEchoLoader(workletUrl: () => string | null): EchoLoader {
 export function echoStage(ctx: BaseAudioContext, support: EchoSupport | undefined) {
   const entry = ctx.createGain();
   const exit = ctx.createGain();
-  const fade = createAudioCrossfade(ctx, { input: entry, output: exit });
+  const fade = createAudioCrossfade(ctx, { input: entry, output: exit, latency: WARMUP_FRAMES / ctx.sampleRate });
   let level: AudioSettings['echo'] = 'off';
   let node: AudioWorkletNode | undefined;
   let started = false;
