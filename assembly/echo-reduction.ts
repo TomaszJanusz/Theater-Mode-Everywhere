@@ -20,8 +20,11 @@
 // - A band whose power stands well above what `remain` predicts is being fed by a source. While it
 //   is, the band gets the learned estimate and a shallow floor; in the decay after it, the preset's
 //   estimate and floor apply as before. Steady sound keeps `remain` at 1 and is treated as before.
-//   A band can only become fed while its power rises: the long, weak tail of a hall after a close
-//   voice also stands above the prediction, but nothing in it is an onset.
+//   A band can only become fed while its power rises, and within 30 dB of its recent peak: the long,
+//   weak tail of a hall after a close voice, and the hum of a recording once the echo has faded, also
+//   stand above the prediction, but neither is an onset of anything worth protecting.
+// - When even the lowest ratio of the last second stands well above `remain`, several decays in a row
+//   have contradicted it: the scene has changed, and `remain` catches up fast instead of drifting.
 //
 // Stereo shares one transform: left is the real part and right the imaginary part of one
 // complex frame. A real, conjugate-symmetric gain applied to that spectrum scales each
@@ -68,6 +71,14 @@ const RELEASE_SECONDS: f64 = 0.025;
 const RISE_FROM: f32 = 1.5;
 const KEEP_FROM: f32 = 0.05;
 const KEEP_SLOPE: f32 = 20;
+// ...and only within 30 dB of the band's slow peak (fully from 27 dB).
+const START_GATE: f32 = 1e-3;
+// The lowest evidence of the recent past forgets at 12 dB/s, so it spans about a second of decays.
+// `remain` is stale when that minimum stands 2 to 4 times above it, and then rises at up to 30 dB/s.
+const LOW_RISE_DB_PER_SECOND: f64 = 12;
+const STALE_RISE_DB_PER_SECOND: f64 = 30;
+const STALE_FROM: f32 = 2;
+const STALE_SPAN: f32 = 2;
 // The floor of a fed band, as a fraction of the preset's floor in dB (-7 dB gives -2.1 dB).
 const CAP_RATIO: f64 = 0.3;
 
@@ -108,6 +119,8 @@ const bandPower = memory.data(BANDS << 2, 4);
 const remain = memory.data(BANDS << 2, 4);
 const fed = memory.data(BANDS << 2, 4);
 const peak = memory.data(BANDS << 2, 4);
+// The lowest evidence (ratio times headroom) each band has shown lately.
+const lowest = memory.data(BANDS << 2, 4);
 
 let pending: i32 = 0;
 let readAt: i32 = QUANTUM;
@@ -122,6 +135,8 @@ let fall: f32 = 1;
 let rise: f32 = 1;
 let peakFall: f32 = 1;
 let release: f32 = 0;
+let lowRise: f32 = 1;
+let staleRise: f32 = 1;
 
 @inline function at(base: usize, index: i32): usize {
   return base + (<usize>index << 2);
@@ -171,6 +186,7 @@ function forget(): void {
     store<f32>(at(remain, b), 1);
     store<f32>(at(fed, b), 0);
     store<f32>(at(peak, b), 0);
+    store<f32>(at(lowest, b), 1);
   }
 }
 
@@ -263,6 +279,8 @@ export function configure(rt60: f32, overSubtract: f32, floorDb: f32, gap: f32, 
   rise = <f32>Math.pow(10, (RISE_DB_PER_SECOND * hopSeconds) / 10);
   peakFall = <f32>Math.pow(10, (-PEAK_FALL_DB_PER_SECOND * hopSeconds) / 10);
   release = <f32>Math.exp(-hopSeconds / RELEASE_SECONDS);
+  lowRise = <f32>Math.pow(10, (LOW_RISE_DB_PER_SECOND * hopSeconds) / 10);
+  staleRise = <f32>Math.pow(10, (STALE_RISE_DB_PER_SECOND * hopSeconds) / 10);
   layout(<f64>rate);
 }
 
@@ -307,11 +325,17 @@ function bands(past: usize): void {
     // Open from the gate to 3 dB above it; the step turns from down to up within 10 % of `remain`.
     const open = unit(was / (top * GATE + EPSILON) - 1);
     let left = load<f32>(at(remain, b));
-    const turn = unit(((ratio * HEADROOM) / left - 0.9) * 5);
-    left = max<f32>(REMAIN_MIN, min<f32>(1, left * (1 + open * (fall + (rise - fall) * turn - 1))));
+    const evidence = ratio * HEADROOM;
+    const turn = unit((evidence / left - 0.9) * 5);
+    let low = load<f32>(at(lowest, b));
+    low = max<f32>(REMAIN_MIN, min<f32>(1, low + open * (min<f32>(evidence, low * lowRise) - low)));
+    store<f32>(at(lowest, b), low);
+    const up = rise + (staleRise - rise) * unit((low / left - STALE_FROM) / STALE_SPAN);
+    left = max<f32>(REMAIN_MIN, min<f32>(1, left * (1 + open * (fall + (up - fall) * turn - 1))));
     store<f32>(at(remain, b), left);
     const before = load<f32>(at(fed, b));
-    const start = max<f32>(unit(ratio - RISE_FROM), unit((before - KEEP_FROM) * KEEP_SLOPE));
+    const onset = unit(ratio - RISE_FROM) * unit(now / (top * START_GATE + EPSILON) - 1);
+    const start = max<f32>(onset, unit((before - KEEP_FROM) * KEEP_SLOPE));
     const source = max<f32>(unit((ratio / left - FED_FROM) / FED_SPAN) * start, before * release);
     store<f32>(at(fed, b), source);
     bandFill(share, from, to, presetShare + (min<f32>(left, presetShare) - presetShare) * source);
@@ -372,7 +396,8 @@ function frame(): void {
       f32x4.mul(alphaV, f32x4.div(v128.load(at(direct, k)), late)),
       f32x4.mul(restV, f32x4.max(f32x4.sub(posterior, oneV), zeroV))
     );
-    const g = f32x4.max(f32x4.div(prior, f32x4.add(prior, oneV)), v128.load(at(floors, k)));
+    // prior / (prior + 1), written so that an overflowing prior gives 1 and not infinity over infinity.
+    const g = f32x4.max(f32x4.sub(oneV, f32x4.div(oneV, f32x4.add(prior, oneV))), v128.load(at(floors, k)));
     v128.store(at(direct, k), f32x4.mul(f32x4.mul(g, g), p));
     v128.store(at(rawGain, k), g);
   }

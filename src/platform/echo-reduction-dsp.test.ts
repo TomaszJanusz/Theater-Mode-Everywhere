@@ -109,6 +109,40 @@ function inRoom(dry: Float64Array, rt60: number): [Float64Array, Float64Array] {
 }
 
 /**
+ * The 0.3 s room of TME-275: the direct sound, six reflections within 45 ms and a diffuse tail that
+ * starts at 50 ms, with the direct sound 4 dB above everything after it. Different per channel.
+ */
+function inShortRoom(dry: Float64Array): [Float64Array, Float64Array] {
+  const rt60 = 0.3;
+  const k = 3 * Math.LN10 / rt60;
+  const channels = [noise(31), noise(32)].map(next => {
+    const taps: [number, number][] = [];
+    let early = 0;
+    for (let r = 0; r < 6; r++) {
+      const at = Math.round((0.004 + 0.0205 * (next() + 1)) * RATE);
+      const gain = 0.35 * next();
+      taps.push([at, gain]);
+      early += gain ** 2;
+    }
+    const tail: [number, number][] = [];
+    let energy = 0;
+    // Every 32nd tap, as in `inRoom`.
+    for (let tap = Math.round(0.05 * RATE); tap < 1.6 * rt60 * RATE; tap += 32) {
+      const h = next() * Math.exp(-k * tap / RATE) * Math.sqrt(32);
+      tail.push([tap, h]);
+      energy += h ** 2;
+    }
+    const scale = Math.sqrt(Math.max(10 ** -0.4 - early, 1e-6) / energy);
+    const wet = Float64Array.from(dry);
+    for (const [tap, h] of [...taps, ...tail.map(([at, h]): [number, number] => [at, h * scale])]) {
+      for (let i = tap; i < dry.length; i++) wet[i] += h * dry[i - tap];
+    }
+    return wet;
+  });
+  return [channels[0], channels[1]];
+}
+
+/**
  * Speech-like bursts (noise with a falling spectrum, 250 ms on, 350 ms off) in a room: the dry
  * signal plus the tail of `inRoom`. Noise keeps the tail uncorrelated with the dry voice, so a
  * projection measures what is left of it.
@@ -320,6 +354,40 @@ describe('echo reduction DSP (WebAssembly)', () => {
     assert.ok(tails[1] < -8.2, `Strong lowers it further (${tails[1].toFixed(1)} dB)`);
   });
 
+  it('lowers the tail from 50 ms after each word in the TME-275 short room, at both levels', () => {
+    // The 0.3 s room of TME-275: six reflections within 45 ms and a diffuse tail from 50 ms, 4 dB below the
+    // direct sound. Before TME-279 the tail fell by the full floor (-7.0 and -10.0 dB) because everything
+    // after an onset did. Keeping the word's ending costs about 1 dB of that; it must not cost more.
+    const dry = voicedSyllables(6);
+    const [left, right] = inShortRoom(dry);
+    const afterWord = (t: number) => t % SYLLABLE > 0.37 && t % SYLLABLE < 0.49;
+    const [light, strong] = (['light', 'strong'] as const).map(level => {
+      const [out] = run(instantiate(ECHO_PRESETS[level]), left, right);
+      const vowel = voiceLevel(out, left, dry, syllable.vowel, 3);
+      assert.ok(vowel > -0.5, `${level}: the vowel keeps its level (${vowel.toFixed(2)} dB)`);
+      return dB(energy(out, LATENCY, afterWord, 3), energy(left, 0, afterWord, 3));
+    });
+    assert.ok(light < -5.9, `Light lowers the tail (${light.toFixed(1)} dB)`);
+    assert.ok(strong < -8.4, `Strong lowers it further (${strong.toFixed(1)} dB)`);
+  });
+
+  it('finds the echo again within two seconds when a dry scene cuts to an echoing one', () => {
+    // A dry recording teaches it that nothing remains after a sound. A cut to a 0.8 s room contradicts
+    // that with every decay, so the lesson must be dropped fast, not at the pace of ordinary drift.
+    const dry = voicedSyllables(8);
+    const [roomLeft, roomRight] = inRoom(dry, 0.8);
+    const cut = 4 * RATE;
+    const left = Float64Array.from(dry, (value, i) => i < cut ? value : roomLeft[i]);
+    const right = Float64Array.from(dry, (value, i) => i < cut ? value : roomRight[i]);
+    const inPause = (t: number) => syllable.tail(t % SYLLABLE);
+    for (const level of ['light', 'strong'] as const) {
+      const [afterCut] = run(instantiate(ECHO_PRESETS[level]), left, right);
+      const [roomOnly] = run(instantiate(ECHO_PRESETS[level]), roomLeft, roomRight);
+      const tail = (out: Float64Array) => dB(energy(out, LATENCY, inPause, 6), energy(roomLeft, 0, inPause, 6));
+      assert.ok(tail(afterCut) < tail(roomOnly) + 1, `${level}: two seconds after the cut the tail is lowered as if it had only heard the room (${tail(afterCut).toFixed(1)} against ${tail(roomOnly).toFixed(1)} dB)`);
+    }
+  });
+
   it('keeps what it learned about the recording when the level changes, and forgets it on reset', () => {
     const dry = voicedSyllables(6);
     const switched = instantiate(ECHO_PRESETS.light);
@@ -347,6 +415,20 @@ describe('echo reduction DSP (WebAssembly)', () => {
     const later = [...outL.subarray(RATE / 2), ...outR.subarray(RATE / 2)];
     assert.ok(later.every(Number.isFinite), 'output is finite again after the bad frame');
     assert.ok(later.some(value => value !== 0), 'and carries audio');
+  });
+
+  it('recovers from samples far out of range without a non-finite gain staying in its memory', () => {
+    // Finite but absurd samples after silence make the ratio of power to late estimate overflow. Written
+    // as prior / (prior + 1) that is infinity over infinity, and the resulting NaN fed itself for good.
+    const dsp = instantiate(ECHO_PRESETS.strong);
+    const { left: bursts } = reverberantBursts(3, 0.5);
+    const left = new Float64Array(bursts.length + RATE);
+    for (let i = RATE / 2; i < RATE / 2 + 2048; i++) left[i] = 1e15 * (i % 2 ? 1 : -1);
+    left.set(bursts, RATE);
+    const [outL, outR] = run(dsp, left, left);
+    const later = [...outL.subarray(RATE), ...outR.subarray(RATE)];
+    assert.ok(later.every(Number.isFinite), 'output is finite again after the burst');
+    assert.ok(outL.subarray(3 * RATE).some(value => Math.abs(value) > 1e-4), 'and carries audio');
   });
 
   it('starts over silent after reset', () => {

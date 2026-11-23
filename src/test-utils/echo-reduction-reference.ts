@@ -26,6 +26,11 @@ const RELEASE_SECONDS = 0.025;
 const RISE_FROM = 1.5;
 const KEEP_FROM = 0.05;
 const KEEP_SLOPE = 20;
+const START_GATE = 1e-3;
+const LOW_RISE_DB_PER_SECOND = 12;
+const STALE_RISE_DB_PER_SECOND = 30;
+const STALE_FROM = 2;
+const STALE_SPAN = 2;
 const CAP_RATIO = 0.3;
 
 const unit = (value: number) => Math.max(0, Math.min(1, value));
@@ -62,6 +67,8 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
   const rise = 10 ** (RISE_DB_PER_SECOND * hopSeconds / 10);
   const peakFall = 10 ** (-PEAK_FALL_DB_PER_SECOND * hopSeconds / 10);
   const release = Math.exp(-hopSeconds / RELEASE_SECONDS);
+  const lowRise = 10 ** (LOW_RISE_DB_PER_SECOND * hopSeconds / 10);
+  const staleRise = 10 ** (STALE_RISE_DB_PER_SECOND * hopSeconds / 10);
   const window = Array.from({ length: N }, (_, i) => Math.sqrt(0.5 - 0.5 * Math.cos(2 * Math.PI * i / N)));
   const bins = N / 2 + 1;
   // Band b covers bins bandStart[b] to bandStart[b + 1]: 0-300 Hz, then octaves.
@@ -69,6 +76,7 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
   const remain = new Float64Array(BANDS).fill(1);
   const fed = new Float64Array(BANDS);
   const peak = new Float64Array(BANDS);
+  const lowest = new Float64Array(BANDS).fill(1);
   const share = new Float64Array(bins);
   const floors = new Float64Array(bins);
   const smoothed = new Float64Array(bins);
@@ -99,10 +107,15 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
       const ratio = now / was;
       peak[b] = Math.max(was, peak[b] * peakFall);
       const open = unit(was / (peak[b] * GATE + EPSILON) - 1);
-      const turn = unit((ratio * HEADROOM / remain[b] - 0.9) * 5);
-      remain[b] = Math.max(REMAIN_MIN, Math.min(1, remain[b] * (1 + open * (fall + (rise - fall) * turn - 1))));
-      // A band becomes fed only while its power rises, and stays fed until it falls to the decay.
-      const start = Math.max(unit(ratio - RISE_FROM), unit((fed[b] - KEEP_FROM) * KEEP_SLOPE));
+      const evidence = ratio * HEADROOM;
+      const turn = unit((evidence / remain[b] - 0.9) * 5);
+      // When even the lowest evidence of the last second stands well above `remain`, it is stale and rises fast.
+      lowest[b] = Math.max(REMAIN_MIN, Math.min(1, lowest[b] + open * (Math.min(evidence, lowest[b] * lowRise) - lowest[b])));
+      const up = rise + (staleRise - rise) * unit((lowest[b] / remain[b] - STALE_FROM) / STALE_SPAN);
+      remain[b] = Math.max(REMAIN_MIN, Math.min(1, remain[b] * (1 + open * (fall + (up - fall) * turn - 1))));
+      // A band becomes fed only while its power rises within 30 dB of its slow peak, and stays fed until it falls to the decay.
+      const onset = unit(ratio - RISE_FROM) * unit(now / (peak[b] * START_GATE + EPSILON) - 1);
+      const start = Math.max(onset, unit((fed[b] - KEEP_FROM) * KEEP_SLOPE));
       fed[b] = Math.max(unit((ratio / remain[b] - FED_FROM) / FED_SPAN) * start, fed[b] * release);
       share.fill(presetShare + (Math.min(remain[b], presetShare) - presetShare) * fed[b], from, to);
       floors.fill(floor + (cap - floor) * fed[b], from, to);
@@ -114,7 +127,7 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
       const late = share[k] * (pastFrame ? pastFrame[k] : 0) + EPSILON;
       const posterior = p / late;
       const prior = ALPHA * direct[k] / late + (1 - ALPHA) * Math.max(posterior - 1, 0);
-      const g = Math.max(prior / (prior + 1), floors[k]);
+      const g = Math.max(1 - 1 / (prior + 1), floors[k]);
       direct[k] = g * g * p;
       raw[k] = g;
     }
