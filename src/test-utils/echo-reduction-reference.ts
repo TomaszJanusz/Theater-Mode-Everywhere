@@ -5,13 +5,16 @@
  */
 import type { EchoPreset } from '../platform/echo-reduction-presets';
 
+import { fft } from './echo-reduction-fft';
+import { RISE_FROM, speechWindow, unit } from './echo-reduction-speech-window';
+
 // The constants of the DSP, under the same names.
 const [N, HOP, QUANTUM, HISTORY] = [1024, 256, 128, 32];
 const EPSILON = 1e-20;
 const ALPHA = 0.9;
 const SMOOTHING_SECONDS = 0.03;
-const BANDS = 7;
-const FIRST_EDGE_HZ = 300;
+const BANDS = 5;
+const [SPEECH_FROM_HZ, FIRST_EDGE_HZ] = [80, 300];
 const FALL_DB_PER_SECOND = 37.5;
 const RISE_DB_PER_SECOND = FALL_DB_PER_SECOND / 9;
 const HEADROOM = 1.7782794;
@@ -21,32 +24,10 @@ const PEAK_FALL_DB_PER_SECOND = 0.6;
 const FED_FROM = 2;
 const FED_SPAN = 4;
 const RELEASE_SECONDS = 0.025;
-const [RISE_FROM, KEEP_FROM, KEEP_SLOPE, START_GATE] = [1.5, 0.05, 20, 1e-3];
+const [KEEP_FROM, KEEP_SLOPE, START_GATE] = [0.05, 20, 1e-3];
 const [QUIET, HOLD_SECONDS, HOLD_SPAN_SECONDS, LOUD_FALL_DB_PER_SECOND] = [1e-2, 1.25, 0.25, 60];
 const [LOW_RISE_DB_PER_SECOND, STALE_RISE_DB_PER_SECOND, STALE_FROM, STALE_SPAN] = [12, 30, 2, 2];
-const CAP_RATIO = 0.3;
-
-const unit = (value: number) => Math.max(0, Math.min(1, value));
-
-type Complex = { re: number[]; im: number[] };
-
-function fft(re: number[], im: number[], inverse: boolean): Complex {
-  const n = re.length;
-  if (n === 1) return { re: [re[0]], im: [im[0]] };
-  const even = fft(re.filter((_, i) => i % 2 === 0), im.filter((_, i) => i % 2 === 0), inverse);
-  const odd = fft(re.filter((_, i) => i % 2 === 1), im.filter((_, i) => i % 2 === 1), inverse);
-  const out: Complex = { re: new Array<number>(n), im: new Array<number>(n) };
-  for (let k = 0; k < n / 2; k++) {
-    const angle = (inverse ? 2 : -2) * Math.PI * k / n;
-    const tr = Math.cos(angle) * odd.re[k] - Math.sin(angle) * odd.im[k];
-    const ti = Math.cos(angle) * odd.im[k] + Math.sin(angle) * odd.re[k];
-    out.re[k] = even.re[k] + tr;
-    out.im[k] = even.im[k] + ti;
-    out.re[k + n / 2] = even.re[k] - tr;
-    out.im[k + n / 2] = even.im[k] - ti;
-  }
-  return out;
-}
+const [CAP_RATIO, PEAKS_SHARE] = [0.3, 0.01];
 
 /** Processes whole channels; the output carries the same 896-sample latency as the worklet. */
 export function referenceEchoReduction(left: Float64Array, right: Float64Array, preset: EchoPreset, rate: number): [Float64Array, Float64Array] {
@@ -65,8 +46,10 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
   const loudFall = 10 ** (-LOUD_FALL_DB_PER_SECOND * hopSeconds / 10);
   const window = Array.from({ length: N }, (_, i) => Math.sqrt(0.5 - 0.5 * Math.cos(2 * Math.PI * i / N)));
   const bins = N / 2 + 1;
-  // Band b covers bins bandStart[b] to bandStart[b + 1]: 0-300 Hz, then octaves.
-  const bandStart = [0, ...Array.from({ length: BANDS - 1 }, (_, b) => Math.min(bins, Math.ceil(FIRST_EDGE_HZ * 2 ** b * N / rate))), bins];
+  // Band b covers bins bandStart[b] to bandStart[b + 1]: 80-300 Hz, then four octaves. These are the
+  // speech bands; every bin outside them keeps a gain of 1.
+  const bandStart = [SPEECH_FROM_HZ, ...Array.from({ length: BANDS }, (_, b) => FIRST_EDGE_HZ * 2 ** b)].map(hz => Math.min(bins, Math.ceil(hz * N / rate)));
+  const [speechFrom, speechTo] = [bandStart[0], bandStart[BANDS]];
   const remain = new Float64Array(BANDS).fill(1);
   const fed = new Float64Array(BANDS);
   const peak = new Float64Array(BANDS);
@@ -77,6 +60,9 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
   const floors = new Float64Array(bins);
   const smoothed = new Float64Array(bins);
   const direct = new Float64Array(bins);
+  const speech = speechWindow(hopSeconds);
+  // The sum of `loud` after the previous frame.
+  let peaks = 0;
   const history: Float64Array[] = [];
   const outputs = [new Float64Array(left.length), new Float64Array(left.length)];
 
@@ -91,7 +77,10 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
     const power = Float64Array.from({ length: bins }, (_, k) => spectra.reduce((sum, s) => sum + s.re[k] ** 2 + s.im[k] ** 2, 0) + EPSILON);
     const pastFrame = history.length >= delayFrames ? history[history.length - delayFrames] : null;
     // Per band: learn how much power remains after the gap when nothing feeds the band, decide how far
-    // the band is fed by a source, and set the late share and the floor of its bins.
+    // the band is fed by a source, and set the late share and the floor of its bins. The floor reaches
+    // below 1 only while a syllable was just heard: fully for 0.8 s after it, then less over 0.4 s.
+    const tail = speech.tail();
+    let [level, before, recentPeaks] = [0, 0, 0];
     for (let b = 0; b < BANDS; b++) {
       const [from, to] = [bandStart[b], bandStart[b + 1]];
       let now = 0;
@@ -109,6 +98,10 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
       lowest[b] = Math.max(REMAIN_MIN, Math.min(1, lowest[b] + open * (Math.min(evidence, lowest[b] * lowRise) - lowest[b])));
       const up = rise + (staleRise - rise) * unit((lowest[b] / remain[b] - STALE_FROM) / STALE_SPAN);
       remain[b] = Math.max(REMAIN_MIN, Math.min(1, remain[b] * (1 + open * (fall + (up - fall) * turn - 1))));
+      // The level of the speech bands, now and before the gap: each band against its own recent peak.
+      const weight = 1 / (loud[b] + now + PEAKS_SHARE * peaks + EPSILON);
+      level += now * weight;
+      before += was * weight;
       // `loud` is the loudest the band has lately been: it falls fast once the band has stayed 20 dB below it for 1.25 s.
       quiet[b] = Math.min(unit(2 - now / (loud[b] * QUIET + EPSILON)) * (quiet[b] + hopSeconds), HOLD_SECONDS + HOLD_SPAN_SECONDS);
       loud[b] = Math.max(was, loud[b] * (peakFall + (loudFall - peakFall) * unit((quiet[b] - HOLD_SECONDS) / HOLD_SPAN_SECONDS)));
@@ -116,11 +109,14 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
       const onset = unit(ratio - RISE_FROM) * unit(now / (loud[b] * START_GATE + EPSILON) - 1);
       const start = Math.max(onset, unit((fed[b] - KEEP_FROM) * KEEP_SLOPE));
       fed[b] = Math.max(unit((ratio / remain[b] - FED_FROM) / FED_SPAN) * start, fed[b] * release);
+      recentPeaks += loud[b];
       share.fill(presetShare + (Math.min(remain[b], presetShare) - presetShare) * fed[b], from, to);
-      floors.fill(floor + (cap - floor) * fed[b], from, to);
+      floors.fill(1 + (floor + (cap - floor) * fed[b] - 1) * tail, from, to);
     }
-    const raw = new Float64Array(bins);
-    for (let k = 0; k < bins; k++) {
+    peaks = recentPeaks;
+    speech.hear(level, before);
+    const raw = new Float64Array(bins).fill(1);
+    for (let k = speechFrom; k < speechTo; k++) {
       const p = power[k];
       smoothed[k] = smoothing * smoothed[k] + (1 - smoothing) * p;
       const late = share[k] * (pastFrame ? pastFrame[k] : 0) + EPSILON;
@@ -130,8 +126,11 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
       direct[k] = g * g * p;
       raw[k] = g;
     }
-    // [1 2 1] / 4 across frequency; the spectrum's symmetry supplies the neighbour beyond each edge.
-    const gains = raw.map((g, k) => 0.5 * g + 0.25 * (raw[Math.abs(k - 1)] + raw[k + 1 < bins ? k + 1 : k - 1]));
+    // [1 2 1] / 4 across frequency. An edge of the speech bands is smoothed against itself; at bins 0
+    // and N/2 the spectrum's symmetry supplies the neighbour beyond the edge.
+    if (speechFrom > 0) raw[speechFrom - 1] = raw[speechFrom];
+    if (speechTo < bins) raw[speechTo] = raw[speechTo - 1];
+    const gains = raw.map((g, k) => (k < speechFrom || k >= speechTo ? 1 : 0.5 * g + 0.25 * (raw[Math.abs(k - 1)] + raw[k + 1 < bins ? k + 1 : k - 1])));
     history.push(Float64Array.from(smoothed));
     for (const [channel, s] of spectra.entries()) {
       const re = s.re.map((value, k) => value * gains[Math.min(k, N - k)]);

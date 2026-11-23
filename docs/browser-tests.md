@@ -149,21 +149,29 @@ in the extension.
   in node. `voice-*`, `bass-*` and `leveling-*` render through the real audio chain in
   Chromium (`OfflineAudioContext`), so they need the Playwright Chromium.
 - **Material:** an id from `tools/audio-lab/corpus/manifest.json`, a built-in id
-  (`synthetic-dry`, `synthetic-wall`, `synthetic-room-0.3s`, `-0.8s`, `-1.5s`; generated
-  in code from fixed seeds) or a path to a WAV file. Everything is resampled to 48 kHz
-  stereo first, and the output is aligned with the input (latency removed).
+  (`synthetic-dry`, `synthetic-wall`, `synthetic-room-0.3s`, `-0.8s`, `-1.5s`,
+  `synthetic-music-sustained`, `synthetic-music-plucked`, `synthetic-room-0.8s-then-music`;
+  generated in code from fixed seeds) or a path to a WAV file. Everything is resampled to
+  48 kHz stereo first, and the output is aligned with the input (latency removed).
 - **Rows:** what can be measured depends on what the material knows. A room built from
   a dry voice and an impulse response gives the voice and the room's sound separately,
   at each reference point (direct sound, first 10, 20 and 50 ms); its tail row is the
   late reverb (behind the 50 ms cut) in the pauses. A dry voice over other sound gives
-  the voice and that sound. A bare clip gives rows for the whole mix only (`-mix`),
-  which describe the mix and not a room. Notes under the table say what a row cannot
-  tell (SRMR in particular). ESTOI and SRMR are taken per channel and averaged over the
-  channels that have sound.
+  the voice and that sound; so does a room with music in it, with one more row for the
+  music where no voice has sounded for 1.5 s. A bare clip gives rows for the whole mix
+  only (`-mix`), which describe the mix and not a room. Every material gets the level of
+  the whole mix inside and outside the speech bands (`metrics/speech-bands.ts`): echo
+  reduction acts inside them only, so the level outside should not change, and neither
+  should the level inside on music without a voice. Notes under the table say what a
+  row cannot tell (SRMR in particular). ESTOI and SRMR are taken per channel and
+  averaged over the channels that have sound.
 - **Corpus rooms:** a manifest entry with `dry` and `impulseResponse` is rebuilt from
   those two on the dry voice's timeline. The lab finds the direct sound as the first
   arrival within 20 dB of the response's peak; an impulse-response entry whose direct
   sound is weaker than that states it as `directArrivalSample` (index in its own file).
+  An entry of kind `derived` has no file: `bed` names a mix entry with a dry voice, and
+  the music left when that voice is taken out of it is the entry's sound, alone
+  (`music`) or under a room (`room-rt080-over-music`).
 - **`--json`** writes the whole run (aligned samples and rows); `pnpm audio:report`
   turns that file into the HTML and PNG report.
 
@@ -171,10 +179,12 @@ When changing the echo-reduction DSP or its presets:
 
 1. Run the gate: `pnpm test tools/audio-lab/echo-gate.test.ts`. It holds voice loss,
    word-ending loss, level movement, tail drop and the distance between Light and
-   Strong on the built-in rooms to the limits in that file, in node, with no browser
-   and no audio files.
-2. Run `pnpm audio:lab echo-light <material>` and `echo-strong` on the rooms the change
-   is about, on the base commit and on the change, and compare the tables.
+   Strong on the built-in rooms to the limits in that file, and the change to music
+   without a voice and to the level outside the speech bands to about 0 dB, in node,
+   with no browser and no audio files.
+2. Run `pnpm audio:lab echo-light <material>` and `echo-strong` on the rooms and the
+   music the change is about, on the base commit and on the change, and compare the
+   tables.
 3. If a limit has to move, move it in the same PR and state the measured values there.
 
 `tools/audio-lab/echo-dsp.test.ts` ties the lab to the binary: the WebAssembly must

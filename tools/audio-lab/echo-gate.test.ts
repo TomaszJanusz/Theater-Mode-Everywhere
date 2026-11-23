@@ -1,11 +1,13 @@
 /**
  * The echo-reduction regression gate: what the shipped DSP does to a known voice in known rooms,
- * held to the behaviour of `dev` when the gate was written (TME-280), with margins. It runs the
- * WebAssembly in node on built-in material, so it needs no browser and no audio files.
+ * held to the behaviour of `dev` when the gate was written (TME-280), with margins, and what it
+ * must not do to sound that is no echo of a voice. It runs the WebAssembly in node on built-in
+ * material, so it needs no browser and no audio files.
  *
  * The limits are one-sided. A change may cost the voice less or lower the tail further without
- * touching this file; costing the voice more, or giving up more than 1 dB of tail, has to be a
- * decision: measure it with `pnpm audio:lab`, then move the limit in the same change.
+ * touching this file; costing the voice more, giving up more than 1 dB of tail, or touching music
+ * and the bands outside speech has to be a decision: measure it with `pnpm audio:lab`, then move
+ * the limit in the same change.
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
@@ -56,12 +58,33 @@ const GATE: Record<string, Room> = {
   }
 };
 
+/**
+ * Sound the effect must leave alone, as the largest change in dB it may make (either way) to each
+ * row. Before the gain was tied to speech, Light and Strong lowered the sustained music by 2.8 and
+ * 8.7 dB inside and outside the speech bands, the plucked music by 1.7 and 2.4 dB inside them, and
+ * the music after the voice had gone by 3.0 and 8.7 dB. Now: 0.00, 0.03 and 0.05, and 0.00 dB.
+ * Outside the speech bands a voice in a room changed by up to 3.1 dB, now by 0.08 dB at most; the
+ * music under a voice, whose bass notes lie within a bin of the lower edge, by 0.45 dB.
+ */
+const UNTOUCHED: Record<string, Record<string, number>> = {
+  'synthetic-music-sustained': { 'speech-bands-level': 0.1, 'outside-speech-bands-level': 0.1 },
+  'synthetic-music-plucked': { 'speech-bands-level': 0.3, 'outside-speech-bands-level': 0.1 },
+  'synthetic-room-0.8s-then-music': { 'bed-level-away': 0.1, 'outside-speech-bands-level': 0.7 },
+  'synthetic-dry': { 'outside-speech-bands-level': 0.2 },
+  'synthetic-wall': { 'outside-speech-bands-level': 0.2 },
+  'synthetic-room-0.8s': { 'outside-speech-bands-level': 0.2 }
+};
+
 type Changes = { voice: number; ending: number; movement: number; tail?: number };
 
-async function measureChanges(material: Material, level: Level): Promise<Changes> {
+const effectOf = (level: Level) => {
   const effect = LAB_EFFECTS.find(candidate => candidate.id === `echo-${level}`);
   assert.ok(effect);
-  const rows = levelRows(material, await effect.run(material.mix));
+  return effect;
+};
+
+async function measureChanges(material: Material, level: Level): Promise<Changes> {
+  const rows = levelRows(material, await effectOf(level).run(material.mix));
   const change = (id: string) => {
     const row = rows.find(candidate => candidate.id === id);
     return row ? row.after - row.before : undefined;
@@ -100,6 +123,24 @@ describe('echo reduction regression gate', () => {
         const [light, strong] = [await changes('light'), await changes('strong')];
         assert.ok(light.tail !== undefined && strong.tail !== undefined, 'both levels have a tail');
         assert.ok(strong.tail <= light.tail - separation, `${(strong.tail - light.tail).toFixed(2)} dB`);
+      });
+    }
+  }
+});
+
+describe('echo reduction leaves alone what is no echo of a voice', () => {
+  for (const [id, limits] of Object.entries(UNTOUCHED)) {
+    // The voice speaks through the first half of the longer clip, so 4.5 s of it are music alone.
+    const material = syntheticMaterial(id, id.endsWith('then-music') ? 12 : 5);
+    for (const level of ['light', 'strong'] as const) {
+      it(`${id}, ${level}: ${Object.keys(limits).join(', ')}`, async () => {
+        const rows = levelRows(material, await effectOf(level).run(material.mix));
+        for (const [row, limit] of Object.entries(limits)) {
+          const found = rows.find(candidate => candidate.id === row);
+          assert.ok(found, `the lab reports ${row}`);
+          const change = found.after - found.before;
+          assert.ok(Math.abs(change) <= limit, `${row} changed by ${change.toFixed(2)} dB, limit ${limit} dB`);
+        }
       });
     }
   }

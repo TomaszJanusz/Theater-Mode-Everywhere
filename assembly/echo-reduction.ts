@@ -28,6 +28,22 @@
 // - When even the lowest ratio of the last second stands well above `remain`, several decays in a row
 //   have contradicted it: the scene has changed, and `remain` catches up fast instead of drifting.
 //
+// Only the echo of speech is its business. Music, effects and ambience are no echo, so two limits
+// keep the gain at exactly 1 for them:
+// - It acts in the speech bands only, 80 Hz to 4.8 kHz: from under the lowest fundamental of a voice
+//   (a male voice reaches down to 85 Hz) to the edge of the band layout above the third formant.
+//   Below lie kick drums and rumble; above, sibilance, cymbals and air, which rooms absorb soonest.
+//   Bins outside are never computed and their gain is never written.
+// - It acts only while speech was just present. The cue is a syllable as the level of the speech
+//   bands shows it, each band weighed against its own recent peak: the level rises over the gap, as
+//   a fed band starts; it then holds for a moment; and within about half a second it falls again.
+//   A voice does that in a dry recording and in a hall. Steady or slowly moving sound never rises,
+//   a drum or a plucked string falls from its first moment, and a chord that starts and stays never
+//   falls. The gain is freed when such a syllable ends and stays free while more are heard: for
+//   0.8 s after the last one, long enough for a long word and the audible part of its tail. It
+//   returns to 1 over the next 0.4 s. An instrument that plays notes as long as syllables (a horn
+//   line, a sung one) passes for a voice, and a syllable shorter than a tenth of a second does not count.
+//
 // Stereo shares one transform: left is the real part and right the imaginary part of one
 // complex frame. A real, conjugate-symmetric gain applied to that spectrum scales each
 // channel's spectrum alike, so both channels get the same gain and the image stays put.
@@ -50,8 +66,9 @@ const ALPHA: f32 = 0.9;
 // noisy as the frame it is compared with.
 const SMOOTHING_SECONDS: f32 = 0.03;
 
-// Bands of the learned decay: 0-300 Hz, then octaves, the last one from 9.6 kHz up.
-const BANDS: i32 = 7;
+// The speech bands, which are also the bands of the learned decay: 80-300 Hz, then four octaves.
+const BANDS: i32 = 5;
+const SPEECH_FROM_HZ: f64 = 80;
 const FIRST_EDGE_HZ: f64 = 300;
 // `remain` follows the 10 % quantile of the power ratio: nine steps up cancel one step down.
 const FALL_DB_PER_SECOND: f64 = 37.5;
@@ -91,6 +108,42 @@ const STALE_FROM: f32 = 2;
 const STALE_SPAN: f32 = 2;
 // The floor of a fed band, as a fraction of the preset's floor in dB (-7 dB gives -2.1 dB).
 const CAP_RATIO: f64 = 0.3;
+// The gain may fall for this long after the last syllable in the speech bands, and is back at 1 this much later.
+const TAIL_SECONDS: f32 = 0.8;
+const TAIL_FADE_SECONDS: f32 = 0.4;
+// A band counts towards the level of the speech bands by its power against its own recent peak plus
+// 1 % of all the bands' peaks: a band that holds only the noise floor of the recording counts for nothing.
+const PEAKS_SHARE: f32 = 0.01;
+// A rise counts from a level of 1 % (fully from 2 %): the hum of a recording and the far end of a
+// tail swell too, and neither is speech.
+const SPEECH_GATE: f32 = 0.01;
+// Rise and fall are read from the change of the level over the gap, smoothed over about three frames
+// (three tenths of each new frame) and never counted above 4: the level of steady noise jumps for a
+// frame or two, and a sound that starts stands above its past for the whole gap.
+const TREND_SHARE: f32 = 0.3;
+const TREND_TOP: f32 = 4;
+// The rise is remembered this long (time constant, seconds) while the level shows whether it holds.
+const RISE_MEMORY_SECONDS: f64 = 0.08;
+// The level holds while it loses less than 40 % (2.2 dB) over the gap, fully while it loses less than
+// 20 % (1 dB). A room lets a word fall faster than that when it ends, and so does a drum from its start.
+const HOLD_FROM: f32 = 0.6;
+const HOLD_SLOPE: f32 = 5;
+// A syllable has held for 7 ms after its rise (fully for 19 ms). The rise itself takes the gap and
+// both smoothings to pass, so the sound has lasted about a tenth of a second by then. A note that
+// falls at 50 dB/s holds for one frame; with less than 7 ms it would count, and with more than
+// 19 ms short syllables in a dry room would not.
+const SYLLABLE_FROM: f32 = 0.007;
+const SYLLABLE_SPAN: f32 = 0.012;
+// ...while at least a fifth of a full rise is still remembered (fully from two fifths), which leaves
+// out the little of both that a note falling a bit more slowly shows.
+const CLEAR_FROM: f32 = 0.2;
+const CLEAR_SLOPE: f32 = 5;
+// A syllable is over when the smoothed change shows the level 15 % lower than before the gap (fully
+// at 35 %). By then it must not have lasted long: what a sound that rose and held still counts for
+// as a syllable falls to nothing over this many seconds. A note held for longer is not one.
+const FALL_FROM: f32 = 0.85;
+const FALL_SLOPE: f32 = 5;
+const SYLLABLE_SECONDS: f32 = 0.6;
 
 const inputLeft = memory.data(QUANTUM << 2, 16);
 const inputRight = memory.data(QUANTUM << 2, 16);
@@ -124,8 +177,6 @@ const history = memory.data((HISTORY * BINS) << 2, 16);
 const share = memory.data(BINS << 2, 16);
 const floors = memory.data(BINS << 2, 16);
 const bandStart = memory.data((BANDS + 1) << 2, 4);
-// Power of the current frame summed over each band.
-const bandPower = memory.data(BANDS << 2, 4);
 const remain = memory.data(BANDS << 2, 4);
 const fed = memory.data(BANDS << 2, 4);
 const peak = memory.data(BANDS << 2, 4);
@@ -138,6 +189,19 @@ const quiet = memory.data(BANDS << 2, 4);
 let pending: i32 = 0;
 let readAt: i32 = QUANTUM;
 let slot: i32 = 0;
+// The whole f32x4 lanes that hold the speech bands: the only bins a frame computes.
+let laneFrom: i32 = 0;
+let laneTo: i32 = 0;
+// Seconds since the last syllable in the speech bands, up to the end of the fade.
+let sinceSpeech: f32 = 0;
+// The smoothed change of the speech bands' level over the gap, its latest rise, fading, for how many
+// seconds the level has held since, and how far a syllable is sounding that has not ended yet.
+let trend: f32 = 1;
+let risen: f32 = 0;
+let held: f32 = 0;
+let spoken: f32 = 0;
+// The sum of the bands' recent peaks (`loud`) after the previous frame.
+let peaks: f32 = 0;
 let delayFrames: i32 = 1;
 // The preset's share of the past power: decay over the gap times the over-subtraction.
 let presetShare: f32 = 0;
@@ -148,6 +212,7 @@ let fall: f32 = 1;
 let rise: f32 = 1;
 let peakFall: f32 = 1;
 let release: f32 = 0;
+let riseFade: f32 = 0;
 let lowRise: f32 = 1;
 let staleRise: f32 = 1;
 let loudFall: f32 = 1;
@@ -181,18 +246,21 @@ function initTables(): void {
 
 initTables();
 
-/** Places the band edges for a sample rate; a band above half the rate is left empty. */
+/**
+ * Places the band edges for a sample rate; a band above half the rate is left empty. Every bin
+ * outside the bands gets a gain of 1 here and keeps it: no frame writes it again.
+ */
 function layout(rate: f64): void {
-  let edge = FIRST_EDGE_HZ;
-  store<i32>(bandStart, 0);
-  for (let b = 1; b < BANDS; b++) {
+  let edge = SPEECH_FROM_HZ;
+  for (let b = 0; b <= BANDS; b++) {
     store<i32>(at(bandStart, b), <i32>Math.min(<f64>((N >> 1) + 1), Math.ceil((edge * <f64>N) / rate)));
-    edge *= 2;
+    edge = b == 0 ? FIRST_EDGE_HZ : edge * 2;
   }
-  store<i32>(at(bandStart, BANDS), (N >> 1) + 1);
+  laneFrom = load<i32>(bandStart) & ~3;
+  laneTo = (load<i32>(at(bandStart, BANDS)) + 3) & ~3;
+  bandFill(gain, 0, N, 1);
 }
 
-// Until `configure` runs the bands must still cover every bin: the power of each bin is summed band by band.
 layout(48000);
 
 /** Forgets what was learned about the recording: every band starts from the preset's assumption. */
@@ -205,6 +273,12 @@ function forget(): void {
     store<f32>(at(loud, b), 0);
     store<f32>(at(quiet, b), 0);
   }
+  sinceSpeech = TAIL_SECONDS + TAIL_FADE_SECONDS;
+  trend = 1;
+  risen = 0;
+  held = 0;
+  spoken = 0;
+  peaks = 0;
 }
 
 forget();
@@ -296,6 +370,7 @@ export function configure(rt60: f32, overSubtract: f32, floorDb: f32, gap: f32, 
   rise = <f32>Math.pow(10, (RISE_DB_PER_SECOND * hopSeconds) / 10);
   peakFall = <f32>Math.pow(10, (-PEAK_FALL_DB_PER_SECOND * hopSeconds) / 10);
   release = <f32>Math.exp(-hopSeconds / RELEASE_SECONDS);
+  riseFade = <f32>Math.exp(-hopSeconds / RISE_MEMORY_SECONDS);
   lowRise = <f32>Math.pow(10, (LOW_RISE_DB_PER_SECOND * hopSeconds) / 10);
   staleRise = <f32>Math.pow(10, (STALE_RISE_DB_PER_SECOND * hopSeconds) / 10);
   loudFall = <f32>Math.pow(10, (-LOUD_FALL_DB_PER_SECOND * hopSeconds) / 10);
@@ -329,14 +404,20 @@ function bandFill(base: usize, from: i32, to: i32, value: f32): void {
 
 /**
  * Per band: learn `remain` from this frame, decide how far the band is fed by a source, and set the
- * share of the past power taken as late reverb and the floor for its bins. No step here is a hard
- * decision, so the float32 build and the float64 reference cannot part ways on a tie.
+ * share of the past power taken as late reverb and the floor for its bins. Across the bands: find
+ * the syllables that let the floors below 1. No step here is a hard decision, so the float32 build
+ * and the float64 reference cannot part ways on a tie.
  */
 function bands(past: usize): void {
+  // How far the gain may fall in this frame: 1 until `TAIL_SECONDS` after the last syllable, then down to 0.
+  const tail = unit((TAIL_SECONDS + TAIL_FADE_SECONDS - sinceSpeech) / TAIL_FADE_SECONDS);
+  let level: f32 = 0;
+  let before: f32 = 0;
+  let recentPeaks: f32 = 0;
   for (let b = 0; b < BANDS; b++) {
     const from = load<i32>(at(bandStart, b));
     const to = load<i32>(at(bandStart, b + 1));
-    const now = load<f32>(at(bandPower, b));
+    const now = bandSum(power, from, to);
     const was = bandSum(past, from, to) + EPSILON * <f32>(to - from + 1);
     const ratio = now / was;
     const top = max<f32>(was, load<f32>(at(peak, b)) * peakFall);
@@ -353,18 +434,40 @@ function bands(past: usize): void {
     left = max<f32>(REMAIN_MIN, min<f32>(1, left * (1 + open * (fall + (up - fall) * turn - 1))));
     store<f32>(at(remain, b), left);
     const heard = load<f32>(at(loud, b));
+    // Each band counts by how loud it is against its own recent peak, so the level of the speech
+    // bands is not that of the one band that carries most of the power.
+    const weight: f32 = 1 / (heard + now + PEAKS_SHARE * peaks + EPSILON);
+    level += now * weight;
+    before += was * weight;
     const still = min<f32>(unit(2 - now / (heard * QUIET + EPSILON)) * (load<f32>(at(quiet, b)) + hopTime), HOLD_SECONDS + HOLD_SPAN_SECONDS);
     store<f32>(at(quiet, b), still);
     const recent = max<f32>(was, heard * (peakFall + (loudFall - peakFall) * unit((still - HOLD_SECONDS) / HOLD_SPAN_SECONDS)));
     store<f32>(at(loud, b), recent);
-    const before = load<f32>(at(fed, b));
+    recentPeaks += recent;
+    const feeding = load<f32>(at(fed, b));
     const onset = unit(ratio - RISE_FROM) * unit(now / (recent * START_GATE + EPSILON) - 1);
-    const start = max<f32>(onset, unit((before - KEEP_FROM) * KEEP_SLOPE));
-    const source = max<f32>(unit((ratio / left - FED_FROM) / FED_SPAN) * start, before * release);
+    const start = max<f32>(onset, unit((feeding - KEEP_FROM) * KEEP_SLOPE));
+    const source = max<f32>(unit((ratio / left - FED_FROM) / FED_SPAN) * start, feeding * release);
     store<f32>(at(fed, b), source);
     bandFill(share, from, to, presetShare + (min<f32>(left, presetShare) - presetShare) * source);
-    bandFill(floors, from, to, floorGain + (capGain - floorGain) * source);
+    bandFill(floors, from, to, 1 + (floorGain + (capGain - floorGain) * source - 1) * tail);
   }
+  peaks = recentPeaks;
+  // A syllable: the level of the speech bands rises as a fed band does, holds, and falls. `level` is
+  // at most `BANDS` and the divisor never zero, so the change is finite whatever the input.
+  const change = level / (before + EPSILON);
+  trend += TREND_SHARE * (min<f32>(change, TREND_TOP) - trend);
+  const rising = unit(trend - RISE_FROM);
+  const falling = unit((FALL_FROM - trend) * FALL_SLOPE);
+  risen = max<f32>(rising * unit(level / SPEECH_GATE - 1), risen * riseFade);
+  // Counted from the end of the rise, so that the quiet before a sound does not count as holding.
+  held = (held + hopTime) * unit((change - HOLD_FROM) * HOLD_SLOPE) * (1 - rising);
+  const syllable = unit((risen * unit((held - SYLLABLE_FROM) / SYLLABLE_SPAN) - CLEAR_FROM) * CLEAR_SLOPE);
+  spoken = max<f32>(spoken - hopTime / SYLLABLE_SECONDS, syllable);
+  // The gain is freed when a syllable ends; while it is free, each further syllable keeps it so.
+  // Half a syllable frees it for half as long, and no number of weak ones adds up to a whole.
+  const speech = max<f32>(spoken * falling, syllable * tail);
+  sinceSpeech = min<f32>(sinceSpeech, (TAIL_SECONDS + TAIL_FADE_SECONDS) * (1 - speech)) + hopTime;
 }
 
 function frame(): void {
@@ -376,22 +479,17 @@ function frame(): void {
   fft(real, imag);
 
   // |L[k]|^2 + |R[k]|^2 from the shared spectrum Z = L + jR: (|Z[k]|^2 + |Z[N-k]|^2) / 2.
+  // A non-finite sample reaches every bin of its frame, so these bins answer for all of them.
   let total: f32 = 0;
-  for (let b = 0; b < BANDS; b++) {
-    const to = load<i32>(at(bandStart, b + 1));
-    let sum: f32 = 0;
-    for (let k = load<i32>(at(bandStart, b)); k < to; k++) {
-      const m = (N - k) & (N - 1);
-      const r1 = load<f32>(at(real, k));
-      const i1 = load<f32>(at(imag, k));
-      const r2 = load<f32>(at(real, m));
-      const i2 = load<f32>(at(imag, m));
-      const p: f32 = 0.5 * (r1 * r1 + i1 * i1 + r2 * r2 + i2 * i2) + EPSILON;
-      store<f32>(at(power, k), p);
-      sum += p;
-    }
-    store<f32>(at(bandPower, b), sum);
-    total += sum;
+  for (let k = laneFrom; k < laneTo; k++) {
+    const m = (N - k) & (N - 1);
+    const r1 = load<f32>(at(real, k));
+    const i1 = load<f32>(at(imag, k));
+    const r2 = load<f32>(at(real, m));
+    const i2 = load<f32>(at(imag, m));
+    const p: f32 = 0.5 * (r1 * r1 + i1 * i1 + r2 * r2 + i2 * i2) + EPSILON;
+    store<f32>(at(power, k), p);
+    total += p;
   }
   if (!isFinite<f32>(total)) {
     // A NaN or infinity would stay in the history; drop everything and start over silent.
@@ -409,7 +507,7 @@ function frame(): void {
   const oneV = f32x4.splat(1);
   const zeroV = f32x4.splat(0);
   const epsilonV = f32x4.splat(EPSILON);
-  for (let k = 0; k < BINS; k += 4) {
+  for (let k = laneFrom; k < laneTo; k += 4) {
     const p = v128.load(at(power, k));
     const s = f32x4.add(f32x4.mul(keep, v128.load(at(smoothed, k))), f32x4.mul(take, p));
     v128.store(at(smoothed, k), s);
@@ -427,17 +525,26 @@ function frame(): void {
   }
   slot = (slot + 1) % HISTORY;
 
-  // [1 2 1] / 4 across frequency. The gain is even around bins 0 and N/2, which gives both edges
-  // their missing neighbour. The decision-directed estimate above keeps the unsmoothed gain.
+  // [1 2 1] / 4 across frequency. An edge of the speech bands is smoothed against itself: the bin
+  // beyond it stays at 1 and would halve what the edge bin takes off, and the lowest one holds the
+  // fundamental of a low voice. The gain is even around bins 0 and N/2, which gives those edges their
+  // missing neighbour. The decision-directed estimate above keeps the unsmoothed gain.
+  const first = load<i32>(bandStart);
+  const end = load<i32>(at(bandStart, BANDS));
+  store<f32>(at(rawGain, first - 1), load<f32>(at(rawGain, first)));
+  store<f32>(at(rawGain, end), load<f32>(at(rawGain, end - 1)));
   store<f32>(rawGain - 4, load<f32>(at(rawGain, 1)));
   store<f32>(at(rawGain, (N >> 1) + 1), load<f32>(at(rawGain, (N >> 1) - 1)));
   const halfV = f32x4.splat(0.5);
   const quarterV = f32x4.splat(0.25);
-  for (let k = 0; k < BINS; k += 4) {
+  for (let k = laneFrom; k < laneTo; k += 4) {
     const centre = at(rawGain, k);
     const sides = f32x4.add(v128.load(centre - 4), v128.load(centre + 4));
     v128.store(at(gain, k), f32x4.add(f32x4.mul(halfV, v128.load(centre)), f32x4.mul(quarterV, sides)));
   }
+  // The lanes hold a few bins beyond the speech bands; their gain is 1.
+  bandFill(gain, laneFrom, first, 1);
+  bandFill(gain, end, laneTo, 1);
   for (let n = (N >> 1) + 1; n < N; n++) store<f32>(at(gain, n), load<f32>(at(gain, N - n)));
 
   for (let i = 0; i < N; i += 4) {

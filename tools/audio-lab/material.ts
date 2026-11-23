@@ -29,7 +29,24 @@ export type Material = {
   room?: Room;
   /** The voice as it sits in a mix that has no room (speech over music): the rest is not voice. */
   voice?: Signal;
+  /** The sound in the mix that is not the talker (music, effects), aligned with it. A mix with a `voice` and no `bed` takes all that is not the voice as its bed. */
+  bed?: Signal;
 };
+
+/** `first` plus (or, with `sign` -1, minus) every signal of `rest`, sample by sample. */
+function combine(first: Signal, rest: Signal[], sign: 1 | -1): Signal {
+  const channels = first.channels.map((channel, index) => {
+    const out = Float32Array.from(channel);
+    for (const signal of rest) {
+      const other = signal.channels[index];
+      for (let i = 0; i < out.length; i++) out[i] += sign * other[i];
+    }
+    return out;
+  });
+  return { sampleRate: first.sampleRate, channels };
+}
+export const sum = (signals: Signal[]): Signal => combine(signals[0], signals.slice(1), 1);
+export const minus = (a: Signal, b: Signal): Signal => combine(a, [b], -1);
 
 /**
  * The dry voice convolved with each part of the room's response (one or two channels), peak 0.5,

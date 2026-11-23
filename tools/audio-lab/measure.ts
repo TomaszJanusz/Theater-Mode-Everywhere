@@ -4,14 +4,15 @@
  *
  * - With a known room and an effect that can be followed, the voice and the room's sound are
  *   measured separately at every reference point of `metrics/early-late.ts`.
- * - With a known dry voice over other sound, the voice and that other sound are measured.
+ * - With a known dry voice over other sound, the voice and that other sound are measured. A room
+ *   may have other sound in it too (`Material.bed`).
  * - Otherwise only the whole mix is known, and the rows say so (`-mix`).
  *
  * ESTOI and SRMR hear one channel at a time. They are taken per channel and averaged over the
  * channels that yield a score, so a clip with sound on one side only is judged by that side.
  */
 import type { EffectResult } from './effects';
-import type { Material } from './material';
+import { minus, sum, type Material } from './material';
 import { bandLevel, bandsOf } from './metrics/band-energy';
 import { REFERENCE_POINTS, type ReferenceKey } from './metrics/early-late';
 import { estoi } from './metrics/estoi';
@@ -19,6 +20,7 @@ import { describeFrames, speechInDryVoice, speechInMix, type Frames } from './me
 import { framePower, maskedLevel, powerGrid, splitGrids, voiceBand, type Grid } from './metrics/grid';
 import { levelMovement } from './metrics/level-movement';
 import { loudness } from './metrics/loudness';
+import { speechBandEdges, speechBandLevels } from './metrics/speech-bands';
 import { srmr } from './metrics/srmr';
 import { tailLevel } from './metrics/tail-decay';
 import { voiceLevel } from './metrics/voice-loss';
@@ -28,21 +30,6 @@ import type { MetricRow, Signal } from './types';
 type Pair<T> = { before: T; after: T };
 /** One way of telling voice from room: what counts as voice, and what is left over as the room's sound (when a room is known). */
 type View = { key: string; of: string; voice: Pair<Grid>; room?: Pair<Grid>; note?: string };
-
-/** `first` plus (or, with `sign` -1, minus) every signal of `rest`, sample by sample. */
-function combine(first: Signal, rest: Signal[], sign: 1 | -1): Signal {
-  const channels = first.channels.map((channel, index) => {
-    const out = Float32Array.from(channel);
-    for (const signal of rest) {
-      const other = signal.channels[index];
-      for (let i = 0; i < out.length; i++) out[i] += sign * other[i];
-    }
-    return out;
-  });
-  return { sampleRate: first.sampleRate, channels };
-}
-const sum = (signals: Signal[]): Signal => combine(signals[0], signals.slice(1), 1);
-const minus = (a: Signal, b: Signal): Signal => combine(a, [b], -1);
 
 /** The reference point behind which the room's sound counts as late reverb. */
 const LATE_CUT: ReferenceKey = '50ms';
@@ -84,18 +71,38 @@ function viewRows({ key, of, voice, room, note }: View, frames: Frames): MetricR
   return rows;
 }
 
-/** What is not voice in a mix without a room (music, effects), followed through the effect. */
+/** What is not the talker in a mix (music, effects), followed through the effect. */
 function bedRows(material: Material, result: EffectResult, frames: Frames): MetricRow[] {
-  if (!material.voice || material.room || !result.follow) return [];
-  const bed = minus(material.mix, material.voice);
-  const pair = grids({ before: bed, after: result.follow(bed) });
+  const { follow } = result;
+  if (!follow) return [];
+  const derived = !material.bed && material.voice && !material.room ? minus(material.mix, material.voice) : undefined;
+  const bed = material.bed ?? derived;
+  if (!bed) return [];
+  const pair = grids({ before: bed, after: follow(bed) });
   // A dry voice alone has nothing under it.
-  if (speechLevel(pair.before, frames) < speechLevel(powerGrid(material.voice), frames) - 80) return [];
+  if (derived && material.voice && speechLevel(pair.before, frames) < speechLevel(powerGrid(material.voice), frames) - 80) return [];
   const pause = Uint8Array.from(frames.speech, value => 1 - value);
   const level = (mask: Uint8Array) => each(pair, grid => maskedLevel(framePower(grid, voiceBand(grid)), mask));
-  return [
+  const rows: MetricRow[] = [
     { id: 'bed-level-speech', label: 'Other sound while the voice speaks', unit: 'dBFS', ...level(frames.speech) },
     { id: 'bed-level-pauses', label: 'Other sound in pauses', unit: 'dBFS', ...level(pause), note: 'A gap to the level while speaking is the voice pumping the sound under it' }
+  ];
+  if (frames.away.some(value => value === 1)) {
+    rows.push({ id: 'bed-level-away', label: 'Other sound with no voice for 1.5 s', unit: 'dBFS', ...level(frames.away), note: 'No speech was just present: a change here is the effect acting on sound that is no echo of the voice' });
+  }
+  return rows;
+}
+
+/** The whole mix inside and outside the bands the effect may act on (`metrics/speech-bands.ts`). */
+function speechBandRows(mix: Pair<Signal>): MetricRow[] {
+  const [low, high] = Object.values(speechBandEdges(mix.before.sampleRate)).map(Math.round);
+  const [before, after] = [speechBandLevels(mix.before), speechBandLevels(mix.after)];
+  return [
+    { id: 'speech-bands-level', label: `Level inside the speech bands (${low} to ${high} Hz, whole mix)`, unit: 'dBFS', before: before.inside, after: after.inside },
+    {
+      id: 'outside-speech-bands-level', label: `Level outside the speech bands (below ${low} and above ${high} Hz, whole mix)`, unit: 'dBFS', before: before.outside, after: after.outside,
+      note: 'Echo reduction acts inside the speech bands only: a change here is bass, cymbals or air it should not have touched'
+    }
   ];
 }
 
@@ -143,13 +150,13 @@ function describe(material: Material, mix: Grid): Frames {
 }
 
 /**
- * The level rows alone (voice, word endings, level movement, room, tail, other sound): everything
+ * The level rows alone (voice, word endings, level movement, room, tail, other sound, speech bands): everything
  * the echo regression gate asserts on, without the slower perceptual measures.
  */
 export function levelRows(material: Material, result: EffectResult): MetricRow[] {
   const mix = grids({ before: material.mix, after: result.output });
   const frames = describe(material, mix.before);
-  return [...views(material, result, mix).flatMap(view => viewRows(view, frames)), ...bedRows(material, result, frames)];
+  return [...views(material, result, mix).flatMap(view => viewRows(view, frames)), ...bedRows(material, result, frames), ...speechBandRows({ before: material.mix, after: result.output })];
 }
 
 export function measure(material: Material, result: EffectResult): MetricRow[] {
@@ -160,6 +167,7 @@ export function measure(material: Material, result: EffectResult): MetricRow[] {
   return [
     ...all.flatMap(view => viewRows(view, frames)),
     ...bedRows(material, result, frames),
+    ...speechBandRows({ before: mix, after: result.output }),
     ...estoiRows(material, result.output),
     ...bandsOf(mixGrids.before).map(band => ({
       id: band.id, label: `${band.label} while speaking (${all[0].of})`, unit: 'dBFS', ...each(all[0].voice, grid => bandLevel(grid, band, frames.speech))

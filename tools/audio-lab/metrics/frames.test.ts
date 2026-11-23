@@ -32,6 +32,17 @@ describe('audio lab: frame labels', () => {
     assert.ok(leading.tail.every(value => value === 0), 'silence before the first word follows no speech');
   });
 
+  it('calls the voice away once it has been silent for 1.5 s, and before it first speaks', () => {
+    const speech = new Uint8Array(1000);
+    speech.fill(1, 100, 200);
+    speech.fill(1, 300, 320);
+    const { away } = describeFrames(speech, FRAME_HZ);
+    const from = Math.round(1.5 * FRAME_HZ);
+    assert.ok(away.subarray(0, 100).every(value => value === 1), 'nothing was spoken yet');
+    assert.ok(away.subarray(100, 320 + from - 1).every(value => value === 0), 'speech, a short pause and the first 1.5 s after it');
+    assert.ok(away.subarray(320 + from - 1).every(value => value === 1), 'from 1.5 s after the last word');
+  });
+
   it('marks the last 60 ms of a word, but only before a real pause', () => {
     for (let m = 8; m < dry.frames - 40; m++) {
       const left = BURST.on - phaseOf(m);

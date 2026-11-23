@@ -51,7 +51,7 @@ describe('audio lab: level metrics', () => {
   });
 
   it('returns NaN instead of a number when there is nothing to measure', () => {
-    const none = { speech: new Uint8Array(before.voice.frames), tail: new Uint8Array(before.voice.frames), wordEnding: new Uint8Array(before.voice.frames) };
+    const none = { speech: new Uint8Array(before.voice.frames), tail: new Uint8Array(before.voice.frames), wordEnding: new Uint8Array(before.voice.frames), away: new Uint8Array(before.voice.frames) };
     assert.ok(Number.isNaN(voiceLevel(before.voice, none)));
     assert.ok(Number.isNaN(tailLevel(before.reverb, none)));
     assert.ok(Number.isNaN(wordEndingLevel(before.voice, none)));
