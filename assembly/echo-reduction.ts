@@ -11,6 +11,18 @@
 // is worst on one, whose spectrum is already patchy (TME-275). So the late estimate averages 30 ms
 // of input, and the gain is smoothed across neighbouring bins before it is applied.
 //
+// The voice must survive. The preset's estimate is a fixed share of whatever sounded `delay` frames
+// ago, so on its own it takes every sound that lasts as its own echo and turns each vowel down after
+// its onset, the same on a dry recording as in a hall (TME-279). Two things per band keep it honest:
+// - `remain` learns how much of a band's power is really left `delay` frames later when nothing
+//   feeds the band. It follows a low quantile of (power now) / (power then): free decays are the
+//   lowest values that ratio takes, so the quantile sits on them. It can only lower the estimate.
+// - A band whose power stands well above what `remain` predicts is being fed by a source. While it
+//   is, the band gets the learned estimate and a shallow floor; in the decay after it, the preset's
+//   estimate and floor apply as before. Steady sound keeps `remain` at 1 and is treated as before.
+//   A band can only become fed while its power rises: the long, weak tail of a hall after a close
+//   voice also stands above the prediction, but nothing in it is an onset.
+//
 // Stereo shares one transform: left is the real part and right the imaginary part of one
 // complex frame. A real, conjugate-symmetric gain applied to that spectrum scales each
 // channel's spectrum alike, so both channels get the same gain and the image stays put.
@@ -32,6 +44,32 @@ const ALPHA: f32 = 0.9;
 // Time constant of the input power smoothing, in seconds. Shorter, and the late estimate is as
 // noisy as the frame it is compared with.
 const SMOOTHING_SECONDS: f32 = 0.03;
+
+// Bands of the learned decay: 0-300 Hz, then octaves, the last one from 9.6 kHz up.
+const BANDS: i32 = 7;
+const FIRST_EDGE_HZ: f64 = 300;
+// `remain` follows the 10 % quantile of the power ratio: nine steps up cancel one step down.
+const FALL_DB_PER_SECOND: f64 = 37.5;
+const RISE_DB_PER_SECOND: f64 = FALL_DB_PER_SECOND / 9;
+// The quantile sits inside the decays; the estimate is kept this far (2.5 dB) above it.
+const HEADROOM: f32 = 1.7782794;
+// -25 dB: a dry recording. Lower would only slow the way back up after a change of scene.
+const REMAIN_MIN: f32 = 0.0031622777;
+// Frames whose band power is 40 dB below the band's slow peak (0.6 dB/s) say nothing about decays.
+const GATE: f32 = 1e-4;
+const PEAK_FALL_DB_PER_SECOND: f64 = 0.6;
+// A band is fed from 2 times (3 dB) what `remain` predicts, fully at 6 times (7.8 dB).
+const FED_FROM: f32 = 2;
+const FED_SPAN: f32 = 4;
+// How long a band stays fed after its source stops, seconds: long enough for the end of a word.
+const RELEASE_SECONDS: f64 = 0.025;
+// A band starts being fed while its power rises 1.5 to 2.5 times (1.8 to 4 dB) over the gap, and can
+// return to it without a rise only while it is still at least 5 to 10 % fed.
+const RISE_FROM: f32 = 1.5;
+const KEEP_FROM: f32 = 0.05;
+const KEEP_SLOPE: f32 = 20;
+// The floor of a fed band, as a fraction of the preset's floor in dB (-7 dB gives -2.1 dB).
+const CAP_RATIO: f64 = 0.3;
 
 const inputLeft = memory.data(QUANTUM << 2, 16);
 const inputRight = memory.data(QUANTUM << 2, 16);
@@ -61,15 +99,29 @@ const gain = memory.data(N << 2, 16);
 // The gain of each bin before smoothing, with one lane in front for the mirrored bin -1.
 const rawGain = memory.data((BINS + 8) << 2, 16) + 16;
 const history = memory.data((HISTORY * BINS) << 2, 16);
+// Per bin, the share of the past power taken as late reverb and the lowest gain, refilled per band.
+const share = memory.data(BINS << 2, 16);
+const floors = memory.data(BINS << 2, 16);
+const bandStart = memory.data((BANDS + 1) << 2, 4);
+// Power of the current frame summed over each band.
+const bandPower = memory.data(BANDS << 2, 4);
+const remain = memory.data(BANDS << 2, 4);
+const fed = memory.data(BANDS << 2, 4);
+const peak = memory.data(BANDS << 2, 4);
 
 let pending: i32 = 0;
 let readAt: i32 = QUANTUM;
 let slot: i32 = 0;
 let delayFrames: i32 = 1;
-let decay: f32 = 0;
-let overSubtraction: f32 = 1;
+// The preset's share of the past power: decay over the gap times the over-subtraction.
+let presetShare: f32 = 0;
 let floorGain: f32 = 1;
+let capGain: f32 = 1;
 let smoothing: f32 = 0;
+let fall: f32 = 1;
+let rise: f32 = 1;
+let peakFall: f32 = 1;
+let release: f32 = 0;
 
 @inline function at(base: usize, index: i32): usize {
   return base + (<usize>index << 2);
@@ -98,6 +150,31 @@ function initTables(): void {
 }
 
 initTables();
+
+/** Places the band edges for a sample rate; a band above half the rate is left empty. */
+function layout(rate: f64): void {
+  let edge = FIRST_EDGE_HZ;
+  store<i32>(bandStart, 0);
+  for (let b = 1; b < BANDS; b++) {
+    store<i32>(at(bandStart, b), <i32>Math.min(<f64>((N >> 1) + 1), Math.ceil((edge * <f64>N) / rate)));
+    edge *= 2;
+  }
+  store<i32>(at(bandStart, BANDS), (N >> 1) + 1);
+}
+
+// Until `configure` runs the bands must still cover every bin: the power of each bin is summed band by band.
+layout(48000);
+
+/** Forgets what was learned about the recording: every band starts from the preset's assumption. */
+function forget(): void {
+  for (let b = 0; b < BANDS; b++) {
+    store<f32>(at(remain, b), 1);
+    store<f32>(at(fed, b), 0);
+    store<f32>(at(peak, b), 0);
+  }
+}
+
+forget();
 
 /** In-place forward transform; swapping the two arrays gives the unscaled inverse. */
 function fft(re: usize, im: usize): void {
@@ -164,22 +241,82 @@ export function reset(): void {
   memory.fill(smoothed, 0, BINS << 2);
   memory.fill(direct, 0, BINS << 2);
   memory.fill(history, 0, (HISTORY * BINS) << 2);
+  forget();
   pending = 0;
   readAt = QUANTUM;
 }
 
 /**
  * `rt60` is the assumed room decay in seconds, `gap` the prediction gap in seconds,
- * `floorDb` the lowest gain. Takes effect on the next frame without clearing state.
+ * `floorDb` the lowest gain. Takes effect on the next frame without clearing state: what was
+ * learned about the recording belongs to the recording, not to the level.
  */
 export function configure(rt60: f32, overSubtract: f32, floorDb: f32, gap: f32, rate: f32): void {
   const hopSeconds = <f64>HOP / <f64>rate;
   delayFrames = <i32>Math.max(1, Math.min(<f64>(HISTORY - 1), Math.round(<f64>gap / hopSeconds)));
   const delta = (3 * Math.LN10) / <f64>rt60;
-  decay = <f32>Math.exp(-2 * delta * <f64>delayFrames * hopSeconds);
-  overSubtraction = overSubtract;
+  presetShare = <f32>(Math.exp(-2 * delta * <f64>delayFrames * hopSeconds) * <f64>overSubtract);
   floorGain = <f32>Math.pow(10, <f64>floorDb / 20);
+  capGain = <f32>Math.pow(10, (CAP_RATIO * <f64>floorDb) / 20);
   smoothing = <f32>Math.exp(-hopSeconds / <f64>SMOOTHING_SECONDS);
+  fall = <f32>Math.pow(10, (-FALL_DB_PER_SECOND * hopSeconds) / 10);
+  rise = <f32>Math.pow(10, (RISE_DB_PER_SECOND * hopSeconds) / 10);
+  peakFall = <f32>Math.pow(10, (-PEAK_FALL_DB_PER_SECOND * hopSeconds) / 10);
+  release = <f32>Math.exp(-hopSeconds / RELEASE_SECONDS);
+  layout(<f64>rate);
+}
+
+/** Sum of bins `from` to `to` (exclusive) of a 16-byte aligned array. */
+function bandSum(base: usize, from: i32, to: i32): f32 {
+  let sum: f32 = 0;
+  let k = from;
+  for (; k < to && (k & 3) != 0; k++) sum += load<f32>(at(base, k));
+  let lanes = f32x4.splat(0);
+  for (; k + 4 <= to; k += 4) lanes = f32x4.add(lanes, v128.load(at(base, k)));
+  sum += f32x4.extract_lane(lanes, 0) + f32x4.extract_lane(lanes, 1) + f32x4.extract_lane(lanes, 2) + f32x4.extract_lane(lanes, 3);
+  for (; k < to; k++) sum += load<f32>(at(base, k));
+  return sum;
+}
+
+function bandFill(base: usize, from: i32, to: i32, value: f32): void {
+  let k = from;
+  for (; k < to && (k & 3) != 0; k++) store<f32>(at(base, k), value);
+  const lanes = f32x4.splat(value);
+  for (; k + 4 <= to; k += 4) v128.store(at(base, k), lanes);
+  for (; k < to; k++) store<f32>(at(base, k), value);
+}
+
+@inline function unit(value: f32): f32 {
+  return max<f32>(0, min<f32>(1, value));
+}
+
+/**
+ * Per band: learn `remain` from this frame, decide how far the band is fed by a source, and set the
+ * share of the past power taken as late reverb and the floor for its bins. No step here is a hard
+ * decision, so the float32 build and the float64 reference cannot part ways on a tie.
+ */
+function bands(past: usize): void {
+  for (let b = 0; b < BANDS; b++) {
+    const from = load<i32>(at(bandStart, b));
+    const to = load<i32>(at(bandStart, b + 1));
+    const now = load<f32>(at(bandPower, b));
+    const was = bandSum(past, from, to) + EPSILON * <f32>(to - from + 1);
+    const ratio = now / was;
+    const top = max<f32>(was, load<f32>(at(peak, b)) * peakFall);
+    store<f32>(at(peak, b), top);
+    // Open from the gate to 3 dB above it; the step turns from down to up within 10 % of `remain`.
+    const open = unit(was / (top * GATE + EPSILON) - 1);
+    let left = load<f32>(at(remain, b));
+    const turn = unit(((ratio * HEADROOM) / left - 0.9) * 5);
+    left = max<f32>(REMAIN_MIN, min<f32>(1, left * (1 + open * (fall + (rise - fall) * turn - 1))));
+    store<f32>(at(remain, b), left);
+    const before = load<f32>(at(fed, b));
+    const start = max<f32>(unit(ratio - RISE_FROM), unit((before - KEEP_FROM) * KEEP_SLOPE));
+    const source = max<f32>(unit((ratio / left - FED_FROM) / FED_SPAN) * start, before * release);
+    store<f32>(at(fed, b), source);
+    bandFill(share, from, to, presetShare + (min<f32>(left, presetShare) - presetShare) * source);
+    bandFill(floors, from, to, floorGain + (capGain - floorGain) * source);
+  }
 }
 
 function frame(): void {
@@ -192,15 +329,21 @@ function frame(): void {
 
   // |L[k]|^2 + |R[k]|^2 from the shared spectrum Z = L + jR: (|Z[k]|^2 + |Z[N-k]|^2) / 2.
   let total: f32 = 0;
-  for (let k = 0; k <= N >> 1; k++) {
-    const m = (N - k) & (N - 1);
-    const r1 = load<f32>(at(real, k));
-    const i1 = load<f32>(at(imag, k));
-    const r2 = load<f32>(at(real, m));
-    const i2 = load<f32>(at(imag, m));
-    const p: f32 = 0.5 * (r1 * r1 + i1 * i1 + r2 * r2 + i2 * i2) + EPSILON;
-    store<f32>(at(power, k), p);
-    total += p;
+  for (let b = 0; b < BANDS; b++) {
+    const to = load<i32>(at(bandStart, b + 1));
+    let sum: f32 = 0;
+    for (let k = load<i32>(at(bandStart, b)); k < to; k++) {
+      const m = (N - k) & (N - 1);
+      const r1 = load<f32>(at(real, k));
+      const i1 = load<f32>(at(imag, k));
+      const r2 = load<f32>(at(real, m));
+      const i2 = load<f32>(at(imag, m));
+      const p: f32 = 0.5 * (r1 * r1 + i1 * i1 + r2 * r2 + i2 * i2) + EPSILON;
+      store<f32>(at(power, k), p);
+      sum += p;
+    }
+    store<f32>(at(bandPower, b), sum);
+    total += sum;
   }
   if (!isFinite<f32>(total)) {
     // A NaN or infinity would stay in the history; drop everything and start over silent.
@@ -210,10 +353,9 @@ function frame(): void {
 
   const past = at(history, ((slot - delayFrames + HISTORY) % HISTORY) * BINS);
   const now = at(history, slot * BINS);
+  bands(past);
   const keep = f32x4.splat(smoothing);
   const take = f32x4.splat(1 - smoothing);
-  const decayV = f32x4.splat(decay * overSubtraction);
-  const floorV = f32x4.splat(floorGain);
   const alphaV = f32x4.splat(ALPHA);
   const restV = f32x4.splat(1 - ALPHA);
   const oneV = f32x4.splat(1);
@@ -224,13 +366,13 @@ function frame(): void {
     const s = f32x4.add(f32x4.mul(keep, v128.load(at(smoothed, k))), f32x4.mul(take, p));
     v128.store(at(smoothed, k), s);
     v128.store(now + (<usize>k << 2), s);
-    const late = f32x4.add(f32x4.mul(decayV, v128.load(past + (<usize>k << 2))), epsilonV);
+    const late = f32x4.add(f32x4.mul(v128.load(at(share, k)), v128.load(past + (<usize>k << 2))), epsilonV);
     const posterior = f32x4.div(p, late);
     const prior = f32x4.add(
       f32x4.mul(alphaV, f32x4.div(v128.load(at(direct, k)), late)),
       f32x4.mul(restV, f32x4.max(f32x4.sub(posterior, oneV), zeroV))
     );
-    const g = f32x4.max(f32x4.div(prior, f32x4.add(prior, oneV)), floorV);
+    const g = f32x4.max(f32x4.div(prior, f32x4.add(prior, oneV)), v128.load(at(floors, k)));
     v128.store(at(direct, k), f32x4.mul(f32x4.mul(g, g), p));
     v128.store(at(rawGain, k), g);
   }
