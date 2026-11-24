@@ -34,6 +34,12 @@ const snl = {
   id: 'UC6en775nhqTdmaZQi9uT16A', name: 'Saturday Night Live UK', url: 'https://www.youtube.com/@SaturdayNightLiveUK',
   avatarUrl: null, verified: false, stat: null
 };
+// Recorded Official Artist Channel uploads (VEVO, Topic) and a brand channel's own upload; fixture evidence, not live.
+const oac = JSON.parse(readFileSync(new URL('../../../test/host-fixtures/youtube-oac-owner.json', import.meta.url), 'utf8')) as {
+  cases: { video: string; player: ReturnType<typeof response>; watch: ReturnType<typeof watchData> }[];
+};
+const OAC_AVATAR = 'ytc/AIdro_n0cOrvmlSEli-0WQipMDMqjeAE_juxkrGhqAAf1GGbJA=s88-c-k-c0x00ffffff-no-rj';
+const BLENDER_AVATAR = 'ytc/AIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY=s88-c-k-c0x00ffffff-no-rj';
 /** A "Collaborators" dialog row as YouTube builds it, reduced to the channel link. */
 const dialogRow = (browseId: string, content: string) => ({ listItemViewModel: { title: {
   content, commandRuns: [{ onTap: { innertubeCommand: { browseEndpoint: { browseId } } } }]
@@ -56,7 +62,7 @@ describe('YouTube video owner', () => {
     }
   });
 
-  it('adds the owner renderer\'s avatar, badge and subscribers only when it names the same channel', () => {
+  it('adds the owner renderer\'s avatar, badge and subscribers, and names the renderer\'s channel when it differs', () => {
     const renderer = {
       navigationEndpoint: { browseEndpoint: { browseId: CHANNEL } },
       thumbnail: { thumbnails: [
@@ -67,11 +73,48 @@ describe('YouTube video owner', () => {
     };
     assert.deepEqual(youtubeAuthors(owner, 'video-a', [watchData('video-a', renderer)]),
       [{ ...owner, avatarUrl: 'https://yt3.ggpht.com/a=s88', verified: true, stat: '1.26M subscribers' }]);
-    const otherChannel = { ...renderer, navigationEndpoint: { browseEndpoint: { browseId: 'UCpreviousChannel0000000' } } };
-    assert.deepEqual(youtubeAuthors(owner, 'video-a', [watchData('video-a', otherChannel)]), [owner]);
+    // Another channel with a name is the author, linked like that name; without one, or with a bad id, the owner stays.
+    const ARTIST = 'UCartistChannel000000000';
+    const otherChannel = (title: unknown, browseId = ARTIST) => ({ ...renderer, title, navigationEndpoint: { browseEndpoint: { browseId } } });
+    const titled = { runs: [{ text: 'Artist', navigationEndpoint: { browseEndpoint: { browseId: ARTIST, canonicalBaseUrl: '/@artist' } } }] };
+    assert.deepEqual(youtubeAuthors(owner, 'video-a', [watchData('video-a', otherChannel(titled))]), [{
+      id: ARTIST, name: 'Artist', url: 'https://www.youtube.com/@artist', avatarUrl: 'https://yt3.ggpht.com/a=s88', verified: true, stat: '1.26M subscribers'
+    }]);
+    // A name that links elsewhere, or nowhere, falls back to the channel id's page.
+    const elsewhere = { runs: [{ text: 'Artist', navigationEndpoint: { browseEndpoint: { browseId: CHANNEL, canonicalBaseUrl: '/@other' } } }] };
+    for (const title of [elsewhere, { simpleText: 'Artist', runs: [{ text: 'Artist' }] }]) {
+      assert.equal(youtubeAuthors(owner, 'video-a', [watchData('video-a', otherChannel(title))])[0]?.url, `https://www.youtube.com/channel/${ARTIST}`);
+    }
+    for (const title of [undefined, { runs: [] }, { runs: [{ text: '  ' }] }]) {
+      assert.deepEqual(youtubeAuthors(owner, 'video-a', [watchData('video-a', otherChannel(title))]), [owner], JSON.stringify(title));
+    }
+    assert.deepEqual(youtubeAuthors(owner, 'video-a', [watchData('video-a', otherChannel(titled, 'not-a-channel'))]), [owner]);
     // Only a response for the same video counts: ytInitialData describes only the tab's first video.
     assert.deepEqual(youtubeAuthors(owner, 'video-b', [watchData('video-a', renderer)]), [owner]);
     assert.deepEqual(youtubeAuthors(owner, 'video-a', [null, {}]), [owner]);
+  });
+
+  it('names the Official Artist Channel YouTube shows for its VEVO and Topic uploads, and a brand channel itself', () => {
+    const authors = (name: string) => {
+      const recorded = oac.cases.find(item => item.video === name)!;
+      return youtubeAuthors(readYoutubeOwner(recorded.player)!, recorded.player.videoDetails.videoId, [watchData('video-z', {}), recorded.watch]);
+    };
+    const artist = {
+      id: 'UCSY5V7BJSrxNvvBF0Drslow', name: 'Mark Ronson', url: 'https://www.youtube.com/channel/UCSY5V7BJSrxNvvBF0Drslow',
+      avatarUrl: `https://yt3.ggpht.com/${OAC_AVATAR}`, verified: true, stat: '7.25M subscribers'
+    };
+    // The player names MarkRonsonVEVO and "Mark Ronson - Topic"; the renderer's own path still leads to the uploader.
+    assert.deepEqual(authors('vevo'), [artist]);
+    assert.deepEqual(authors('topic'), [artist]);
+    assert.deepEqual(authors('brand'), [{
+      id: CHANNEL, name: 'Blender', url: 'https://www.youtube.com/@BlenderOfficial',
+      avatarUrl: `https://yt3.ggpht.com/${BLENDER_AVATAR}`, verified: true, stat: '1.26M subscribers'
+    }]);
+    // A Topic channel without an artist channel names itself, and keeps the player's link.
+    const TOPIC = 'UCtopicChannel0000000000';
+    const topic = { ...owner, id: TOPIC, name: 'Some Band - Topic', url: `https://www.youtube.com/channel/${TOPIC}` };
+    const topicRenderer = { title: { runs: [{ text: 'Some Band - Topic' }] }, navigationEndpoint: { browseEndpoint: { browseId: TOPIC } } };
+    assert.deepEqual(youtubeAuthors(topic, 'video-a', [watchData('video-a', topicRenderer)]), [topic]);
   });
 
   it('lists every collaborator of a collaboration, in YouTube\'s order, with their own avatars', () => {
