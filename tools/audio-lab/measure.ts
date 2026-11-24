@@ -97,6 +97,7 @@ function bedRows(material: Material, result: EffectResult, frames: Frames): Metr
     { id: 'bed-level-speech', label: 'Other sound while the voice speaks', unit: 'dBFS', ...level(frames.speech) },
     { id: 'bed-level-pauses', label: 'Other sound in pauses', unit: 'dBFS', ...level(pause), note: 'A gap to the level while speaking is the voice pumping the sound under it' }
   ];
+  rows.push(dip('bed-largest-dip-pauses', 'Largest drop of the other sound over 50 ms, in pauses', pause));
   if (frames.away.some(value => value === 1)) {
     rows.push({ id: 'bed-level-away', label: 'Other sound with no voice for 1.5 s', unit: 'dBFS', ...level(frames.away), note: 'No speech was just present: a change here is the effect acting on sound that is no echo of the voice' });
     rows.push(dip('bed-largest-dip-away', 'Largest drop of the other sound over 50 ms, with no voice for 1.5 s', frames.away));

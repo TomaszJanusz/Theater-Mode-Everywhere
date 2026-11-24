@@ -45,11 +45,13 @@
 //   speech bands is falling and for 0.1 s after. This is also what keeps the voice itself: a vowel
 //   that holds is not turned down.
 // - It acts as far as it is sure. One syllable that hardly stands out from the sound around it may
-//   be a chord accent, and gets two fifths of the depth. More of them in a row, one that lasts, or
-//   one that stands 15 dB clear of what sounded before it, get all of it.
-// None of this hears a voice. An instrument that plays notes as long as syllables, one after
-// another, passes for one; a word shorter than a tenth of a second on its own does not count; and
-// a voice under louder music moves the level too little to be found.
+//   be a chord accent, and gets two fifths of the depth. One that lasts, or one that stands 15 dB
+//   clear of what sounded before it, gets all of it. So does a run of them, but only where each
+//   sounds different from the one before: vowels move the level from band to band, and a chord
+//   struck again and again over music keeps its shape and adds nothing.
+// None of this hears a voice. An instrument whose notes are as long as syllables and change their
+// colour from one to the next passes for one; a word shorter than a tenth of a second on its own
+// does not count; and a voice under louder music moves the level too little to be found.
 //
 // Stereo shares one transform: left is the real part and right the imaginary part of one
 // complex frame. A real, conjugate-symmetric gain applied to that spectrum scales each
@@ -124,11 +126,12 @@ const PEAKS_SHARE: f32 = 0.01;
 // A rise counts from a level of 1 % (fully from 2 %): the hum of a recording and the far end of a
 // tail swell too, and neither is speech.
 const SPEECH_GATE: f32 = 0.01;
-// Rise and fall are read from the change of the level over the gap, smoothed over about three frames
-// (three tenths of each new frame) and never counted above 4: the level of steady noise jumps for a
-// frame or two, and a sound that starts stands above its past for the whole gap.
-const TREND_SHARE: f32 = 0.3;
+// Rise and fall are read from the change of the level over the gap, smoothed with this time constant
+// (seconds: three tenths of each new frame at 48 kHz) and never counted above 4: the level of steady
+// noise jumps for a frame or two, and a sound that starts stands above its past for the whole gap.
+const TREND_SECONDS: f64 = 0.014953;
 const TREND_TOP: f32 = 4;
+const REFERENCE_HOP_RATE: f64 = 187.5;
 // The rise is remembered this long (time constant, seconds) while the level shows whether it holds.
 const RISE_MEMORY_SECONDS: f64 = 0.08;
 // The level holds while it loses less than 40 % (2.2 dB) over the gap, fully while it loses less than
@@ -145,10 +148,11 @@ const SYLLABLE_SPAN: f32 = 0.012;
 // out the little of both that a note falling a bit more slowly shows.
 const CLEAR_FROM: f32 = 0.2;
 const CLEAR_SLOPE: f32 = 5;
-// Any hold at all keeps a syllable sounding (fully from 5 ms), until its level falls or rises
-// again, and for this many seconds at most: a note held longer is not one. It counts in full until
-// its last tenth of a second.
-const HELD_SLOPE: f32 = 200;
+// A syllable sounds on until the speech bands have lost half their power over the gap (it is over
+// at two fifths, 4 dB down): a held vowel wavers by 2 dB and keeps counting. It sounds for this many
+// seconds at most: a note held longer is not one. It counts in full until its last tenth of a second.
+const GONE_FROM: f32 = 0.4;
+const GONE_SLOPE: f32 = 5;
 const SYLLABLE_SECONDS: f32 = 2;
 const SOUNDING_SLOPE: f32 = 10;
 // The level is falling when the smoothed change shows it 15 % lower than before the gap (fully at
@@ -156,16 +160,22 @@ const SOUNDING_SLOPE: f32 = 10;
 const FALL_FROM: f32 = 0.85;
 const FALL_SLOPE: f32 = 10;
 const FALLING_SECONDS: f32 = 0.1;
-// How sure the DSP is that it hears speech, 0 to 1, with 0.3 to spare. A syllable adds two fifths,
-// or up to all of it when the speech bands are 8 to 32 times (9 to 15 dB) louder than before its
-// rise; every second it sounds adds 1.5; and every second takes 0.5 away, so that syllables more
-// than a second apart, as chord accents are, never add up. What sounded before a rise is kept
-// until a twentieth of the rise is left in memory, 0.24 s on.
+// How sure the DSP is that it hears speech, 0 to 1, with 0.3 to spare. A syllable adds two fifths
+// when it has another shape than the one counted before it: the levels of the bands, each against
+// its own peak, differ by 0.6 in all (nothing below 0.4). Chord accents repeated over sustained
+// music differ by 0.15 to 0.45, the built-in voice in a 1.5 s room by 0.5 to 1.4. It adds up to
+// three fifths more when the speech bands are 8 to 32 times (9 to 15 dB) louder than before its
+// rise, whatever its shape: there is nothing else sounding to mistake it for. What sounded before
+// a rise is kept until a twentieth of the rise is left in memory, 0.24 s on. Every second a
+// syllable sounds adds 1, and every second takes 0.5 away: accents of 180 ms twice a second do not
+// add up by their length alone, and a vowel held for a second does.
 const SURE_STEP: f32 = 0.4;
 const CLEAR_OF_FROM: f32 = 8;
 const CLEAR_OF_SPAN: f32 = 24;
 const RISE_KEPT: f32 = 20;
-const SURE_RISE: f32 = 1.5;
+const NEW_SHAPE_FROM: f32 = 0.4;
+const NEW_SHAPE_SPAN: f32 = 0.2;
+const SURE_RISE: f32 = 1;
 const SURE_FALL: f32 = 0.5;
 const SURE_TOP: f32 = 1.3;
 
@@ -209,6 +219,8 @@ const lowest = memory.data(BANDS << 2, 4);
 // The peak the start of a fed band is judged against, and for how many seconds the band has stayed far below it.
 const loud = memory.data(BANDS << 2, 4);
 const quiet = memory.data(BANDS << 2, 4);
+// How loud each band was against its own peak in the syllable counted last.
+const shape = memory.data(BANDS << 2, 4);
 
 let pending: i32 = 0;
 let readAt: i32 = QUANTUM;
@@ -225,10 +237,12 @@ let risen: f32 = 0;
 let held: f32 = 0;
 let sounding: f32 = 0;
 // How far the level is falling or has just fallen; how sure the DSP is of speech; whether the latest
-// rise has still to be counted as a syllable; and the power of the speech bands before that rise.
+// rise has still to be counted as a syllable, and how much of one the last frame counted; and the
+// power of the speech bands before that rise.
 let sinking: f32 = 0;
 let sure: f32 = 0;
 let fresh: f32 = 0;
+let counting: f32 = 0;
 let quietBefore: f32 = 0;
 // The sum of the bands' recent peaks (`loud`) after the previous frame.
 let peaks: f32 = 0;
@@ -243,6 +257,9 @@ let rise: f32 = 1;
 let peakFall: f32 = 1;
 let release: f32 = 0;
 let riseFade: f32 = 0;
+let trendShare: f32 = 0;
+// The hop in units of the hop at 48 kHz, which the syllable's per-frame rules were set for.
+let pace: f32 = 1;
 let lowRise: f32 = 1;
 let staleRise: f32 = 1;
 let loudFall: f32 = 1;
@@ -311,6 +328,8 @@ function forget(): void {
   sinking = 0;
   sure = 0;
   fresh = 0;
+  counting = 0;
+  memory.fill(shape, 0, BANDS << 2);
   quietBefore = 0;
   peaks = 0;
 }
@@ -405,6 +424,8 @@ export function configure(rt60: f32, overSubtract: f32, floorDb: f32, gap: f32, 
   peakFall = <f32>Math.pow(10, (-PEAK_FALL_DB_PER_SECOND * hopSeconds) / 10);
   release = <f32>Math.exp(-hopSeconds / RELEASE_SECONDS);
   riseFade = <f32>Math.exp(-hopSeconds / RISE_MEMORY_SECONDS);
+  trendShare = <f32>(1 - Math.exp(-hopSeconds / TREND_SECONDS));
+  pace = <f32>(hopSeconds * REFERENCE_HOP_RATE);
   lowRise = <f32>Math.pow(10, (LOW_RISE_DB_PER_SECOND * hopSeconds) / 10);
   staleRise = <f32>Math.pow(10, (STALE_RISE_DB_PER_SECOND * hopSeconds) / 10);
   loudFall = <f32>Math.pow(10, (-LOUD_FALL_DB_PER_SECOND * hopSeconds) / 10);
@@ -437,6 +458,15 @@ function bandFill(base: usize, from: i32, to: i32, value: f32): void {
 }
 
 /**
+ * What is left of a value after one frame that keeps the share `stays` of it per 5.33 ms, the hop
+ * at 48 kHz. Whatever the hop of this sample rate, the same time takes away about the same share:
+ * a frame half as long takes half as much.
+ */
+function kept(stays: f32): f32 {
+  return max<f32>(0, 1 - pace * (1 - stays));
+}
+
+/**
  * Per band: learn `remain` from this frame, decide how far the band is fed by a source, and set the
  * share of the past power taken as late reverb and the floor for its bins. Across the bands: find
  * the syllables that let the floors below 1. No step here is a hard decision, so the float32 build
@@ -450,6 +480,7 @@ function bands(past: usize): void {
   let before: f32 = 0;
   let recentPeaks: f32 = 0;
   let totalNow: f32 = 0;
+  let apart: f32 = 0;
   let totalWas: f32 = 0;
   for (let b = 0; b < BANDS; b++) {
     const from = load<i32>(at(bandStart, b));
@@ -474,7 +505,12 @@ function bands(past: usize): void {
     // Each band counts by how loud it is against its own recent peak, so the level of the speech
     // bands is not that of the one band that carries most of the power.
     const weight: f32 = 1 / (heard + now + PEAKS_SHARE * peaks + EPSILON);
-    level += now * weight;
+    // The shape of a syllable: how loud each band is against its own peak, kept from the one counted last.
+    const part = now * weight;
+    const last = load<f32>(at(shape, b));
+    apart += abs<f32>(part - last);
+    store<f32>(at(shape, b), last + counting * (part - last));
+    level += part;
     before += was * weight;
     totalNow += now;
     totalWas += was;
@@ -495,23 +531,25 @@ function bands(past: usize): void {
   // A syllable: the level of the speech bands rises as a fed band does, and holds. `level` is at most
   // `BANDS` and no divisor zero, so every ratio here is finite or infinite, never undefined.
   const change = level / (before + EPSILON);
-  trend += TREND_SHARE * (min<f32>(change, TREND_TOP) - trend);
+  trend += trendShare * (min<f32>(change, TREND_TOP) - trend);
   const rising = unit(trend - RISE_FROM);
   risen = max<f32>(rising * unit(level / SPEECH_GATE - 1), risen * riseFade);
   // Counted from the end of the rise, so that the quiet before a sound does not count as holding.
-  held = (held + hopTime) * unit((change - HOLD_FROM) * HOLD_SLOPE) * (1 - rising);
+  held = (held + hopTime) * kept(unit((change - HOLD_FROM) * HOLD_SLOPE) * (1 - rising));
   const syllable = unit((risen * unit((held - SYLLABLE_FROM) / SYLLABLE_SPAN) - CLEAR_FROM) * CLEAR_SLOPE);
-  // It sounds on while its level holds, for `SYLLABLE_SECONDS` at most (less for a weak one).
-  sounding = max<f32>(sounding - hopTime, syllable * SYLLABLE_SECONDS) * unit(held * HELD_SLOPE);
+  // It sounds on until the bands lose their power, for `SYLLABLE_SECONDS` at most (less for a weak one).
+  sounding = max<f32>(sounding - hopTime, syllable * SYLLABLE_SECONDS) * kept(unit((totalNow / (totalWas + EPSILON) - GONE_FROM) * GONE_SLOPE));
   const spoken = unit(sounding * SOUNDING_SLOPE);
   // Half a syllable frees the gain for half as long, and no number of weak ones adds up to a whole.
   sinceSpeech = min<f32>(sinceSpeech, (TAIL_SECONDS + TAIL_FADE_SECONDS) * (1 - spoken)) + hopTime;
   sinking = max<f32>(unit((FALL_FROM - trend) * FALL_SLOPE), sinking - hopTime / FALLING_SECONDS);
-  // Each rise counts once, by how far it lifted the speech bands above what sounded before it.
+  // Each rise counts once, by how far it lifted the speech bands above what sounded before it, and
+  // only as a syllable of another shape than the last.
   quietBefore += (1 - unit(risen * RISE_KEPT)) * (totalWas - quietBefore);
-  const step = SURE_STEP + (1 - SURE_STEP) * unit((totalNow / (quietBefore + EPSILON) - CLEAR_OF_FROM) / CLEAR_OF_SPAN);
-  sure = max<f32>(min<f32>(sure + step * syllable * fresh + hopTime * (spoken * SURE_RISE - SURE_FALL), SURE_TOP), 0);
-  fresh = max<f32>(fresh, rising) * (1 - syllable);
+  const step = SURE_STEP * unit((apart - NEW_SHAPE_FROM) / NEW_SHAPE_SPAN) + (1 - SURE_STEP) * unit((totalNow / (quietBefore + EPSILON) - CLEAR_OF_FROM) / CLEAR_OF_SPAN);
+  counting = min<f32>(syllable * fresh * pace, 1);
+  sure = max<f32>(min<f32>(sure + step * counting + hopTime * (spoken * SURE_RISE - SURE_FALL), SURE_TOP), 0);
+  fresh = max<f32>(fresh, rising) * kept(1 - syllable);
 }
 
 function frame(): void {

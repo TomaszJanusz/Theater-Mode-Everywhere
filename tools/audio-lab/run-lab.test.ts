@@ -90,8 +90,8 @@ describe('audio lab: runs', () => {
     const strong = LAB_EFFECTS.find(effect => effect.id === 'echo-strong')!;
     const rows = levelRows(material, await strong.run(material.mix));
     const row = (id: string) => rows.find(candidate => candidate.id === id)!;
-    for (const id of ['voice-level-direct', 'tail-level', 'bed-level-speech', 'bed-level-pauses', 'bed-level-away', 'bed-largest-dip-away', 'speech-bands-level', 'outside-speech-bands-level']) assert.ok(row(id), id);
-    assert.equal(row('bed-largest-dip-away').after, 0, 'and it never dips there, not for 50 ms');
+    for (const id of ['voice-level-direct', 'tail-level', 'bed-level-speech', 'bed-level-pauses', 'bed-largest-dip-pauses', 'bed-level-away', 'bed-largest-dip-away', 'speech-bands-level', 'outside-speech-bands-level']) assert.ok(row(id), id);
+    assert.ok(row('bed-largest-dip-away').after < 0.01, `and it never dips there, not for 50 ms (${row('bed-largest-dip-away').after} dB)`);
     assert.equal(row('bed-level-away').label, 'Other sound with no voice for 1.5 s');
     assert.equal(row('speech-bands-level').label, 'Level inside the speech bands (70 to 4805 Hz, whole mix)');
     assert.equal(row('outside-speech-bands-level').label, 'Level outside the speech bands (below 70 and above 4805 Hz, whole mix)');

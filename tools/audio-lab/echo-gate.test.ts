@@ -69,10 +69,14 @@ const within = (limit: number): Bound => ({ atMost: [limit, limit], atLeast: [-l
  * music also has a limit on its largest dip over any 50 ms.
  * - Sustained and plucked music pass: Light and Strong lowered them by 2.8 and 8.7 dB [sustained]
  *   and 1.7 and 2.4 dB [plucked, with dips of 7 and 10 dB].
- * - A chord accent of 180 ms has the shape of a syllable, and no envelope tells them apart. The
- *   accompaniment under it still dips as the accent ends, by 5.2 and 6.7 dB at the worst accent
- *   [6.1 and 9.9 dB], for a fifth of a second and not for as long as it plays: its level over the
- *   clip falls by 0.4 dB [2.9 and 7.8 dB].
+ * - A chord accent of 180 ms has the shape of a syllable, and no envelope tells them apart. One
+ *   accent gets two fifths of the depth, and accents of one chord add nothing to each other, at
+ *   one every 1.6 s or two a second. The accompaniment still dips as an accent ends, by 3.2 and
+ *   6.4 dB at the worst one [6.0 and 9.9 dB], for a fifth of a second; over the clip it loses
+ *   0.15 and 0.24 dB [2.9 and 8.0 dB], and at two a second 0.5 and 0.9 dB [2.9 and 6.6 dB].
+ * - Music that starts 12 dB under a voice the moment it stops is under the voice's echo for the
+ *   first fifth of a second, and is lowered with it: by 5.4 and 9.3 dB at the worst, as on `dev`.
+ *   This is the overlap the effect cannot avoid; from 1.5 s on the music is untouched [-2.8, -9.0].
  * - Applause dips by 2.5 and 3.3 dB [5.0 and 7.3 dB].
  * - Outside the speech bands a voice in a room changed by up to 3.1 dB, now by 0.08 dB at most;
  *   music under a voice, whose bass notes lie within a bin of the lower edge, by 0.45 dB.
@@ -80,7 +84,9 @@ const within = (limit: number): Bound => ({ atMost: [limit, limit], atLeast: [-l
 const UNTOUCHED: Case[] = [
   { id: 'synthetic-music-sustained', rows: { 'speech-bands-level': within(0.1), 'outside-speech-bands-level': within(0.1), 'largest-dip-mix': { atMost: [0.1, 0.1] } } },
   { id: 'synthetic-music-plucked', rows: { 'speech-bands-level': within(0.3), 'outside-speech-bands-level': within(0.1), 'largest-dip-mix': { atMost: [1.2, 1.6] } } },
-  { id: 'synthetic-music-accents', rows: { 'bed-level': { atLeast: [-0.7, -0.8] }, 'bed-largest-dip': { atMost: [5.7, 7.2] }, 'outside-speech-bands-level': within(0.4) } },
+  { id: 'synthetic-music-accents', rows: { 'bed-level': { atLeast: [-0.4, -0.5] }, 'bed-largest-dip': { atMost: [3.8, 6.9] }, 'outside-speech-bands-level': within(0.4) } },
+  { id: 'synthetic-music-accents-fast', rows: { 'bed-level': { atLeast: [-0.8, -1.3] }, 'bed-largest-dip': { atMost: [3.8, 6.9] }, 'outside-speech-bands-level': within(0.4) } },
+  { id: 'synthetic-room-0.8s-cut-to-music', seconds: 12, rows: { 'bed-largest-dip-pauses': { atMost: [5.9, 9.8] }, 'bed-level-away': within(0.1), 'bed-largest-dip-away': { atMost: [0.1, 0.1] } } },
   { id: 'synthetic-applause', rows: { 'speech-bands-level': { atLeast: [-0.9, -1] }, 'largest-dip-mix': { atMost: [3, 3.8] }, 'outside-speech-bands-level': within(0.1) } },
   // The voice speaks through the first half of the clip, so 4.5 s of it are music alone.
   { id: 'synthetic-room-0.8s-then-music', seconds: 12, rows: { 'bed-level-away': within(0.1), 'bed-largest-dip-away': { atMost: [0.1, 0.1] }, 'outside-speech-bands-level': within(0.7) } },

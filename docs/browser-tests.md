@@ -155,8 +155,8 @@ in the extension.
   rooms (`synthetic-dry`, `synthetic-wall`, `synthetic-room-0.3s`, `-0.8s`, `-1.5s`);
   speech an envelope can mistake (`synthetic-room-0.3s-short-words`, `-long-vowels`,
   `-fast`, `-fast-pitched`); music without a voice (`synthetic-music-sustained`,
-  `-plucked`, `-accents`, `synthetic-applause`); and a voice with music
-  (`synthetic-room-0.8s-then-music`, `-under-music`).
+  `-plucked`, `-accents`, `-accents-fast`, `synthetic-applause`); and a voice with
+  music (`synthetic-room-0.8s-then-music`, `-cut-to-music`, `-under-music`).
 - **Rows:** what can be measured depends on what the material knows. A room built from
   a dry voice and an impulse response gives the voice and the room's sound separately,
   at each reference point (direct sound, first 10, 20 and 50 ms); its tail row is the

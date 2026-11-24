@@ -12,15 +12,36 @@ import { dB, framePower, voiceBand, type Grid } from './grid';
 const WINDOW_FRAMES = 9;
 const SOUNDING = 1e-3;
 
+/**
+ * The same on the power of each frame, before and after. Two passes over running sums, so a film
+ * costs as little memory as a clip.
+ */
+export function largestDipOf(before: Float64Array, after: Float64Array, mask?: Uint8Array): number {
+  /** Calls `visit` with the power before and after of every window that lies inside the mask. */
+  const windows = (visit: (was: number, now: number) => void): void => {
+    let [was, now, masked] = [0, 0, 0];
+    for (let m = 0; m < before.length; m++) {
+      was += before[m];
+      now += after[m];
+      masked += mask && !mask[m] ? 1 : 0;
+      if (m < WINDOW_FRAMES - 1) continue;
+      if (masked === 0) visit(was, now);
+      const first = m - WINDOW_FRAMES + 1;
+      was -= before[first];
+      now -= after[first];
+      masked -= mask && !mask[first] ? 1 : 0;
+    }
+  };
+  let loudest = 0;
+  windows(was => { loudest = Math.max(loudest, was); });
+  let deepest = Number.NaN;
+  windows((was, now) => {
+    if (was > SOUNDING * loudest) deepest = Math.max(Number.isNaN(deepest) ? 0 : deepest, dB(was) - dB(now));
+  });
+  return deepest;
+}
+
 export function largestDip(before: Grid, after: Grid, mask?: Uint8Array): number {
   const [powerBefore, powerAfter] = [before, after].map(grid => framePower(grid, voiceBand(grid)));
-  const sums: [number, number][] = [];
-  for (let m = 0; m + WINDOW_FRAMES <= before.frames; m++) {
-    if (mask && !mask.subarray(m, m + WINDOW_FRAMES).every(value => value === 1)) continue;
-    const sumOf = (power: Float64Array) => power.subarray(m, m + WINDOW_FRAMES).reduce((sum, value) => sum + value, 0);
-    sums.push([sumOf(powerBefore), sumOf(powerAfter)]);
-  }
-  const loudest = sums.reduce((max, [sum]) => Math.max(max, sum), 0);
-  const dips = sums.filter(([sum]) => sum > SOUNDING * loudest).map(([was, now]) => dB(was) - dB(now));
-  return dips.length === 0 ? Number.NaN : Math.max(0, ...dips);
+  return largestDipOf(powerBefore, powerAfter, mask);
 }

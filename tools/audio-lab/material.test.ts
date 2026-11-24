@@ -66,8 +66,8 @@ describe('audio lab: material', () => {
     assert.deepEqual(SYNTHETIC_IDS, [
       'synthetic-dry', 'synthetic-wall', 'synthetic-room-0.3s', 'synthetic-room-0.8s', 'synthetic-room-1.5s',
       'synthetic-room-0.3s-short-words', 'synthetic-room-0.3s-long-vowels', 'synthetic-room-0.3s-fast', 'synthetic-room-0.3s-fast-pitched',
-      'synthetic-music-sustained', 'synthetic-music-plucked', 'synthetic-music-accents', 'synthetic-applause',
-      'synthetic-room-0.8s-then-music', 'synthetic-room-0.8s-under-music'
+      'synthetic-music-sustained', 'synthetic-music-plucked', 'synthetic-music-accents', 'synthetic-music-accents-fast', 'synthetic-applause',
+      'synthetic-room-0.8s-then-music', 'synthetic-room-0.8s-cut-to-music', 'synthetic-room-0.8s-under-music'
     ]);
     const first = syntheticMaterial('synthetic-room-0.3s', 2);
     const second = syntheticMaterial('synthetic-room-0.3s', 2);
@@ -135,6 +135,9 @@ describe('audio lab: material', () => {
     const during = (samples: Float32Array) => energy(samples.subarray(1.25 * 48000, 1.35 * 48000));
     assert.ok(Math.abs(10 * Math.log10(during(accents) / during(bed.channels[0])) - 8) < 2.5, `${(10 * Math.log10(during(accents) / during(bed.channels[0]))).toFixed(1)} dB in the first accent`);
     assert.ok(energy(accents.subarray(1.5 * 48000, 2.7 * 48000)) < 1e-9, 'and nothing between two accents');
+    // Three times as many when they come every half second.
+    const fast = syntheticMaterial('synthetic-music-accents-fast', 6);
+    assert.ok(fast.bed && energy(fast.mix.channels[0].subarray(1.75 * 48000, 1.85 * 48000).map((value, i) => value - fast.bed!.channels[0][1.75 * 48000 + i])) > 0.5 * during(accents));
     const applause = syntheticMaterial('synthetic-applause', 3);
     assert.ok(!applause.dry && !applause.bed && energy(applause.mix.channels[0]) > 0);
     assert.notDeepEqual(applause.mix.channels[0], applause.mix.channels[1]);
@@ -145,6 +148,19 @@ describe('audio lab: material', () => {
     assert.ok(bed && room && voice);
     const spokenRoom = mix.channels[0].map((value, i) => value - bed.channels[0][i]);
     assert.ok(Math.abs(10 * Math.log10(energy(bed.channels[0]) / energy(spokenRoom)) - 2) < 1, `${(10 * Math.log10(energy(bed.channels[0]) / energy(spokenRoom))).toFixed(1)} dB`);
+  });
+
+  it('cuts from the voice to music that was not there before', () => {
+    const { bed, dry: voice, room } = syntheticMaterial('synthetic-room-0.8s-cut-to-music', 8);
+    assert.ok(bed && voice && room);
+    const last = voice.reduce((at, value, i) => (Math.abs(value) > 1e-4 ? i : at), 0);
+    assert.ok(last > 2 * 48000 && last < 4 * 48000, 'the voice speaks through the first half');
+    assert.equal(energy(bed.channels[0].subarray(0, last + 1)), 0, 'no music while it speaks');
+    // At its full level from the first 50 ms on, 12 dB under the voice in its room.
+    const [first, later] = [bed.channels[0].subarray(last + 1, last + 2401), bed.channels[0].subarray(last + 48000, last + 50400)].map(energy);
+    assert.ok(Math.abs(10 * Math.log10(first / later)) < 3, `${(10 * Math.log10(first / later)).toFixed(1)} dB between its first 50 ms and a second on`);
+    const spoken = room.parts.reduce((sum, part) => sum + energy(part.channels[0].subarray(0, last)), 0) / last;
+    assert.ok(Math.abs(10 * Math.log10(energy(bed.channels[0].subarray(last + 1)) / (bed.channels[0].length - last - 1) / spoken) + 12) < 3);
   });
 
   it('lets the voice stop while the music plays on, and keeps the music as the bed', () => {

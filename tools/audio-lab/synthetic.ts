@@ -247,14 +247,15 @@ function pluckedMusic(seconds: number): Signal {
 }
 
 /**
- * Accents over an accompaniment: a four-note chord struck every 1.6 s that holds for 180 ms and is
- * damped, 8 dB above the sustained music it is played over. Each has the length and the shape of a
- * syllable, and what sounds on after it is the accompaniment, not an echo.
+ * Accents over an accompaniment: a four-note chord struck every `period` seconds that holds for
+ * 180 ms and is damped, 8 dB above the sustained music it is played over. Each has the length and
+ * the shape of a syllable, and what sounds on after it is the accompaniment, not an echo. Every
+ * 1.6 s they come one at a time; every 0.5 s they come at the pace of slow speech.
  */
-function chordAccents(seconds: number): Signal {
+const chordAccents = (period: number) => (seconds: number): Signal => {
   const length = Math.round(seconds * LAB_RATE);
   const out = new Float64Array(length);
-  for (let begin = 1.2; begin + 0.2 < seconds; begin += 1.6) {
+  for (let begin = 1.2; begin + 0.2 < seconds; begin += period) {
     for (const hz of [220, 277.18, 329.63, 440]) {
       for (let i = 0; i < 0.18 * LAB_RATE; i++) {
         const t = i / LAB_RATE;
@@ -266,7 +267,7 @@ function chordAccents(seconds: number): Signal {
     }
   }
   return stereoOf(out, out, 1);
-}
+};
 
 /** Applause: thirty claps a second on each side, each a burst of noise around 2 kHz that dies in 10 ms. */
 function applause(seconds: number): Signal {
@@ -314,6 +315,8 @@ type Built = {
   musicDb?: number;
   /** Sound on top of the music that is no voice either; the music is then followed as the bed. */
   over?: (seconds: number) => Signal;
+  /** The music starts at once when the voice stops, instead of playing throughout. */
+  musicAfter?: boolean;
 };
 
 const SHORT_ROOM = (channel: number) => exponentialRoom(0.3, 4, 30 + channel);
@@ -332,10 +335,13 @@ const ROOMS: Record<string, Built> = {
   'synthetic-room-0.3s-fast-pitched': { label: 'Synthetic voice played 1.6 times as fast, room RT60 0.3 s', response: SHORT_ROOM, voice: pitchedFast },
   'synthetic-music-sustained': { label: 'Sustained music, no voice', music: sustainedMusic, voiceShare: 0 },
   'synthetic-music-plucked': { label: 'Plucked and struck music, no voice', music: pluckedMusic, voiceShare: 0 },
-  'synthetic-music-accents': { label: 'Chord accents of 180 ms over sustained music, no voice', music: sustainedMusic, over: chordAccents, voiceShare: 0 },
+  'synthetic-music-accents': { label: 'Chord accents of 180 ms every 1.6 s over sustained music, no voice', music: sustainedMusic, over: chordAccents(1.6), voiceShare: 0 },
+  'synthetic-music-accents-fast': { label: 'Chord accents of 180 ms every 0.5 s over sustained music, no voice', music: sustainedMusic, over: chordAccents(0.5), voiceShare: 0 },
   'synthetic-applause': { label: 'Applause, no voice', music: applause, voiceShare: 0 },
   // The voice speaks through the first half and the music plays on alone: a passage with no speech in it.
   'synthetic-room-0.8s-then-music': { label: 'Synthetic voice in a room (RT60 0.8 s) over sustained music, then the music alone', response: ROOM, music: sustainedMusic, voiceShare: 0.5 },
+  // A cut: the music is not there while the voice speaks, and starts 12 dB under it the moment it stops.
+  'synthetic-room-0.8s-cut-to-music': { label: 'Synthetic voice in a room (RT60 0.8 s), then a cut to quiet sustained music', response: ROOM, music: sustainedMusic, voiceShare: 0.5, musicDb: -12, musicAfter: true },
   // The music is louder than the voice it plays over: the level of the mix hardly moves when the voice speaks.
   'synthetic-room-0.8s-under-music': { label: 'Synthetic voice in a room (RT60 0.8 s) under sustained music 2 dB louder', response: ROOM, music: sustainedMusic, musicDb: 2 }
 };
@@ -345,7 +351,7 @@ export const SYNTHETIC_IDS = Object.keys(ROOMS);
 export function syntheticMaterial(id: string, seconds = 8): Material {
   const built = ROOMS[id];
   if (!built) throw new Error(`Unknown synthetic material '${id}'. Known: ${SYNTHETIC_IDS.join(', ')}`);
-  const { label, response, music, over, musicDb, voice = syntheticVoice, voiceShare = 1 } = built;
+  const { label, response, music, over, musicDb, musicAfter, voice = syntheticVoice, voiceShare = 1 } = built;
   const length = Math.round(seconds * LAB_RATE);
   const played = music?.(seconds);
   if (played && voiceShare === 0) {
@@ -356,7 +362,8 @@ export function syntheticMaterial(id: string, seconds = 8): Material {
     return { id, label, mix: sum([played, scaled(accents, 10 ** 0.4 * rms(played, length) * Math.sqrt(sounding) / rms(accents, length))]), bed: played };
   }
   const dry = new Float32Array(length);
-  dry.set(voice(voiceShare * seconds));
+  const said = voice(voiceShare * seconds);
+  dry.set(said);
   if (!response) {
     const alone = { sampleRate: LAB_RATE, channels: [dry, dry.slice()] };
     return { id, label, mix: alone, dry, voice: alone };
@@ -364,6 +371,9 @@ export function syntheticMaterial(id: string, seconds = 8): Material {
   const room = buildRoom(dry, [response(0), response(1)], 0);
   if (!played) return { id, label, dry, ...room };
   const spokenLength = Math.round(voiceShare * length);
-  const bed = musicDb === undefined ? played : scaled(played, 10 ** (musicDb / 20) * rms(room.mix, spokenLength) / rms(played, spokenLength));
+  const level = musicDb === undefined ? 1 : 10 ** (musicDb / 20) * rms(room.mix, spokenLength) / rms(played, length);
+  // After a cut the music is at its full level from its first sample: what it swelled in with is left out.
+  const cut = said.reduce((last, value, i) => (Math.abs(value) > 1e-4 ? i : last), 0) + 1;
+  const bed = scaled(musicAfter ? { sampleRate: LAB_RATE, channels: played.channels.map(channel => channel.map((_, i) => (i < cut ? 0 : channel[Math.min(length - 1, i - cut + LAB_RATE)]))) } : played, level);
   return { id, label, dry, room: room.room, mix: sum([room.mix, bed]), bed };
 }

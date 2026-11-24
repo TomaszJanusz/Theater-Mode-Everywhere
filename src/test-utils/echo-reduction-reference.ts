@@ -80,7 +80,7 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
     // the band is fed by a source, and set the late share and the floor of its bins. The floor reaches
     // below 1 only as far as the speech window lets it.
     const tail = speech.tail();
-    const heard = { level: 0, before: 0, totalNow: 0, totalWas: 0 };
+    const heard = { parts: new Array<number>(BANDS), before: 0, totalNow: 0, totalWas: 0 };
     let recentPeaks = 0;
     for (let b = 0; b < BANDS; b++) {
       const [from, to] = [bandStart[b], bandStart[b + 1]];
@@ -101,7 +101,7 @@ export function referenceEchoReduction(left: Float64Array, right: Float64Array, 
       remain[b] = Math.max(REMAIN_MIN, Math.min(1, remain[b] * (1 + open * (fall + (up - fall) * turn - 1))));
       // The level of the speech bands, now and before the gap: each band against its own recent peak.
       const weight = 1 / (loud[b] + now + PEAKS_SHARE * peaks + EPSILON);
-      heard.level += now * weight;
+      heard.parts[b] = now * weight;
       heard.before += was * weight;
       heard.totalNow += now;
       heard.totalWas += was;

@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { noise, RATE, stereo } from '../test-utils/signals';
 
 import { powerGrid } from './grid';
-import { largestDip } from './largest-dip';
+import { largestDip, largestDipOf } from './largest-dip';
 
 describe('audio lab: largest dip', () => {
   const next = noise(8);
@@ -28,6 +28,16 @@ describe('audio lab: largest dip', () => {
     const short = largestDip(before, dipped(10, 2, 2.02));
     assert.ok(short > 1 && short < 6, `${short.toFixed(2)} dB`);
     assert.equal(largestDip(before, dipped(-6, 1, 3)), 0, 'louder is no dip');
+  });
+
+  it('reads a film as it reads a clip', () => {
+    // Half an hour of frames: one argument per window would overflow the call stack.
+    const frames = 30 * 60 * RATE / 256;
+    const steadyPower = new Float64Array(frames).fill(0.01);
+    assert.equal(largestDipOf(steadyPower, steadyPower), 0);
+    const dippedPower = steadyPower.slice();
+    dippedPower.fill(0.001, frames - 5000, frames - 4950);
+    assert.ok(Math.abs(largestDipOf(steadyPower, dippedPower) - 10) < 1e-6);
   });
 
   it('counts only frames inside the mask, and only where there was sound', () => {
