@@ -134,16 +134,27 @@ function paintAccent(node: HTMLElement, accent: string | null): void {
 }
 
 /**
- * The first author's avatar colors the panel (its fill, lit edge and tip) in place of the user's accent. The color is
- * read when the page is idle and applied only while that avatar still leads the panel; until then, and for an avatar
- * with no usable color, the panel keeps the user's accent. Returns the function that follows the leading avatar.
+ * Colors the header's home button (shadow.css, .theater-home-pill) with the arrow's avatar color, or gives it back the
+ * user's accent for none. Its icon takes the arrow's lit-edge shade, lifted towards the ink, so it keeps 3:1 on the
+ * button's tint (author-byline-contrast.test.ts); written with the accent, so high contrast lifts its safe shade.
  */
-function avatarAccentFollower(panel: HTMLElement, scope: DisposableScope, readAccent: ReadAccent): (author: ContentAuthor) => void {
+function paintHome(home: HTMLElement, accent: string | null): void {
+  paintAccent(home, accent);
+  if (accent) home.style.setProperty('--home-ink', 'color-mix(in srgb, var(--accent-color) 55%, var(--appearance-ink, #ffffff))');
+  else home.style.removeProperty('--home-ink');
+}
+
+/**
+ * The first author's avatar color, for the panel (its fill, lit edge and tip) and the header's home button. The color is
+ * read when the page is idle and given to `paint` only while that avatar still leads the panel; until then, and for an
+ * avatar with no usable color, it is null and they keep the user's accent. Returns the function that follows the
+ * leading avatar.
+ */
+function avatarAccentFollower(scope: DisposableScope, readAccent: ReadAccent, paint: (accent: string | null) => void): (author: ContentAuthor) => void {
   let current: { id: string; url: string | null } | null = null;
   let cancel = () => {};
   // The panel's end (the byline turned off, theater left) stops a read that has not drawn yet.
   scope.add(() => cancel());
-  const paint = (accent: string | null) => paintAccent(panel, accent);
   return author => {
     const url = author.avatarUrl;
     if (author.id === current?.id && url === current.url) return;
@@ -358,7 +369,20 @@ function buildPanel(host: AuthorBylineHost, readAccent: ReadAccent, shape: Panel
   trigger.append(fill, glow, rim, avatars, names);
   root.append(style, trigger);
   const popup = trigger instanceof HTMLDivElement || shape === 'link' ? null : bindPopup(host, { scope, root, trigger }, readAccent);
-  const followAvatar = avatarAccentFollower(trigger, scope, readAccent);
+  // The home button beside the plate, in its header row, takes the arrow's color too, until the panel ends.
+  let leading: string | null = null;
+  let home: HTMLElement | null = null;
+  const colorHome = (next: HTMLElement | null) => {
+    if (home && home !== next) paintHome(home, null);
+    home = next;
+    if (home) paintHome(home, leading);
+  };
+  const followAvatar = avatarAccentFollower(scope, readAccent, accent => {
+    leading = accent;
+    paintAccent(trigger, accent);
+    colorHome(home);
+  });
+  scope.add(() => colorHome(null));
   scope.add(() => root.remove());
 
   let signature: string | undefined;
@@ -372,6 +396,8 @@ function buildPanel(host: AuthorBylineHost, readAccent: ReadAccent, shape: Panel
       if (trigger instanceof HTMLAnchorElement && shown[0].url) channelLink(trigger, shown[0].url);
       const { names: visible, more } = bylineNames(shown);
       avatars.replaceChildren(...shown.slice(0, STACKED_AVATARS).map(author => avatar(author, 'theater-byline-avatar')));
+      // The popup's rows line up with the stack's width (author-byline-view.css).
+      root.style.setProperty('--stacked', String(Math.min(shown.length, STACKED_AVATARS)));
       names.replaceChildren();
       visible.forEach((name, index) => {
         if (index) names.append(element('span', 'theater-byline-and', '&'));
@@ -395,6 +421,7 @@ function buildPanel(host: AuthorBylineHost, readAccent: ReadAccent, shape: Panel
         popup?.close();
         plate.prepend(root);
       }
+      colorHome(plate.parentElement?.querySelector<HTMLElement>(':scope > .theater-home-pill') ?? null);
     },
     focused() {
       const active = (root.getRootNode() as Document | ShadowRoot).activeElement;

@@ -10,6 +10,7 @@ import { legibleAccent } from './avatar-accent';
 const CSS = readFileSync(new URL('./author-byline-view.css', import.meta.url), 'utf8');
 const SHADOW = readFileSync(new URL('../ui/shadow.css', import.meta.url), 'utf8');
 const TOKENS = readFileSync(new URL('../appearance-tokens.css', import.meta.url), 'utf8');
+const VIEW = readFileSync(new URL('./author-byline-view.ts', import.meta.url), 'utf8');
 
 type Rgb = [number, number, number];
 const rgb = (hex: string): Rgb => hex.slice(1).match(/../g)!.map(channel => parseInt(channel, 16)) as Rgb;
@@ -27,7 +28,7 @@ function sharesUnderNames(layer: 'before' | 'after', color: string): number[] {
   });
   assert.ok(stops.length >= 3, `the ${layer} gradient lists its stops`);
   // The names stop --text-end before the apex; the stops after that point are the ramp into the tip.
-  assert.match(CSS, /padding-inline: \d+px var\(--text-end\)/);
+  assert.match(CSS, /padding-inline: var\(--inset\) var\(--text-end\)/);
   const under = stops.filter(({ position }) => position === '0%' || position.includes('var(--text-end)'));
   assert.ok(under.length >= 2, 'stops up to the end of the names are found');
   return under.map(({ share }) => share);
@@ -124,6 +125,39 @@ function rowTones(): number[] {
   });
 }
 
+/** The custom properties a rule declares, by name. */
+function declarations(body: string): Map<string, string> {
+  return new Map([...body.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(match => [match[1], match[2].trim()]));
+}
+
+/** A length in px from a `calc()` of px lengths, numbers and custom properties, resolved against `scope`. */
+function px(value: string, scope: Map<string, string>, depth = 0): number {
+  assert.ok(depth < 10, `${value} resolves`);
+  const expression = value.replace(/var\((--[\w-]+)\)/g, (_, name: string) => {
+    const declared = scope.get(name);
+    assert.ok(declared, `${name} is declared`);
+    return `(${px(declared, scope, depth + 1)})`;
+  }).replace(/calc\(/g, '(').replace(/(\d+(?:\.\d+)?)px/g, '$1');
+  assert.match(expression, /^[\d\s.+\-*/()]+$/, `${value} is plain arithmetic`);
+  return Number(new Function(`return ${expression};`)());
+}
+
+/**
+ * The row's geometry with `stacked` avatars in the panel: the panel's custom properties (`.theater-byline`, with the
+ * count the view sets) and the row's own, as the row's padding, avatar column, gap and `--text-start` resolve.
+ */
+function rowGeometry(stacked: number): { inset: number; avatar: number; gap: number; textStart: number } {
+  const panel = /\n\.theater-byline \{([^}]+)\}/.exec(CSS)?.[1];
+  assert.ok(panel, 'the panel rule is declared');
+  const rule = rowRule();
+  const scope = new Map([...declarations(panel), ...declarations(rule), ['--stacked', String(stacked)]]);
+  const padding = /\n\s*padding: \S+ (.+);/.exec(rule)?.[1];
+  const columns = /grid-template-columns: (var\(--row-avatar\)) /.exec(rule)?.[1];
+  const gap = /column-gap: (.+);/.exec(rule)?.[1];
+  assert.ok(padding && columns && gap, 'the row declares its inline padding, avatar column and gap');
+  return { inset: px(padding, scope), avatar: px(columns, scope), gap: px(gap, scope), textStart: px('var(--text-start)', scope) };
+}
+
 /**
  * The row's accent ramp over its tone: the largest share anywhere (at its start, under the hover edge) and the largest
  * under the name and its secondary text, which start at `--text-start`. Stops are linear, so the largest share from a
@@ -131,11 +165,12 @@ function rowTones(): number[] {
  */
 function rowRamp(): { edge: number; text: number } {
   const rule = rowRule();
-  // The name starts after the row's padding, its avatar column and the gap.
-  assert.match(rule, /--text-start: 64px;/);
-  assert.match(rule, /grid-template-columns: 40px /);
-  assert.match(rule, /gap: 12px;/);
-  assert.match(rule, /padding: 12px;/);
+  // The name starts after the row's padding, its avatar column and the gap, for every stack the panel shows.
+  for (const stacked of [2, 3]) {
+    const row = rowGeometry(stacked);
+    assert.ok(row.gap > 0 && row.avatar > 0, `${stacked} stacked: the row has room for its avatar and gap`);
+    assert.equal(row.textStart, row.inset + row.avatar + row.gap, `${stacked} stacked: --text-start is where the name starts`);
+  }
   assert.match(rule, /background-color: var\(--row-fill\);\s*background-image: linear-gradient\(var\(--dir\),/, 'the ramp lies over the tone');
   const stops = rule.split('\n').flatMap(line => {
     const stop = /^color-mix\(in srgb, var\(--accent-color, #[0-9a-f]{6}\) ([\d.]+)%, transparent\) (.+?)(?:,|\);)$/.exec(line.trim());
@@ -234,6 +269,31 @@ it('keeps the names at WCAG AA over the accent ramp and the lit tip at 3:1 on th
         // The lit edge outlines the arrowhead against the plate it points into.
         const ratio = contrastRatio(hex(rim), hex(plate.over(picture)));
         assert.ok(ratio >= 3, `${accent} (${mode}) lit tip, ${plate.name}, ${video} video: ${ratio.toFixed(2)}:1`);
+      }
+    }
+  }
+});
+
+it('keeps the home button\'s icon at 3:1 on its hover and press tint when it takes the byline\'s avatar color', () => {
+  // With the byline's color the icon takes its lit-edge shade (author-byline-view.ts); the tint is the color itself.
+  const ink = /'--home-ink', 'color-mix\(in srgb, var\(--accent-color\) ([\d.]+)%, var\(--appearance-ink, (#[0-9a-f]{6})\)\)'/.exec(VIEW);
+  assert.ok(ink, 'the icon lifts the byline\'s color towards the ink');
+  assert.match(SHADOW, /\.theater-home-pill:hover,\s*\.theater-home-pill:focus-visible \{[^}]*color: var\(--home-ink, var\(--accent-color, #ffffff\)\)/);
+  const tints = ['hover,\\s*\\.theater-home-pill:focus-visible', 'active'].map(state => {
+    const rule = new RegExp(`\\.theater-home-pill:${state} \\{([^}]+)\\}`).exec(SHADOW)?.[1];
+    const share = rule && /color-mix\(in srgb, var\(--accent-color, #[0-9a-f]{6}\) ([\d.]+)%, transparent\)/.exec(rule);
+    assert.ok(share, `the ${state} tint is declared`);
+    return Number(share[1]) / 100;
+  });
+  // Reduce transparency and high contrast drop the tint (--appearance-image: none); the opaque plate stays.
+  const shares = [0, ...tints];
+  for (const accent of avatarAccents()) {
+    // High contrast takes the color's contrast-safe shade, which the icon lifts in turn.
+    for (const [mode, swatch] of [['normal', accent], ['high contrast', contrastSafeAccent(accent)]] as const) {
+      const icon = hex(over(rgb(swatch), Number(ink[1]) / 100, rgb(ink[2])));
+      for (const plate of plates()) for (const [video, picture] of Object.entries(VIDEOS)) for (const share of shares) {
+        const ratio = contrastRatio(icon, hex(over(rgb(swatch), share, plate.over(picture))));
+        assert.ok(ratio >= 3, `${accent} (${mode}), ${plate.name}, ${video} video, ${share * 100}% tint: ${ratio.toFixed(2)}:1`);
       }
     }
   }

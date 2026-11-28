@@ -1,28 +1,20 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 
-import { mountHudStage } from '../../.storybook/hud-stage';
-import { DisposableScope } from '../core/disposable-scope';
-import type { ContentAuthor } from '../media-features/content-title';
+import type { DisposableScope } from '../core/disposable-scope';
+import { author, AVATAR, idle, mountByline, setGlobal, unlinked, type ReadAccent } from '../test-utils/author-byline-fixture';
 import { APPEARANCE_MODES, blockingViolations } from '../test-utils/axe';
-import { createHud, TITLE_HUD_CLASS } from '../ui/hud';
-import { bindMenuPopover } from '../ui/menu-popover';
-import { getPlayerUiRoot, queryPlayerUi } from '../ui/root';
+import { getPlayerUiRoot } from '../ui/root';
 
-import { providerAuthorHosts } from './author-byline';
-import { watchAuthorBylineSetting } from './author-byline-setting';
-import { mountAuthorByline, readAvatarAccent } from './author-byline-view';
-import { BYLINE_STORAGE_KEY } from './settings-values';
-import { createYouTubeSettings } from './youtube/settings';
-
-const HOSTS = providerAuthorHosts([{ domain: 'youtube.com', includeSubdomains: true }], ['yt3.ggpht.com']);
-const AVATAR = 'https://yt3.ggpht.com/avatar=s88';
-const author = (name: string, overrides: Partial<ContentAuthor> = {}): ContentAuthor => ({
-  id: name, name, url: `https://www.youtube.com/@${name.replace(/\W/g, '')}`, avatarUrl: null, verified: false, stat: null, ...overrides
-});
+import { readAvatarAccent } from './author-byline-view';
 
 let scope: DisposableScope | undefined;
 afterEach(() => { scope?.dispose(); scope = undefined; });
+async function mount(...args: Parameters<typeof mountByline>) {
+  const view = await mountByline(...args);
+  scope = view.scope;
+  return view;
+}
 
 const LONG_TITLE = 'Building a cedar-strip canoe, part 3: fibreglass, epoxy, the first coat of varnish and every mistake left in on purpose';
 /** The tooltip a browser shows over `node`: the nearest `title` from it outwards, where an empty one means none. */
@@ -30,71 +22,6 @@ function tooltip(node: Element | null): string | null {
   for (let current = node; current; current = current.parentElement) if (current.hasAttribute('title')) return current.getAttribute('title');
   return null;
 }
-
-type ReadAccent = (avatarUrl: string, signal: AbortSignal) => Promise<string | null>;
-/** Idle callbacks run in order, so this resolves after any the view scheduled before it. */
-const idle = () => new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 }));
-/** Saves Settings > Appearance > the author byline switch, as the Settings page does. */
-const setGlobal = (enabled: boolean) => chrome.storage.sync.set({ [BYLINE_STORAGE_KEY]: enabled });
-/** Tests stay off the network: without a reader of their own, no avatar has a color. */
-const noAccent: ReadAccent = () => Promise.resolve(null);
-
-async function mount(
-  authors: readonly ContentAuthor[] | null,
-  options: { showAuthor?: boolean; global?: boolean; dir?: 'rtl'; readAccent?: ReadAccent } = {},
-  firstTitle = 'Building a cedar-strip canoe',
-  beforePublish?: () => void
-) {
-  const stage = mountHudStage();
-  beforePublish?.();
-  const hud = createHud(stage.host, () => {}, stage.clock);
-  scope = new DisposableScope();
-  stage.onDispose(() => hud.syncContentTitle(null));
-  const settings = createYouTubeSettings();
-  await settings.ready;
-  if (options.showAuthor === false) await settings.set('youtube', 'showAuthor', false);
-  await setGlobal(options.global ?? true);
-  // The global switch the view follows, read from the same storage the Settings page writes.
-  const global = watchAuthorBylineSetting();
-  await global.ready;
-  const byline = mountAuthorByline({ scope, bindMenu: bindMenuPopover }, { provider: 'youtube', hosts: HOSTS, settings, global, readAccent: options.readAccent ?? noAccent });
-  const publish = (next: readonly ContentAuthor[] | null, title = 'Building a cedar-strip canoe') =>
-    hud.syncContentTitle({ title, subtitle: null, authors: next }, byline);
-  /** A navigation between items: the title clears before the next one is published. */
-  const clear = () => hud.syncContentTitle(null, byline);
-  publish(authors, firstTitle);
-  const plate = () => queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS}`)!;
-  if (options.dir) plate().dir = options.dir;
-  const panel = () => plate()?.querySelector<HTMLElement>('.theater-byline-panel') ?? null;
-  const popup = () => plate()?.querySelector<HTMLElement>('.theater-byline-popup') ?? null;
-  const list = () => popup()!.querySelector<HTMLUListElement>('.theater-byline-list')!;
-  const rows = () => [...list().children].map(item => item.firstElementChild as HTMLElement);
-  // The visible names; a link's new-tab note is for screen readers only.
-  const names = () => {
-    const shownNames = panel()?.querySelector('.theater-byline-names');
-    return shownNames && [...shownNames.childNodes].filter(node => !(node instanceof Element && node.matches('.theater-byline-sr'))).map(node => node.textContent).join('');
-  };
-  const links = () => [...plate().querySelectorAll<HTMLAnchorElement>('a.theater-byline-row')];
-  const shown = () => getComputedStyle(popup()!).visibility === 'visible';
-  /** Opens the list from the keyboard, as ↓ on the focused panel does: pinned, with focus on its first link. */
-  const openList = async () => {
-    panel()!.focus();
-    await userEvent.keyboard('{ArrowDown}');
-    expect(shown()).toBe(true);
-  };
-  // Links stay in the test page: every activation is recorded and its navigation stopped.
-  const followed: string[] = [];
-  getPlayerUiRoot().addEventListener('click', event => {
-    const link = (event.target as Element).closest('a');
-    if (!link) return;
-    event.preventDefault();
-    followed.push(link.href);
-  }, { capture: true, signal: scope.signal });
-  return { hud, publish, clear, plate, panel, names, popup, list, rows, links, shown, openList, followed, settings, stage };
-}
-
-/** A channel without a link the provider admits. */
-const unlinked = (name: string, overrides: Partial<ContentAuthor> = {}) => author(name, { url: null, ...overrides });
 
 describe('author byline in the title plate', () => {
   test('sits at the start of the plate and leaves its height unchanged', async () => {

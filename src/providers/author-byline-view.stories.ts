@@ -64,7 +64,7 @@ const LONG_TITLE = 'Building a cedar-strip canoe, part 3: fibreglass, epoxy, the
  * `click` and `keyboard` (Enter) open a button arrow, whose first author has no link; a link arrow is opened by
  * `hover` or `arrow` (↓ on the focused arrow), since its click and Enter follow the link.
  */
-type Opening = 'closed' | 'click' | 'keyboard' | 'arrow' | 'focus' | 'hover';
+type Opening = 'closed' | 'click' | 'keyboard' | 'arrow' | 'focus' | 'hover' | 'home';
 interface Args extends HudArgs {
   authors: number; accent: AccentColorPreset;
   /** Each author's avatar, in order; authors past the list have none. */
@@ -80,7 +80,7 @@ const meta: Meta<Args> = {
     authors: { control: { type: 'range', min: 0, max: 3 } },
     accent: { control: 'select', options: ['red', 'purple', 'pink', 'yellow', 'blue', 'green', 'gray'] },
     avatars: { control: 'object' },
-    open: { control: 'inline-radio', options: ['closed', 'click', 'keyboard', 'arrow', 'focus', 'hover'] },
+    open: { control: 'inline-radio', options: ['closed', 'click', 'keyboard', 'arrow', 'focus', 'hover', 'home'] },
     title: { control: 'text' }, phase: { control: false }, live: { control: false }
   }
 };
@@ -118,6 +118,13 @@ async function awaitPanelAccent(first: Avatar | undefined): Promise<void> {
 
 /** Opens or points at the panel as the story asks; false when nothing is left to check. */
 async function interact(values: Args): Promise<boolean> {
+  // The home button's hover takes the arrow's avatar color, or keeps the user's accent without one.
+  if (values.open === 'home') {
+    const home = queryPlayerUi<HTMLElement>('.theater-home-pill')!;
+    await userEvent.hover(home);
+    await waitFor(() => expect(home.style.getPropertyValue('--accent-color')).toBe(expectedAccent(values.avatars[0])));
+    return false;
+  }
   if (values.open === 'click') await userEvent.click(panel()!);
   if (values.open === 'keyboard' || values.open === 'arrow') {
     panel()!.focus();
@@ -204,5 +211,8 @@ export const AvatarBlue = byline({ avatars: ['blue'] });
 export const AvatarOrange = byline({ avatars: ['orange'], authors: 2 });
 export const AvatarNavyOpen = byline({ avatars: ['navy', 'pastel'], authors: 2, open: 'arrow' });
 export const AvatarPastelHovered = byline({ avatars: ['pastel'], open: 'hover' });
+// The home button's hover takes the arrow's avatar color; a gray avatar leaves it the user's accent.
+export const HomeHoverAvatarColor = byline({ avatars: ['orange'], accent: 'purple', open: 'home' });
+export const HomeHoverFallback = byline({ avatars: ['gray'], accent: 'purple', open: 'home' });
 // A gray avatar keeps the user's accent, on the panel and on its row.
 export const AvatarGrayFallbackOpen = byline({ avatars: ['gray', 'blue', 'none'], authors: 3, accent: 'purple', open: 'arrow' });

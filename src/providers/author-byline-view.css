@@ -11,6 +11,17 @@
   --dir: to right;
   /* How far the arrowhead steps towards the title on hover, focus and open. */
   --nudge: 2px;
+  /* The geometry the popup's rows line up with, from the plate's filled edge: the stacked avatars start --inset in,
+     each --avatar wide and over the previous by --overlap; the names start --name-gap after the stack. The view sets
+     --stacked, how many avatars the stack shows. The plate's outline lies --plate-ring outside its filled edge. */
+  --inset: 17px;
+  --avatar: 24px;
+  --overlap: 7px;
+  --name-gap: 8px;
+  --stacked: 1;
+  --stack: calc(var(--avatar) + (var(--stacked) - 1) * (var(--avatar) - var(--overlap)));
+  --name-start: calc(var(--inset) + var(--stack) + var(--name-gap));
+  --plate-ring: 2px;
   position: relative;
   /* Above the scrolling title's start fade, which reaches under the tip. */
   z-index: 1;
@@ -36,7 +47,7 @@
   z-index: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--name-gap);
   max-width: 360px;
   min-width: 0;
   margin: 0;
@@ -45,7 +56,7 @@
   border-end-start-radius: var(--theater-title-radius);
   padding-block: 0;
   /* Measured from the plate's filled edge: the avatar keeps the W4b place, 17px in. */
-  padding-inline: 17px var(--text-end);
+  padding-inline: var(--inset) var(--text-end);
   background: none;
   color: var(--appearance-ink, #ffffff);
   font: inherit;
@@ -181,15 +192,15 @@
   display: grid;
   place-items: center;
   box-sizing: border-box;
-  width: 24px;
-  height: 24px;
+  width: var(--avatar);
+  height: var(--avatar);
   border-radius: 50%;
   object-fit: cover;
   /* Ringed in the plate's fill, so stacked avatars stay apart. */
   box-shadow: 0 0 0 2px var(--appearance-surface, rgb(12, 12, 14));
 }
 
-.theater-byline-avatar + .theater-byline-avatar { margin-inline-start: -7px; }
+.theater-byline-avatar + .theater-byline-avatar { margin-inline-start: calc(-1 * var(--overlap)); }
 
 .theater-byline-monogram {
   background: color-mix(in srgb, var(--accent-color, #6366f1) 72%, #000000);
@@ -233,9 +244,11 @@
   color: var(--appearance-muted, rgba(255, 255, 255, 0.72));
 }
 
-/* The popup: one block under the plate from the panel's start, clamped to the video (never over the chat), listing a
-   row per author. It starts right at the panel's edge and is at least as wide, with the 8px gap as its own padding, so
-   a move from the panel to a row never leaves the menu.
+/* The popup: one block under the plate, clamped to the video (never over the chat), listing a row per author. It hangs
+   from the plate on shared lines: its border runs on the plate's outline, and the rows' avatars and names start where
+   the panel's first avatar and name do. It is at least as wide as the panel, and the gap under the plate (the 8px
+   between the outlines of the home button and the plate) is its own padding, so a move from the panel to a row never
+   leaves the menu.
 
    Hover intent without a timer: the shell opens the menu at once, and the popup turns visible after 250 ms of hover and
    stays 300 ms after the pointer leaves, a bridge for a diagonal move. A key (or a click on a button panel) pins it at
@@ -245,18 +258,17 @@
   position: absolute !important;
   top: 100% !important;
   bottom: auto !important;
-  inset-inline-start: 0 !important;
+  inset-inline-start: calc(-1 * var(--plate-ring)) !important;
   inset-inline-end: auto !important;
   display: block !important;
   visibility: hidden !important;
   transition: visibility 0s linear 0.3s !important;
   box-sizing: border-box !important;
-  width: max(100%, min(288px, calc(var(--theater-video-width, 100vw) - 48px))) !important;
+  width: max(calc(100% + var(--plate-ring)), min(288px, calc(var(--theater-video-width, 100vw) - 48px))) !important;
   min-width: 0 !important;
   max-width: none !important;
   max-height: none !important;
-  padding: 8px 0 0 !important;
-  padding-inline-start: 4px !important;
+  padding: calc(var(--plate-ring) + 8px) 0 0 !important;
   overflow: visible !important;
   border: 0 !important;
   background: transparent !important;
@@ -298,17 +310,23 @@
    alternate, and a pointer lifts a row further; those tones are the ink laid over the block's surface, with the ramp
    over them. Under the name and its secondary text the ramp stays at 4% and the tones at 9%, so both keep WCAG AA on
    every row whichever accent (author-byline-contrast.test.ts). The keyboard ring is the ink, inside the row, so the
-   block never cuts it. */
+   block never cuts it.
+
+   Inside the block's 1px border the row's padding puts its avatar on the panel's first avatar, and the gap after the
+   avatar puts the name on the panel's first name; the end padding mirrors the start. The avatar grows with a wider
+   stack (three avatars), so the gap after it stays close to the panel's own. */
 .theater-byline-row {
   --row-fill: transparent;
-  /* Where the name starts: the padding, the avatar and the gap. */
-  --text-start: 64px;
+  --row-avatar: calc(40px + (var(--stacked) - 2) * 8px);
+  --row-inset: calc(var(--inset) + var(--plate-ring) - 1px);
+  /* Where the name starts in the row: its padding, the avatar and the gap. */
+  --text-start: calc(var(--name-start) + var(--plate-ring) - 1px);
   position: relative;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-columns: var(--row-avatar) minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  column-gap: calc(var(--name-start) - var(--inset) - var(--row-avatar));
+  padding: 14px var(--row-inset);
   /* The outer rows follow the block's corners, so the focus ring does too. */
   border-radius: inherit;
   background-color: var(--row-fill);
@@ -373,13 +391,13 @@ a.theater-byline-row:focus-visible {
 .theater-byline-row-avatar {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: var(--row-avatar);
+  height: var(--row-avatar);
   border-radius: 50%;
   object-fit: cover;
 }
 
-.theater-byline-row-avatar.theater-byline-monogram { font-size: 14px; }
+.theater-byline-row-avatar.theater-byline-monogram { font-size: calc(var(--row-avatar) * 0.35); }
 
 .theater-byline-row-heading {
   display: flex;

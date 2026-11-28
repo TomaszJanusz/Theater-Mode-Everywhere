@@ -2297,7 +2297,8 @@ button.theater-time-end:focus-visible,
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
   )) !important;
   outline-color: var(--appearance-border, color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent)) !important;
-  color: var(--accent-color, #ffffff) !important;
+  /* The author byline gives the home button its avatar color and this lifted icon shade (author-byline-view.ts). */
+  color: var(--home-ink, var(--accent-color, #ffffff)) !important;
 }
 
 .theater-home-pill:active {
