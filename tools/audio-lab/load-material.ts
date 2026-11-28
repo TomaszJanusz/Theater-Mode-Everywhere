@@ -4,7 +4,7 @@ import { homedir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildRoom, LAB_RATE, type Material } from './material';
+import { buildRoom, LAB_RATE, minus, sum, type Material } from './material';
 import { resample } from './metrics/resample';
 import { SYNTHETIC_IDS, syntheticMaterial } from './synthetic';
 import type { Signal } from './types';
@@ -57,8 +57,10 @@ function voiceInMix(mix: Signal, dry: Float32Array): Signal {
  * What the lab reads from a corpus manifest entry; the corpus owns the file and its other fields.
  * `dry` and `impulseResponse` name other entries. An entry of kind `speech` is its own dry voice.
  * An impulse response may state the sample (of its own file) at which the direct sound arrives.
+ * `bed` names a mix entry with a dry voice: what is left of that mix without its voice (its music)
+ * is this entry's other sound, alone or under a room built from `dry` and `impulseResponse`.
  */
-type Entry = { id: string; kind?: string; label?: string; file?: string; dry?: string; impulseResponse?: string; directArrivalSample?: number };
+type Entry = { id: string; kind?: string; label?: string; file?: string; dry?: string; impulseResponse?: string; directArrivalSample?: number; bed?: string };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
@@ -76,7 +78,7 @@ function readManifest(directory: string): Entry[] {
     if (arrival !== undefined && !(typeof arrival === 'number' && Number.isInteger(arrival) && arrival >= 0)) {
       throw new Error(`${path}: directArrivalSample of '${id}' must be a sample index`);
     }
-    return { id, kind: text(entry.kind), label: text(entry.label), file: text(entry.file), dry: text(entry.dry), impulseResponse: text(entry.impulseResponse), directArrivalSample: arrival };
+    return { id, kind: text(entry.kind), label: text(entry.label), file: text(entry.file), dry: text(entry.dry), impulseResponse: text(entry.impulseResponse), directArrivalSample: arrival, bed: text(entry.bed) };
   });
 }
 
@@ -96,16 +98,25 @@ function fromManifest(entry: Entry, { entries, directory }: Corpus): Material {
     if (!found) throw new Error(`Material '${entry.id}' refers to '${id}', which the manifest does not list`);
     return found;
   };
+  /** The other sound of a mix entry: the mix without its dry voice. */
+  const bedOf = (source: Entry): Signal => {
+    if (!source.dry) throw new Error(`Material '${entry.id}' takes its bed from '${source.id}', which names no dry voice to take out`);
+    const mix = toStereo(entryAudio(source, directory));
+    return minus(mix, voiceInMix(mix, toMono(entryAudio(find(source.dry), directory))));
+  };
   const label = entry.label ?? entry.id;
   const dryId = entry.dry ?? (entry.kind === 'speech' ? entry.id : undefined);
   const dry = dryId ? toMono(entryAudio(find(dryId), directory)) : undefined;
+  const bed = entry.bed ? bedOf(find(entry.bed)) : undefined;
   if (dry && entry.impulseResponse) {
     const response = find(entry.impulseResponse);
     const audio = withLeadIn(entryAudio(response, directory));
     const stated = response.directArrivalSample;
     const arrival = stated === undefined ? undefined : (stated + LEAD_IN) * LAB_RATE / audio.sampleRate;
-    return { id: entry.id, label, dry, ...buildRoom(dry, atLabRate(audio), arrival) };
+    const built = buildRoom(dry, atLabRate(audio), arrival);
+    return bed ? { id: entry.id, label, dry, room: built.room, mix: sum([built.mix, bed]), bed } : { id: entry.id, label, dry, ...built };
   }
+  if (bed) return { id: entry.id, label, mix: bed };
   const mix = toStereo(entryAudio(entry, directory));
   return { id: entry.id, label, mix, dry, voice: dry ? voiceInMix(mix, dry) : undefined };
 }

@@ -1,11 +1,13 @@
 /**
  * The echo-reduction regression gate: what the shipped DSP does to a known voice in known rooms,
- * held to the behaviour of `dev` when the gate was written (TME-280), with margins. It runs the
- * WebAssembly in node on built-in material, so it needs no browser and no audio files.
+ * held to the behaviour of `dev` when the gate was written (TME-280), with margins, and what it
+ * must not do to sound that is no echo of a voice. It runs the WebAssembly in node on built-in
+ * material, so it needs no browser and no audio files.
  *
  * The limits are one-sided. A change may cost the voice less or lower the tail further without
- * touching this file; costing the voice more, or giving up more than 1 dB of tail, has to be a
- * decision: measure it with `pnpm audio:lab`, then move the limit in the same change.
+ * touching this file; costing the voice more, giving up more than 1 dB of tail, or touching music
+ * and the bands outside speech has to be a decision: measure it with `pnpm audio:lab`, then move
+ * the limit in the same change.
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
@@ -56,12 +58,73 @@ const GATE: Record<string, Room> = {
   }
 };
 
+/** The change of one lab row in dB, as [Light, Strong]: at most this, at least this, or both. */
+type Bound = { atMost?: [number, number]; atLeast?: [number, number] };
+type Case = { id: string; seconds?: number; rows: Record<string, Bound> };
+const within = (limit: number): Bound => ({ atMost: [limit, limit], atLeast: [-limit, -limit] });
+
+/**
+ * Sound the effect must leave alone. In brackets what `dev` did before the gain was tied to speech.
+ * A level over a whole clip hides a gain that falls for a fifth of a second and comes back, so the
+ * music also has a limit on its largest dip over any 50 ms.
+ * - Sustained and plucked music pass: Light and Strong lowered them by 2.8 and 8.7 dB [sustained]
+ *   and 1.7 and 2.4 dB [plucked, with dips of 7 and 10 dB].
+ * - A chord accent of 180 ms has the shape of a syllable, and no envelope tells them apart. One
+ *   accent gets two fifths of the depth, and accents of one chord add nothing to each other, at
+ *   one every 1.6 s or two a second. The accompaniment still dips as an accent ends, by 3.2 and
+ *   6.4 dB at the worst one [6.0 and 9.9 dB], for a fifth of a second; over the clip it loses
+ *   0.15 and 0.24 dB [2.9 and 8.0 dB], and at two a second 0.5 and 0.9 dB [2.9 and 6.6 dB].
+ * - Music that starts 12 dB under a voice the moment it stops is under the voice's echo for the
+ *   first fifth of a second, and is lowered with it: by 5.4 and 9.3 dB at the worst, as on `dev`.
+ *   This is the overlap the effect cannot avoid; from 1.5 s on the music is untouched [-2.8, -9.0].
+ * - Applause dips by 2.5 and 3.3 dB [5.0 and 7.3 dB].
+ * - Outside the speech bands a voice in a room changed by up to 3.1 dB, now by 0.08 dB at most;
+ *   music under a voice, whose bass notes lie within a bin of the lower edge, by 0.45 dB.
+ */
+const UNTOUCHED: Case[] = [
+  { id: 'synthetic-music-sustained', rows: { 'speech-bands-level': within(0.1), 'outside-speech-bands-level': within(0.1), 'largest-dip-mix': { atMost: [0.1, 0.1] } } },
+  { id: 'synthetic-music-plucked', rows: { 'speech-bands-level': within(0.3), 'outside-speech-bands-level': within(0.1), 'largest-dip-mix': { atMost: [1.2, 1.6] } } },
+  { id: 'synthetic-music-accents', rows: { 'bed-level': { atLeast: [-0.4, -0.5] }, 'bed-largest-dip': { atMost: [3.8, 6.9] }, 'outside-speech-bands-level': within(0.4) } },
+  { id: 'synthetic-music-accents-fast', rows: { 'bed-level': { atLeast: [-0.8, -1.3] }, 'bed-largest-dip': { atMost: [3.8, 6.9] }, 'outside-speech-bands-level': within(0.4) } },
+  { id: 'synthetic-room-0.8s-cut-to-music', seconds: 12, rows: { 'bed-largest-dip-pauses': { atMost: [5.9, 9.8] }, 'bed-level-away': within(0.1), 'bed-largest-dip-away': { atMost: [0.1, 0.1] } } },
+  { id: 'synthetic-applause', rows: { 'speech-bands-level': { atLeast: [-0.9, -1] }, 'largest-dip-mix': { atMost: [3, 3.8] }, 'outside-speech-bands-level': within(0.1) } },
+  // The voice speaks through the first half of the clip, so 4.5 s of it are music alone.
+  { id: 'synthetic-room-0.8s-then-music', seconds: 12, rows: { 'bed-level-away': within(0.1), 'bed-largest-dip-away': { atMost: [0.1, 0.1] }, 'outside-speech-bands-level': within(0.7) } },
+  { id: 'synthetic-dry', seconds: 5, rows: { 'outside-speech-bands-level': within(0.2) } },
+  { id: 'synthetic-wall', seconds: 5, rows: { 'outside-speech-bands-level': within(0.2) } },
+  { id: 'synthetic-room-0.8s', seconds: 5, rows: { 'outside-speech-bands-level': within(0.2) } }
+];
+
+/**
+ * Speech that an envelope can take for something else, and must not: its echo has to come down
+ * much as `dev` brought it down [in brackets, Light and Strong, late reverb in the pauses].
+ * - A vowel held for 1.2 s: -6.7 and -9.5 dB [-6.7 and -9.5].
+ * - Speech 1.6 times as fast, at the same pitch and at a higher one: -5.4 and -7.1 dB [-5.7 and
+ *   -7.5], -5.6 and -7.5 dB [-6.0 and -8.1].
+ * - A voice under music 2 dB louder than itself: -2.5 and -3.9 dB [-4.3 and -8.9]. The voice moves
+ *   the level of such a mix too little to be found each time; what is given up in echo is kept in
+ *   music, which loses 0.2 and 0.3 dB while the voice speaks [2.9 and 6.8 dB].
+ * One case is given up. A word of 90 ms on its own (`synthetic-room-0.3s-short-words`) is over
+ * before it can show that it holds its level, as a drum is; its echo passes [-3.9 and -4.8 dB].
+ * Counting it would count every struck sound: the plucked music above would lose 1.4 and 1.5 dB.
+ */
+const FOUND: Case[] = [
+  { id: 'synthetic-room-0.3s-long-vowels', rows: { 'tail-level': { atMost: [-5.7, -8.5] } } },
+  { id: 'synthetic-room-0.3s-fast', rows: { 'tail-level': { atMost: [-4.4, -6.1] } } },
+  { id: 'synthetic-room-0.3s-fast-pitched', rows: { 'tail-level': { atMost: [-4.6, -6.5] } } },
+  { id: 'synthetic-room-0.8s-under-music', rows: { 'tail-level': { atMost: [-1.5, -2.9] }, 'bed-level-speech': { atLeast: [-0.8, -0.9] } } }
+];
+
 type Changes = { voice: number; ending: number; movement: number; tail?: number };
 
-async function measureChanges(material: Material, level: Level): Promise<Changes> {
+const effectOf = (level: Level) => {
   const effect = LAB_EFFECTS.find(candidate => candidate.id === `echo-${level}`);
   assert.ok(effect);
-  const rows = levelRows(material, await effect.run(material.mix));
+  return effect;
+};
+
+async function measureChanges(material: Material, level: Level): Promise<Changes> {
+  const rows = levelRows(material, await effectOf(level).run(material.mix));
   const change = (id: string) => {
     const row = rows.find(candidate => candidate.id === id);
     return row ? row.after - row.before : undefined;
@@ -104,3 +167,23 @@ describe('echo reduction regression gate', () => {
     }
   }
 });
+
+for (const [title, cases] of [['echo reduction leaves alone what is no echo of a voice', UNTOUCHED], ['echo reduction finds speech that does not look like a run of syllables', FOUND]] as const) {
+  describe(title, () => {
+    for (const { id, seconds = 8, rows: bounds } of cases) {
+      const material = syntheticMaterial(id, seconds);
+      for (const [index, level] of (['light', 'strong'] as const).entries()) {
+        it(`${id}, ${level}: ${Object.keys(bounds).join(', ')}`, async () => {
+          const rows = levelRows(material, await effectOf(level).run(material.mix));
+          for (const [row, { atMost, atLeast }] of Object.entries(bounds)) {
+            const found = rows.find(candidate => candidate.id === row);
+            assert.ok(found, `the lab reports ${row}`);
+            const change = found.after - found.before;
+            assert.ok(atMost === undefined || change <= atMost[index], `${row} changed by ${change.toFixed(2)} dB, at most ${atMost?.[index]} dB`);
+            assert.ok(atLeast === undefined || change >= atLeast[index], `${row} changed by ${change.toFixed(2)} dB, at least ${atLeast?.[index]} dB`);
+          }
+        });
+      }
+    }
+  });
+}

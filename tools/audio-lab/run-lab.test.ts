@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
 import { LAB_EFFECTS, latencyOf } from './effects';
-import { measure } from './measure';
+import { levelRows, measure } from './measure';
 import { decodeRun, encodeRun } from './run-json';
 import { runLab } from './run-lab';
 import { syntheticMaterial, syntheticVoice } from './synthetic';
@@ -36,9 +36,10 @@ describe('audio lab: runs', () => {
     assert.equal(run.output.sampleRate, 48000);
     assert.deepEqual(run.output.channels.map(channel => channel.length), [96000, 96000]);
     assert.deepEqual(run.input.channels.map(channel => channel.length), [96000, 96000]);
-    assert.deepEqual(ids(run).filter(id => !id.startsWith('band-')), ['voice-level-mix', 'word-ending-level-mix', 'level-movement-mix', 'tail-level-mix', 'srmr', 'loudness']);
+    assert.deepEqual(ids(run).filter(id => !id.startsWith('band-')), ['voice-level-mix', 'word-ending-level-mix', 'level-movement-mix', 'largest-dip-mix', 'tail-level-mix', 'speech-bands-level', 'outside-speech-bands-level', 'srmr', 'loudness']);
     const voice = run.metrics[0];
-    assert.ok(voice.after < voice.before - 1 && voice.after > voice.before - 6, `${voice.before} to ${voice.after}`);
+    // Two seconds of a dry voice: the effect ran (the first syllable passes untouched, the rest loses a little).
+    assert.ok(voice.after < voice.before - 0.1 && voice.after > voice.before - 6, `${voice.before} to ${voice.after}`);
     assert.equal(voice.label, 'Level while speaking (whole mix)');
     assert.match(voice.note ?? '', /Measured on the whole mix/);
     // What comes back is what the report tool reads.
@@ -80,8 +81,41 @@ describe('audio lab: runs', () => {
     const material = syntheticMaterial('synthetic-dry', 3);
     const light = LAB_EFFECTS.find(effect => effect.id === 'echo-light')!;
     const rows = measure(material, await light.run(material.mix));
-    assert.deepEqual(ids({ metrics: rows }).filter(id => !id.startsWith('band-')), ['voice-level-direct', 'word-ending-level-direct', 'level-movement-direct', 'estoi-direct', 'srmr', 'loudness']);
+    assert.deepEqual(ids({ metrics: rows }).filter(id => !id.startsWith('band-')), ['voice-level-direct', 'word-ending-level-direct', 'level-movement-direct', 'speech-bands-level', 'outside-speech-bands-level', 'estoi-direct', 'srmr', 'loudness']);
     assert.ok(Math.abs(rows.find(row => row.id === 'estoi-direct')!.before - 1) < 1e-9, 'an untouched dry voice is fully intelligible');
+  });
+
+  it('measures the music under a voice in a room, while it speaks, in its pauses and once it has gone', async () => {
+    const material = syntheticMaterial('synthetic-room-0.8s-then-music', 8);
+    const strong = LAB_EFFECTS.find(effect => effect.id === 'echo-strong')!;
+    const rows = levelRows(material, await strong.run(material.mix));
+    const row = (id: string) => rows.find(candidate => candidate.id === id)!;
+    for (const id of ['voice-level-direct', 'tail-level', 'bed-level-speech', 'bed-level-pauses', 'bed-largest-dip-pauses', 'bed-level-away', 'bed-largest-dip-away', 'speech-bands-level', 'outside-speech-bands-level']) assert.ok(row(id), id);
+    assert.ok(row('bed-largest-dip-away').after < 0.01, `and it never dips there, not for 50 ms (${row('bed-largest-dip-away').after} dB)`);
+    assert.equal(row('bed-level-away').label, 'Other sound with no voice for 1.5 s');
+    assert.equal(row('speech-bands-level').label, 'Level inside the speech bands (70 to 4805 Hz, whole mix)');
+    assert.equal(row('outside-speech-bands-level').label, 'Level outside the speech bands (below 70 and above 4805 Hz, whole mix)');
+    // The music is lowered a little with the voice's echo while the voice speaks, and is left alone once it has gone.
+    assert.ok(row('bed-level-speech').after < row('bed-level-speech').before - 0.3);
+    assert.ok(Math.abs(row('bed-level-away').after - row('bed-level-away').before) < 0.1);
+    // A room without music has no such rows, and a clip without a voice no row for where the voice is away.
+    const plain = syntheticMaterial('synthetic-room-0.8s', 3);
+    assert.ok(!levelRows(plain, await strong.run(plain.mix)).some(candidate => candidate.id.startsWith('bed-level')));
+  });
+
+  it('follows the accompaniment under accents, and reads music alone for its deepest dip', async () => {
+    const strong = LAB_EFFECTS.find(effect => effect.id === 'echo-strong')!;
+    const accents = syntheticMaterial('synthetic-music-accents', 6);
+    const rows = levelRows(accents, await strong.run(accents.mix));
+    const labels = Object.fromEntries(rows.map(row => [row.id, row.label]));
+    assert.equal(labels['bed-level'], 'Accompaniment under the other sound');
+    assert.equal(labels['bed-largest-dip'], 'Largest drop of the accompaniment over 50 ms');
+    assert.ok(!('bed-level-speech' in labels), 'no voice, no rows by where it speaks');
+    const dip = rows.find(row => row.id === 'bed-largest-dip')!;
+    assert.ok(dip.before === 0 && dip.after > 1 && dip.higherIsBetter === false, `${dip.after} dB`);
+    const applause = syntheticMaterial('synthetic-applause', 4);
+    const mixRows = levelRows(applause, await strong.run(applause.mix));
+    assert.equal(mixRows.find(row => row.id === 'largest-dip-mix')?.label, 'Largest drop of the level over 50 ms (whole mix)');
   });
 
   it('judges a clip with sound on one side only by that side', async () => {

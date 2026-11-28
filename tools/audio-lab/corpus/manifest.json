@@ -125,6 +125,25 @@
       "nominalRt60": 0.8
     },
     {
+      "id": "music",
+      "kind": "derived",
+      "label": "Corpus music alone (speech-over-music without its voice)",
+      "source": "speech-over-music minus dry-speech, taken apart when the lab loads it. No file.",
+      "licence": "MIT (repository licence)",
+      "bed": "speech-over-music"
+    },
+    {
+      "id": "room-rt080-over-music",
+      "kind": "derived",
+      "label": "Corpus voice in room-rt080 over the corpus music",
+      "source": "dry-speech convolved with room-rt080-ir, plus the music of speech-over-music, mixed when the lab loads it. No file.",
+      "licence": "MIT (repository licence)",
+      "nominalRt60": 0.8,
+      "impulseResponse": "room-rt080-ir",
+      "dry": "dry-speech",
+      "bed": "speech-over-music"
+    },
+    {
       "id": "youtube-echo",
       "kind": "external",
       "file": "youtube-echo.wav",

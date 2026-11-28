@@ -63,11 +63,14 @@ const RENDER = `(async ({ echo, seconds, origin }) => {
   let seed = 1;
   const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 31 - 1;
   const dry = new Float32Array(n);
-  let low = 0;
+  // Noise in the speech bands, where the DSP acts: three low-pass poles at 1.5 kHz, two high-pass at 150 Hz.
+  const low = [0, 0, 0], slow = [0, 0];
   for (let i = 0; i < n; i++) {
     const t = (i / rate) % 0.6;
-    low += 0.2 * (random() - low);
-    dry[i] = t < 0.25 ? 0.1 * low * Math.min(1, t / 0.005, (0.25 - t) / 0.005) : 0;
+    let value = random();
+    for (let pole = 0; pole < 3; pole++) value = low[pole] += 0.2 * (value - low[pole]);
+    for (let pole = 0; pole < 2; pole++) value -= slow[pole] += 0.02 * (value - slow[pole]);
+    dry[i] = t < 0.25 ? 0.2 * value * Math.min(1, t / 0.005, (0.25 - t) / 0.005) : 0;
   }
   for (let ch = 0; ch < 2; ch++) {
     const data = buffer.getChannelData(ch);

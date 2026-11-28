@@ -7,7 +7,9 @@ import manifest from './manifest.json';
 
 const directory = new URL('./', import.meta.url);
 const read = (file: string) => readFileSync(new URL(file, directory));
-const entries = manifest.entries.filter(({ kind }) => kind !== 'external');
+type Entry = (typeof manifest.entries)[number];
+// Committed audio: every entry but the fetched excerpts and the ones the lab mixes from other entries.
+const entries = manifest.entries.filter((entry): entry is Entry & { file: string; sha256: string; duration: number } => entry.kind !== 'external' && entry.kind !== 'derived');
 
 it('freezes the corpus with one verified entry per committed audio file and stays under budget', () => {
   assert.deepEqual(entries.map(({ file }) => file).sort(), readdirSync(directory).filter((file) => file.endsWith('.wav')).sort());
@@ -46,4 +48,16 @@ it('keeps the dry reference aligned and includes a dominant later wall reflectio
   const direct = wall.readInt16LE(44);
   const delayed = wall.readInt16LE(44 + Math.round(0.042 * 16000) * 2);
   assert.ok(direct > 0 && delayed > 3 * direct);
+});
+
+it('derives its mixes from committed entries instead of adding files', () => {
+  const derived = manifest.entries.filter(({ kind }) => kind === 'derived');
+  assert.deepEqual(derived.map(({ id }) => id), ['music', 'room-rt080-over-music']);
+  for (const entry of derived) {
+    assert.equal(entry.file, undefined, entry.id);
+    for (const part of [entry.dry, entry.impulseResponse, entry.bed]) {
+      if (part !== undefined) assert.ok(entries.some(({ id }) => id === part), `${entry.id} refers to ${part}`);
+    }
+    assert.equal(entries.find(({ id }) => id === entry.bed)?.dry, 'dry-speech', `${entry.id}: the bed's mix names its dry voice`);
+  }
 });

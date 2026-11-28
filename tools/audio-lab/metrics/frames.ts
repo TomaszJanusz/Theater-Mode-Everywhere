@@ -20,12 +20,18 @@ export type Frames = {
    * its far side still counts.
    */
   wordEnding: Uint8Array;
+  /**
+   * The voice has not sounded for 1.5 s, or not yet at all: no speech was just present, so what
+   * sounds here is neither the voice nor its echo. Longer than any tail the effect may follow.
+   */
+  away: Uint8Array;
 };
 
 const TAIL_FROM = 0.05;
 const TAIL_TO = 0.3;
 const ENDING = 0.06;
 const ENDING_PAUSE = 0.1;
+const AWAY_FROM = 1.5;
 
 const levels = (grid: Grid): Float64Array => framePower(grid, voiceBand(grid)).map(dB);
 
@@ -61,17 +67,19 @@ export function describeFrames(speech: Uint8Array, frameHz: number): Frames {
   const frames = speech.length;
   const tail = new Uint8Array(frames);
   const wordEnding = new Uint8Array(frames);
-  const [tailFrom, tailTo, ending, endingPause] = [TAIL_FROM, TAIL_TO, ENDING, ENDING_PAUSE].map(seconds => Math.round(seconds * frameHz));
+  const away = new Uint8Array(frames);
+  const [tailFrom, tailTo, ending, endingPause, awayFrom] = [TAIL_FROM, TAIL_TO, ENDING, ENDING_PAUSE, AWAY_FROM].map(seconds => Math.round(seconds * frameHz));
   // Frames before the first word follow no speech, so they are no tail.
   let sinceStop = Number.POSITIVE_INFINITY;
   for (let m = 0; m < frames; m++) {
     sinceStop = speech[m] ? 0 : sinceStop + 1;
     if (sinceStop >= tailFrom && sinceStop <= tailTo) tail[m] = 1;
+    if (sinceStop >= awayFrom) away[m] = 1;
     const stops = speech[m] && m + 1 < frames && !speech[m + 1];
     if (stops && m + endingPause < frames && speech.subarray(m + 1, m + 1 + endingPause).every(value => value === 0)) {
       wordEnding.fill(1, Math.max(0, m + 1 - ending), m + 1);
     }
   }
   for (let m = 0; m < frames; m++) if (!speech[m]) wordEnding[m] = 0;
-  return { speech, tail, wordEnding };
+  return { speech, tail, wordEnding, away };
 }

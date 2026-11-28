@@ -55,26 +55,35 @@ function run(dsp: Dsp, left: Float64Array, right: Float64Array, probe?: GainProb
   return out;
 }
 
+// The speech bands at 48 kHz: bins 2 to 102, 70 Hz to 4.8 kHz. Every other bin keeps a gain of 1.
+const SPEECH_BINS = [2, 103] as const;
+
 /**
- * How restless a run of gain frames is, over 190 Hz to 16 kHz: the mean step in dB between
- * neighbouring bins (`across`) and between consecutive frames (`along`), and the share of bins
- * standing 6 dB or more above both bins 140 Hz away (`specks`). Specks are what musical noise is made of.
+ * How restless a run of gain frames is, over 260 Hz to 4.6 kHz of the speech bands: the mean step
+ * in dB between neighbouring bins (`across`) and between frames (`along`, over the pairs of
+ * consecutive frames for which `adjacent` holds), and the share of bins standing 6 dB or more above
+ * both bins 140 Hz away (`specks`). Specks are what musical noise is made of.
  */
-function restlessness(frames: Float32Array[]) {
+function restlessness(frames: Float32Array[], adjacent: (frame: number) => boolean = frame => frame > 0) {
   const level = frames.map(frame => Array.from(frame, value => 20 * Math.log10(value)));
+  const [from, to] = [SPEECH_BINS[0] + 4, SPEECH_BINS[1] - 4];
   let across = 0;
   let along = 0;
   let specks = 0;
   let cells = 0;
+  let pairs = 0;
   for (const [f, frame] of level.entries()) {
-    for (let k = 4; k < 340; k++) {
+    for (let k = from; k < to; k++) {
       across += Math.abs(frame[k + 1] - frame[k]);
-      if (f > 0) along += Math.abs(frame[k] - level[f - 1][k]);
+      if (adjacent(f)) {
+        along += Math.abs(frame[k] - level[f - 1][k]);
+        pairs++;
+      }
       if (frame[k] - Math.max(frame[k - 3], frame[k + 3]) > 6) specks++;
       cells++;
     }
   }
-  return { across: across / cells, along: along / (cells - 336), specks: 100 * specks / cells };
+  return { across: across / cells, along: along / pairs, specks: 100 * specks / cells };
 }
 
 /** Deterministic noise in [-1, 1). */
@@ -143,20 +152,35 @@ function inShortRoom(dry: Float64Array): [Float64Array, Float64Array] {
 }
 
 /**
- * Speech-like bursts (noise with a falling spectrum, 250 ms on, 350 ms off) in a room: the dry
- * signal plus the tail of `inRoom`. Noise keeps the tail uncorrelated with the dry voice, so a
- * projection measures what is left of it.
+ * Noise in the speech bands: white noise through three low-pass poles at 1.5 kHz and two high-pass
+ * poles at 150 Hz, at the level the bursts always had. 0.3 % of its power lies outside the bands the
+ * DSP acts on, so a level measured on the samples is a level in those bands.
+ */
+function speechBandNoise(seed: number): () => number {
+  const source = noise(seed);
+  const low = [0, 0, 0];
+  const slow = [0, 0];
+  return () => {
+    let value = source();
+    for (let pole = 0; pole < low.length; pole++) value = low[pole] += 0.2 * (value - low[pole]);
+    for (let pole = 0; pole < slow.length; pole++) value -= slow[pole] += 0.02 * (value - slow[pole]);
+    return 2 * value;
+  };
+}
+
+/**
+ * Speech-like bursts (noise in the speech bands, 250 ms on, 350 ms off) in a room: the dry signal
+ * plus the tail of `inRoom`. Noise keeps the tail uncorrelated with the dry voice, so a projection
+ * measures what is left of it.
  */
 function reverberantBursts(seconds: number, rt60: number) {
   const n = Math.round(seconds * RATE);
   const dry = new Float64Array(n);
-  const source = noise(3);
-  let low = 0;
+  const source = speechBandNoise(3);
   for (let i = 0; i < n; i++) {
     const t = i / RATE;
     const on = t % 0.6 < 0.25 ? Math.min(1, (t % 0.6) / 0.005, (0.25 - t % 0.6) / 0.005) : 0;
-    low += 0.2 * (source() - low);
-    dry[i] = 0.4 * on * low;
+    dry[i] = 0.4 * on * source();
   }
   const [left, right] = inRoom(dry, rt60);
   return { dry, left, right };
@@ -194,24 +218,42 @@ const inTail = (t: number) => t % 0.6 > 0.33 && t % 0.6 < 0.58;
  * A vowel that lasts and a word that fades are what a late-reverb estimate mistakes for echo (TME-279).
  */
 const SYLLABLE = 0.5;
-function voicedSyllables(seconds: number): Float64Array {
+/** The same vowel in every syllable, or one vowel after another: [first formant, second formant] in Hz. */
+const ONE_VOWEL: [number, number][] = [[700, 1800]];
+const VOWELS: [number, number][] = [[700, 1800], [320, 2300], [500, 1000], [400, 2000]];
+/**
+ * `hold` and `fade` are the seconds a syllable holds its level and fades, `period` the time from one
+ * to the next, and `vibrato` how far the pitch swings around 115 Hz, which makes the level waver.
+ */
+function voicedSyllables(seconds: number, vowels = ONE_VOWEL, { period = SYLLABLE, hold = 0.2, fade = 0.1, vibrato = 12 } = {}): Float64Array {
   const dry = new Float64Array(Math.round(seconds * RATE));
   let phase = 0;
   for (let i = 0; i < dry.length; i++) {
     const t = i / RATE;
-    const u = t % SYLLABLE;
-    const pitch = 115 + 12 * Math.sin(2 * Math.PI * 0.9 * t);
+    const u = t % period;
+    const pitch = 115 + vibrato * Math.sin(2 * Math.PI * 0.9 * t);
     phase += 2 * Math.PI * pitch / RATE;
-    const envelope = u < 0.02 ? 0.5 - 0.5 * Math.cos(Math.PI * u / 0.02) : u < 0.22 ? 1 : u < 0.32 ? 0.5 + 0.5 * Math.cos(Math.PI * (u - 0.22) / 0.1) : 0;
+    const held = 0.02 + hold;
+    const envelope = u < 0.02 ? 0.5 - 0.5 * Math.cos(Math.PI * u / 0.02) : u < held ? 1 : u < held + fade ? 0.5 + 0.5 * Math.cos(Math.PI * (u - held) / fade) : 0;
     if (envelope === 0) continue;
+    const [first, second] = vowels[Math.floor(t / period) % vowels.length];
     let sum = 0;
     for (let h = 1; h <= 30; h++) {
       const f = h * pitch;
-      sum += (1 + 3 * Math.exp(-(((f - 700) / 250) ** 2)) + 2 * Math.exp(-(((f - 1800) / 400) ** 2))) / h * Math.sin(h * phase + h);
+      sum += (1 + 3 * Math.exp(-(((f - first) / 250) ** 2)) + 2 * Math.exp(-(((f - second) / 400) ** 2))) / h * Math.sin(h * phase + h);
     }
     dry[i] = 0.08 * envelope * sum;
   }
   return dry;
+}
+
+/** A signal made at 48 kHz as it would arrive at another sample rate, between its samples by a straight line. */
+function atRate(signal: Float64Array, rate: number): Float64Array {
+  return Float64Array.from({ length: Math.floor(signal.length * rate / RATE) }, (_, i) => {
+    const at = i * RATE / rate;
+    const before = Math.floor(at);
+    return signal[before] + (at - before) * ((signal[before + 1] ?? 0) - signal[before]);
+  });
 }
 // Parts of a syllable, by the time since it began, and the pause well after it.
 const syllable = {
@@ -301,26 +343,107 @@ describe('echo reduction DSP (WebAssembly)', () => {
 
   for (const level of ['light', 'strong'] as const) {
     // Steady sound is the hard case: nothing in it is an onset, yet every bin's power jitters from
-    // frame to frame. A gain that follows the jitter turns it into musical noise (TME-275).
+    // frame to frame. A gain that follows the jitter turns it into musical noise (TME-275). The gain
+    // is free on steady sound only after the level has fallen, so the noise drops by 8 dB for 0.2 s of
+    // every 0.7 s: the drop frees the gain, the lower level it works on from 60 ms after it is as
+    // steady as noise is, and each return is a sound that starts and holds, as a syllable does.
     it(`holds its gain steady on steady noise at ${level}`, () => {
+      const lowered = (seconds: number) => seconds % 0.7 > 0.56 && seconds % 0.7 < 0.66;
       const [left, right] = [5, 6].map(seed => {
         const source = noise(seed);
         let low = 0;
-        return Float64Array.from({ length: 3 * RATE }, () => {
+        return Float64Array.from({ length: 5 * RATE }, (_, i) => {
           low += 0.2 * (source() - low);
-          return 0.4 * low;
+          return ((i / RATE) % 0.7 < 0.5 ? 0.4 : 0.16) * low;
         });
       });
       const gains: Float32Array[] = [];
+      const starts: number[] = [];
+      let was = false;
       run(instantiate(ECHO_PRESETS[level]), left, right, (gain, seconds) => {
-        if (seconds > 1) gains.push(gain.slice());
+        const now = seconds > 1.4 && lowered(seconds - LATENCY / RATE);
+        if (now && !was) starts.push(gains.length);
+        if (now) gains.push(gain.slice());
+        was = now;
       });
-      const { across, along, specks } = restlessness(gains);
+      const { across, along, specks } = restlessness(gains, frame => !starts.includes(frame));
+      const working = 10 * Math.log10(gains.reduce((sum, gain) => sum + gain.subarray(...SPEECH_BINS).reduce((bins, value) => bins + value ** 2, 0), 0) / (gains.length * (SPEECH_BINS[1] - SPEECH_BINS[0])));
+      // A gain of 1 throughout would be steady too, and would pass the three lines after this one.
+      assert.ok(working < -1.5, `the gain is at work in these frames (${working.toFixed(1)} dB)`);
       assert.ok(across < 1.7, `neighbouring bins move together (${across.toFixed(2)} dB per bin)`);
       assert.ok(along < 1, `the gain drifts rather than flickers (${along.toFixed(2)} dB per frame)`);
       assert.ok(specks < 1.2, `almost no bin opens on its own (${specks.toFixed(2)} %)`);
     });
   }
+
+  for (const rate of [RATE, 44100]) {
+    it(`never writes the gain outside the speech bands at ${rate} Hz`, () => {
+      const { left, right } = reverberantBursts(2, 0.8);
+      const [from, to] = [80, 4800].map(hz => Math.ceil(hz * 1024 / rate));
+      let lowest = 1;
+      let touched = 0;
+      run(instantiate(ECHO_PRESETS.strong, rate), left, right, gain => {
+        for (let k = 0; k < GAIN_BINS; k++) {
+          if (k >= from && k < to) lowest = Math.min(lowest, gain[k]);
+          else if (gain[k] !== 1) touched++;
+        }
+      });
+      assert.equal(touched, 0, 'every bin below 80 Hz and above 4.8 kHz keeps a gain of exactly 1');
+      assert.ok(lowest < 0.35, `while the speech bands reach the floor (${(20 * Math.log10(lowest)).toFixed(1)} dB)`);
+    });
+  }
+
+  it('lowers the tail of the last word and is back at a gain of 1 for the sound that goes on without a voice', () => {
+    // A voice in a 0.8 s room over steady noise 20 dB below it. The last word starts at 2.5 s and ends at
+    // 2.82 s; from then on there is only its tail, and then only the noise.
+    const voice = voicedSyllables(6).map((value, i) => (i < 3 * RATE ? value : 0));
+    const bed = [21, 22].map(seed => speechBandNoise(seed));
+    const [left, right] = inRoom(voice, 0.8).map((channel, side) => channel.map((value, i) => value + 0.1 * Math.min(1, i / RATE) * bed[side]()));
+    let tail = 0;
+    let frames = 0;
+    let lowered = 0;
+    run(instantiate(ECHO_PRESETS.strong), left, right, (gain, seconds) => {
+      const middle = seconds - 512 / RATE;
+      const speechBins = gain.subarray(...SPEECH_BINS);
+      if (middle > 2.9 && middle < 3.3) {
+        tail += speechBins.reduce((sum, value) => sum + value ** 2, 0) / speechBins.length;
+        frames++;
+      }
+      // 1.2 s after the last syllable has ended, and the 80 ms it takes to hear that.
+      if (middle > 2.82 + 0.08 + 1.2 && gain.some(value => value !== 1)) lowered++;
+    });
+    const tailDb = 10 * Math.log10(tail / frames);
+    assert.ok(tailDb < -6, `the tail of the last word is lowered (${tailDb.toFixed(1)} dB)`);
+    assert.equal(lowered, 0, 'and 1.2 s after the last syllable every bin is at exactly 1 again');
+  });
+
+  it('takes neither steady, swelling nor struck sound for speech', () => {
+    // None of these is a syllable: the first never rises, the second rises without ever holding, and
+    // the third falls from its first moment as a drum or a plucked string does (5 ms up, then 60 dB/s).
+    // Before the gain was tied to speech, Strong lowered them by 8.3, 8.6 and 4.9 dB in the speech bands.
+    // Read from 4 s on: a sound that begins out of silence and stays is a syllable to the cue, once,
+    // and for up to 3.5 s the gain is free whenever the level of the noise happens to fall.
+    const length = 8 * RATE;
+    const sounds: Record<string, (seconds: number) => number> = {
+      steady: seconds => Math.min(1, seconds),
+      swelling: seconds => 10 ** (-2 + 2 * ((seconds / 2.5) % 1)),
+      struck: seconds => Math.min(1, (seconds % 0.5) / 0.005) * Math.exp(-6.9 * (seconds % 0.5))
+    };
+    for (const [name, envelope] of Object.entries(sounds)) {
+      const [left, right] = [31, 32].map(seed => {
+        const source = speechBandNoise(seed);
+        return Float64Array.from({ length }, (_, i) => envelope(i / RATE) * source());
+      });
+      let lowest = 0;
+      run(instantiate(ECHO_PRESETS.strong), left, right, (gain, seconds) => {
+        if (seconds < 4) return;
+        const bins = gain.subarray(...SPEECH_BINS);
+        lowest = Math.min(lowest, 10 * Math.log10(bins.reduce((sum, value) => sum + value ** 2, 0) / bins.length));
+      });
+      // The lowest any single frame goes, not an average: a dip of 10 dB for a fifth of a second is pumping.
+      assert.ok(lowest > -0.5, `${name} sound keeps its level in every frame (${lowest.toFixed(2)} dB at the lowest)`);
+    }
+  });
 
   for (const level of ['light', 'strong'] as const) {
     // No room, so nothing to remove: any loss is the voice. Before TME-279 the vowel lost 2.6 dB (Light)
@@ -401,10 +524,12 @@ describe('echo reduction DSP (WebAssembly)', () => {
     const [afterReset] = run(restarted, dry, dry, undefined, seconds => {
       if (seconds === 3) restarted.reset();
     });
-    const vowelAfterReset = voiceLevel(afterReset, dry, dry, syllable.vowel, 3, 3.5);
-    const vowelLater = voiceLevel(afterReset, dry, dry, syllable.vowel, 5, 6);
-    assert.ok(vowelAfterReset < -3, `after a reset the preset's assumption applies again (${vowelAfterReset.toFixed(2)} dB)`);
-    assert.ok(vowelLater > -0.3, `and the recording is learned again within two seconds (${vowelLater.toFixed(2)} dB)`);
+    // A vowel that holds is never turned down, learned or not. What shows the preset's assumption is
+    // the end of a word, which falls: -8.2 dB right after a reset before the gain was tied to speech.
+    const endingAfterReset = voiceLevel(afterReset, dry, dry, syllable.ending, 3, 4);
+    const endingLater = voiceLevel(afterReset, dry, dry, syllable.ending, 5, 6);
+    assert.ok(endingAfterReset < -1.5, `after a reset the preset's assumption applies again (${endingAfterReset.toFixed(2)} dB)`);
+    assert.ok(endingLater > -0.5, `and the recording is learned again within two seconds (${endingLater.toFixed(2)} dB)`);
   });
 
   it('recovers from a non-finite sample instead of carrying it in its history', () => {
@@ -431,10 +556,11 @@ describe('echo reduction DSP (WebAssembly)', () => {
     assert.ok(outL.subarray(3 * RATE).some(value => Math.abs(value) > 1e-4), 'and carries audio');
   });
 
-  it('treats low sound between words as before, not as a new source', () => {
-    // A voice in the TME-275 short room with pauses of 0.7 s, and a rumble 50 dB below it. Once the echo has
-    // faded, the rumble is all there is, and every swell of it stands above what a decay would leave. Taking
-    // those swells for sources would raise the gain below 300 Hz in the pauses to -1 dB at both levels.
+  it('lowers the echo of a word over low sound, and lets go of the low sound once the echo has faded', () => {
+    // A voice in the TME-275 short room with pauses of 0.7 s, and a rumble 50 dB below it. From 40 ms
+    // after a word its echo falls, and below 300 Hz the gain goes down with it as it always did (-6.9
+    // and -9.8 dB before the gain was tied to speech). From 330 ms on the rumble is all there is. It
+    // does not fall, so it is no echo: the gain used to stay at -4.4 and -7.5 dB there.
     const voice = voicedSyllables(8).map((value, i) => (i / RATE) % 1 < SYLLABLE ? value : 0);
     const [roomLeft, roomRight] = inShortRoom(voice);
     const next = noise(9);
@@ -444,21 +570,21 @@ describe('echo reduction DSP (WebAssembly)', () => {
       return 0.3 * 10 ** (-50 / 20) * 12 * low;
     });
     const [left, right] = [roomLeft, roomRight].map(channel => channel.map((value, i) => value + rumble[i]));
-    const [light, strong] = (['light', 'strong'] as const).map(level => {
-      let sum = 0;
-      let count = 0;
+    for (const [level, echoLimit] of [['light', -6], ['strong', -8.8]] as const) {
+      const sums = { echo: 0, rumble: 0 };
+      const counts = { echo: 0, rumble: 0 };
       run(instantiate(ECHO_PRESETS[level]), left, right, (gain, seconds) => {
-        // The middle of a frame, from 330 ms after the word has ended.
+        // The middle of a frame, by the time since the word began (it ends at 0.32 s).
         const u = (seconds - 512 / RATE) % 1;
-        if (seconds < 3 || u < 0.65 || u > 0.97) return;
-        for (let k = 1; k <= 4; k++) sum += gain[k] ** 2;
-        count += 4;
+        const part = u > 0.36 && u < 0.5 ? 'echo' : u > 0.65 && u < 0.9 ? 'rumble' : null;
+        if (seconds < 3 || !part) return;
+        for (let k = 2; k <= 5; k++) sums[part] += gain[k] ** 2;
+        counts[part] += 4;
       });
-      return 10 * Math.log10(sum / count);
-    });
-    // Before TME-279: -4.1 and -7.0 dB.
-    assert.ok(light < -3.6, `Light keeps the rumble down (${light.toFixed(1)} dB)`);
-    assert.ok(strong < -6.5, `Strong too (${strong.toFixed(1)} dB)`);
+      const [echo, after] = [10 * Math.log10(sums.echo / counts.echo), 10 * Math.log10(sums.rumble / counts.rumble)];
+      assert.ok(echo < echoLimit, `${level}: the echo is lowered (${echo.toFixed(1)} dB)`);
+      assert.ok(after > echo + 2, `${level}: the rumble after it is let go (${after.toFixed(1)} dB)`);
+    }
   });
 
   it('hears a phrase 38 dB quieter than the one before it on its own terms', () => {
@@ -466,12 +592,108 @@ describe('echo reduction DSP (WebAssembly)', () => {
     // judgement takes a quiet scene after a loud one for the pauses of the loud one: the voice lost what
     // it did before TME-279 (vowel -2.8 and -5.7 dB) for as long as the level stayed down.
     const dry = voicedSyllables(9);
-    const input = Float64Array.from(dry, (value, i) => i < 4 * RATE ? value : value * 10 ** (-38 / 20));
-    for (const level of ['light', 'strong'] as const) {
+    const quieter = (signal: Float64Array) => Float64Array.from(signal, (value, i) => (i < 4 * RATE ? value : value * 10 ** (-38 / 20)));
+    const input = quieter(dry);
+    // The same in a 0.8 s room, where there is an echo to lower: leaving the quiet scene alone would
+    // keep its voice too, so its tail has to come down as the loud scene's does.
+    const [roomLeft, roomRight] = inRoom(dry, 0.8).map(quieter);
+    const inPause = (t: number) => syllable.tail(t % SYLLABLE);
+    for (const [level, tailLimit] of [['light', -5], ['strong', -7.5]] as const) {
       const [out] = run(instantiate(ECHO_PRESETS[level]), input, input);
       const [vowel, ending] = [syllable.vowel, syllable.ending].map(part => voiceLevel(out, input, dry, part, 6, 8));
       assert.ok(vowel > -0.3, `${level}: two seconds on, the vowel keeps its level (${vowel.toFixed(2)} dB)`);
       assert.ok(ending > -0.5, `${level}: and the end of the word is not cut (${ending.toFixed(2)} dB)`);
+      const [inRoomOut] = run(instantiate(ECHO_PRESETS[level]), roomLeft, roomRight);
+      const tail = (from: number, to: number) => dB(energy(inRoomOut, LATENCY, t => t < to && inPause(t), from), energy(roomLeft, 0, t => t < to && inPause(t), from));
+      assert.ok(tail(6, 8) < tailLimit, `${level}: and in a room its echo is lowered again (${tail(6, 8).toFixed(1)} dB)`);
+    }
+  });
+
+  it('finds the voice again when loud music stops and it speaks 38 dB below it', () => {
+    // A chord held for 4 s, then a voice in a 0.8 s room 38 dB under it. While the bands still remember
+    // the chord, the voice is too low to count: the first second of it passes as it is. The voice says
+    // one vowel after another: in this room a syllable does not stand 9 dB clear of the one before, and
+    // the same vowel again and again would count as little as a chord struck again and again.
+    const dry = voicedSyllables(9, VOWELS).map((value, i) => (i < 4 * RATE ? 0 : value * 10 ** (-38 / 20)));
+    const [roomLeft, roomRight] = inRoom(dry, 0.8);
+    const chord = Float64Array.from(dry, (_, i) => (i < 4 * RATE ? 0.05 * [220, 330, 440, 660, 990, 1320, 1980, 2640].reduce((sum, hz) => sum + Math.sin(2 * Math.PI * hz * i / RATE), 0) * Math.min(1, i / RATE, (4 * RATE - i) / (0.01 * RATE)) : 0));
+    const [left, right] = [roomLeft, roomRight].map(channel => channel.map((value, i) => value + chord[i]));
+    const inPause = (t: number) => syllable.tail(t % SYLLABLE);
+    for (const [level, tailLimit] of [['light', -5], ['strong', -7.5]] as const) {
+      const [out] = run(instantiate(ECHO_PRESETS[level]), left, right);
+      const tail = (from: number, to: number) => dB(energy(out, LATENCY, t => t < to && inPause(t), from), energy(left, 0, t => t < to && inPause(t), from));
+      assert.ok(tail(6, 8) < tailLimit, `${level}: from two seconds on its echo is lowered (${tail(6, 8).toFixed(1)} dB)`);
+    }
+  });
+
+  it('leaves a tone beyond the edges of the speech bands alone while it lowers the echo beside it', () => {
+    // A steady tone beside a voice in a 0.8 s room, at Strong. The bands end at 70 and 4805 Hz at this
+    // rate, and an edge between bins is one bin (47 Hz) wide: a tone that close to it is carried partly
+    // by a bin inside. Before the gain was limited to the speech bands, each of these lost 7.5 to 10 dB.
+    const voice = voicedSyllables(6);
+    const [roomLeft, roomRight] = inRoom(voice, 0.8);
+    const [plain] = run(instantiate(ECHO_PRESETS.strong), roomLeft, roomRight);
+    const lockIn = (signal: (i: number) => number, hz: number, from: number, to: number) => {
+      let [cos, sin] = [0, 0];
+      for (let i = from; i < to; i++) {
+        cos += signal(i) * Math.cos(2 * Math.PI * hz * i / RATE);
+        sin += signal(i) * Math.sin(2 * Math.PI * hz * i / RATE);
+      }
+      return Math.hypot(cos, sin);
+    };
+    // Over the clip, and over its worst 50 ms: the tone is lowered only in the moments an echo falls.
+    for (const [hz, limit, worstLimit] of [[40, -0.3, -0.6], [55, -1.2, -2.2], [65, -2, -3.6], [4825, -0.6, -1.5], [4900, -0.05, -0.1], [9000, -0.01, -0.01]] as const) {
+      const tone = Float64Array.from(voice, (_, i) => 0.02 * Math.sin(2 * Math.PI * hz * i / RATE));
+      const [out] = run(instantiate(ECHO_PRESETS.strong), roomLeft.map((value, i) => value + tone[i]), roomRight.map((value, i) => value + tone[i]));
+      // What the tone adds to the output, against the tone itself.
+      const added = (i: number) => out[i + LATENCY] - plain[i + LATENCY];
+      const change = 20 * Math.log10(lockIn(added, hz, RATE, voice.length - LATENCY) / lockIn(i => tone[i], hz, RATE, voice.length - LATENCY));
+      let worst = 0;
+      for (let from = RATE; from + 0.05 * RATE < voice.length - LATENCY; from += 0.025 * RATE) {
+        worst = Math.min(worst, 20 * Math.log10(lockIn(added, hz, from, from + 0.05 * RATE) / lockIn(i => tone[i], hz, from, from + 0.05 * RATE)));
+      }
+      assert.ok(change > limit && change < 0.05, `${hz} Hz changes by ${change.toFixed(2)} dB (limit ${limit} dB)`);
+      assert.ok(worst > worstLimit, `${hz} Hz at its worst 50 ms: ${worst.toFixed(2)} dB (limit ${worstLimit} dB)`);
+    }
+  });
+
+  for (const rate of [44100, RATE, 96000]) {
+    // The rules of a syllable are in seconds, and a frame is 256 samples at any rate. Counted in frames,
+    // a held vowel stopped being one a quarter of a second in at 96 kHz, and its echo passed (-1.6 and
+    // -2.0 dB here, where all three rates used to give -4.9 and -6.9 dB). The pitch of this vowel swings
+    // by 4 Hz, as far as a held one may waver and count: at 6 Hz its echo comes down by half as much.
+    it(`lowers the echo of a vowel held for 1.2 s at ${rate} Hz`, () => {
+      const dry = voicedSyllables(7, ONE_VOWEL, { period: 2.4, hold: 1.16, fade: 0.02, vibrato: 4 });
+      const [left, right] = inRoom(dry, 0.3).map(channel => atRate(channel, rate));
+      // From 50 to 250 ms after each vowel has ended, the first one left out.
+      const inEcho = (i: number) => i / rate > 2.4 && (i / rate) % 2.4 > 1.25 && (i / rate) % 2.4 < 1.45;
+      for (const [level, limit] of [['light', -3.4], ['strong', -5.4]] as const) {
+        const [out] = run(instantiate(ECHO_PRESETS[level], rate), left, right);
+        let [after, before] = [0, 0];
+        for (let i = 0; i + LATENCY < out.length; i++) {
+          if (!inEcho(i)) continue;
+          after += out[i + LATENCY] ** 2;
+          before += left[i] ** 2;
+        }
+        assert.ok(dB(after, before) < limit, `${level}: ${dB(after, before).toFixed(1)} dB`);
+      }
+    });
+  }
+
+  it('leaves steady noise alone at 96 kHz as at 48 kHz', () => {
+    for (const seed of [41, 9, 5]) {
+      const source = speechBandNoise(seed);
+      const mono = atRate(Float64Array.from({ length: 12 * RATE }, (_, i) => Math.min(1, i / RATE) * source()), 96000);
+      const [from, to] = [80, 4800].map(hz => Math.ceil(hz * 1024 / 96000));
+      let lowest = 0;
+      let frame = 0;
+      run(instantiate(ECHO_PRESETS.strong, 96000), mono, mono, gain => {
+        // From 4 s on, as at 48 kHz: 375 frames a second at this rate.
+        if (frame++ < 4 * 375) return;
+        const bins = gain.subarray(from, to);
+        lowest = Math.min(lowest, 10 * Math.log10(bins.reduce((sum, value) => sum + value ** 2, 0) / bins.length));
+      });
+      assert.ok(lowest > -0.5, `seed ${seed}: ${lowest.toFixed(2)} dB at the lowest frame`);
     }
   });
 

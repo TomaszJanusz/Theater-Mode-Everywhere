@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { loadMaterial } from './load-material';
 import { resample } from './metrics/resample';
+import { speechBandLevels } from './metrics/speech-bands';
 import { SYNTHETIC_IDS, syntheticMaterial, syntheticVoice } from './synthetic';
 import { noise } from './test-utils/signals';
 import type { Signal } from './types';
@@ -54,12 +55,20 @@ describe('audio lab: material', () => {
       { id: 'faint-ir', file: 'faint-ir.wav', directArrivalSample: 40 },
       { id: 'faint', dry: 'dry', impulseResponse: 'faint-ir' },
       { id: 'fetched', cache: true },
-      { id: 'broken', file: 'dry.wav', dry: 'missing' }
+      { id: 'broken', file: 'dry.wav', dry: 'missing' },
+      { id: 'music-alone', bed: 'over-music' },
+      { id: 'room-over-music', dry: 'dry', impulseResponse: 'ir', bed: 'over-music' },
+      { id: 'no-bed', bed: 'plain' }
     ]
   }));
 
   it('builds the built-in rooms the same way every time, parts adding up to the mix', () => {
-    assert.deepEqual(SYNTHETIC_IDS, ['synthetic-dry', 'synthetic-wall', 'synthetic-room-0.3s', 'synthetic-room-0.8s', 'synthetic-room-1.5s']);
+    assert.deepEqual(SYNTHETIC_IDS, [
+      'synthetic-dry', 'synthetic-wall', 'synthetic-room-0.3s', 'synthetic-room-0.8s', 'synthetic-room-1.5s',
+      'synthetic-room-0.3s-short-words', 'synthetic-room-0.3s-long-vowels', 'synthetic-room-0.3s-fast', 'synthetic-room-0.3s-fast-pitched',
+      'synthetic-music-sustained', 'synthetic-music-plucked', 'synthetic-music-accents', 'synthetic-music-accents-fast', 'synthetic-applause',
+      'synthetic-room-0.8s-then-music', 'synthetic-room-0.8s-cut-to-music', 'synthetic-room-0.8s-under-music'
+    ]);
     const first = syntheticMaterial('synthetic-room-0.3s', 2);
     const second = syntheticMaterial('synthetic-room-0.3s', 2);
     assert.deepEqual(first.mix.channels[1], second.mix.channels[1]);
@@ -74,6 +83,94 @@ describe('audio lab: material', () => {
     assert.ok(Math.abs(peak - 0.5) < 1e-6);
     assert.notDeepEqual(first.mix.channels[0], first.mix.channels[1], 'the two ears hear different reflections');
     assert.throws(() => syntheticMaterial('synthetic-cathedral'), /Unknown synthetic material/);
+  });
+
+  it('builds music with no voice in it, below, inside and above the speech bands', () => {
+    for (const id of ['synthetic-music-sustained', 'synthetic-music-plucked']) {
+      const material = syntheticMaterial(id, 3);
+      assert.ok(!material.dry && !material.room && !material.voice && !material.bed, `${id} is only a mix`);
+      assert.deepEqual(material.mix.channels[0], syntheticMaterial(id, 3).mix.channels[0], `${id} is the same every time`);
+      assert.notDeepEqual(material.mix.channels[0], material.mix.channels[1], `${id} is stereo`);
+      const { inside, outside } = speechBandLevels(material.mix);
+      assert.ok(inside > -40 && outside > -60, `${id} sounds inside (${inside.toFixed(0)} dBFS) and outside (${outside.toFixed(0)} dBFS) the speech bands`);
+    }
+    // Sustained music swells in and then holds its level; plucked music falls 20 dB or more between its notes.
+    const spread = (id: string) => {
+      const [left] = syntheticMaterial(id, 4).mix.channels;
+      const levels = Array.from({ length: 30 }, (_, step) => 10 * Math.log10(energy(left.subarray((1 + 0.1 * step) * 48000, (1.02 + 0.1 * step) * 48000))));
+      return Math.max(...levels) - Math.min(...levels);
+    };
+    assert.ok(spread('synthetic-music-sustained') < 6, `sustained: ${spread('synthetic-music-sustained').toFixed(1)} dB`);
+    assert.ok(spread('synthetic-music-plucked') > 12, `plucked: ${spread('synthetic-music-plucked').toFixed(1)} dB`);
+  });
+
+  it('builds speech an envelope can take for something else: short, long and fast', () => {
+    /** The lengths in seconds of the stretches in which the dry voice sounds, with gaps under 30 ms closed. */
+    const stretches = (id: string) => {
+      const { dry: voice, room } = syntheticMaterial(id, 8);
+      assert.ok(voice && room, `${id} is a voice in a room`);
+      const lengths: number[] = [];
+      let [length, gap] = [0, 0];
+      for (let i = 0; i < voice.length; i += 48) {
+        const on = Math.abs(voice[i]) > 1e-4 || Math.abs(voice[i + 12] ?? 0) > 1e-4;
+        gap = on ? 0 : gap + 1;
+        if (on || (length > 0 && gap < 30)) length++;
+        else if (length > 0) { lengths.push((length - gap + 1) / 1000); length = 0; }
+      }
+      return lengths;
+    };
+    const short = stretches('synthetic-room-0.3s-short-words');
+    assert.ok(short.length >= 6 && short.every(length => length > 0.07 && length < 0.1), `words of 90 ms: ${short.join(', ')}`);
+    const long = stretches('synthetic-room-0.3s-long-vowels');
+    assert.ok(long.length >= 3 && long.every(length => length > 1.1 && length < 1.25), `vowels of 1.2 s: ${long.join(', ')}`);
+    // The same phrases 1.6 times as fast: as many again fit into the clip, at the same pitch or a higher one.
+    const [plain, fast, pitched] = ['synthetic-room-0.3s', 'synthetic-room-0.3s-fast', 'synthetic-room-0.3s-fast-pitched'].map(id => stretches(id).length);
+    assert.ok(fast > 1.3 * plain && pitched > 1.3 * plain, `${plain}, ${fast} and ${pitched} phrases`);
+  });
+
+  it('strikes chord accents 8 dB over the music they are played on, and claps without a voice', () => {
+    const { mix, bed, dry: voice } = syntheticMaterial('synthetic-music-accents', 6);
+    assert.ok(bed && !voice);
+    const accents = mix.channels[0].map((value, i) => value - bed.channels[0][i]);
+    const during = (samples: Float32Array) => energy(samples.subarray(1.25 * 48000, 1.35 * 48000));
+    assert.ok(Math.abs(10 * Math.log10(during(accents) / during(bed.channels[0])) - 8) < 2.5, `${(10 * Math.log10(during(accents) / during(bed.channels[0]))).toFixed(1)} dB in the first accent`);
+    assert.ok(energy(accents.subarray(1.5 * 48000, 2.7 * 48000)) < 1e-9, 'and nothing between two accents');
+    // Three times as many when they come every half second.
+    const fast = syntheticMaterial('synthetic-music-accents-fast', 6);
+    assert.ok(fast.bed && energy(fast.mix.channels[0].subarray(1.75 * 48000, 1.85 * 48000).map((value, i) => value - fast.bed!.channels[0][1.75 * 48000 + i])) > 0.5 * during(accents));
+    const applause = syntheticMaterial('synthetic-applause', 3);
+    assert.ok(!applause.dry && !applause.bed && energy(applause.mix.channels[0]) > 0);
+    assert.notDeepEqual(applause.mix.channels[0], applause.mix.channels[1]);
+  });
+
+  it('plays music 2 dB louder than the voice it plays over', () => {
+    const { mix, bed, room, dry: voice } = syntheticMaterial('synthetic-room-0.8s-under-music', 6);
+    assert.ok(bed && room && voice);
+    const spokenRoom = mix.channels[0].map((value, i) => value - bed.channels[0][i]);
+    assert.ok(Math.abs(10 * Math.log10(energy(bed.channels[0]) / energy(spokenRoom)) - 2) < 1, `${(10 * Math.log10(energy(bed.channels[0]) / energy(spokenRoom))).toFixed(1)} dB`);
+  });
+
+  it('cuts from the voice to music that was not there before', () => {
+    const { bed, dry: voice, room } = syntheticMaterial('synthetic-room-0.8s-cut-to-music', 8);
+    assert.ok(bed && voice && room);
+    const last = voice.reduce((at, value, i) => (Math.abs(value) > 1e-4 ? i : at), 0);
+    assert.ok(last > 2 * 48000 && last < 4 * 48000, 'the voice speaks through the first half');
+    assert.equal(energy(bed.channels[0].subarray(0, last + 1)), 0, 'no music while it speaks');
+    // At its full level from the first 50 ms on, 12 dB under the voice in its room.
+    const [first, later] = [bed.channels[0].subarray(last + 1, last + 2401), bed.channels[0].subarray(last + 48000, last + 50400)].map(energy);
+    assert.ok(Math.abs(10 * Math.log10(first / later)) < 3, `${(10 * Math.log10(first / later)).toFixed(1)} dB between its first 50 ms and a second on`);
+    const spoken = room.parts.reduce((sum, part) => sum + energy(part.channels[0].subarray(0, last)), 0) / last;
+    assert.ok(Math.abs(10 * Math.log10(energy(bed.channels[0].subarray(last + 1)) / (bed.channels[0].length - last - 1) / spoken) + 12) < 3);
+  });
+
+  it('lets the voice stop while the music plays on, and keeps the music as the bed', () => {
+    const { mix, dry: voice, room, bed } = syntheticMaterial('synthetic-room-0.8s-then-music', 6);
+    assert.ok(voice && room && bed);
+    assert.ok(energy(voice.subarray(0, 3 * 48000)) > 0 && energy(voice.subarray(3 * 48000)) === 0, 'the voice speaks in the first half only');
+    assert.ok(energy(bed.channels[0].subarray(4 * 48000)) > 0, 'the music plays on');
+    const sum = Float32Array.from(bed.channels[0]);
+    for (const part of room.parts) part.channels[0].forEach((value, i) => { sum[i] += value; });
+    assert.ok(errorDb(sum, mix.channels[0]) < -100, 'voice, room and music add up to the mix');
   });
 
   it('brings a manifest clip to 48 kHz stereo', () => {
@@ -122,6 +219,21 @@ describe('audio lab: material', () => {
     assert.equal(mix.channels[0].length, reference.length);
   });
 
+  it('takes the music out of a mix entry, alone or under a room', () => {
+    const alone = loadMaterial('music-alone', directory);
+    assert.ok(!alone.dry && !alone.room && !alone.voice && !alone.bed);
+    // The mix was 0.5 voice + music on the left and 0.25 voice - music on the right.
+    const expected = Float32Array.from(resample(music, rate, 48000));
+    assert.ok(errorDb(alone.mix.channels[0], expected) < -25, `the left channel is the music (${errorDb(alone.mix.channels[0], expected).toFixed(0)} dB)`);
+    assert.ok(errorDb(alone.mix.channels[1], expected.map(value => -value)) < -25, 'and the right channel its inverse');
+    const { mix, room, bed, dry: voice } = loadMaterial('room-over-music', directory);
+    assert.ok(room && bed && voice);
+    assert.deepEqual(bed.channels[0], alone.mix.channels[0]);
+    const plain = loadMaterial('room', directory);
+    assert.ok(errorDb(mix.channels[0].map((value, i) => value - bed.channels[0][i]), plain.mix.channels[0]) < -100, 'the room is the same with the music under it');
+    assert.throws(() => loadMaterial('no-bed', directory), /takes its bed from 'plain', which names no dry voice/);
+  });
+
   it('reads a WAV path, and says what it looked for when the material is unknown', () => {
     const path = join(directory, 'dry.wav');
     const material = loadMaterial(path, directory);
@@ -139,6 +251,14 @@ describe('audio lab: material', () => {
   // rebuilds the room from its parts and must land on the same samples.
   const corpus = fileURLToPath(new URL('./corpus/', import.meta.url));
   const frozen = existsSync(join(corpus, 'manifest.json'));
+  it('mixes the corpus voice in a room with the corpus music', { skip: frozen ? false : 'the corpus is not in this checkout' }, () => {
+    const { mix, bed, room } = loadMaterial('room-rt080-over-music');
+    assert.ok(bed && room);
+    assert.deepEqual(bed.channels[0], loadMaterial('music').mix.channels[0]);
+    assert.equal(mix.channels[0].length, bed.channels[0].length);
+    assert.ok(energy(bed.channels[0]) > 0.001 * energy(mix.channels[0]), 'the music is in the mix');
+  });
+
   for (const id of ['wall-reflection', 'room-rt080']) {
     it(`rebuilds the corpus room ${id} on the timeline of its frozen WAV`, { skip: frozen ? false : 'the corpus is not in this checkout' }, () => {
       const { mix, room } = loadMaterial(id);
