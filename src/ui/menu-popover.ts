@@ -11,6 +11,15 @@ const PINNED_CLASS = 'visible';
 const SUPPRESS_CLASS = 'is-suppressed';
 // Stable test hooks on the menu host: the shell family, an opaque identity per bind, and the state.
 let bindSequence = 0;
+const menuOpen = (host: HTMLElement, panel: HTMLElement) => host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
+
+/** Mirrors whether the menu is open in its trigger's ARIA, the test hook and the panel's inertness. */
+function syncOpenState(host: HTMLElement, panel: HTMLElement, trigger: HTMLElement): void {
+  const open = menuOpen(host, panel);
+  trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  host.dataset.teState = open ? 'open' : 'closed';
+  panel.inert = !open;
+}
 
 /**
  * A volume or speed panel is open under the pointer or while focus is inside it. Focus on its button
@@ -47,18 +56,14 @@ export function holdMenuPosition(panel: HTMLElement): void {
 export function closeMenuPopover(host: HTMLElement | null | undefined, restoreFocus = false): boolean {
   if (!host) return false;
   const panel = host.querySelector<HTMLElement>(':scope > .theater-menu-panel');
-  const trigger = host.querySelector<HTMLButtonElement>(':scope > button');
-  if (!panel || !trigger) return false;
-  const open = host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
-  if (!open) return false;
+  const trigger = host.querySelector<HTMLElement>(':scope > :is(a, button)');
+  if (!panel || !trigger || !menuOpen(host, panel)) return false;
   panel.dispatchEvent(new Event(MENU_CLOSE_EVENT));
   panel.classList.remove(PINNED_CLASS);
   host.classList.remove(OPEN_CLASS);
   host.classList.add(SUPPRESS_CLASS);
   releaseMenuPosition(panel);
-  trigger.setAttribute('aria-expanded', 'false');
-  host.dataset.teState = 'closed';
-  panel.inert = true;
+  syncOpenState(host, panel, trigger);
   const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
   if (restoreFocus) trigger.focus({ preventScroll: true });
   else if (active instanceof HTMLElement && panel.contains(active)) active.blur();
@@ -80,10 +85,13 @@ function centerActiveRow(list: HTMLElement | null): void {
  * One menu shell for the player bar. Hover reveals it. A click on its button or
  * a press inside it pins it open after the pointer leaves, and a second click on
  * the button closes it. Keyboard activation pins it and moves focus inside.
+ *
+ * A link trigger keeps its own activation: a click, Enter or Space follows the link and closes a menu
+ * that hover opened instead of pinning it. Hover and `open` (the owner's keys) still show the menu.
  */
 export function bindMenuPopover(options: {
   host: HTMLElement;
-  trigger: HTMLButtonElement;
+  trigger: HTMLButtonElement | HTMLAnchorElement;
   panel: HTMLElement;
   scope: DisposableScope;
   onBeforeOpen?: () => void;
@@ -106,12 +114,7 @@ export function bindMenuPopover(options: {
   panel.classList.add('theater-menu-panel');
   Object.assign(host.dataset, { teSurface: 'menu', teOwner: `menu-${++bindSequence}` });
 
-  const syncExpanded = () => {
-    const open = host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
-    trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-    host.dataset.teState = open ? 'open' : 'closed';
-    panel.inert = !open;
-  };
+  const syncExpanded = () => syncOpenState(host, panel, trigger);
   syncExpanded();
   const close = (restoreFocus = false) => {
     const closed = closeMenuPopover(host, restoreFocus);
@@ -124,7 +127,6 @@ export function bindMenuPopover(options: {
     event.stopPropagation();
   });
   const list = () => (options.centerActiveIn ? panel.querySelector<HTMLElement>(options.centerActiveIn) : null);
-  const isOpen = () => host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
   // Once the user scrolls, re-renders keep their position instead of re-centering.
   let userScrolled = false;
   let lastScrollTop = 0;
@@ -140,7 +142,7 @@ export function bindMenuPopover(options: {
     }, { capture: true, passive: true });
     // Providers rebuild the list while the menu is open, which resets its scroll.
     const observer = new MutationObserver(() => {
-      if (!isOpen()) return;
+      if (!menuOpen(host, panel)) return;
       const next = list();
       if (!next) return;
       if (userScrolled) next.scrollTop = lastScrollTop;
@@ -150,7 +152,7 @@ export function bindMenuPopover(options: {
     scope.add(() => observer.disconnect());
   }
   const show = (pin: boolean, focusFirst: boolean) => {
-    const already = host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
+    const already = menuOpen(host, panel);
     options.onBeforeOpen?.();
     if (!already) {
       panel.dispatchEvent(new Event(MENU_OPEN_EVENT));
@@ -206,6 +208,10 @@ export function bindMenuPopover(options: {
     });
   });
   scope.listen(trigger, 'click', (event: MouseEvent) => {
+    if ('href' in trigger) {
+      close();
+      return;
+    }
     if (event.detail === 0) {
       show(true, true);
       options.onKeyboardOpen?.();

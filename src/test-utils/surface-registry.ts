@@ -83,7 +83,9 @@ export const surfaceRegistrations: SurfaceRegistration[] = [
       const byline = mountAuthorByline({ scope: owner, bindMenu: bindMenuPopover }, {
         provider: 'sample', settings, global, hosts: providerAuthorHosts([{ domain: 'example.com', includeSubdomains: true }], [])
       });
-      byline.render([1, 2].map(index => ({ id: String(index), name: `Channel ${index}`, url: `https://www.example.com/c/${index}`,
+      // The first channel has no link, so the arrow is the popup's button and opens it on activation; an arrow that is
+      // the first channel's link follows it instead, covered in author-byline-view.component.test.ts.
+      byline.render([1, 2].map(index => ({ id: String(index), name: `Channel ${index}`, url: index > 1 ? `https://www.example.com/c/${index}` : null,
         avatarUrl: null, verified: false, stat: null })), plate);
       const host = plate.querySelector<HTMLElement>('.theater-byline')!;
       const trigger = host.querySelector<HTMLButtonElement>(':scope > button')!;
