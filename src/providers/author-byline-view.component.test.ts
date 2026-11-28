@@ -205,7 +205,7 @@ describe('author byline in the title plate', () => {
     expect(corners(view.rows()[1])).toEqual(['0px', '0px', '11px', '11px']);
   });
 
-  test('alternates the rows\' tone from the second author; a pointer lifts the row and marks its start; focus draws a ring inside it', async () => {
+  test('alternates the rows\' tone from the second author; every row has its lit edge, which a pointer widens as it lifts the row; focus draws a ring inside it', async () => {
     const view = await mount([author('One'), author('Two'), author('Three')]);
     await view.openList();
     const [first, second, third] = view.links();
@@ -214,11 +214,12 @@ describe('author byline in the title plate', () => {
     expect(fill(second)).not.toBe(fill(first));
     expect(fill(third)).toBe(fill(first));
     const restFill = fill(third);
-    expect(edge(third).content).toBe('none');
+    // Every row shows its lit edge; the pointer widens and brightens it.
+    expect([edge(third).width, edge(third).opacity]).toEqual(['2px', '0.6']);
     await userEvent.hover(third);
     await expect.poll(() => fill(third)).not.toBe(restFill);
     expect(fill(third)).not.toBe(fill(second));
-    expect(edge(third).width).toBe('3px');
+    expect([edge(third).width, edge(third).opacity]).toEqual(['3px', '1']);
     // The edge sits at the row's start.
     expect(edge(third).left).toBe('0px');
     third.focus();

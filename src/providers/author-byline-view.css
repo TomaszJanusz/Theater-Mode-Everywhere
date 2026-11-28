@@ -293,8 +293,8 @@
 }
 
 /* A row is its author's channel link when the host admits one. Like the panel it takes its own avatar's color (the
-   user's accent until that is read, or for an avatar without one; author-byline-view.ts): an accent ramp from the
-   row's start, where the lit edge marks it on hover, fading out under the name. From the second author the rows
+   user's accent until that is read, or for an avatar without one; author-byline-view.ts): a lit edge at the row's
+   start, brightened and widened on hover, and an accent ramp from it fading out under the name. From the second author the rows
    alternate, and a pointer lifts a row further; those tones are the ink laid over the block's surface, with the ramp
    over them. Under the name and its secondary text the ramp stays at 4% and the tones at 9%, so both keep WCAG AA on
    every row whichever accent (author-byline-contrast.test.ts). The keyboard ring is the ink, inside the row, so the
@@ -313,7 +313,7 @@
   border-radius: inherit;
   background-color: var(--row-fill);
   background-image: linear-gradient(var(--dir),
-    color-mix(in srgb, var(--accent-color, #6366f1) 28%, transparent) 0%,
+    color-mix(in srgb, var(--accent-color, #6366f1) 40%, transparent) 0%,
     color-mix(in srgb, var(--accent-color, #6366f1) 4%, transparent) var(--text-start),
     color-mix(in srgb, var(--accent-color, #6366f1) 0%, transparent) 100%);
   color: var(--appearance-ink, #f8fafc);
@@ -335,13 +335,20 @@ a.theater-byline-row {
 
 .theater-byline-list > li > a.theater-byline-row:active { --row-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 9%, transparent); }
 
-a.theater-byline-row:hover::before {
+.theater-byline-row::before {
   content: "";
   position: absolute;
   inset-block: 0;
   inset-inline-start: 0;
+  width: 2px;
+  background: var(--edge);
+  opacity: 0.6;
+}
+
+a.theater-byline-row:hover::before {
   width: 3px;
   background: var(--edge);
+  opacity: 1;
 }
 
 a.theater-byline-row:focus-visible {
@@ -352,6 +359,7 @@ a.theater-byline-row:focus-visible {
 /* Forced colors drop the ramp and the lit edge: the system's highlight rings the hovered row instead. */
 @media (forced-colors: active) {
   .theater-byline-row { background-image: none; }
+  .theater-byline-row::before { display: none; }
   a.theater-byline-row:hover:not(:focus-visible) { outline: 1px solid Highlight; outline-offset: -1px; }
 }
 
