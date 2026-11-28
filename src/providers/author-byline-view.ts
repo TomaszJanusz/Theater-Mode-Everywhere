@@ -3,6 +3,7 @@ import type { AuthorBylineControl, AuthorBylineHost } from '../core/author-bylin
 import type { DisposableScope } from '../core/disposable-scope';
 import { languageRuntime, translateMessage } from '../i18n-runtime';
 import type { ContentAuthor } from '../media-features/content-title';
+import { MENU_OPEN_EVENT } from '../ui/menu-popover';
 import { createSvgIcon } from '../ui/svg-icon';
 
 import { bylineNames, checkedAuthors, monogram, type AuthorHosts } from './author-byline';
@@ -119,25 +120,41 @@ function whenIdle(scope: DisposableScope, task: () => void): () => void {
 }
 
 /**
- * The first author's avatar colors the panel (its fill, lit edge and tip) in place of the user's accent; the popup
- * keeps the user's. The color is read when the page is idle and applied only while that avatar still leads the panel;
- * until then, and for an avatar with no usable color, the panel keeps the user's accent. High contrast takes the
- * color's contrast-safe shade, as it does for the user's accent. Returns the function that follows the leading avatar.
+ * Colors `node` and what it holds with an avatar's accent, or gives it back the user's for none. High contrast takes
+ * the color's contrast-safe shade, as it does for the user's accent.
  */
-function avatarAccentFollower(panel: HTMLElement, scope: DisposableScope, readAccent: ReadAccent): (author: ContentAuthor) => void {
+function paintAccent(node: HTMLElement, accent: string | null): void {
+  if (accent) {
+    node.style.setProperty('--accent-color', accent);
+    node.style.setProperty('--contrast-accent', contrastSafeAccent(accent));
+  } else {
+    node.style.removeProperty('--accent-color');
+    node.style.removeProperty('--contrast-accent');
+  }
+}
+
+/**
+ * Colors the header's home button (shadow.css, .theater-home-pill) with the arrow's avatar color, or gives it back the
+ * user's accent for none. Its icon takes the arrow's lit-edge shade, lifted towards the ink, so it keeps 3:1 on the
+ * button's tint (author-byline-contrast.test.ts); written with the accent, so high contrast lifts its safe shade.
+ */
+function paintHome(home: HTMLElement, accent: string | null): void {
+  paintAccent(home, accent);
+  if (accent) home.style.setProperty('--home-ink', 'color-mix(in srgb, var(--accent-color) 55%, var(--appearance-ink, #ffffff))');
+  else home.style.removeProperty('--home-ink');
+}
+
+/**
+ * The first author's avatar color, for the panel (its fill, lit edge and tip) and the header's home button. The color is
+ * read when the page is idle and given to `paint` only while that avatar still leads the panel; until then, and for an
+ * avatar with no usable color, it is null and they keep the user's accent. Returns the function that follows the
+ * leading avatar.
+ */
+function avatarAccentFollower(scope: DisposableScope, readAccent: ReadAccent, paint: (accent: string | null) => void): (author: ContentAuthor) => void {
   let current: { id: string; url: string | null } | null = null;
   let cancel = () => {};
   // The panel's end (the byline turned off, theater left) stops a read that has not drawn yet.
   scope.add(() => cancel());
-  const paint = (accent: string | null) => {
-    if (accent) {
-      panel.style.setProperty('--accent-color', accent);
-      panel.style.setProperty('--contrast-accent', contrastSafeAccent(accent));
-    } else {
-      panel.style.removeProperty('--accent-color');
-      panel.style.removeProperty('--contrast-accent');
-    }
-  };
   return author => {
     const url = author.avatarUrl;
     if (author.id === current?.id && url === current.url) return;
@@ -179,12 +196,24 @@ function nameText(name: string, className: string): HTMLElement {
 }
 
 /**
- * One author's row in the popup's list. With an admitted channel link the whole row is that link, a real anchor: a
- * click, Enter or Space (see the player's key guard) opens the channel in a new tab, so theater keeps playing; middle
- * and modified clicks and the context menu stay the browser's. Without one it is a plain row.
+ * Makes `link` a real anchor to `url` in a new tab: a click, Enter or Space (see the player's key guard) opens the
+ * channel and theater keeps playing; middle and modified clicks and the context menu stay the browser's.
+ */
+function channelLink(link: HTMLAnchorElement, url: string): void {
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+}
+
+/** Ends a link's accessible name for screen readers: it opens in a new tab. */
+const newTabNote = () => element('span', 'theater-byline-sr', t('authorChannelNewTab'));
+
+/**
+ * One author's row in the popup's list. With an admitted channel link the whole row is that link (`channelLink`);
+ * without one it is a plain row. Its arrow keys and Escape belong to the list (the player's menu-row class).
  */
 function renderRow(author: ContentAuthor): HTMLLIElement {
-  const row = element(author.url ? 'a' : 'div', 'theater-byline-row');
+  const row = element(author.url ? 'a' : 'div', 'theater-byline-row theater-cc-menu-item');
   const heading = element('div', 'theater-byline-row-heading');
   const name = element('div', 'theater-byline-row-name');
   name.append(nameText(author.name, 'theater-byline-row-title'));
@@ -193,12 +222,10 @@ function renderRow(author: ContentAuthor): HTMLLIElement {
   if (author.stat) heading.append(nameText(author.stat, 'theater-byline-row-stat'));
   row.append(avatar(author, 'theater-byline-row-avatar'), heading);
   if (row instanceof HTMLAnchorElement && author.url) {
-    row.href = author.url;
-    row.target = '_blank';
-    row.rel = 'noopener noreferrer';
+    channelLink(row, author.url);
     // The row's own words start the link's name; the new tab ends it for screen readers.
     const open = element('span', 'theater-byline-row-open');
-    open.append(element('span', 'theater-byline-sr', t('authorChannelNewTab')), createSvgIcon(OPEN_ICON));
+    open.append(newTabNote(), createSvgIcon(OPEN_ICON));
     row.append(open);
   }
   const item = element('li', '');
@@ -206,45 +233,58 @@ function renderRow(author: ContentAuthor): HTMLLIElement {
   return item;
 }
 
+/**
+ * What the panel is for its authors, which fixes its element and whether it has a popup: one author's channel link
+ * (`link`), one author without one (`plain`), or for two or more a popup under the arrow, which is the first author's
+ * link when they have one (`menu-link`) and otherwise the popup's button (`menu`).
+ */
+type PanelShape = 'link' | 'plain' | 'menu-link' | 'menu';
+function panelShape(shown: readonly ContentAuthor[]): PanelShape {
+  const linked = shown[0].url !== null;
+  if (shown.length > 1) return linked ? 'menu-link' : 'menu';
+  return linked ? 'link' : 'plain';
+}
+
+/** The panel's element for its shape: a link, the popup's button, or a plain panel. */
+function panelElement(shape: PanelShape): HTMLAnchorElement | HTMLButtonElement | HTMLDivElement {
+  if (shape === 'link' || shape === 'menu-link') return element('a', 'theater-byline-panel');
+  if (shape === 'plain') return element('div', 'theater-byline-panel');
+  const button = element('button', 'theater-byline-panel');
+  button.type = 'button';
+  return button;
+}
+
 interface BylinePanel {
+  readonly shape: PanelShape;
   show(shown: readonly ContentAuthor[], plate: HTMLElement): void;
+  /** Whether focus is on the panel or in its popup. */
+  focused(): boolean;
+  /** Focuses the panel, when it can take focus. */
+  focus(): void;
   /** Closes the popup, takes the panel out and ends its listeners and any avatar read. */
   dispose(): void;
 }
 
 /**
- * The panel and its popup, built in a child of the controls' scope: an arrow-shaped button whose gradient leads into
- * the title, and under the plate one block listing a row per author, in the player's menu shell (hover, click, Enter,
- * Space or ↓; ↑/↓ move between rows; Escape and outside presses close it; focus returns to the panel). The stylesheet
- * holds hover intent: the popup shows after 250 ms of hover and stays 300 ms after the pointer leaves.
+ * The popup under the plate, for two or more authors: one block listing a row per author, in the player's menu shell.
+ * Hover reveals it (the stylesheet holds hover intent: it shows after 250 ms and stays 300 ms after the pointer
+ * leaves); ↓ on the panel opens it at the first link, ↑/↓ move between rows, Escape and outside presses close it and
+ * focus returns to the panel. A button panel also opens it with a click, Enter or Space; a link panel follows its link
+ * instead, and the click closes a popup hover opened. Each row takes its own avatar's accent, read the first time the
+ * popup opens; until then, and for an avatar with no usable color, a row keeps the user's accent.
  */
-function buildPanel(host: AuthorBylineHost, readAccent: ReadAccent): BylinePanel {
-  const scope = host.scope.child();
-  const root = element('div', 'theater-byline');
-  // The plate's tooltip is its scrolling title (hud.ts); an empty title keeps it off the panel and its popup.
-  root.title = '';
-  const style = element('style', '');
-  style.textContent = css;
-  const trigger = element('button', 'theater-byline-panel');
-  trigger.type = 'button';
-  // The fill and its lit edge are decoration behind the names.
-  const fill = element('span', 'theater-byline-fill');
-  const glow = element('span', 'theater-byline-glow');
-  glow.append(element('span', ''));
-  const rim = element('span', 'theater-byline-rim');
-  for (const part of [fill, glow, rim]) part.setAttribute('aria-hidden', 'true');
-  const avatars = element('span', 'theater-byline-avatars');
-  // The rows show each avatar again beside its name; in the panel they are decoration.
-  avatars.setAttribute('aria-hidden', 'true');
-  const names = element('span', 'theater-byline-names');
-  trigger.append(fill, glow, rim, avatars, names);
+function bindPopup(
+  host: AuthorBylineHost,
+  { scope, root, trigger }: { scope: DisposableScope; root: HTMLElement; trigger: HTMLButtonElement | HTMLAnchorElement },
+  readAccent: ReadAccent
+) {
   // The menu shell's panel; its top padding is the hover bridge from the panel, and the list inside is the block.
   const popup = element('div', 'theater-cc-menu theater-byline-popup');
   const list = element('ul', 'theater-byline-list');
   // A list without bullets keeps its role everywhere only when it says so.
   list.setAttribute('role', 'list');
   popup.append(list);
-  root.append(style, trigger, popup);
+  root.append(popup);
 
   const menu = host.bindMenu({
     host: root, trigger, panel: popup, scope,
@@ -270,41 +310,128 @@ function buildPanel(host: AuthorBylineHost, readAccent: ReadAccent): BylinePanel
   scope.listen(window, 'pointerdown', (event: PointerEvent) => {
     if (!event.composedPath().includes(root)) menu.close();
   }, { capture: true });
-  const followAvatar = avatarAccentFollower(trigger, scope, readAccent);
+
+  let rows: Array<{ row: HTMLElement; url: string | null }> = [];
+  let opened = false;
+  let reads: AbortController | undefined;
+  scope.add(() => reads?.abort());
+  // A row's color comes from its own avatar; the reads of a list that was replaced are dropped with it.
+  const paintRows = () => {
+    reads?.abort();
+    const controller = reads = new AbortController();
+    for (const { row, url } of rows) {
+      if (!url) continue;
+      const known = accents.get(url);
+      if (settledAccent(known)) paintAccent(row, known);
+      else void readAccent(url, controller.signal).then(accent => { if (!controller.signal.aborted) paintAccent(row, accent); });
+    }
+  };
+  scope.listen(popup, MENU_OPEN_EVENT, () => {
+    if (opened) return;
+    opened = true;
+    paintRows();
+  });
+  return {
+    render(shown: readonly ContentAuthor[]) {
+      const items = shown.map(renderRow);
+      rows = items.map((item, index) => ({ row: item.firstElementChild as HTMLElement, url: shown[index].avatarUrl }));
+      list.replaceChildren(...items);
+      if (opened) paintRows();
+    },
+    close: () => menu.close()
+  };
+}
+
+/**
+ * The panel, built in a child of the controls' scope for one `PanelShape`: an arrow whose gradient leads into the
+ * title. One author's panel is their channel link and has no popup; two or more get the popup (`bindPopup`), with the
+ * arrow standing for the first author (their avatar's color, and their link when they have one).
+ */
+function buildPanel(host: AuthorBylineHost, readAccent: ReadAccent, shape: PanelShape): BylinePanel {
+  const scope = host.scope.child();
+  const root = element('div', 'theater-byline');
+  // The plate's tooltip is its scrolling title (hud.ts); an empty title keeps it off the panel and its popup.
+  root.title = '';
+  const style = element('style', '');
+  style.textContent = css;
+  const trigger = panelElement(shape);
+  const linked = trigger instanceof HTMLAnchorElement;
+  // The fill and its lit edge are decoration behind the names.
+  const fill = element('span', 'theater-byline-fill');
+  const glow = element('span', 'theater-byline-glow');
+  glow.append(element('span', ''));
+  const rim = element('span', 'theater-byline-rim');
+  for (const part of [fill, glow, rim]) part.setAttribute('aria-hidden', 'true');
+  const avatars = element('span', 'theater-byline-avatars');
+  // The rows show each avatar again beside its name; in the panel they are decoration.
+  avatars.setAttribute('aria-hidden', 'true');
+  const names = element('span', 'theater-byline-names');
+  trigger.append(fill, glow, rim, avatars, names);
+  root.append(style, trigger);
+  const popup = trigger instanceof HTMLDivElement || shape === 'link' ? null : bindPopup(host, { scope, root, trigger }, readAccent);
+  // The home button beside the plate, in its header row, takes the arrow's color too, until the panel ends.
+  let leading: string | null = null;
+  let home: HTMLElement | null = null;
+  const colorHome = (next: HTMLElement | null) => {
+    if (home && home !== next) paintHome(home, null);
+    home = next;
+    if (home) paintHome(home, leading);
+  };
+  const followAvatar = avatarAccentFollower(scope, readAccent, accent => {
+    leading = accent;
+    paintAccent(trigger, accent);
+    colorHome(home);
+  });
+  scope.add(() => colorHome(null));
   scope.add(() => root.remove());
 
   let signature: string | undefined;
   return {
+    shape,
     show(shown, plate) {
       const next = JSON.stringify([shown, t('authorChannelNewTab'), t('authorVerified')]);
       if (next === signature && root.parentElement === plate) return;
       signature = next;
       followAvatar(shown[0]);
+      if (trigger instanceof HTMLAnchorElement && shown[0].url) channelLink(trigger, shown[0].url);
       const { names: visible, more } = bylineNames(shown);
       avatars.replaceChildren(...shown.slice(0, STACKED_AVATARS).map(author => avatar(author, 'theater-byline-avatar')));
+      // The popup's rows line up with the stack's width (author-byline-view.css).
+      root.style.setProperty('--stacked', String(Math.min(shown.length, STACKED_AVATARS)));
       names.replaceChildren();
       visible.forEach((name, index) => {
         if (index) names.append(element('span', 'theater-byline-and', '&'));
         names.append(nameText(name, 'theater-byline-name'));
       });
       if (shown.length === 1 && shown[0].verified) names.append(verifiedMark());
-      // The visible label is the accessible name; with three or more authors it starts the list of every name, and the
-      // count, which a listener would not need, stays out of it.
+      // The visible label starts the accessible name, and a link's ends with the new tab. With three or more authors
+      // it lists every name instead of the count, which a listener would not need.
       if (more) {
         const count = element('span', 'theater-byline-more', `+${more}`);
         count.setAttribute('aria-hidden', 'true');
         names.append(count);
-        trigger.setAttribute('aria-label', listedNames(shown));
-      } else trigger.removeAttribute('aria-label');
-      list.replaceChildren(...shown.map(renderRow));
+        trigger.setAttribute('aria-label', linked ? `${listedNames(shown)} ${t('authorChannelNewTab')}` : listedNames(shown));
+      } else {
+        trigger.removeAttribute('aria-label');
+        if (linked) names.append(newTabNote());
+      }
+      popup?.render(shown);
       if (root.parentElement !== plate) {
         // A new plate (another title row) starts closed.
-        menu.close();
+        popup?.close();
         plate.prepend(root);
       }
+      colorHome(plate.parentElement?.querySelector<HTMLElement>(':scope > .theater-home-pill') ?? null);
+    },
+    focused() {
+      const active = (root.getRootNode() as Document | ShadowRoot).activeElement;
+      return active instanceof Node && root.contains(active);
+    },
+    focus() {
+      if (!(trigger instanceof HTMLDivElement)) trigger.focus({ preventScroll: true });
     },
     dispose() {
-      menu.close();
+      popup?.close();
       scope.dispose();
     }
   };
@@ -314,7 +441,9 @@ function buildPanel(host: AuthorBylineHost, readAccent: ReadAccent): BylinePanel
  * The author panel at the start of the title plate and its popup (`buildPanel`). It shows only what `checkedAuthors`
  * admits, only while `bylineAllowed` (the global switch and the provider's `showAuthor`, global off wins), and repaints
  * only when that changed. While it cannot show (either switch off or still unread, no authors, or no title) nothing is
- * built or bound and no avatar is loaded or read, so the title row is the one without a byline.
+ * built or bound and no avatar is loaded or read, so the title row is the one without a byline. Authors that change the
+ * panel's shape (one to several, a link arriving) replace it with a fresh one, so no popup, listener or open state of
+ * the old shape outlives it; focus on the old panel moves to the new one.
  */
 export function mountAuthorByline(
   host: AuthorBylineHost,
@@ -339,8 +468,14 @@ export function mountAuthorByline(
       panel = null;
       return;
     }
-    panel ??= buildPanel(host, options.readAccent ?? readAvatarAccent);
-    panel.show(shown, plate);
+    const shape = panelShape(shown);
+    if (panel?.shape !== shape) {
+      const focused = panel?.focused() ?? false;
+      panel?.dispose();
+      panel = buildPanel(host, options.readAccent ?? readAvatarAccent, shape);
+      panel.show(shown, plate);
+      if (focused) panel.focus();
+    } else panel.show(shown, plate);
   };
   // The view owns the settings store it was given, and the global switch it follows.
   scope.add(() => options.settings.dispose());

@@ -98,19 +98,29 @@ function watchOwnerRenderer(videoId: string, responses: readonly unknown[]): Rec
 }
 
 /**
- * Every channel behind `videoId`, in YouTube's order, from the owner renderer of that video's watch-next response when
- * it names the player response's channel: one channel gains its avatar, verified badge and subscriber count; a
- * collaboration (the renderer opens a "Collaborators" dialog instead of the channel) lists each collaborator. Otherwise
- * just the player response's channel. The responses, not the page's rendered model, because after an in-app navigation
- * that model still describes the previous video until after YouTube's page events.
+ * Every channel behind `videoId`, in YouTube's order, from the owner renderer of that video's watch-next response: one
+ * channel gains its avatar, verified badge and subscriber count; a collaboration (the renderer opens a "Collaborators"
+ * dialog instead of the channel) lists each collaborator. The renderer may name another channel than the player
+ * response: on an Official Artist Channel the player names the uploading VEVO or Topic channel and the renderer the
+ * artist, as YouTube's own byline does, linked like its name (the renderer's own path still leads to the uploader).
+ * Without a usable renderer, just the player response's channel. The responses, not the page's rendered model, because
+ * after an in-app navigation that model still describes the previous video until after YouTube's page events.
  */
 export function youtubeAuthors(owner: ContentAuthor, videoId: string, responses: readonly unknown[]): ContentAuthor[] {
   const data = watchOwnerRenderer(videoId, responses);
   const endpoint = record(data?.navigationEndpoint);
-  if (record(endpoint?.browseEndpoint)?.browseId === owner.id) {
+  const id = record(endpoint?.browseEndpoint)?.browseId;
+  if (typeof id === 'string' && CHANNEL_ID.test(id)) {
     const verified = list(data?.badges)
       .some(badge => VERIFIED_BADGES.has(String(record(record(badge)?.metadataBadgeRenderer)?.style)));
-    return [{ ...owner, avatarUrl: avatarUrl(record(data?.thumbnail)?.thumbnails), verified, stat: simpleText(data?.subscriberCountText) }];
+    const details = { avatarUrl: avatarUrl(record(data?.thumbnail)?.thumbnails), verified, stat: simpleText(data?.subscriberCountText) };
+    if (id === owner.id) return [{ ...owner, ...details }];
+    const run = record(list(record(data?.title)?.runs)[0]);
+    const name = sanitizeContentTitle(run?.text);
+    if (!name) return [owner];
+    const link = record(record(run?.navigationEndpoint)?.browseEndpoint);
+    const url = channelUrl(link?.browseId === id ? link.canonicalBaseUrl : null, id);
+    return [{ id, name: name.slice(0, 80), url, ...details }];
   }
   const dialog = record(record(record(record(endpoint?.showDialogCommand)?.panelLoadingStrategy)?.inlineContent)?.dialogViewModel);
   const items = record(record(dialog?.customContent)?.listViewModel)?.listItems;

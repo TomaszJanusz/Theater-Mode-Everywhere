@@ -1,0 +1,333 @@
+{
+  "source": "YouTube watch pages, logged out, English UI (hl=en, gl=US): an Official Artist Channel video uploaded by its VEVO channel (/watch?v=OPf0YbXqDm0), an auto-generated Topic upload of the same artist (/watch?v=tYvFa2ARD24) and a brand channel's own upload (/watch?v=aqz-KE-bpKQ)",
+  "captured": "2026-11-24",
+  "environment": "curl on runner02 with a desktop Chrome user agent; ytInitialPlayerResponse and ytInitialData of each server-rendered watch page",
+  "evidence": "Recorded host fixture (the player response's channel and the watch page data's owner renderer), not live extension verification",
+  "notes": "Tracking parameters, accessibility labels and subscribe buttons are removed. On an Official Artist Channel the player response names the uploading VEVO or Topic channel, while the owner renderer names the artist channel; its own canonicalBaseUrl and command URL still point at the uploader, and only the title run links to the artist channel.",
+  "cases": [
+    {
+      "video": "vevo",
+      "player": {
+        "videoDetails": {
+          "videoId": "OPf0YbXqDm0",
+          "title": "Mark Ronson - Uptown Funk (Official Video) ft. Bruno Mars",
+          "author": "MarkRonsonVEVO",
+          "channelId": "UCmfFGTSsfJVu6CGvL8r75qg"
+        },
+        "microformat": {
+          "playerMicroformatRenderer": {
+            "ownerProfileUrl": "http://www.youtube.com/@MarkRonsonVEVO"
+          }
+        }
+      },
+      "watch": {
+        "currentVideoEndpoint": {
+          "watchEndpoint": {
+            "videoId": "OPf0YbXqDm0"
+          }
+        },
+        "contents": {
+          "twoColumnWatchNextResults": {
+            "results": {
+              "results": {
+                "contents": [
+                  {
+                    "videoPrimaryInfoRenderer": {}
+                  },
+                  {
+                    "videoSecondaryInfoRenderer": {
+                      "owner": {
+                        "videoOwnerRenderer": {
+                          "thumbnail": {
+                            "thumbnails": [
+                              {
+                                "url": "https://yt3.ggpht.com/ytc/AIdro_n0cOrvmlSEli-0WQipMDMqjeAE_juxkrGhqAAf1GGbJA=s48-c-k-c0x00ffffff-no-rj",
+                                "width": 48,
+                                "height": 48
+                              },
+                              {
+                                "url": "https://yt3.ggpht.com/ytc/AIdro_n0cOrvmlSEli-0WQipMDMqjeAE_juxkrGhqAAf1GGbJA=s88-c-k-c0x00ffffff-no-rj",
+                                "width": 88,
+                                "height": 88
+                              },
+                              {
+                                "url": "https://yt3.ggpht.com/ytc/AIdro_n0cOrvmlSEli-0WQipMDMqjeAE_juxkrGhqAAf1GGbJA=s176-c-k-c0x00ffffff-no-rj",
+                                "width": 176,
+                                "height": 176
+                              }
+                            ]
+                          },
+                          "title": {
+                            "runs": [
+                              {
+                                "text": "Mark Ronson",
+                                "navigationEndpoint": {
+                                  "commandMetadata": {
+                                    "webCommandMetadata": {
+                                      "url": "/channel/UCSY5V7BJSrxNvvBF0Drslow",
+                                      "webPageType": "WEB_PAGE_TYPE_CHANNEL"
+                                    }
+                                  },
+                                  "browseEndpoint": {
+                                    "browseId": "UCSY5V7BJSrxNvvBF0Drslow",
+                                    "canonicalBaseUrl": "/channel/UCSY5V7BJSrxNvvBF0Drslow"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "navigationEndpoint": {
+                            "commandMetadata": {
+                              "webCommandMetadata": {
+                                "url": "/@MarkRonsonVEVO",
+                                "webPageType": "WEB_PAGE_TYPE_CHANNEL"
+                              }
+                            },
+                            "browseEndpoint": {
+                              "browseId": "UCSY5V7BJSrxNvvBF0Drslow",
+                              "canonicalBaseUrl": "/@MarkRonsonVEVO"
+                            }
+                          },
+                          "subscriberCountText": {
+                            "simpleText": "7.25M subscribers"
+                          },
+                          "badges": [
+                            {
+                              "metadataBadgeRenderer": {
+                                "icon": {
+                                  "iconType": "AUDIO_BADGE"
+                                },
+                                "style": "BADGE_STYLE_TYPE_VERIFIED_ARTIST",
+                                "tooltip": "Official Artist Channel"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "video": "topic",
+      "player": {
+        "videoDetails": {
+          "videoId": "tYvFa2ARD24",
+          "title": "Uptown Funk",
+          "author": "Mark Ronson - Topic",
+          "channelId": "UCm9XijVCOsRrxdx0giD_1fQ"
+        },
+        "microformat": {
+          "playerMicroformatRenderer": {
+            "ownerProfileUrl": "http://www.youtube.com/channel/UCm9XijVCOsRrxdx0giD_1fQ"
+          }
+        }
+      },
+      "watch": {
+        "currentVideoEndpoint": {
+          "watchEndpoint": {
+            "videoId": "tYvFa2ARD24"
+          }
+        },
+        "contents": {
+          "twoColumnWatchNextResults": {
+            "results": {
+              "results": {
+                "contents": [
+                  {
+                    "videoPrimaryInfoRenderer": {}
+                  },
+                  {
+                    "videoSecondaryInfoRenderer": {
+                      "owner": {
+                        "videoOwnerRenderer": {
+                          "thumbnail": {
+                            "thumbnails": [
+                              {
+                                "url": "https://yt3.ggpht.com/ytc/AIdro_n0cOrvmlSEli-0WQipMDMqjeAE_juxkrGhqAAf1GGbJA=s48-c-k-c0x00ffffff-no-rj",
+                                "width": 48,
+                                "height": 48
+                              },
+                              {
+                                "url": "https://yt3.ggpht.com/ytc/AIdro_n0cOrvmlSEli-0WQipMDMqjeAE_juxkrGhqAAf1GGbJA=s88-c-k-c0x00ffffff-no-rj",
+                                "width": 88,
+                                "height": 88
+                              },
+                              {
+                                "url": "https://yt3.ggpht.com/ytc/AIdro_n0cOrvmlSEli-0WQipMDMqjeAE_juxkrGhqAAf1GGbJA=s176-c-k-c0x00ffffff-no-rj",
+                                "width": 176,
+                                "height": 176
+                              }
+                            ]
+                          },
+                          "title": {
+                            "runs": [
+                              {
+                                "text": "Mark Ronson",
+                                "navigationEndpoint": {
+                                  "commandMetadata": {
+                                    "webCommandMetadata": {
+                                      "url": "/channel/UCSY5V7BJSrxNvvBF0Drslow",
+                                      "webPageType": "WEB_PAGE_TYPE_CHANNEL"
+                                    }
+                                  },
+                                  "browseEndpoint": {
+                                    "browseId": "UCSY5V7BJSrxNvvBF0Drslow",
+                                    "canonicalBaseUrl": "/channel/UCSY5V7BJSrxNvvBF0Drslow"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "navigationEndpoint": {
+                            "commandMetadata": {
+                              "webCommandMetadata": {
+                                "url": "/channel/UCm9XijVCOsRrxdx0giD_1fQ",
+                                "webPageType": "WEB_PAGE_TYPE_CHANNEL"
+                              }
+                            },
+                            "browseEndpoint": {
+                              "browseId": "UCSY5V7BJSrxNvvBF0Drslow",
+                              "canonicalBaseUrl": "/channel/UCm9XijVCOsRrxdx0giD_1fQ"
+                            }
+                          },
+                          "subscriberCountText": {
+                            "simpleText": "7.25M subscribers"
+                          },
+                          "badges": [
+                            {
+                              "metadataBadgeRenderer": {
+                                "icon": {
+                                  "iconType": "AUDIO_BADGE"
+                                },
+                                "style": "BADGE_STYLE_TYPE_VERIFIED_ARTIST",
+                                "tooltip": "Official Artist Channel"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "video": "brand",
+      "player": {
+        "videoDetails": {
+          "videoId": "aqz-KE-bpKQ",
+          "title": "Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film",
+          "author": "Blender",
+          "channelId": "UCSMOQeBJ2RAnuFungnQOxLg"
+        },
+        "microformat": {
+          "playerMicroformatRenderer": {
+            "ownerProfileUrl": "http://www.youtube.com/@BlenderOfficial"
+          }
+        }
+      },
+      "watch": {
+        "currentVideoEndpoint": {
+          "watchEndpoint": {
+            "videoId": "aqz-KE-bpKQ"
+          }
+        },
+        "contents": {
+          "twoColumnWatchNextResults": {
+            "results": {
+              "results": {
+                "contents": [
+                  {
+                    "videoPrimaryInfoRenderer": {}
+                  },
+                  {
+                    "videoSecondaryInfoRenderer": {
+                      "owner": {
+                        "videoOwnerRenderer": {
+                          "thumbnail": {
+                            "thumbnails": [
+                              {
+                                "url": "https://yt3.ggpht.com/ytc/AIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY=s48-c-k-c0x00ffffff-no-rj",
+                                "width": 48,
+                                "height": 48
+                              },
+                              {
+                                "url": "https://yt3.ggpht.com/ytc/AIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY=s88-c-k-c0x00ffffff-no-rj",
+                                "width": 88,
+                                "height": 88
+                              },
+                              {
+                                "url": "https://yt3.ggpht.com/ytc/AIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY=s176-c-k-c0x00ffffff-no-rj",
+                                "width": 176,
+                                "height": 176
+                              }
+                            ]
+                          },
+                          "title": {
+                            "runs": [
+                              {
+                                "text": "Blender",
+                                "navigationEndpoint": {
+                                  "commandMetadata": {
+                                    "webCommandMetadata": {
+                                      "url": "/@BlenderOfficial",
+                                      "webPageType": "WEB_PAGE_TYPE_CHANNEL"
+                                    }
+                                  },
+                                  "browseEndpoint": {
+                                    "browseId": "UCSMOQeBJ2RAnuFungnQOxLg",
+                                    "canonicalBaseUrl": "/@BlenderOfficial"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "navigationEndpoint": {
+                            "commandMetadata": {
+                              "webCommandMetadata": {
+                                "url": "/@BlenderOfficial",
+                                "webPageType": "WEB_PAGE_TYPE_CHANNEL"
+                              }
+                            },
+                            "browseEndpoint": {
+                              "browseId": "UCSMOQeBJ2RAnuFungnQOxLg",
+                              "canonicalBaseUrl": "/@BlenderOfficial"
+                            }
+                          },
+                          "subscriberCountText": {
+                            "simpleText": "1.26M subscribers"
+                          },
+                          "badges": [
+                            {
+                              "metadataBadgeRenderer": {
+                                "icon": {
+                                  "iconType": "CHECK_CIRCLE_THICK"
+                                },
+                                "style": "BADGE_STYLE_TYPE_VERIFIED",
+                                "tooltip": "Verified"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

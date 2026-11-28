@@ -1659,6 +1659,8 @@ function initialize(): void {
       return false;
     }
     if (activeEl?.matches('.theater-cc-menu-item') && ['ArrowUp', 'ArrowDown', 'Escape'].includes(event.key)) return false;
+    // The author byline's ↓ opens its list from the panel (providers/author-byline-view.ts); elsewhere it is the volume's.
+    if (event.key === 'ArrowDown' && activeEl?.matches('.theater-byline-panel[aria-expanded]')) return false;
     if (activeEl?.matches('input[type=range]')
         && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;
     // The chat separator resizes the chat with these keys instead of seeking (see chat-separator.ts).

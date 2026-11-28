@@ -5,7 +5,7 @@
 export const PLAYER_UI_HOST_ID = 'theater-everywhere-ui';
 
 // Both script worlds must leave native button activation to the focused UI control.
-export const UI_ACTIVATION_SELECTOR = '.theater-menu, .theater-service-action-host, '
+export const UI_ACTIVATION_SELECTOR = '.theater-menu, .theater-byline, .theater-service-action-host, '
   + '.theater-time-end, .theater-controls-row button, .theater-ended-curtain, .te-dialog-overlay';
 
 export function findPlayerUiRoot(): ShadowRoot | null {

@@ -1,78 +1,26 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 
-import { mountHudStage } from '../../.storybook/hud-stage';
-import { DisposableScope } from '../core/disposable-scope';
-import type { ContentAuthor } from '../media-features/content-title';
-import { blockingViolations } from '../test-utils/axe';
-import { createHud, TITLE_HUD_CLASS } from '../ui/hud';
-import { bindMenuPopover } from '../ui/menu-popover';
-import { getPlayerUiRoot, queryPlayerUi } from '../ui/root';
+import type { DisposableScope } from '../core/disposable-scope';
+import { author, AVATAR, idle, mountByline, setGlobal, unlinked, type ReadAccent } from '../test-utils/author-byline-fixture';
+import { APPEARANCE_MODES, blockingViolations } from '../test-utils/axe';
+import { getPlayerUiRoot } from '../ui/root';
 
-import { providerAuthorHosts } from './author-byline';
-import { watchAuthorBylineSetting } from './author-byline-setting';
-import { mountAuthorByline, readAvatarAccent } from './author-byline-view';
-import { BYLINE_STORAGE_KEY } from './settings-values';
-import { createYouTubeSettings } from './youtube/settings';
-
-const HOSTS = providerAuthorHosts([{ domain: 'youtube.com', includeSubdomains: true }], ['yt3.ggpht.com']);
-const AVATAR = 'https://yt3.ggpht.com/avatar=s88';
-const author = (name: string, overrides: Partial<ContentAuthor> = {}): ContentAuthor => ({
-  id: name, name, url: `https://www.youtube.com/@${name.replace(/\W/g, '')}`, avatarUrl: null, verified: false, stat: null, ...overrides
-});
+import { readAvatarAccent } from './author-byline-view';
 
 let scope: DisposableScope | undefined;
 afterEach(() => { scope?.dispose(); scope = undefined; });
+async function mount(...args: Parameters<typeof mountByline>) {
+  const view = await mountByline(...args);
+  scope = view.scope;
+  return view;
+}
 
 const LONG_TITLE = 'Building a cedar-strip canoe, part 3: fibreglass, epoxy, the first coat of varnish and every mistake left in on purpose';
 /** The tooltip a browser shows over `node`: the nearest `title` from it outwards, where an empty one means none. */
 function tooltip(node: Element | null): string | null {
   for (let current = node; current; current = current.parentElement) if (current.hasAttribute('title')) return current.getAttribute('title');
   return null;
-}
-
-type ReadAccent = (avatarUrl: string, signal: AbortSignal) => Promise<string | null>;
-/** Idle callbacks run in order, so this resolves after any the view scheduled before it. */
-const idle = () => new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 }));
-/** Saves Settings > Appearance > the author byline switch, as the Settings page does. */
-const setGlobal = (enabled: boolean) => chrome.storage.sync.set({ [BYLINE_STORAGE_KEY]: enabled });
-/** Tests stay off the network: without a reader of their own, no avatar has a color. */
-const noAccent: ReadAccent = () => Promise.resolve(null);
-
-async function mount(
-  authors: readonly ContentAuthor[] | null,
-  options: { showAuthor?: boolean; global?: boolean; dir?: 'rtl'; readAccent?: ReadAccent } = {},
-  firstTitle = 'Building a cedar-strip canoe',
-  beforePublish?: () => void
-) {
-  const stage = mountHudStage();
-  beforePublish?.();
-  const hud = createHud(stage.host, () => {}, stage.clock);
-  scope = new DisposableScope();
-  stage.onDispose(() => hud.syncContentTitle(null));
-  const settings = createYouTubeSettings();
-  await settings.ready;
-  if (options.showAuthor === false) await settings.set('youtube', 'showAuthor', false);
-  await setGlobal(options.global ?? true);
-  // The global switch the view follows, read from the same storage the Settings page writes.
-  const global = watchAuthorBylineSetting();
-  await global.ready;
-  const byline = mountAuthorByline({ scope, bindMenu: bindMenuPopover }, { provider: 'youtube', hosts: HOSTS, settings, global, readAccent: options.readAccent ?? noAccent });
-  const publish = (next: readonly ContentAuthor[] | null, title = 'Building a cedar-strip canoe') =>
-    hud.syncContentTitle({ title, subtitle: null, authors: next }, byline);
-  /** A navigation between items: the title clears before the next one is published. */
-  const clear = () => hud.syncContentTitle(null, byline);
-  publish(authors, firstTitle);
-  const plate = () => queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS}`)!;
-  if (options.dir) plate().dir = options.dir;
-  const panel = () => plate()?.querySelector<HTMLButtonElement>('.theater-byline-panel') ?? null;
-  const popup = () => plate()?.querySelector<HTMLElement>('.theater-byline-popup') ?? null;
-  const list = () => popup()!.querySelector<HTMLUListElement>('.theater-byline-list')!;
-  const rows = () => [...list().children].map(item => item.firstElementChild as HTMLElement);
-  const names = () => panel()?.querySelector('.theater-byline-names')?.textContent;
-  const links = () => [...plate().querySelectorAll<HTMLAnchorElement>('a.theater-byline-row')];
-  const shown = () => getComputedStyle(popup()!).visibility === 'visible';
-  return { hud, publish, clear, plate, panel, names, popup, list, rows, links, shown, settings, stage };
 }
 
 describe('author byline in the title plate', () => {
@@ -95,8 +43,9 @@ describe('author byline in the title plate', () => {
     expect(middle(name)).toBeCloseTo(middle(plate), 1);
     expect(middle(title)).toBeCloseTo(middle(plate), 1);
     expect(view.names()).toBe('Harbour Films');
-    // The visible name is the accessible name.
+    // The visible name starts the accessible name, and the new tab ends it.
     expect(view.panel()!.hasAttribute('aria-label')).toBe(false);
+    await expect.element(view.panel()!).toHaveAccessibleName('Harbour Films Verified Opens the channel in a new tab');
     expect(view.panel()!.querySelector<HTMLImageElement>('img.theater-byline-avatar')!.referrerPolicy).toBe('no-referrer');
     expect(view.panel()!.querySelector('.theater-byline-verified')!.getAttribute('aria-label')).toBe('Verified');
   });
@@ -104,10 +53,14 @@ describe('author byline in the title plate', () => {
   test('labels two authors "A & B" and three "A +2", naming everyone for assistive technology', async () => {
     const view = await mount([author('QuietHarbor'), author('Bottlewright')]);
     expect(view.names()).toBe('QuietHarbor&Bottlewright');
+    await expect.element(view.panel()!).toHaveAccessibleName('QuietHarbor & Bottlewright Opens the channel in a new tab');
     view.publish([author('A'), author('B'), author('C')]);
     expect(view.names()).toBe('A+2');
-    expect(view.panel()!.getAttribute('aria-label')).toBe('A, B, and C');
+    expect(view.panel()!.getAttribute('aria-label')).toBe('A, B, and C Opens the channel in a new tab');
     expect(view.rows()).toHaveLength(3);
+    // A first author without a link leaves a button, whose name is the names alone.
+    view.publish([unlinked('A'), author('B'), author('C')]);
+    expect(view.panel()!.getAttribute('aria-label')).toBe('A, B, and C');
   });
 
   test('lists the authors as rows of one block, each its channel link, only to the provider\'s hosts and in a new tab', async () => {
@@ -129,7 +82,7 @@ describe('author byline in the title plate', () => {
     expect(row.querySelector('a, button')).toBeNull();
     expect(row.querySelector('.theater-byline-row-avatar')!.getAttribute('aria-hidden')).toBe('true');
     expect(row.querySelector('.theater-byline-verified')!.getAttribute('aria-label')).toBe('Verified');
-    await userEvent.click(view.panel()!);
+    await view.openList();
     await expect.element(row).toHaveAccessibleName('Harbour Verified 1.26M subscribers Opens the channel in a new tab');
     // A host outside the allow-list leaves a plain row: no link, no pointer, nothing to focus.
     expect(plain.tagName).toBe('DIV');
@@ -142,22 +95,16 @@ describe('author byline in the title plate', () => {
 
   test('a click, or Enter on the focused row, follows the row\'s link', async () => {
     const view = await mount([author('One'), author('Two')]);
-    const followed: string[] = [];
-    // Stop the navigation: the test only needs the activation.
-    view.popup()!.addEventListener('click', event => {
-      event.preventDefault();
-      followed.push((event.target as Element).closest('a')!.href);
-    });
-    await userEvent.click(view.panel()!);
+    await view.openList();
     await userEvent.click(view.links()[1].querySelector('.theater-byline-row-title')!);
     view.links()[0].focus();
     await userEvent.keyboard('{Enter}');
-    expect(followed).toEqual(['https://www.youtube.com/@Two', 'https://www.youtube.com/@One']);
+    expect(view.followed).toEqual(['https://www.youtube.com/@Two', 'https://www.youtube.com/@One']);
   });
 
   test('one block frames the rows: it alone has the border, corners and shadow, and clips the rows to its corners', async () => {
     const view = await mount([author('One'), author('Two'), author('Three')]);
-    await userEvent.click(view.panel()!);
+    await view.openList();
     const block = getComputedStyle(view.list());
     expect(block.borderTopWidth).toBe('1px');
     expect(block.borderTopLeftRadius).toBe('12px');
@@ -178,27 +125,28 @@ describe('author byline in the title plate', () => {
     expect(corners(first)).toEqual(['11px', '11px', '0px', '0px']);
     expect(corners(second)).toEqual(['0px', '0px', '0px', '0px']);
     expect(corners(third)).toEqual(['0px', '0px', '11px', '11px']);
-    // One author: a block of a single row with all four corners.
-    view.publish([author('Solo')], 'A solo video');
-    await userEvent.click(view.panel()!);
-    expect(view.rows()).toHaveLength(1);
-    expect(corners(view.rows()[0])).toEqual(['11px', '11px', '11px', '11px']);
+    // Two authors: the first row takes the top corners, the last the bottom ones.
+    view.publish([author('One'), author('Two')], 'A duet');
+    await view.openList();
+    expect(corners(view.rows()[0])).toEqual(['11px', '11px', '0px', '0px']);
+    expect(corners(view.rows()[1])).toEqual(['0px', '0px', '11px', '11px']);
   });
 
-  test('alternates the rows\' tone from the second author; a pointer lifts the row and marks its start; focus draws a ring inside it', async () => {
+  test('alternates the rows\' tone from the second author; every row has its lit edge, which a pointer widens as it lifts the row; focus draws a ring inside it', async () => {
     const view = await mount([author('One'), author('Two'), author('Three')]);
-    await userEvent.click(view.panel()!);
+    await view.openList();
     const [first, second, third] = view.links();
     const fill = (row: HTMLElement) => getComputedStyle(row).backgroundColor;
     const edge = (row: HTMLElement) => getComputedStyle(row, '::before');
     expect(fill(second)).not.toBe(fill(first));
     expect(fill(third)).toBe(fill(first));
     const restFill = fill(third);
-    expect(edge(third).content).toBe('none');
+    // Every row shows its lit edge; the pointer widens and brightens it.
+    expect([edge(third).width, edge(third).opacity]).toEqual(['2px', '0.6']);
     await userEvent.hover(third);
     await expect.poll(() => fill(third)).not.toBe(restFill);
     expect(fill(third)).not.toBe(fill(second));
-    expect(edge(third).width).toBe('3px');
+    expect([edge(third).width, edge(third).opacity]).toEqual(['3px', '1']);
     // The edge sits at the row's start.
     expect(edge(third).left).toBe('0px');
     third.focus();
@@ -210,10 +158,12 @@ describe('author byline in the title plate', () => {
     expect(ring.outlineOffset).toBe('-2px');
   });
 
-  test('Enter and ↓ open the popup at once with focus on the first link; ↑/↓ move, Escape returns to the panel', async () => {
+  test('↓ opens the popup at once with focus on the first link; ↑/↓ move, Escape returns to the panel', async () => {
     const view = await mount([author('One'), author('Two')]);
     view.panel()!.focus();
-    await userEvent.keyboard('{Enter}');
+    // Focus alone does not open it.
+    expect(view.panel()!.getAttribute('aria-expanded')).toBe('false');
+    await userEvent.keyboard('{ArrowDown}');
     expect(view.shown()).toBe(true);
     expect(getPlayerUiRoot().activeElement).toBe(view.links()[0]);
     await userEvent.keyboard('{ArrowDown}');
@@ -227,10 +177,30 @@ describe('author byline in the title plate', () => {
     await userEvent.keyboard('{ArrowDown}');
     expect(view.panel()!.getAttribute('aria-expanded')).toBe('true');
     expect(getPlayerUiRoot().activeElement).toBe(view.links()[0]);
+    // Focus moving on closes it.
+    const outside = document.body.appendChild(document.createElement('button'));
+    outside.focus();
+    outside.remove();
+    expect(view.panel()!.getAttribute('aria-expanded')).toBe('false');
+    expect(view.shown()).toBe(false);
   });
 
-  test('a click pins the popup at once; a press outside closes it', async () => {
-    const view = await mount([author('One')]);
+  test('with a first author without a link the arrow is the popup\'s button: a click or Enter opens it', async () => {
+    const view = await mount([unlinked('One'), author('Two')]);
+    expect(view.panel()!.tagName).toBe('BUTTON');
+    view.panel()!.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(view.shown()).toBe(true);
+    // The first row is not a link; focus goes to the first one there is.
+    expect(getPlayerUiRoot().activeElement).toBe(view.links()[0]);
+    expect(view.links()[0].href).toBe('https://www.youtube.com/@Two');
+    await userEvent.keyboard('{Escape}');
+    expect(getPlayerUiRoot().activeElement).toBe(view.panel());
+    expect(view.followed).toEqual([]);
+  });
+
+  test('a click on a button panel pins the popup at once; a press outside closes it', async () => {
+    const view = await mount([unlinked('One'), author('Two')]);
     await userEvent.click(view.panel()!);
     expect(view.shown()).toBe(true);
     await userEvent.click(document.body, { position: { x: 600, y: 600 } });
@@ -239,7 +209,7 @@ describe('author byline in the title plate', () => {
   });
 
   test('hover opens after the intent delay and leaving keeps the popup for the bridge; a pinned or closed menu does not wait', async () => {
-    const view = await mount([author('One')]);
+    const view = await mount([unlinked('One'), author('Two')]);
     const waitBefore = () => getComputedStyle(view.popup()!).transitionDelay;
     expect(waitBefore()).toBe('0.3s');
     await userEvent.hover(view.panel()!);
@@ -248,6 +218,118 @@ describe('author byline in the title plate', () => {
     await userEvent.click(view.panel()!);
     expect(view.shown()).toBe(true);
     expect(getComputedStyle(view.popup()!).transitionProperty).toBe('none');
+  });
+
+  test('a link arrow: hover lists every author, the first too; a click follows the first author\'s link and closes the popup unpinned', async () => {
+    const view = await mount([author('One'), author('Two'), author('Three')]);
+    const arrow = view.panel() as HTMLAnchorElement;
+    expect(arrow.tagName).toBe('A');
+    expect([arrow.href, arrow.target, arrow.rel]).toEqual(['https://www.youtube.com/@One', '_blank', 'noopener noreferrer']);
+    // The popup is stated as the link's expandable part; the list is not a menu.
+    expect(arrow.getAttribute('aria-expanded')).toBe('false');
+    expect(arrow.hasAttribute('aria-haspopup')).toBe(false);
+    await userEvent.hover(arrow);
+    await expect.poll(view.shown).toBe(true);
+    expect(arrow.getAttribute('aria-expanded')).toBe('true');
+    expect(view.links().map(link => link.href)).toEqual(['https://www.youtube.com/@One', 'https://www.youtube.com/@Two', 'https://www.youtube.com/@Three']);
+    await userEvent.click(arrow);
+    expect(view.followed).toEqual(['https://www.youtube.com/@One']);
+    // Closed at once and not pinned: the pointer still on the arrow does not bring it back.
+    expect(view.shown()).toBe(false);
+    expect(arrow.getAttribute('aria-expanded')).toBe('false');
+    expect(view.popup()!.classList.contains('visible')).toBe(false);
+    // Leaving and coming back (as after the new tab) shows it on hover again, and leaving hides it.
+    await userEvent.unhover(arrow);
+    await userEvent.hover(arrow);
+    await expect.poll(view.shown).toBe(true);
+    await userEvent.unhover(arrow);
+    await userEvent.hover(view.plate().querySelector('.theater-title-hud-viewport')!);
+    await expect.poll(view.shown).toBe(false);
+    // Enter on the focused arrow follows the link too and opens nothing.
+    arrow.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(view.followed).toEqual(['https://www.youtube.com/@One', 'https://www.youtube.com/@One']);
+    expect(arrow.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  test('one author with a link: the whole panel is that link, with no popup or menu shell', async () => {
+    const view = await mount([author('Harbour', { verified: true, stat: '1.26M subscribers' })]);
+    const panel = view.panel() as HTMLAnchorElement;
+    expect(panel.tagName).toBe('A');
+    expect([panel.href, panel.target, panel.rel]).toEqual(['https://www.youtube.com/@Harbour', '_blank', 'noopener noreferrer']);
+    for (const name of ['aria-haspopup', 'aria-expanded']) expect(panel.hasAttribute(name)).toBe(false);
+    expect(view.popup()).toBeNull();
+    const root = view.plate().querySelector<HTMLElement>('.theater-byline')!;
+    expect(root.classList.contains('theater-menu')).toBe(false);
+    expect(root.dataset.teSurface).toBeUndefined();
+    expect(getComputedStyle(panel).cursor).toBe('pointer');
+    await userEvent.click(panel.querySelector('.theater-byline-name')!);
+    panel.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(view.followed).toEqual(['https://www.youtube.com/@Harbour', 'https://www.youtube.com/@Harbour']);
+    // ↓ on it is not the byline's: nothing opens.
+    await userEvent.keyboard('{ArrowDown}');
+    expect(view.popup()).toBeNull();
+  });
+
+  test('one author without a link: a plain panel that takes no focus and never lifts', async () => {
+    const view = await mount([unlinked('Harbour')]);
+    const panel = view.panel()!;
+    expect(panel.tagName).toBe('DIV');
+    expect(view.popup()).toBeNull();
+    for (const name of ['aria-haspopup', 'aria-expanded', 'tabindex', 'role']) expect(panel.hasAttribute(name)).toBe(false);
+    panel.focus();
+    expect(getPlayerUiRoot().activeElement).not.toBe(panel);
+    expect(getComputedStyle(panel).cursor).toBe('default');
+    await userEvent.hover(panel);
+    expect(getComputedStyle(panel.querySelector('.theater-byline-fill')!, '::after').opacity).toBe('0');
+    expect(getComputedStyle(panel.querySelector('.theater-byline-rim')!).transform).toBe('none');
+    await userEvent.click(panel);
+    expect(view.followed).toEqual([]);
+  });
+
+  test('changing shape (one to several authors and back, a link arriving) replaces the panel cleanly and keeps focus on it', async () => {
+    const view = await mount([unlinked('One')]);
+    const added = vi.spyOn(window, 'addEventListener');
+    const removed = vi.spyOn(window, 'removeEventListener');
+    const pointer = (spy: typeof added | typeof removed) => spy.mock.calls.filter(([type]) => type === 'pointerdown').length;
+    try {
+      // A link arriving later makes the panel a link.
+      view.publish([author('One')]);
+      expect(view.panel()!.tagName).toBe('A');
+      expect(view.popup()).toBeNull();
+      view.panel()!.focus();
+      // A second author arriving brings the popup, and focus stays on the arrow.
+      view.publish([author('One'), author('Two')]);
+      expect(view.popup()).not.toBeNull();
+      expect(getPlayerUiRoot().activeElement).toBe(view.panel());
+      expect(view.plate().querySelectorAll('.theater-byline')).toHaveLength(1);
+      await userEvent.keyboard('{ArrowDown}');
+      expect(getPlayerUiRoot().activeElement).toBe(view.links()[0]);
+      // Back to one while the list is open: no popup, listener or open state is left, and focus is on the link.
+      view.publish([author('One')]);
+      expect(view.popup()).toBeNull();
+      expect(view.plate().querySelector('.theater-menu, .is-open, .is-suppressed, .visible')).toBeNull();
+      expect(getPlayerUiRoot().activeElement).toBe(view.panel());
+      expect(pointer(removed)).toBe(pointer(added));
+      // And to several again: a fresh popup, closed, that hover and the keyboard open as before.
+      view.publish([author('One'), author('Two')]);
+      expect(view.panel()!.getAttribute('aria-expanded')).toBe('false');
+      await userEvent.keyboard('{ArrowDown}');
+      expect(view.shown()).toBe(true);
+      await userEvent.keyboard('{Escape}');
+      expect(getPlayerUiRoot().activeElement).toBe(view.panel());
+      // The same shape with other authors keeps the panel and moves its link.
+      const panel = view.panel();
+      view.publish([author('Three'), author('Four')], 'Another video');
+      expect(view.panel()).toBe(panel);
+      expect((view.panel() as HTMLAnchorElement).href).toBe('https://www.youtube.com/@Three');
+      scope!.dispose();
+      expect(pointer(removed)).toBe(pointer(added));
+    } finally {
+      added.mockRestore();
+      removed.mockRestore();
+    }
   });
 
   test('follows the provider setting live and keeps the panel out while it is off', async () => {
@@ -319,15 +401,15 @@ describe('author byline in the title plate', () => {
   });
 
   test('while it cannot show, the byline binds nothing to the window; it binds and unbinds with the switch', async () => {
-    const view = await mount([author('One')], { global: false });
+    const view = await mount([author('One'), author('Two')], { global: false });
     const added = vi.spyOn(window, 'addEventListener');
     const removed = vi.spyOn(window, 'removeEventListener');
     const pointer = (spy: typeof added | typeof removed) => spy.mock.calls.filter(([type]) => type === 'pointerdown').length;
     try {
-      view.publish([author('Two')], 'Another video');
+      view.publish([author('Two'), author('Three')], 'Another video');
       expect(pointer(added)).toBe(0);
       await setGlobal(true);
-      expect(view.names()).toBe('Two');
+      expect(view.names()).toBe('Two&Three');
       const bound = pointer(added);
       expect(bound).toBeGreaterThan(0);
       await setGlobal(false);
@@ -358,8 +440,8 @@ describe('author byline in the title plate', () => {
     expect(getComputedStyle(fill).clipPath.startsWith('polygon(22px 0px')).toBe(true);
     expect(view.panel()!.getBoundingClientRect().right).toBeCloseTo(view.plate().getBoundingClientRect().right, 2);
     // A left-to-right stat lines up under the name at the row's right-to-left start, and the hover edge marks that start.
-    view.publish([author('One', { stat: '1.26M subscribers' })]);
-    await userEvent.click(view.panel()!);
+    view.publish([author('One', { stat: '1.26M subscribers' }), author('Two')]);
+    await view.openList();
     const row = view.links()[0];
     await userEvent.hover(row);
     expect(getComputedStyle(row, '::before').right).toBe('0px');
@@ -369,8 +451,10 @@ describe('author byline in the title plate', () => {
       return text.getBoundingClientRect();
     });
     expect(stat.right).toBeCloseTo(name.right, 0);
+    // The row's accent ramp starts from its right-to-left start too.
+    expect(getComputedStyle(row).backgroundImage).toMatch(/^linear-gradient\(to left,/);
     view.plate().dir = 'ltr';
-    expect(getComputedStyle(fill).clipPath.startsWith('polygon(0px 0px')).toBe(true);
+    expect(getComputedStyle(view.panel()!.querySelector('.theater-byline-fill')!).clipPath.startsWith('polygon(0px 0px')).toBe(true);
   });
 
   test('shows the accent at rest; hover, focus and open lift the panel and step the arrowhead forward', async () => {
@@ -422,7 +506,7 @@ describe('author byline in the title plate', () => {
     expect(state()).toBe('running');
     expect(tooltip(view.panel()!.querySelector('.theater-byline-name'))).toBe('');
     // The popup's rows are the panel's too.
-    await userEvent.click(view.panel()!);
+    await expect.poll(view.shown).toBe(true);
     await userEvent.hover(view.rows()[1]);
     expect(state()).toBe('running');
     expect(tooltip(view.rows()[1].querySelector('.theater-byline-row-title'))).toBe('');
@@ -455,24 +539,61 @@ describe('author byline in the title plate', () => {
     }
   });
 
-  test('the open popup has no blocking accessibility violations', async () => {
-    const view = await mount([author('Harbour Films', { avatarUrl: AVATAR, verified: true, stat: '1.26M subscribers' }), author('Two')]);
-    await userEvent.click(view.panel()!);
-    expect(await blockingViolations(view.plate())).toEqual([]);
-  });
-  test('colors the panel with the first author\'s avatar and leaves the popup with the user\'s accent', async () => {
+  for (const mode of APPEARANCE_MODES) {
+    test(`every shape has no blocking accessibility violations, the popup open or closed: ${mode.name}`, async () => {
+      const view = await mount([author('Harbour Films', { avatarUrl: AVATAR, verified: true, stat: '1.26M subscribers' }), author('Two')]);
+      const host = getPlayerUiRoot().host as HTMLElement;
+      mode.apply(host);
+      await expect.poll(() => mode.applied(host)).toBe(true);
+      expect(await blockingViolations(view.plate()), 'link arrow, closed').toEqual([]);
+      await view.openList();
+      expect(await blockingViolations(view.plate()), 'link arrow, open').toEqual([]);
+      await userEvent.keyboard('{Escape}');
+      view.publish([unlinked('Harbour Films'), author('Two')]);
+      await userEvent.click(view.panel()!);
+      expect(await blockingViolations(view.plate()), 'button arrow, open').toEqual([]);
+      for (const shown of [[author('Harbour Films', { verified: true })], [unlinked('Harbour Films')]]) {
+        view.publish(shown);
+        expect(await blockingViolations(view.plate()), `one author, ${shown[0].url ? 'linked' : 'plain'}`).toEqual([]);
+      }
+    });
+  }
+  test('colors the panel with the first author\'s avatar, and each row with its own once the popup has opened', async () => {
     const reads: string[] = [];
-    const readAccent: ReadAccent = url => { reads.push(url); return Promise.resolve(url === AVATAR ? '#3792c7' : '#b14c7d'); };
-    const view = await mount([author('Harbour', { avatarUrl: AVATAR }), author('Two', { avatarUrl: 'https://yt3.ggpht.com/two=s88' })], { readAccent });
+    const TWO = 'https://yt3.ggpht.com/two=s88', GRAY = 'https://yt3.ggpht.com/gray=s88';
+    const colors: Record<string, string | null> = { [AVATAR]: '#3792c7', [TWO]: '#b14c7d', [GRAY]: null };
+    const readAccent: ReadAccent = url => { reads.push(url); return Promise.resolve(colors[url] ?? null); };
+    const view = await mount([author('Harbour', { avatarUrl: AVATAR }), author('Two', { avatarUrl: TWO }), author('Gray', { avatarUrl: GRAY }), author('Plain')], { readAccent });
     const edge = (node: Element) => getComputedStyle(node).getPropertyValue('--edge');
-    await expect.poll(() => getComputedStyle(view.panel()!).getPropertyValue('--accent-color')).toBe('#3792c7');
-    // Only the first author's avatar is read.
+    const accent = (node: Element) => getComputedStyle(node).getPropertyValue('--accent-color');
+    await expect.poll(() => accent(view.panel()!)).toBe('#3792c7');
+    const userAccent = accent(view.plate());
+    // Only the first author's avatar is read while the popup has never opened.
+    await idle();
     expect(reads).toEqual([AVATAR]);
     const rim = view.panel()!.querySelector('.theater-byline-rim')!;
     expect(edge(rim)).toContain('#3792c7');
     expect(getComputedStyle(view.panel()!).getPropertyValue('--contrast-accent')).toMatch(/^#[0-9a-f]{6}$/);
-    await userEvent.click(view.panel()!);
-    expect(edge(view.rows()[0])).not.toContain('#3792c7');
+    const box = view.list().getBoundingClientRect();
+    await view.openList();
+    // Each row takes its own avatar's color for its ramp, lit edge and monogram; without a color, the user's accent.
+    await expect.poll(() => view.rows().map(accent)).toEqual(['#3792c7', '#b14c7d', userAccent, userAccent]);
+    expect(reads.slice(1).sort()).toEqual([AVATAR, GRAY, TWO].sort());
+    expect(edge(view.rows()[1])).toContain('#b14c7d');
+    // The monogram of an avatar that cannot load (offline here) takes its row's color, as the ramp does.
+    const mixed = (color: string) => {
+      const probe = view.plate().appendChild(document.createElement('span'));
+      probe.style.background = `color-mix(in srgb, ${color} 72%, #000000)`;
+      const value = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return value;
+    };
+    await expect.poll(() => view.rows()[1].querySelector('.theater-byline-monogram')).not.toBeNull();
+    expect(getComputedStyle(view.rows()[1].querySelector('.theater-byline-monogram')!).backgroundColor).toBe(mixed('#b14c7d'));
+    expect(getComputedStyle(view.rows()[1]).backgroundImage).toContain('linear-gradient');
+    // The colors arrive without moving anything.
+    expect(view.list().getBoundingClientRect().toJSON()).toEqual(box.toJSON());
+    await userEvent.keyboard('{Escape}');
     // Another first author brings its own color; a title without authors takes it away with the panel.
     view.publish([author('Two', { avatarUrl: 'https://yt3.ggpht.com/two=s88' })], 'Another video');
     await expect.poll(() => getComputedStyle(view.panel()!).getPropertyValue('--accent-color')).toBe('#b14c7d');
@@ -500,6 +621,30 @@ describe('author byline in the title plate', () => {
     expect(accent()).toBe('');
     pending.get('https://yt3.ggpht.com/second=s88')!('#07803f');
     await expect.poll(accent).toBe('#07803f');
+  });
+
+  test('a row read that returns after its list was replaced paints nothing; the next list reads its own avatars', async () => {
+    const pending = new Map<string, Array<{ resolve: (accent: string | null) => void; signal: AbortSignal }>>();
+    const readAccent: ReadAccent = (url, signal) => new Promise(resolve => pending.set(url, [...pending.get(url) ?? [], { resolve, signal }]));
+    const TWO = 'https://yt3.ggpht.com/two=s88', THREE = 'https://yt3.ggpht.com/three=s88';
+    const view = await mount([author('One'), author('Two', { avatarUrl: TWO })], { readAccent });
+    await view.openList();
+    await expect.poll(() => pending.has(TWO)).toBe(true);
+    // Other authors arrive while the read is under way: it is given up, and the new rows read their own avatars.
+    view.publish([author('One'), author('Three', { avatarUrl: THREE })], 'Another video');
+    expect(pending.get(TWO)![0].signal.aborted).toBe(true);
+    await expect.poll(() => pending.has(THREE)).toBe(true);
+    pending.get(TWO)![0].resolve('#b14c7d');
+    await idle();
+    const accent = () => view.rows()[1].style.getPropertyValue('--accent-color');
+    expect(accent()).toBe('');
+    pending.get(THREE)![0].resolve('#07803f');
+    await expect.poll(accent).toBe('#07803f');
+    // Ending the byline gives up a read still under way.
+    view.publish([author('One'), author('Two', { avatarUrl: TWO })], 'A third video');
+    await expect.poll(() => pending.get(TWO)!.length).toBe(2);
+    scope!.dispose();
+    expect(pending.get(TWO)![1].signal.aborted).toBe(true);
   });
 
   test('the same channel with another size of its avatar keeps its color until that one is read; another channel resets it', async () => {
