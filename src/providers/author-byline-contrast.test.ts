@@ -89,78 +89,6 @@ const token = (name: string) => {
   return value;
 };
 
-/** Every tone a row takes (rest, alternate row, hover, press): the ink's share laid over the block's surface. */
-function rowTones(): number[] {
-  const fills = [...CSS.matchAll(/--row-fill: (.+);/g)].map(match => match[1]);
-  assert.ok(fills.length >= 4, 'rest, alternate, hover and press tones are declared');
-  return fills.map(fill => {
-    assert.doesNotMatch(fill, /accent/, 'row tones never take the accent');
-    if (fill === 'transparent') return 0;
-    const share = /^color-mix\(in srgb, var\(--appearance-ink, #[0-9a-f]{6}\) ([\d.]+)%, transparent\)$/.exec(fill);
-    assert.ok(share, `a row tone lays the ink over the block: ${fill}`);
-    return Number(share[1]) / 100;
-  });
-}
-
-/** The block's surface, the rows' ink and secondary text with no appearance setting, with Reduce transparency and with high contrast. */
-function blockModes() {
-  const fallback = (rule: string, property: string) => {
-    const value = new RegExp(`${rule} \\{[^}]*var\\(${property}, (#[0-9a-f]{6}|rgba\\([^)]+\\))\\)`).exec(CSS)?.[1];
-    assert.ok(value, `${rule} falls back for ${property}`);
-    return value;
-  };
-  const surface = fallback('\\.theater-byline-list', '--appearance-surface');
-  const ink = fallback('\\.theater-byline-row', '--appearance-ink');
-  const muted = fallback('\\.theater-byline-row-stat', '--appearance-muted');
-  // Both settings swap the glass for the opaque panel; only high contrast also lifts the ink and the secondary text.
-  assert.match(TOKENS, /--appearance-surface: var\(--appearance-normal-panel\)/);
-  assert.match(TOKENS, /--appearance-surface: var\(--appearance-high-panel\)/);
-  return [
-    { name: 'default', surface, ink, muted },
-    { name: 'reduced transparency', surface: token('--appearance-normal-panel'), ink, muted },
-    { name: 'high contrast', surface: token('--appearance-high-panel'), ink: token('--appearance-high-text'), muted: token('--appearance-high-secondary') }
-  ];
-}
-
-/**
- * A row's tone (the ink at `share` over the block) on the block's surface over the picture. Laying a translucent ink
- * over the composited surface equals premultiplied `color-mix(in srgb, ink share, surface)` over the picture.
- */
-function rowFill(ink: Rgb, share: number, surface: { rgb: Rgb; alpha: number }, picture: Rgb): Rgb {
-  return over(ink, share, over(surface.rgb, surface.alpha, picture));
-}
-
-it('keeps the row name and its secondary text at WCAG AA on every row tone in every appearance mode', () => {
-  const tones = rowTones();
-  // Alternate rows and the pointer each change the tone.
-  assert.equal(new Set(tones).size, tones.length, 'every tone differs');
-  for (const mode of blockModes()) for (const tone of tones) for (const [video, picture] of Object.entries(VIDEOS)) {
-    const background = hex(rowFill(rgb(mode.ink), tone, color(mode.surface), picture));
-    for (const [text, foreground] of [['name', mode.ink], ['secondary', mode.muted]]) {
-      const ratio = contrastRatio(foreground, background);
-      assert.ok(ratio >= 4.5, `${mode.name}, ${tone * 100}% tone, ${video} video, ${text} text: ${ratio.toFixed(2)}:1`);
-    }
-  }
-});
-
-it('marks the hovered row with the panel\'s lit edge at 3:1 against every row tone for every preset', () => {
-  assert.match(CSS, /a\.theater-byline-row:hover::before \{[^}]*background: var\(--edge\)/);
-  const edge = /--edge: color-mix\(in srgb, var\(--accent-color, #[0-9a-f]{6}\) ([\d.]+)%, var\(--appearance-ink, #[0-9a-f]{6}\)\)/.exec(CSS);
-  assert.ok(edge, 'the lit edge lifts the accent towards the ink');
-  const share = Number(edge[1]) / 100;
-  const modes = blockModes();
-  // `system` is the browser's own accent; the lifted tone remains the hover cue there.
-  for (const accent of ACCENT_COLOR_OPTIONS.filter(option => option.preset !== 'system')) {
-    for (const [mode, swatch] of [[modes[0], accent.swatch], [modes[2], contrastSafeAccent(accent.swatch)]] as const) {
-      for (const tone of rowTones()) for (const [video, picture] of Object.entries(VIDEOS)) {
-        const rim = hex(over(rgb(swatch), share, rgb(mode.ink)));
-        const ratio = contrastRatio(rim, hex(rowFill(rgb(mode.ink), tone, color(mode.surface), picture)));
-        assert.ok(ratio >= 3, `${accent.preset} (${mode.name}), ${tone * 100}% tone, ${video} video: ${ratio.toFixed(2)}:1`);
-      }
-    }
-  }
-});
-
 /** Avatar colors across the wheel, from dark to pale and from muted to vivid, as `legibleAccent` places them. */
 function avatarAccents(): string[] {
   const accents = new Set<string>();
@@ -175,6 +103,119 @@ function avatarAccents(): string[] {
   assert.ok(accents.size > 300, 'the sweep yields many accents');
   return [...accents];
 }
+
+
+/** The row's own rule, which starts it at rest (the edge is declared with the panel's). */
+function rowRule(): string {
+  const rule = [...CSS.matchAll(/\n\.theater-byline-row \{([^}]+)\}/g)].map(match => match[1]).find(body => body.includes('--row-fill: transparent'));
+  assert.ok(rule, 'the row rule is declared');
+  return rule;
+}
+
+/** Every tone a row takes (rest, alternate row, hover, press): the ink's share laid over the block's surface. */
+function rowTones(): number[] {
+  const fills = [...CSS.matchAll(/--row-fill: (.+);/g)].map(match => match[1]);
+  assert.ok(fills.length >= 4, 'rest, alternate, hover and press tones are declared');
+  return fills.map(fill => {
+    if (fill === 'transparent') return 0;
+    const share = /^color-mix\(in srgb, var\(--appearance-ink, #[0-9a-f]{6}\) ([\d.]+)%, transparent\)$/.exec(fill);
+    assert.ok(share, `a row tone lays the ink over the block: ${fill}`);
+    return Number(share[1]) / 100;
+  });
+}
+
+/**
+ * The row's accent ramp over its tone: the largest share anywhere (at its start, under the hover edge) and the largest
+ * under the name and its secondary text, which start at `--text-start`. Stops are linear, so the largest share from a
+ * point on is the largest stop from there on.
+ */
+function rowRamp(): { edge: number; text: number } {
+  const rule = rowRule();
+  // The name starts after the row's padding, its avatar column and the gap.
+  assert.match(rule, /--text-start: 64px;/);
+  assert.match(rule, /grid-template-columns: 40px /);
+  assert.match(rule, /gap: 12px;/);
+  assert.match(rule, /padding: 12px;/);
+  assert.match(rule, /background-color: var\(--row-fill\);\s*background-image: linear-gradient\(var\(--dir\),/, 'the ramp lies over the tone');
+  const stops = rule.split('\n').flatMap(line => {
+    const stop = /^color-mix\(in srgb, var\(--accent-color, #[0-9a-f]{6}\) ([\d.]+)%, transparent\) (.+?)(?:,|\);)$/.exec(line.trim());
+    return stop ? [{ share: Number(stop[1]) / 100, position: stop[2] }] : [];
+  });
+  assert.deepEqual(stops.map(stop => stop.position), ['0%', 'var(--text-start)', '100%'], 'the ramp runs from the start through the name to the end');
+  return { edge: Math.max(...stops.map(stop => stop.share)), text: Math.max(...stops.slice(1).map(stop => stop.share)) };
+}
+
+/** The block's surface, the rows' ink and secondary text with no appearance setting, with Reduce transparency and with high contrast. */
+function blockModes() {
+  const fallback = (rule: string, property: string, source = CSS) => {
+    const value = new RegExp(`${rule}[^}]*var\\(${property}, (#[0-9a-f]{6}|rgba\\([^)]+\\))\\)`).exec(source)?.[1];
+    assert.ok(value, `${rule} falls back for ${property}`);
+    return value;
+  };
+  const surface = fallback('\\.theater-byline-list \\{', '--appearance-surface');
+  const ink = fallback('', '--appearance-ink', rowRule());
+  const muted = fallback('\\.theater-byline-row-stat \\{', '--appearance-muted');
+  // Both settings swap the glass for the opaque panel; only high contrast also lifts the ink and the secondary text.
+  assert.match(TOKENS, /--appearance-surface: var\(--appearance-normal-panel\)/);
+  assert.match(TOKENS, /--appearance-surface: var\(--appearance-high-panel\)/);
+  return [
+    { name: 'default', surface, ink, muted, highContrast: false },
+    { name: 'reduced transparency', surface: token('--appearance-normal-panel'), ink, muted, highContrast: false },
+    { name: 'high contrast', surface: token('--appearance-high-panel'), ink: token('--appearance-high-text'), muted: token('--appearance-high-secondary'), highContrast: true }
+  ];
+}
+
+/**
+ * A row's background: its accent ramp at `share` over its tone (the ink at `tone` over the block) on the block's surface
+ * over the picture. Laying a translucent ink over the composited surface equals premultiplied `color-mix(in srgb, ink
+ * share, surface)` over the picture.
+ */
+function rowFill(accent: Rgb, share: number, ink: Rgb, tone: number, surface: { rgb: Rgb; alpha: number }, picture: Rgb): Rgb {
+  return over(accent, share, over(ink, tone, over(surface.rgb, surface.alpha, picture)));
+}
+
+/** Every accent a row can take: the presets (the browser's own as white) and the avatar sweep. High contrast takes the contrast-safe shade of each. */
+const rowAccents = () => [...ACCENTS.map(accent => ({ name: accent.name, swatch: accent.swatch, preset: true })), ...avatarAccents().map(swatch => ({ name: swatch, swatch, preset: false }))];
+
+it('keeps the row name and its secondary text at WCAG AA on every row tone with every accent, in every appearance mode', () => {
+  const tones = rowTones();
+  // Alternate rows and the pointer each change the tone.
+  assert.equal(new Set(tones).size, tones.length, 'every tone differs');
+  const { text } = rowRamp();
+  assert.ok(text > 0, 'the ramp reaches under the name');
+  for (const mode of blockModes()) for (const accent of rowAccents()) {
+    const swatch = rgb(mode.highContrast ? contrastSafeAccent(accent.swatch) : accent.swatch);
+    for (const tone of tones) for (const [video, picture] of Object.entries(VIDEOS)) for (const share of [0, text]) {
+      const background = hex(rowFill(swatch, share, rgb(mode.ink), tone, color(mode.surface), picture));
+      for (const [kind, foreground] of [['name', mode.ink], ['secondary', mode.muted]]) {
+        const ratio = contrastRatio(foreground, background);
+        assert.ok(ratio >= 4.5, `${mode.name}, ${accent.name}, ${share * 100}% accent, ${tone * 100}% tone, ${video} video, ${kind} text: ${ratio.toFixed(2)}:1`);
+      }
+    }
+  }
+});
+
+it('marks the hovered row with its lit edge at 3:1 against the row under it for every accent', () => {
+  assert.match(CSS, /a\.theater-byline-row:hover::before \{[^}]*background: var\(--edge\)/);
+  // The row declares the edge itself, so its own accent reaches it.
+  assert.match(CSS, /\.theater-byline-row \{ --edge:/);
+  const edge = /--edge: color-mix\(in srgb, var\(--accent-color, #[0-9a-f]{6}\) ([\d.]+)%, var\(--appearance-ink, #[0-9a-f]{6}\)\)/.exec(CSS);
+  assert.ok(edge, 'the lit edge lifts the accent towards the ink');
+  const share = Number(edge[1]) / 100;
+  const ramp = rowRamp();
+  const modes = blockModes();
+  // `system` is the browser's own accent; the lifted tone remains the hover cue there.
+  for (const accent of rowAccents().filter(option => option.name !== 'system')) {
+    for (const mode of [modes[0], modes[1], modes[2]]) {
+      const swatch = rgb(mode.highContrast ? contrastSafeAccent(accent.swatch) : accent.swatch);
+      const rim = hex(over(swatch, share, rgb(mode.ink)));
+      for (const tone of rowTones()) for (const [video, picture] of Object.entries(VIDEOS)) for (const under of [0, ramp.edge]) {
+        const ratio = contrastRatio(rim, hex(rowFill(swatch, under, rgb(mode.ink), tone, color(mode.surface), picture)));
+        assert.ok(ratio >= 3, `${accent.name} (${mode.name}), ${under * 100}% accent, ${tone * 100}% tone, ${video} video: ${ratio.toFixed(2)}:1`);
+      }
+    }
+  }
+});
 
 it('keeps the names at WCAG AA over the accent ramp and the lit tip at 3:1 on the plate around it for every avatar accent', () => {
   const shares = accentUnderNames();

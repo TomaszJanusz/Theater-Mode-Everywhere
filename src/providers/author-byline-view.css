@@ -1,7 +1,8 @@
 /* Injected with the author panel (see author-byline-view.ts). The panel fills the start of the title plate
    (shadow.css, .theater-everywhere-title-hud) out to its filled edge, as tall as the plate and the home button, by
-   bleeding through the plate's edge insets, so the plate does not grow; its popup uses the subtitle menu's shell class
-   for the shared open/close lifecycle and restyles it as one block of rows under the plate. */
+   bleeding through the plate's edge insets, so the plate does not grow. It is a channel link, a button or, for one
+   author without a link, a plain panel. With two or more authors its popup uses the subtitle menu's shell class for
+   the shared open/close lifecycle and restyles it as one block of rows under the plate. */
 
 .theater-byline {
   /* The chevron's depth; the names end this far before the apex, where the accent ramps up. */
@@ -22,10 +23,11 @@
   line-height: 1.2;
 }
 
-/* The lit edge: the accent lifted towards the ink. The panel declares it again, so the first author's avatar color,
-   set on the panel (author-byline-view.ts), reaches its edge while the popup's rows keep the user's accent. */
+/* The lit edge: the accent lifted towards the ink. The panel and every row declare it again, so the avatar color each
+   of them is given (author-byline-view.ts) reaches its own edge. */
 .theater-byline,
-.theater-byline-panel { --edge: color-mix(in srgb, var(--accent-color, #6366f1) 55%, var(--appearance-ink, #ffffff)); }
+.theater-byline-panel,
+.theater-byline-row { --edge: color-mix(in srgb, var(--accent-color, #6366f1) 55%, var(--appearance-ink, #ffffff)); }
 
 .theater-everywhere-title-hud[dir="rtl"] .theater-byline { --dir: to left; --nudge: -2px; }
 
@@ -48,11 +50,15 @@
   color: var(--appearance-ink, #ffffff);
   font: inherit;
   font-weight: 700;
+  text-decoration: none;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
-  cursor: pointer;
+  cursor: default;
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* Only a link or a button answers the pointer; one author without a link is a plain panel that never lifts. */
+:is(a, button).theater-byline-panel { cursor: pointer; }
 
 .theater-byline-panel:focus-visible { outline: none; }
 
@@ -110,7 +116,7 @@
     color-mix(in srgb, var(--appearance-ink, #ffffff) 22%, transparent) calc(100% - 0px));
 }
 
-.theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) .theater-byline-fill::after { opacity: 1; }
+:is(a, button).theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) .theater-byline-fill::after { opacity: 1; }
 
 .theater-byline-panel:focus-visible .theater-byline-fill { box-shadow: inset 0 0 0 2px var(--appearance-ink, #ffffff); }
 
@@ -154,15 +160,15 @@
 .theater-byline-rim,
 .theater-byline-glow { transition: transform 0.16s ease-out, opacity 0.16s ease-out; }
 
-.theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) :is(.theater-byline-rim, .theater-byline-glow) { transform: translateX(var(--nudge)); }
-.theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) .theater-byline-glow { opacity: 1; }
+:is(a, button).theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) :is(.theater-byline-rim, .theater-byline-glow) { transform: translateX(var(--nudge)); }
+:is(a, button).theater-byline-panel:is(:hover, :focus-visible, [aria-expanded="true"]) .theater-byline-glow { opacity: 1; }
 
 :host([data-motion="reduced"]) .theater-byline-panel :is(.theater-byline-rim, .theater-byline-glow) { transform: none; }
 
 /* Forced colors drop the fills and the lit edge: the system's highlight rings the lifted panel instead, thicker for
    the keyboard. */
 @media (forced-colors: active) {
-  .theater-byline-panel:is(:hover, [aria-expanded="true"]) { outline: 1px solid Highlight; outline-offset: -1px; }
+  :is(a, button).theater-byline-panel:is(:hover, [aria-expanded="true"]) { outline: 1px solid Highlight; outline-offset: -1px; }
   .theater-byline-panel:focus-visible { outline: 2px solid Highlight; outline-offset: -2px; }
 }
 
@@ -232,9 +238,9 @@
    a move from the panel to a row never leaves the menu.
 
    Hover intent without a timer: the shell opens the menu at once, and the popup turns visible after 250 ms of hover and
-   stays 300 ms after the pointer leaves, a bridge for a diagonal move. A click or a key pins it at once, and a close
-   (Escape, an outside press, the panel clicked again) suppresses the menu, which hides it at once. The delays are
-   pointer timing, not motion, so they hold under Reduce motion too. */
+   stays 300 ms after the pointer leaves, a bridge for a diagonal move. A key (or a click on a button panel) pins it at
+   once, and a close (Escape, an outside press, a click on the panel) suppresses the menu, which hides it at once. The
+   delays are pointer timing, not motion, so they hold under Reduce motion too. */
 .theater-cc-menu.theater-byline-popup {
   position: absolute !important;
   top: 100% !important;
@@ -286,12 +292,17 @@
   list-style: none;
 }
 
-/* A row is its author's channel link when the host admits one. From the second author the rows alternate, and a
-   pointer lifts a row further; every tone is the ink laid over the block's surface, never the accent, so text keeps
-   WCAG AA on all of them whichever accent is chosen (author-byline-contrast.test.ts). The panel's lit edge marks the
-   hovered row at its start; the keyboard ring is the ink, inside the row, so the block never cuts it. */
+/* A row is its author's channel link when the host admits one. Like the panel it takes its own avatar's color (the
+   user's accent until that is read, or for an avatar without one; author-byline-view.ts): an accent ramp from the
+   row's start, where the lit edge marks it on hover, fading out under the name. From the second author the rows
+   alternate, and a pointer lifts a row further; those tones are the ink laid over the block's surface, with the ramp
+   over them. Under the name and its secondary text the ramp stays at 4% and the tones at 9%, so both keep WCAG AA on
+   every row whichever accent (author-byline-contrast.test.ts). The keyboard ring is the ink, inside the row, so the
+   block never cuts it. */
 .theater-byline-row {
   --row-fill: transparent;
+  /* Where the name starts: the padding, the avatar and the gap. */
+  --text-start: 64px;
   position: relative;
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
@@ -300,7 +311,11 @@
   padding: 12px;
   /* The outer rows follow the block's corners, so the focus ring does too. */
   border-radius: inherit;
-  background: var(--row-fill);
+  background-color: var(--row-fill);
+  background-image: linear-gradient(var(--dir),
+    color-mix(in srgb, var(--accent-color, #6366f1) 28%, transparent) 0%,
+    color-mix(in srgb, var(--accent-color, #6366f1) 4%, transparent) var(--text-start),
+    color-mix(in srgb, var(--accent-color, #6366f1) 0%, transparent) 100%);
   color: var(--appearance-ink, #f8fafc);
   text-decoration: none;
 }
@@ -309,16 +324,16 @@
 .theater-byline-list > li:not(:first-child) { border-start-start-radius: 0; border-start-end-radius: 0; }
 .theater-byline-list > li:not(:last-child) { border-end-start-radius: 0; border-end-end-radius: 0; }
 
-.theater-byline-list > li:nth-child(even) > .theater-byline-row { --row-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 6%, transparent); }
+.theater-byline-list > li:nth-child(even) > .theater-byline-row { --row-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 5%, transparent); }
 
 a.theater-byline-row {
   cursor: pointer;
   transition: background-color 0.12s ease-out;
 }
 
-.theater-byline-list > li > a.theater-byline-row:hover { --row-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 10%, transparent); }
+.theater-byline-list > li > a.theater-byline-row:hover { --row-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 8%, transparent); }
 
-.theater-byline-list > li > a.theater-byline-row:active { --row-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 12%, transparent); }
+.theater-byline-list > li > a.theater-byline-row:active { --row-fill: color-mix(in srgb, var(--appearance-ink, #f8fafc) 9%, transparent); }
 
 a.theater-byline-row:hover::before {
   content: "";
@@ -332,6 +347,12 @@ a.theater-byline-row:hover::before {
 a.theater-byline-row:focus-visible {
   outline: 2px solid var(--appearance-ink, #ffffff);
   outline-offset: -2px;
+}
+
+/* Forced colors drop the ramp and the lit edge: the system's highlight rings the hovered row instead. */
+@media (forced-colors: active) {
+  .theater-byline-row { background-image: none; }
+  a.theater-byline-row:hover:not(:focus-visible) { outline: 1px solid Highlight; outline-offset: -1px; }
 }
 
 /* High contrast draws every ring 1px outside its control; inside the block that would be cut, so this one stays in. */

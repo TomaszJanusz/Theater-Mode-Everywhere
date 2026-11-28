@@ -60,21 +60,87 @@ const HOSTS = providerAuthorHosts([{ domain: 'youtube.com', includeSubdomains: t
 const TITLE = 'Building a cedar-strip canoe, part 3: fibreglass';
 const LONG_TITLE = 'Building a cedar-strip canoe, part 3: fibreglass, epoxy, the first coat of varnish and every mistake left in';
 
-interface Args extends HudArgs { authors: number; accent: AccentColorPreset; avatar: Avatar; title: string; open: 'closed' | 'click' | 'keyboard' | 'focus' | 'hover' }
+/**
+ * `click` and `keyboard` (Enter) open a button arrow, whose first author has no link; a link arrow is opened by
+ * `hover` or `arrow` (↓ on the focused arrow), since its click and Enter follow the link.
+ */
+type Opening = 'closed' | 'click' | 'keyboard' | 'arrow' | 'focus' | 'hover';
+interface Args extends HudArgs {
+  authors: number; accent: AccentColorPreset;
+  /** Each author's avatar, in order; authors past the list have none. */
+  avatars: Avatar[];
+  /** Whether the first author's channel link is admitted. */
+  linked: boolean;
+  title: string; open: Opening;
+}
 const meta: Meta<Args> = {
   title: 'Components/Author byline',
-  args: { phase: 'steady', live: false, authors: 1, accent: 'red', avatar: 'none', title: TITLE, open: 'closed' },
+  args: { phase: 'steady', live: false, authors: 1, accent: 'red', avatars: [], linked: true, title: TITLE, open: 'closed' },
   argTypes: {
     authors: { control: { type: 'range', min: 0, max: 3 } },
     accent: { control: 'select', options: ['red', 'purple', 'pink', 'yellow', 'blue', 'green', 'gray'] },
-    avatar: { control: 'select', options: ['none', ...Object.keys(AVATARS)] },
-    open: { control: 'inline-radio', options: ['closed', 'click', 'keyboard', 'focus', 'hover'] },
+    avatars: { control: 'object' },
+    open: { control: 'inline-radio', options: ['closed', 'click', 'keyboard', 'arrow', 'focus', 'hover'] },
     title: { control: 'text' }, phase: { control: false }, live: { control: false }
   }
 };
 export default meta;
 
-const panel = () => queryPlayerUi<HTMLButtonElement>(`.${TITLE_HUD_CLASS} .theater-byline-panel`);
+const panel = () => queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS} .theater-byline-panel`);
+const rows = () => [...queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS} .theater-byline-list`)?.children ?? []]
+  .map(item => item.firstElementChild as HTMLElement);
+const popupShown = () => {
+  const popup = queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS} .theater-byline-popup`);
+  return popup !== null && getComputedStyle(popup).visibility === 'visible';
+};
+/** The color an avatar stand-in gives, through the production extraction; null keeps the user's accent. */
+const expectedAccent = (avatar: Avatar | undefined) => (avatar && avatar !== 'none' ? avatarAccent(avatarPixels(AVATARS[avatar])) : null) ?? '';
+
+/** The panel's element and, for one author, the popup it does not have. */
+async function expectShape(values: Args): Promise<void> {
+  const tag = values.authors > 1 ? 'BUTTON' : 'DIV';
+  await expect(panel()!.tagName).toBe(values.linked ? 'A' : tag);
+  if (values.authors > 1) return;
+  await expect(panel()!.hasAttribute('aria-expanded')).toBe(false);
+  await expect(queryPlayerUi(`.${TITLE_HUD_CLASS} .theater-byline-popup`)).toBeNull();
+}
+
+const accentOf = (node: HTMLElement) => node.style.getPropertyValue('--accent-color');
+
+/** The first avatar's color arrives when the page is idle; a gray avatar leaves the user's accent. */
+async function awaitPanelAccent(first: Avatar | undefined): Promise<void> {
+  if (first === 'gray') {
+    await waitFor(() => expect(reads.length).toBeGreaterThan(0));
+    await Promise.all(reads);
+    await expect(accentOf(panel()!)).toBe('');
+  } else if (first && first !== 'none') await waitFor(() => expect(accentOf(panel()!)).toBe(expectedAccent(first)));
+}
+
+/** Opens or points at the panel as the story asks; false when nothing is left to check. */
+async function interact(values: Args): Promise<boolean> {
+  if (values.open === 'click') await userEvent.click(panel()!);
+  if (values.open === 'keyboard' || values.open === 'arrow') {
+    panel()!.focus();
+    await userEvent.keyboard(values.open === 'arrow' ? '{ArrowDown}' : '{Enter}');
+  }
+  // Focus alone lifts the panel without opening anything.
+  if (values.open === 'focus') {
+    panel()!.focus();
+    await expect(panel()!.matches(':focus-visible')).toBe(true);
+    if (values.authors > 1) await expect(panel()!.getAttribute('aria-expanded')).toBe('false');
+    return false;
+  }
+  if (values.open === 'hover') {
+    await userEvent.hover(panel()!);
+    // The pointer on the panel or its popup leaves the scrolling title running and without a tooltip.
+    const track = queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS} .theater-title-hud-track`)!;
+    if (queryPlayerUi(`.${TITLE_HUD_CLASS}.marquee`)) {
+      await expect(getComputedStyle(track).animationPlayState).toBe('running');
+      await expect(panel()!.closest('[title]')!.getAttribute('title')).toBe('');
+    }
+  }
+  return values.open !== 'closed' && values.authors > 1;
+}
 
 function byline(args: Partial<Args> = {}) {
   return hudStory<Args>((hud, stage, values) => {
@@ -82,69 +148,61 @@ function byline(args: Partial<Args> = {}) {
     stage.onDispose(() => scope.dispose());
     const settings = createYouTubeSettings();
     const control = mountAuthorByline({ scope, bindMenu: bindMenuPopover }, { provider: 'youtube', hosts: HOSTS, settings, readAccent });
-    const authors = CHANNELS.slice(0, values.authors);
-    if (authors.length && values.avatar !== 'none') authors[0] = { ...authors[0], avatarUrl: avatarUrl(values.avatar) };
+    const authors = CHANNELS.slice(0, values.authors).map((channel, index) => {
+      const avatar = values.avatars[index];
+      return { ...channel, url: index === 0 && !values.linked ? null : channel.url, avatarUrl: avatar && avatar !== 'none' ? avatarUrl(avatar) : null };
+    });
     hud.syncContentTitle({ title: values.title, subtitle: null, authors }, control);
     const plate = queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS}`);
     if (plate) applyAccentColorPreset(plate, values.accent);
+    // A link activated here would open a tab: the stories only show the panel.
+    plate?.addEventListener('click', event => { if ((event.target as Element).closest('a')) event.preventDefault(); }, { capture: true, signal: scope.signal });
   }, {
     args,
     play: async ({ args: values }) => {
       // The panel waits for the provider setting to load from storage.
       if (!values.authors) { await expect(panel()).toBeNull(); return; }
       await waitFor(() => expect(panel()).not.toBeNull());
-      // The avatar's color arrives when the page is idle; a gray avatar leaves the user's accent.
-      const accent = () => panel()!.style.getPropertyValue('--accent-color');
-      if (values.avatar === 'gray') {
-        await waitFor(() => expect(reads.length).toBeGreaterThan(0));
-        await Promise.all(reads);
-        await expect(accent()).toBe('');
-      } else if (values.avatar !== 'none') await waitFor(() => expect(accent()).toMatch(/^#[0-9a-f]{6}$/));
-      if (values.open === 'click') await userEvent.click(panel()!);
-      if (values.open === 'keyboard') {
-        panel()!.focus();
-        await userEvent.keyboard('{Enter}');
-      }
-      // Focus alone lifts the panel without opening it.
-      if (values.open === 'focus') {
-        panel()!.focus();
-        await expect(panel()!.matches(':focus-visible')).toBe(true);
-        await expect(panel()!.getAttribute('aria-expanded')).toBe('false');
-        return;
-      }
-      if (values.open === 'hover') {
-        await userEvent.hover(panel()!);
-        // The pointer on the panel or its popup leaves the scrolling title running and without a tooltip.
-        const track = queryPlayerUi<HTMLElement>(`.${TITLE_HUD_CLASS} .theater-title-hud-track`)!;
-        if (queryPlayerUi(`.${TITLE_HUD_CLASS}.marquee`)) {
-          await expect(getComputedStyle(track).animationPlayState).toBe('running');
-          await expect(panel()!.closest('[title]')!.getAttribute('title')).toBe('');
-        }
-      }
-      if (values.open !== 'closed') await expect(panel()!.getAttribute('aria-expanded')).toBe('true');
+      await expectShape(values);
+      await awaitPanelAccent(values.avatars[0]);
+      if (!await interact(values)) return;
+      await expect(panel()!.getAttribute('aria-expanded')).toBe('true');
+      await waitFor(() => expect(popupShown()).toBe(true));
+      // Every author has a row, the first too, each in its own avatar's color once the popup has opened.
+      await expect(rows()).toHaveLength(values.authors);
+      await waitFor(() => expect(rows().map(accentOf)).toEqual(CHANNELS.slice(0, values.authors).map((_, index) => expectedAccent(values.avatars[index]))));
     }
   });
 }
 
-// The accent ramp shows at rest; hover, focus and open lift the panel and step the arrowhead forward.
+// One author: the whole panel is their channel link, with no popup. The accent ramp shows at rest; hover and focus
+// lift the panel and step the arrowhead forward.
 export const OneAuthor = byline();
 export const OneAuthorFocused = byline({ open: 'focus' });
-export const OneAuthorOpen = byline({ open: 'click' });
+export const OneAuthorHovered = byline({ open: 'hover' });
+// One author without a link the host admits: a plain panel that does not lift.
+export const OneAuthorUnlinked = byline({ linked: false, open: 'hover' });
 // Also shot in German and Arabic (right-to-left): see .storybook/profiles.ts.
-export const TwoAuthorsOpen = byline({ authors: 2, accent: 'purple', open: 'click' });
+export const TwoAuthorsOpen = byline({ authors: 2, accent: 'purple', avatars: ['blue', 'orange'], open: 'arrow' });
+// Hover lists every author, the one the arrow stands for too.
+export const TwoAuthorsHoverOpen = byline({ authors: 2, accent: 'purple', avatars: ['orange', 'blue'], open: 'hover' });
 export const ThreeAuthors = byline({ authors: 3, accent: 'pink' });
-// One block of rows that alternate from the second author; each row is its channel's link.
-export const ThreeAuthorsOpen = byline({ authors: 3, accent: 'green', open: 'click' });
+// One block of rows that alternate from the second author; each row is its channel's link, in its avatar's color.
+export const ThreeAuthorsOpen = byline({ authors: 3, accent: 'green', avatars: ['blue', 'orange', 'pastel'], open: 'arrow' });
 // The first row takes focus and shows its ring inside the block.
-export const KeyboardOpen = byline({ authors: 2, open: 'keyboard', accent: 'blue' });
-export const YellowAccentOpen = byline({ accent: 'yellow', open: 'click' });
+export const KeyboardOpen = byline({ authors: 2, open: 'arrow', accent: 'blue' });
+// A first author without a link: the arrow is the popup's button, which a click opens.
+export const ButtonArrowOpen = byline({ authors: 2, linked: false, avatars: ['navy', 'orange'], open: 'click' });
+export const ButtonArrowKeyboardOpen = byline({ authors: 3, linked: false, accent: 'yellow', open: 'keyboard' });
+export const YellowAccentOpen = byline({ authors: 2, accent: 'yellow', open: 'arrow' });
 export const LongTitle = byline({ title: LONG_TITLE, authors: 2 });
 // The pointer on the panel opens its popup and leaves the scrolling title running, without the title's tooltip.
 export const LongTitleOverPanel = byline({ title: LONG_TITLE, authors: 2, open: 'hover' });
 export const NoAuthor = byline({ authors: 0 });
-// The first author's avatar colors the panel; open, the popup keeps the user's accent.
-export const AvatarBlueOpen = byline({ avatar: 'blue', open: 'click' });
-export const AvatarOrange = byline({ avatar: 'orange', authors: 2 });
-export const AvatarNavyOpen = byline({ avatar: 'navy', authors: 2, open: 'click' });
-export const AvatarPastelOpen = byline({ avatar: 'pastel', open: 'click' });
-export const AvatarGrayFallbackOpen = byline({ avatar: 'gray', accent: 'purple', open: 'click' });
+// The first author's avatar colors the panel; open, each row takes its own avatar's color.
+export const AvatarBlue = byline({ avatars: ['blue'] });
+export const AvatarOrange = byline({ avatars: ['orange'], authors: 2 });
+export const AvatarNavyOpen = byline({ avatars: ['navy', 'pastel'], authors: 2, open: 'arrow' });
+export const AvatarPastelHovered = byline({ avatars: ['pastel'], open: 'hover' });
+// A gray avatar keeps the user's accent, on the panel and on its row.
+export const AvatarGrayFallbackOpen = byline({ avatars: ['gray', 'blue', 'none'], authors: 3, accent: 'purple', open: 'arrow' });
